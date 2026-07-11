@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+/* ── Design tokens (docs/design/tokens.md) — light ─────────────────────── */
+:root {
+  --bg: #faf6ef;
+  --surface: #ffffff;
+  --ink: #241a10;
+  --ink-secondary: #8f8272;
+  --ink-tertiary: #b4a794;
+  --line-card: rgba(36, 26, 16, 0.08);
+  --line-pill: rgba(36, 26, 16, 0.1);
+  --line-soft: rgba(36, 26, 16, 0.06);
+  --fill: rgba(36, 26, 16, 0.06);
+  --track: rgba(36, 26, 16, 0.08);
+  --accent: #ff5c39;
+  --accent-strong: #e8492a;
+  --accent-soft: rgba(255, 92, 57, 0.12);
+
+  /* Budget states */
+  --good: #2e9e5b;
+  --good-text: #1f7a45;
+  --good-bg: rgba(46, 158, 91, 0.12);
+  --warn: #e39a0c;
+  --warn-text: #b87804;
+  --warn-bg: rgba(227, 154, 12, 0.15);
+  --over: #e5484d;
+  --over-text: #e5484d;
+  --over-bg: rgba(229, 72, 77, 0.11);
+  --over-track: rgba(229, 72, 77, 0.2);
+
+  /* Member avatars */
+  --member-blue: #2a6fdb;
+  --member-pink: #e0447c;
+
+  /* Category colors (shared/categories.json) */
+  --cat-groceries: #2e9e5b;
+  --cat-coffee: #a9713c;
+  --cat-eatingOut: #f2790f;
+  --cat-transport: #2a6fdb;
+  --cat-home: #7b5bd6;
+  --cat-health: #e0447c;
+  --cat-entertainment: #c13fa8;
+  --cat-other: #8a8577;
+  --cat-circle-alpha: 14%;
+
+  --key-shadow: 0 1px 3px rgba(36, 26, 16, 0.12);
+}
+
+/* ── Dark ──────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191410;
+    --surface: #242019;
+    --ink: #f6eee2;
+    --ink-secondary: #a2937f;
+    --ink-tertiary: #6e6153;
+    --line-card: rgba(246, 238, 226, 0.08);
+    --line-pill: rgba(246, 238, 226, 0.1);
+    --line-soft: rgba(246, 238, 226, 0.06);
+    --fill: rgba(246, 238, 226, 0.07);
+    --track: rgba(246, 238, 226, 0.08);
+
+    --good: #40be74;
+    --good-text: #6fd79a;
+    --good-bg: rgba(64, 190, 116, 0.16);
+
+    --member-blue: #4b87e8;
+    --member-pink: #ef6d9c;
+
+    --cat-groceries: #57c282;
+    --cat-coffee: #c99465;
+    --cat-eatingOut: #f79a4a;
+    --cat-transport: #6d9eec;
+    --cat-home: #a78deb;
+    --cat-health: #ef6d9c;
+    --cat-entertainment: #db6fc7;
+    --cat-other: #a79f8d;
+    --cat-circle-alpha: 16%;
+
+    --key-shadow: none;
+  }
+}
+
+/* ── Tailwind theme mapping ───────────────────────────────────────────── */
+@theme inline {
+  --color-*: initial;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-secondary);
+  --color-ink-3: var(--ink-tertiary);
+  --color-line: var(--line-card);
+  --color-pill: var(--line-pill);
+  --color-soft: var(--line-soft);
+  --color-fill: var(--fill);
+  --color-track: var(--track);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-text: var(--good-text);
+  --color-good-bg: var(--good-bg);
+  --color-warn: var(--warn);
+  --color-warn-text: var(--warn-text);
+  --color-warn-bg: var(--warn-bg);
+  --color-over: var(--over);
+  --color-over-bg: var(--over-bg);
+  --color-over-track: var(--over-track);
+  --color-member-blue: var(--member-blue);
+  --color-member-pink: var(--member-pink);
+  --color-white: #ffffff;
+  --color-transparent: transparent;
+
+  --font-sans: var(--font-outfit), "Outfit", sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* ── Material Symbols Rounded, filled ─────────────────────────────────── */
+.msr {
+  font-family: "Material Symbols Rounded";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings:
+    "FILL" 1,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+  user-select: none;
+  flex: none;
+}
+
+/* Tabular numerals for every amount */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Section label: 11px/700 uppercase, letter-spacing .07em, tertiary */
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+
+input,
+select,
+button,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+input::placeholder {
+  color: var(--ink-tertiary);
+}
+
+button {
+  cursor: pointer;
+}

@@ -1,0 +1,134 @@
+{
+  "app": {
+    "name": "Gastos Diarios",
+    "tagline": "The household budget,<br></br>between the two of you.",
+    "loading": "Loading…"
+  },
+  "nav": {
+    "summary": "Summary",
+    "expenses": "Expenses",
+    "settings": "Settings",
+    "sharedHousehold": "Shared household"
+  },
+  "auth": {
+    "continueWithGoogle": "Continue with Google",
+    "signOut": "Sign out",
+    "signInError": "We couldn't sign you in. Try again."
+  },
+  "onboarding": {
+    "greeting": "Hi, {name} 👋",
+    "setupQuestion": "Shall we set up the household?",
+    "setupHint": "A household is for two: you and your partner share a single budget.",
+    "createTitle": "Create our household",
+    "createHint": "You'll invite your partner with a code afterwards",
+    "joinTitle": "Join with a code",
+    "joinHint": "Your partner already created the household",
+    "join": "Join",
+    "joining": "Joining…",
+    "codePlaceholder": "GD-7K2M…",
+    "joinError": "That code doesn't exist or is no longer valid.",
+    "budgetTitle": "How much per period?",
+    "budgetHint": "You can change it anytime from Settings.",
+    "householdName": "Household name",
+    "defaultHouseholdName": "{name}'s household",
+    "starts": "Starts",
+    "finish": "Done, let's spend wisely",
+    "creating": "Creating the household…",
+    "createError": "We couldn't create the household. Try again.",
+    "back": "Back"
+  },
+  "period": {
+    "weekly": "Weekly",
+    "fortnightly": "Fortnightly",
+    "byDefault": "default",
+    "adjusted": "Adjusted",
+    "inProgress": "in progress",
+    "weeklyAmount": "Weekly · {amount}",
+    "fortnightlyAmount": "Fortnightly · {amount}"
+  },
+  "budgetState": {
+    "comfortable": "On track",
+    "warning": "Running low",
+    "over": "Over budget"
+  },
+  "dashboard": {
+    "title": "Summary",
+    "newExpense": "New expense",
+    "remaining": "You have left",
+    "spentOf": "Spent <strong>{spent}</strong> of {budget}",
+    "daysLeft": "{count, plural, one {<strong>1 day</strong> left} other {<strong># days</strong> left}}",
+    "periodEnded": "Period ended",
+    "betweenTwo": "Between the two",
+    "splitNote": "{a}% / {b}% of the period total",
+    "byCategory": "By category",
+    "trend": "Trend · recent periods",
+    "trendHint": "The — mark is each period's recorded budget",
+    "noPeriod": "No period has started yet.",
+    "noPeriodHint": "The first period starts on {date}."
+  },
+  "expenses": {
+    "title": "Expenses",
+    "groupedByDay": "Grouped by day",
+    "flatList": "Flat list",
+    "categoryAll": "Category: all",
+    "categoryFilter": "Category: {name}",
+    "personAll": "Person: both",
+    "personFilter": "Person: {name}",
+    "searchPlaceholder": "Search the notes…",
+    "addPlaceholder": "Add expense: amount · category · note · date",
+    "amountPlaceholder": "0.00",
+    "notePlaceholder": "Note (optional)",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this {amount} expense?",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "noResults": "Nothing here",
+    "noResultsHint": "No expense matches those filters."
+  },
+  "empty": {
+    "noExpensesTitle": "No expenses yet",
+    "noExpensesHint": "Log the first one — it takes less than 5 seconds."
+  },
+  "settings": {
+    "title": "Settings",
+    "defaultBudget": "Default budget",
+    "amount": "Amount",
+    "periodType": "Period",
+    "thisPeriod": "This period · {range}",
+    "budget": "Budget",
+    "thisPeriodNote": "Only affects the current period; it stays recorded with its amount and type.",
+    "showUsd": "Also show in USD",
+    "showUsdHint": "Approximate (≈). The real amount stays in AUD.",
+    "language": "Language",
+    "spanish": "Español",
+    "english": "English",
+    "inviteCode": "Invite code",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "editAmount": "Edit amount"
+  },
+  "newPeriod": {
+    "titleWeekly": "New week",
+    "titleFortnightly": "New fortnight",
+    "subtitle": "{range} · how much are you starting with?",
+    "defaultBadge": "Your default budget",
+    "adjustedBadge": "Adjusted for this period",
+    "noteWeekly": "The amount and type stay recorded for this week.<br></br>You can adjust it from Settings while it's in progress.",
+    "noteFortnightly": "The amount and type stay recorded for this fortnight.<br></br>You can adjust it from Settings while it's in progress.",
+    "startWeekly": "Start the week",
+    "startFortnightly": "Start the fortnight"
+  },
+  "categories": {
+    "groceries": "Groceries",
+    "coffee": "Coffee",
+    "eatingOut": "Eating out",
+    "transport": "Transport",
+    "home": "Home",
+    "health": "Health",
+    "entertainment": "Entertainment",
+    "other": "Other"
+  }
+}

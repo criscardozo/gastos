@@ -1,0 +1,134 @@
+{
+  "app": {
+    "name": "Gastos Diarios",
+    "tagline": "El presupuesto de la casa,<br></br>entre los dos.",
+    "loading": "Cargando…"
+  },
+  "nav": {
+    "summary": "Resumen",
+    "expenses": "Gastos",
+    "settings": "Ajustes",
+    "sharedHousehold": "Hogar compartido"
+  },
+  "auth": {
+    "continueWithGoogle": "Continuar con Google",
+    "signOut": "Cerrar sesión",
+    "signInError": "No pudimos iniciar sesión. Probá de nuevo."
+  },
+  "onboarding": {
+    "greeting": "Hola, {name} 👋",
+    "setupQuestion": "¿Armamos el hogar?",
+    "setupHint": "Un hogar es de dos: vos y tu pareja comparten un solo presupuesto.",
+    "createTitle": "Crear nuestro hogar",
+    "createHint": "Después invitás a tu pareja con un código",
+    "joinTitle": "Unirme con código",
+    "joinHint": "Tu pareja ya creó el hogar",
+    "join": "Unirme",
+    "joining": "Uniéndote…",
+    "codePlaceholder": "GD-7K2M…",
+    "joinError": "Ese código no existe o ya no sirve.",
+    "budgetTitle": "¿Cuánto por período?",
+    "budgetHint": "Lo pueden cambiar cuando quieran desde Ajustes.",
+    "householdName": "Nombre del hogar",
+    "defaultHouseholdName": "Hogar de {name}",
+    "starts": "Comienza",
+    "finish": "Listo, a gastar con criterio",
+    "creating": "Creando el hogar…",
+    "createError": "No pudimos crear el hogar. Probá de nuevo.",
+    "back": "Volver"
+  },
+  "period": {
+    "weekly": "Semanal",
+    "fortnightly": "Quincenal",
+    "byDefault": "por defecto",
+    "adjusted": "Ajustado",
+    "inProgress": "en curso",
+    "weeklyAmount": "Semanal · {amount}",
+    "fortnightlyAmount": "Quincenal · {amount}"
+  },
+  "budgetState": {
+    "comfortable": "Van bien",
+    "warning": "Queda poco",
+    "over": "Se pasaron"
+  },
+  "dashboard": {
+    "title": "Resumen",
+    "newExpense": "Nuevo gasto",
+    "remaining": "Te queda",
+    "spentOf": "Gastado <strong>{spent}</strong> de {budget}",
+    "daysLeft": "{count, plural, one {Queda <strong>1 día</strong>} other {Quedan <strong># días</strong>}}",
+    "periodEnded": "Período terminado",
+    "betweenTwo": "Entre los dos",
+    "splitNote": "{a}% / {b}% del total del período",
+    "byCategory": "Por categoría",
+    "trend": "Tendencia · últimos períodos",
+    "trendHint": "La marca — es el presupuesto registrado de cada período",
+    "noPeriod": "Todavía no arrancó ningún período.",
+    "noPeriodHint": "El primer período comienza el {date}."
+  },
+  "expenses": {
+    "title": "Gastos",
+    "groupedByDay": "Agrupado por día",
+    "flatList": "Lista plana",
+    "categoryAll": "Categoría: todas",
+    "categoryFilter": "Categoría: {name}",
+    "personAll": "Persona: ambos",
+    "personFilter": "Persona: {name}",
+    "searchPlaceholder": "Buscar en las notas…",
+    "addPlaceholder": "Agregar gasto: monto · categoría · nota · fecha",
+    "amountPlaceholder": "0,00",
+    "notePlaceholder": "Nota (opcional)",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Borrar",
+    "deleteConfirm": "¿Borrar este gasto de {amount}?",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "noResults": "Nada por acá",
+    "noResultsHint": "Ningún gasto coincide con esos filtros."
+  },
+  "empty": {
+    "noExpensesTitle": "Sin gastos todavía",
+    "noExpensesHint": "Cargá el primero — tarda menos de 5 segundos."
+  },
+  "settings": {
+    "title": "Ajustes",
+    "defaultBudget": "Presupuesto por defecto",
+    "amount": "Monto",
+    "periodType": "Período",
+    "thisPeriod": "Este período · {range}",
+    "budget": "Presupuesto",
+    "thisPeriodNote": "Solo afecta al período en curso; queda registrado con su monto y tipo.",
+    "showUsd": "Ver también en USD",
+    "showUsdHint": "Aproximado (≈). El monto real sigue en AUD.",
+    "language": "Idioma",
+    "spanish": "Español",
+    "english": "English",
+    "inviteCode": "Código de invitación",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "editAmount": "Editar monto"
+  },
+  "newPeriod": {
+    "titleWeekly": "Nueva semana",
+    "titleFortnightly": "Nueva quincena",
+    "subtitle": "{range} · ¿con cuánto arrancan?",
+    "defaultBadge": "Tu presupuesto por defecto",
+    "adjustedBadge": "Ajustado para este período",
+    "noteWeekly": "El monto y el tipo quedan registrados para esta semana.<br></br>Podés ajustarlo desde Ajustes mientras esté en curso.",
+    "noteFortnightly": "El monto y el tipo quedan registrados para esta quincena.<br></br>Podés ajustarlo desde Ajustes mientras esté en curso.",
+    "startWeekly": "Empezar la semana",
+    "startFortnightly": "Empezar la quincena"
+  },
+  "categories": {
+    "groceries": "Súper",
+    "coffee": "Café",
+    "eatingOut": "Salidas",
+    "transport": "Transporte",
+    "home": "Hogar",
+    "health": "Salud",
+    "entertainment": "Ocio",
+    "other": "Otros"
+  }
+}
