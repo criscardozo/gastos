@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "comment": "Seed categories shared by both clients. `key` is the i18n key (translated client-side); icons carry both the Material Symbols name (web) and the SF Symbols name (iOS). Colors come from the design system (docs/design/tokens.md).",
+  "categories": [
+    {
+      "id": "groceries",
+      "key": "groceries",
+      "icon": { "material": "shopping_basket", "sfSymbol": "basket.fill" },
+      "color": { "light": "#2E9E5B", "dark": "#57C282" },
+      "sortOrder": 0
+    },
+    {
+      "id": "coffee",
+      "key": "coffee",
+      "icon": { "material": "local_cafe", "sfSymbol": "cup.and.saucer.fill" },
+      "color": { "light": "#A9713C", "dark": "#C99465" },
+      "sortOrder": 1
+    },
+    {
+      "id": "eatingOut",
+      "key": "eatingOut",
+      "icon": { "material": "restaurant", "sfSymbol": "fork.knife" },
+      "color": { "light": "#F2790F", "dark": "#F79A4A" },
+      "sortOrder": 2
+    },
+    {
+      "id": "transport",
+      "key": "transport",
+      "icon": { "material": "directions_bus", "sfSymbol": "bus.fill" },
+      "color": { "light": "#2A6FDB", "dark": "#6D9EEC" },
+      "sortOrder": 3
+    },
+    {
+      "id": "home",
+      "key": "home",
+      "icon": { "material": "home", "sfSymbol": "house.fill" },
+      "color": { "light": "#7B5BD6", "dark": "#A78DEB" },
+      "sortOrder": 4
+    },
+    {
+      "id": "health",
+      "key": "health",
+      "icon": { "material": "favorite", "sfSymbol": "heart.fill" },
+      "color": { "light": "#E0447C", "dark": "#EF6D9C" },
+      "sortOrder": 5
+    },
+    {
+      "id": "entertainment",
+      "key": "entertainment",
+      "icon": { "material": "movie", "sfSymbol": "film.fill" },
+      "color": { "light": "#C13FA8", "dark": "#DB6FC7" },
+      "sortOrder": 6
+    },
+    {
+      "id": "other",
+      "key": "other",
+      "icon": { "material": "more_horiz", "sfSymbol": "ellipsis.circle.fill" },
+      "color": { "light": "#8A8577", "dark": "#A79F8D" },
+      "sortOrder": 7
+    }
+  ]
+}
