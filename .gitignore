@@ -1,0 +1,39 @@
+# macOS
+.DS_Store
+
+# Local agent workspace
+.claude/
+
+# Node
+node_modules/
+.pnpm-store/
+*.log
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+apps/web/.vercel/
+apps/web/next-env.d.ts
+
+# Env files (Firebase client config is public by design, but keep env files local)
+.env
+.env.local
+.env.*.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+firebase/rules-tests/coverage/
+
+# Xcode
+apps/ios/*.xcodeproj/xcuserdata/
+apps/ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+xcuserdata/
+DerivedData/
+*.xcresult
+
+# Test output
+coverage/
+.vitest/

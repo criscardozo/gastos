@@ -1,0 +1,16 @@
+{
+  "name": "gastos-diarios",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "typecheck": "pnpm --filter web typecheck",
+    "lint": "pnpm --filter web lint",
+    "test": "pnpm --filter web test && pnpm --filter rules-tests test",
+    "test:web": "pnpm --filter web test",
+    "test:rules": "pnpm --filter rules-tests test",
+    "emulators": "firebase emulators:start --config firebase/firebase.json --project qcris-gastos-diarios"
+  },
+  "packageManager": "pnpm@11.4.0"
+}
