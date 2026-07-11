@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  web:
+    name: Web — typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web typecheck
+      - run: pnpm --filter web lint
+      - run: pnpm --filter web test
+      - run: pnpm --filter web build
+
+  rules:
+    name: Firestore rules — emulator tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter rules-tests test
+
+  ios:
+    name: iOS — build & period-logic tests
+    # macOS runners are free for public repos; for a private repo they burn
+    # minutes fast — keep this job manual-friendly.
+    if: github.event_name == 'pull_request' || github.ref_name == 'main' || github.ref_name == 'master'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        working-directory: apps/ios
+        run: xcodegen
+      - name: Build & test
+        working-directory: apps/ios
+        run: |
+          DEST=$(xcodebuild -project GastosDiarios.xcodeproj -scheme GastosDiarios -showdestinations 2>/dev/null \
+            | grep -m1 'platform:iOS Simulator.*name:iPhone' \
+            | sed -E 's/.*id:([A-F0-9-]+).*/\1/')
+          xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiarios \
+            -destination "platform=iOS Simulator,id=$DEST" \
+            -only-testing:GastosDiariosTests
