@@ -1,0 +1,339 @@
+rules_version = '2';
+
+// ===============================================================
+// Gastos Diarios — Firestore security rules
+// These rules ARE the security boundary: there is no backend.
+// Contract: shared/schema.md (any change there must be mirrored here).
+// ===============================================================
+//
+// Assumed data model
+//
+// Collection: users
+// Document ID: {uid} (Firebase Auth uid)
+// Fields:
+//   - displayName: string (required, 1..80)
+//   - householdId: string|null (optional; denormalized convenience — when set,
+//     the user must be a member of that household after this write)
+//   - language: "es"|"en"|null (optional)
+//   - displayCurrency: string|null (optional, ISO 4217 uppercase)
+//   - createdAt: timestamp (required, server time, immutable)
+//   - updatedAt: timestamp (required, server time)
+//
+// Collection: households
+// Document ID: random
+// Fields:
+//   - name: string (required, 1..60)
+//   - currency: string (required, ISO 4217 uppercase)
+//   - timezone: string (required, IANA, 1..60)
+//   - defaultBudget: map { amountCents: int>0, period: "weekly"|"fortnightly",
+//     anchorDate: "YYYY-MM-DD" } (required)
+//   - memberIds: list<string> (required, size 1..2 — HARD CAP OF 2)
+//   - memberProfiles: map<uid, {displayName: string 1..80, color: "#RRGGBB"}>
+//     (required, keys ⊆ memberIds semantics enforced per-branch)
+//   - categories: map<id, category> (required, ≤ 30 entries; entry shape is a
+//     client contract — map entries cannot be iterated in rules)
+//   - createdAt: timestamp (required, server time, immutable)
+//   - updatedAt: timestamp (required, server time)
+//
+// Subcollection: households/{id}/expenses
+// Document ID: random
+// Fields:
+//   - amountCents: int (required, 1..10_000_000)
+//   - categoryId: string (required, 1..40)
+//   - note: string (required, may be empty, ≤ 200)
+//   - date: "YYYY-MM-DD" string (required; household-timezone calendar date)
+//   - createdBy: uid string (required, = author on create, immutable)
+//   - createdAt: timestamp (required, server time, immutable)
+//   - updatedAt: timestamp (required, server time)
+//
+// Subcollection: households/{id}/periodBudgets
+// Document ID: {startDate} ("YYYY-MM-DD") — idempotent materialization
+// Fields:
+//   - startDate: string (required, == doc ID, immutable)
+//   - endDate: string (required, "YYYY-MM-DD", > startDate, immutable)
+//   - period: "weekly"|"fortnightly" (required, immutable)
+//   - amountCents: int (required, 1..100_000_000)
+//   - source: "default"|"custom" (required)
+//   - createdAt: timestamp (required, server time, immutable)
+//   - updatedAt: timestamp (required, server time)
+//   Deletes are DENIED: past periods are an immutable historical record.
+//
+// Collection: invites
+// Document ID: {code} — the code IS the capability (≥ 10 chars, crypto-random,
+//   `list` denied so codes cannot be enumerated)
+// Fields:
+//   - householdId: string (required; creator must be a member)
+//   - createdBy: uid string (required, = author)
+//   - createdAt: timestamp (required, server time)
+//
+// Join flow: joiner `get`s invites/{code} → self-add update on the household
+// touching ONLY memberIds (+ own memberProfiles entry + updatedAt), adding
+// ONLY themselves, ONLY while memberIds.size() < 2. Knowing the household ID
+// is treated as capability-equivalent to knowing the invite code (household
+// IDs are random and never listable).
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================ Helpers ============================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Membership check for subcollections (get() is cached per request)
+    function isMember(householdId) {
+      return isAuthenticated()
+        && request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberIds;
+    }
+
+    // Format + logical range (month 01-12, day 01-31). Month-length /
+    // leap-year correctness is a client responsibility; rules cannot
+    // compute calendars.
+    function isCalendarDate(value) {
+      return value is string
+        && value.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$');
+    }
+
+    function isServerTimestamp(value) {
+      return value is timestamp && value == request.time;
+    }
+
+    // ============================ users ============================
+
+    function isValidUser(data) {
+      return data.keys().hasOnly(['displayName', 'householdId', 'language', 'displayCurrency', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['displayName', 'createdAt', 'updatedAt'])
+        && data.displayName is string
+        && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && (!('householdId' in data) || data.householdId == null
+            || (data.householdId is string && data.householdId.size() >= 1 && data.householdId.size() <= 60))
+        && (!('language' in data) || data.language == null || data.language in ['es', 'en'])
+        && (!('displayCurrency' in data) || data.displayCurrency == null
+            || (data.displayCurrency is string && data.displayCurrency.matches('^[A-Z]{3}$')));
+    }
+
+    // If householdId is set, the user must actually be a member of that
+    // household once this write (or its batch) commits — getAfter() covers
+    // the create-household-and-link batch.
+    function householdLinkIsTruthful(data) {
+      return !('householdId' in data) || data.householdId == null
+        || request.auth.uid in getAfter(/databases/$(database)/documents/households/$(data.householdId)).data.memberIds;
+    }
+
+    match /users/{uid} {
+      allow get: if isOwner(uid);
+      allow list: if false;
+
+      allow create: if isOwner(uid)
+        && isValidUser(request.resource.data)
+        && householdLinkIsTruthful(request.resource.data)
+        && isServerTimestamp(request.resource.data.createdAt)
+        && isServerTimestamp(request.resource.data.updatedAt);
+
+      allow update: if isOwner(uid)
+        && isValidUser(request.resource.data)
+        && householdLinkIsTruthful(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && isServerTimestamp(request.resource.data.updatedAt);
+
+      allow delete: if false;
+    }
+
+    // ============================ households ============================
+
+    function isValidBudget(budget) {
+      return budget is map
+        && budget.keys().hasOnly(['amountCents', 'period', 'anchorDate'])
+        && budget.keys().hasAll(['amountCents', 'period', 'anchorDate'])
+        && budget.amountCents is int
+        && budget.amountCents > 0 && budget.amountCents <= 100000000
+        && budget.period in ['weekly', 'fortnightly']
+        && isCalendarDate(budget.anchorDate);
+    }
+
+    function isValidMemberProfile(profile) {
+      return profile is map
+        && profile.keys().hasOnly(['displayName', 'color'])
+        && profile.keys().hasAll(['displayName', 'color'])
+        && profile.displayName is string
+        && profile.displayName.size() >= 1 && profile.displayName.size() <= 80
+        && profile.color is string
+        && profile.color.matches('^#[0-9A-Fa-f]{6}$');
+    }
+
+    function isValidMemberIds(ids) {
+      return ids is list
+        && ids.size() >= 1 && ids.size() <= 2
+        && ids[0] is string && ids[0].size() >= 1 && ids[0].size() <= 128
+        && (ids.size() == 1
+            || (ids[1] is string && ids[1].size() >= 1 && ids[1].size() <= 128 && ids[0] != ids[1]));
+    }
+
+    function isValidHousehold(data) {
+      return data.keys().hasOnly(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'createdAt', 'updatedAt'])
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 60
+        && data.currency is string && data.currency.matches('^[A-Z]{3}$')
+        && data.timezone is string && data.timezone.size() >= 1 && data.timezone.size() <= 60
+        && isValidBudget(data.defaultBudget)
+        && isValidMemberIds(data.memberIds)
+        && data.memberProfiles is map && data.memberProfiles.size() <= 2
+        && data.categories is map && data.categories.size() >= 1 && data.categories.size() <= 30;
+    }
+
+    // Join self-add: a non-member adds ONLY themselves, touching ONLY
+    // memberIds + their own memberProfiles entry + updatedAt, ONLY while
+    // there is a free seat. Once the second member joins, the household is
+    // locked forever.
+    function isSelfAddJoin() {
+      return isAuthenticated()
+        && !(request.auth.uid in resource.data.memberIds)
+        && resource.data.memberIds.size() < 2
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'memberProfiles', 'updatedAt'])
+        && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
+        && request.resource.data.memberIds.toSet()
+             == resource.data.memberIds.toSet().union([request.auth.uid].toSet())
+        && request.resource.data.memberProfiles.diff(resource.data.memberProfiles).affectedKeys().hasOnly([request.auth.uid])
+        && isValidMemberProfile(request.resource.data.memberProfiles[request.auth.uid]);
+    }
+
+    match /households/{householdId} {
+      allow get: if isAuthenticated() && request.auth.uid in resource.data.memberIds;
+      allow list: if false;
+
+      allow create: if isAuthenticated()
+        && isValidHousehold(request.resource.data)
+        && request.resource.data.memberIds == [request.auth.uid]
+        && request.resource.data.memberProfiles.keys().hasOnly([request.auth.uid])
+        && isValidMemberProfile(request.resource.data.memberProfiles[request.auth.uid])
+        && isServerTimestamp(request.resource.data.createdAt)
+        && isServerTimestamp(request.resource.data.updatedAt);
+
+      allow update: if isValidHousehold(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && isServerTimestamp(request.resource.data.updatedAt)
+        && (
+          // (a) member edit: membership roster is immutable; a member may
+          // edit only their OWN memberProfiles entry
+          (request.auth != null
+            && request.auth.uid in resource.data.memberIds
+            && request.resource.data.memberIds == resource.data.memberIds
+            && (request.resource.data.memberProfiles == resource.data.memberProfiles
+                || (request.resource.data.memberProfiles.diff(resource.data.memberProfiles).affectedKeys().hasOnly([request.auth.uid])
+                    && isValidMemberProfile(request.resource.data.memberProfiles[request.auth.uid])))
+          )
+          // (b) invite-code join: strict self-add
+          || isSelfAddJoin()
+        );
+
+      allow delete: if false;
+
+      // ------------------------ expenses ------------------------
+
+      function isValidExpense(data) {
+        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt'])
+          && data.keys().hasAll(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt'])
+          && data.amountCents is int
+          && data.amountCents > 0 && data.amountCents <= 10000000
+          && data.categoryId is string
+          && data.categoryId.size() >= 1 && data.categoryId.size() <= 40
+          && data.note is string && data.note.size() <= 200
+          && isCalendarDate(data.date)
+          && data.createdBy is string;
+      }
+
+      match /expenses/{expenseId} {
+        allow read: if isMember(householdId);
+
+        allow create: if isMember(householdId)
+          && isValidExpense(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid
+          && isServerTimestamp(request.resource.data.createdAt)
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        // Either member can edit any expense (createdBy is attribution, not
+        // ownership) — but attribution and createdAt are immutable.
+        allow update: if isMember(householdId)
+          && isValidExpense(request.resource.data)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        allow delete: if isMember(householdId);
+      }
+
+      // ------------------------ periodBudgets ------------------------
+
+      function isValidPeriodBudget(data, startDateId) {
+        return data.keys().hasOnly(['startDate', 'endDate', 'period', 'amountCents', 'source', 'createdAt', 'updatedAt'])
+          && data.keys().hasAll(['startDate', 'endDate', 'period', 'amountCents', 'source', 'createdAt', 'updatedAt'])
+          && isCalendarDate(data.startDate)
+          && data.startDate == startDateId
+          && isCalendarDate(data.endDate)
+          && data.endDate > data.startDate
+          && data.period in ['weekly', 'fortnightly']
+          && data.amountCents is int
+          && data.amountCents > 0 && data.amountCents <= 100000000
+          && data.source in ['default', 'custom'];
+      }
+
+      match /periodBudgets/{startDate} {
+        allow read: if isMember(householdId);
+
+        allow create: if isMember(householdId)
+          && isValidPeriodBudget(request.resource.data, startDate)
+          && isServerTimestamp(request.resource.data.createdAt)
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        // Only the budget amount (and its source flag) may change after
+        // materialization — period boundaries and type never move.
+        allow update: if isMember(householdId)
+          && isValidPeriodBudget(request.resource.data, startDate)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amountCents', 'source', 'updatedAt'])
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        // Past periods are an immutable historical record.
+        allow delete: if false;
+      }
+    }
+
+    // ============================ invites ============================
+
+    function isValidInvite(data, code) {
+      return data.keys().hasOnly(['householdId', 'createdBy', 'createdAt'])
+        && data.keys().hasAll(['householdId', 'createdBy', 'createdAt'])
+        && data.householdId is string
+        && data.householdId.size() >= 1 && data.householdId.size() <= 60
+        && data.createdBy == request.auth.uid
+        && code.size() >= 10 && code.size() <= 40;
+    }
+
+    match /invites/{code} {
+      // Knowing the code is the capability; enumeration is impossible
+      // because list is denied.
+      allow get: if isAuthenticated();
+      allow list: if false;
+
+      allow create: if isAuthenticated()
+        && isValidInvite(request.resource.data, code)
+        && isMember(request.resource.data.householdId)
+        && isServerTimestamp(request.resource.data.createdAt);
+
+      allow update: if false;
+
+      // Members can revoke / clean up after joining.
+      allow delete: if isMember(resource.data.householdId);
+    }
+
+    // Everything else: default deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

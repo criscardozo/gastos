@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyC825o9DAGTb4QCtVrfzY8ttnnLpQGYX34</string>
+	<key>GCM_SENDER_ID</key>
+	<string>56331687585</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>dev.cardozo.gastosdiarios</string>
+	<key>PROJECT_ID</key>
+	<string>qcris-gastos-diarios</string>
+	<key>STORAGE_BUCKET</key>
+	<string>qcris-gastos-diarios.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:56331687585:ios:f7e8c0c6c6e684468682e0</string>
+</dict>
+</plist>
