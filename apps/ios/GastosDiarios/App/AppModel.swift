@@ -1,0 +1,588 @@
+import Foundation
+import Observation
+import Security
+import FirebaseAuth
+import FirebaseFirestore
+
+/// App-wide observable state (MVVM: the screens are thin views over this).
+@MainActor
+@Observable
+final class AppModel {
+
+    enum Phase: Equatable {
+        case loading
+        case signedOut
+        case onboarding   // signed in, no household yet
+        case ready        // household loaded
+    }
+
+    // MARK: State
+
+    private(set) var phase: Phase = .loading
+    private(set) var uid: String?
+    private(set) var authDisplayName: String = ""
+    private(set) var userProfile: UserProfile?
+    private(set) var household: Household?
+    /// Materialized periods, ascending by startDate.
+    private(set) var periods: [PeriodBudget] = []
+    /// Expenses of the CURRENT period (bounded listener) — drives the entry pill.
+    private(set) var currentExpenses: [ExpenseItem] = []
+    /// Expenses of the period being VIEWED in Summary/History.
+    private(set) var viewedExpenses: [ExpenseItem] = []
+    /// Spent totals for past periods, keyed by startDate.
+    private(set) var pastTotals: [String: Int] = [:]
+    private(set) var usdRate: Double?
+    /// Invite code for this household (created lazily), nil until generated.
+    private(set) var inviteCode: String?
+
+    var viewedPeriodIndex: Int?
+    var showNewPeriodSheet = false
+    var authError: String?
+    var isSigningIn = false
+
+    let googleSignInConfigured = AuthService.isGoogleSignInConfigured
+
+    // MARK: Services & listeners
+
+    private let auth = AuthService()
+    private let firestore = FirestoreService()
+    private let fx = FXService()
+
+    private var authHandle: AuthStateDidChangeListenerHandle?
+    private var userListener: ListenerRegistration?
+    private var householdListener: ListenerRegistration?
+    private var periodsListener: ListenerRegistration?
+    private var currentExpensesListener: ListenerRegistration?
+    private var viewedExpensesListener: ListenerRegistration?
+    private var currentListenerRange: (String, String)?
+    private var viewedListenerRange: (String, String)?
+    private var materializing = false
+    private var creatingProfile = false
+
+    // MARK: Derived
+
+    var l10n: L10n { L10n.resolve(userLanguage: userProfile?.language) }
+
+    var householdTimeZone: TimeZone {
+        household?.timeZone ?? TimeZone(identifier: "Australia/Sydney")!
+    }
+
+    var today: CalendarDate {
+        PeriodLogic.todayInTimezone(Date(), householdTimeZone)
+    }
+
+    var currentPeriod: PeriodBudget? {
+        periods.last(where: { $0.contains(today) })
+    }
+
+    var currentPeriodIndex: Int? {
+        guard let current = currentPeriod else { return nil }
+        return periods.firstIndex(where: { $0.startDate == current.startDate })
+    }
+
+    var viewedPeriod: PeriodBudget? {
+        guard let index = viewedPeriodIndex, periods.indices.contains(index) else {
+            return currentPeriod
+        }
+        return periods[index]
+    }
+
+    var isViewingCurrentPeriod: Bool {
+        viewedPeriod?.startDate == currentPeriod?.startDate
+    }
+
+    var currentSpentCents: Int {
+        currentExpenses.reduce(0) { $0 + $1.expense.amountCents }
+    }
+
+    var currentRemainingCents: Int {
+        (currentPeriod?.amountCents ?? 0) - currentSpentCents
+    }
+
+    var viewedSpentCents: Int {
+        viewedExpenses.reduce(0) { $0 + $1.expense.amountCents }
+    }
+
+    var currentBudgetState: BudgetState {
+        PeriodLogic.budgetState(
+            spentCents: currentSpentCents,
+            budgetCents: currentPeriod?.amountCents ?? 0
+        )
+    }
+
+    var showUSD: Bool { userProfile?.displayCurrency == "USD" }
+
+    var members: [(uid: String, profile: MemberProfile)] {
+        guard let household else { return [] }
+        return household.memberIds.compactMap { uid in
+            household.memberProfiles[uid].map { (uid: uid, profile: $0) }
+        }
+    }
+
+    /// Past periods (before the current one), most recent first.
+    var pastPeriods: [PeriodBudget] {
+        guard let currentStart = currentPeriod?.startDate else {
+            return periods.reversed()
+        }
+        return periods.filter { $0.startDate < currentStart }.reversed()
+    }
+
+    // MARK: Lifecycle
+
+    func start() {
+        guard authHandle == nil else { return }
+        authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            Task { @MainActor in
+                self?.authStateChanged(user)
+            }
+        }
+    }
+
+    private func authStateChanged(_ user: User?) {
+        guard let user else {
+            teardownSessionListeners()
+            attachedHouseholdId = nil
+            uid = nil
+            userProfile = nil
+            household = nil
+            periods = []
+            currentExpenses = []
+            viewedExpenses = []
+            pastTotals = [:]
+            inviteCode = nil
+            viewedPeriodIndex = nil
+            phase = .signedOut
+            return
+        }
+        uid = user.uid
+        authDisplayName = user.displayName ?? user.email ?? "?"
+        listenUserDoc(uid: user.uid)
+    }
+
+    private func teardownSessionListeners() {
+        userListener?.remove(); userListener = nil
+        householdListener?.remove(); householdListener = nil
+        periodsListener?.remove(); periodsListener = nil
+        currentExpensesListener?.remove(); currentExpensesListener = nil
+        viewedExpensesListener?.remove(); viewedExpensesListener = nil
+        currentListenerRange = nil
+        viewedListenerRange = nil
+    }
+
+    private func listenUserDoc(uid: String) {
+        userListener?.remove()
+        userListener = firestore.listenUser(uid: uid) { [weak self] profile in
+            guard let self else { return }
+            if let profile {
+                self.creatingProfile = false
+                self.userProfile = profile
+                if let householdId = profile.householdId {
+                    self.attachHousehold(id: householdId)
+                } else {
+                    self.phase = .onboarding
+                }
+            } else {
+                // First sign-in: create users/{uid}.
+                self.userProfile = nil
+                self.phase = .onboarding
+                guard !self.creatingProfile else { return }
+                self.creatingProfile = true
+                let name = self.authDisplayName
+                Task { try? await self.firestore.createUserProfile(uid: uid, displayName: name) }
+            }
+        }
+    }
+
+    private var attachedHouseholdId: String?
+
+    private func attachHousehold(id: String) {
+        guard attachedHouseholdId != id else { return }
+        attachedHouseholdId = id
+        householdListener?.remove()
+        periodsListener?.remove()
+
+        householdListener = firestore.listenHousehold(id: id) { [weak self] household in
+            guard let self else { return }
+            self.household = household
+            if household != nil {
+                self.phase = .ready
+                self.materializeIfNeeded()
+                self.refreshExpenseListeners()
+            }
+        }
+        periodsListener = firestore.listenPeriodBudgets(householdId: id) { [weak self] periods in
+            guard let self else { return }
+            let hadPeriods = !self.periods.isEmpty
+            self.periods = periods
+            if self.viewedPeriodIndex == nil || !hadPeriods {
+                self.viewedPeriodIndex = self.currentPeriodIndex
+            }
+            self.materializeIfNeeded()
+            self.refreshExpenseListeners()
+            self.checkNewPeriodPrompt()
+            self.loadPastTotals()
+        }
+        Task { await self.refreshFXIfNeeded() }
+    }
+
+    // MARK: Period materialization
+
+    private func materializeIfNeeded() {
+        guard !materializing,
+              let household,
+              let householdId = household.id ?? attachedHouseholdId,
+              let anchor = CalendarDate(household.defaultBudget.anchorDate)
+        else { return }
+
+        let last: PeriodLogic.PeriodRange? = periods.last.flatMap { period in
+            guard let start = period.start, let end = period.end else { return nil }
+            return PeriodLogic.PeriodRange(startDate: start, endDate: end)
+        }
+        let missing = PeriodLogic.cascadeMaterialization(
+            last: last,
+            anchorDate: anchor,
+            defaultPeriod: household.defaultBudget.period,
+            today: today
+        )
+        guard !missing.isEmpty else { return }
+        materializing = true
+        let type = household.defaultBudget.period
+        let amount = household.defaultBudget.amountCents
+        Task {
+            await firestore.materializePeriods(
+                householdId: householdId,
+                periods: missing,
+                periodType: type,
+                amountCents: amount
+            )
+            self.materializing = false
+        }
+    }
+
+    /// "New period" sheet: first open inside a freshly materialized,
+    /// still-default period.
+    private func checkNewPeriodPrompt() {
+        guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }
+        let key = "seenPeriodStart.\(householdId)"
+        let seen = UserDefaults.standard.string(forKey: key)
+        guard seen != current.startDate else { return }
+        if seen == nil {
+            // First launch with this household (e.g. right after onboarding or
+            // joining): don't prompt, just mark as seen.
+            UserDefaults.standard.set(current.startDate, forKey: key)
+            return
+        }
+        if current.source == "default" {
+            showNewPeriodSheet = true
+        } else {
+            UserDefaults.standard.set(current.startDate, forKey: key)
+        }
+    }
+
+    /// Swipe-dismiss of the sheet also counts as "seen".
+    func markNewPeriodSeen() {
+        guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }
+        UserDefaults.standard.set(current.startDate, forKey: "seenPeriodStart.\(householdId)")
+        showNewPeriodSheet = false
+    }
+
+    func confirmNewPeriod(amountCents: Int) {
+        guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }
+        UserDefaults.standard.set(current.startDate, forKey: "seenPeriodStart.\(householdId)")
+        showNewPeriodSheet = false
+        if amountCents != current.amountCents, amountCents > 0 {
+            Task {
+                try? await firestore.updatePeriodBudget(
+                    householdId: householdId,
+                    startDate: current.startDate,
+                    amountCents: amountCents
+                )
+            }
+        }
+    }
+
+    // MARK: Expense listeners (ALWAYS bounded by date range)
+
+    private func refreshExpenseListeners() {
+        guard let householdId = attachedHouseholdId else { return }
+
+        if let current = currentPeriod {
+            let range = (current.startDate, current.endDate)
+            if currentListenerRange?.0 != range.0 || currentListenerRange?.1 != range.1 {
+                currentListenerRange = range
+                currentExpensesListener?.remove()
+                currentExpensesListener = firestore.listenExpenses(
+                    householdId: householdId,
+                    startDate: range.0,
+                    endDate: range.1
+                ) { [weak self] items in
+                    guard let self else { return }
+                    self.currentExpenses = items.sorted {
+                        ($0.expense.date, $0.expense.createdAt ?? .distantPast)
+                            > ($1.expense.date, $1.expense.createdAt ?? .distantPast)
+                    }
+                    if self.isViewingCurrentPeriod {
+                        self.viewedExpenses = self.currentExpenses
+                    }
+                }
+            }
+        }
+
+        refreshViewedListener()
+    }
+
+    private func refreshViewedListener() {
+        guard let householdId = attachedHouseholdId, let viewed = viewedPeriod else { return }
+
+        if isViewingCurrentPeriod {
+            viewedExpensesListener?.remove()
+            viewedExpensesListener = nil
+            viewedListenerRange = nil
+            viewedExpenses = currentExpenses
+            return
+        }
+
+        let range = (viewed.startDate, viewed.endDate)
+        if viewedListenerRange?.0 != range.0 || viewedListenerRange?.1 != range.1 {
+            viewedListenerRange = range
+            viewedExpensesListener?.remove()
+            viewedExpenses = []
+            viewedExpensesListener = firestore.listenExpenses(
+                householdId: householdId,
+                startDate: range.0,
+                endDate: range.1
+            ) { [weak self] items in
+                self?.viewedExpenses = items.sorted {
+                    ($0.expense.date, $0.expense.createdAt ?? .distantPast)
+                        > ($1.expense.date, $1.expense.createdAt ?? .distantPast)
+                }
+            }
+        }
+    }
+
+    func navigatePeriod(by delta: Int) {
+        guard let index = viewedPeriodIndex ?? currentPeriodIndex else { return }
+        let target = index + delta
+        guard periods.indices.contains(target) else { return }
+        viewedPeriodIndex = target
+        refreshViewedListener()
+    }
+
+    // MARK: Past period totals
+
+    private var loadingPastTotals = false
+
+    private func loadPastTotals() {
+        guard !loadingPastTotals, let householdId = attachedHouseholdId else { return }
+        let missing = pastPeriods.filter { pastTotals[$0.startDate] == nil }
+        guard !missing.isEmpty else { return }
+        loadingPastTotals = true
+        Task {
+            for period in missing {
+                if let total = await firestore.fetchSpentCents(
+                    householdId: householdId,
+                    startDate: period.startDate,
+                    endDate: period.endDate
+                ) {
+                    self.pastTotals[period.startDate] = total
+                }
+            }
+            self.loadingPastTotals = false
+        }
+    }
+
+    // MARK: FX
+
+    func refreshFXIfNeeded() async {
+        guard showUSD else { return }
+        usdRate = await fx.audToUsdRate()
+    }
+
+    // MARK: Auth actions
+
+    func signInWithGoogle() {
+        guard !isSigningIn else { return }
+        isSigningIn = true
+        authError = nil
+        Task {
+            do {
+                try await auth.signInWithGoogle()
+            } catch let error as AuthService.AuthError {
+                self.authError = error.errorDescription
+            } catch {
+                let ns = error as NSError
+                // User-cancelled sign-in is not an error worth surfacing.
+                if !(ns.domain == "com.google.GIDSignIn" && ns.code == -5) {
+                    self.authError = error.localizedDescription
+                }
+            }
+            self.isSigningIn = false
+        }
+    }
+
+    func signOut() {
+        try? auth.signOut()
+        attachedHouseholdId = nil
+    }
+
+    // MARK: Onboarding actions
+
+    func createHousehold(amountCents: Int, period: PeriodType, anchorDate: CalendarDate) async {
+        guard let uid else { return }
+        let budget = DefaultBudget(
+            amountCents: amountCents,
+            period: period,
+            anchorDate: anchorDate.raw
+        )
+        do {
+            let id = try await firestore.createHousehold(
+                uid: uid,
+                displayName: authDisplayName,
+                memberColor: "#2A6FDB",
+                defaultBudget: budget,
+                timezone: "Australia/Sydney"
+            )
+            // Suppress the "new period" sheet for the period we just set up.
+            UserDefaults.standard.set(anchorDate.raw, forKey: "seenPeriodStart.\(id)")
+        } catch {
+            authError = error.localizedDescription
+        }
+    }
+
+    func joinHousehold(code: String) async -> Bool {
+        guard let uid else { return false }
+        let normalized = Self.normalizeInviteCode(code)
+        do {
+            let id = try await firestore.joinHousehold(
+                code: normalized,
+                uid: uid,
+                displayName: authDisplayName,
+                memberColor: "#E0447C"
+            )
+            UserDefaults.standard.removeObject(forKey: "seenPeriodStart.\(id)")
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    static func normalizeInviteCode(_ raw: String) -> String {
+        var code = raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        code = code.replacingOccurrences(of: "‑", with: "-")  // non-breaking hyphen
+        if !code.hasPrefix("GD-") {
+            code = "GD-" + code
+        }
+        return code
+    }
+
+    // MARK: Invite code
+
+    func ensureInviteCode() {
+        guard inviteCode == nil,
+              let householdId = attachedHouseholdId,
+              let uid,
+              members.count < 2
+        else { return }
+
+        let key = "inviteCode.\(householdId)"
+        if let stored = UserDefaults.standard.string(forKey: key) {
+            inviteCode = stored
+            return
+        }
+        let code = Self.generateInviteCode()
+        inviteCode = code
+        Task {
+            do {
+                try await firestore.createInvite(code: code, householdId: householdId, uid: uid)
+                UserDefaults.standard.set(code, forKey: key)
+            } catch {
+                self.inviteCode = nil
+            }
+        }
+    }
+
+    private static func generateInviteCode() -> String {
+        // Crypto-random, unambiguous alphabet; "GD-" prefix included in the
+        // doc ID (total length 11 ≥ the rules' minimum of 10).
+        let alphabet = Array("ABCDEFGHJKMNPQRSTUVWXYZ23456789")
+        var code = "GD-"
+        for _ in 0..<8 {
+            var random: UInt32 = 0
+            _ = withUnsafeMutableBytes(of: &random) { SecRandomCopyBytes(kSecRandomDefault, 4, $0.baseAddress!) }
+            code.append(alphabet[Int(random) % alphabet.count])
+        }
+        return code
+    }
+
+    // MARK: Expense actions
+
+    func saveExpense(amountCents: Int, categoryId: String, note: String, date: CalendarDate?) {
+        guard let householdId = attachedHouseholdId, let uid else { return }
+        firestore.createExpense(
+            householdId: householdId,
+            uid: uid,
+            amountCents: amountCents,
+            categoryId: categoryId,
+            note: note,
+            date: (date ?? today).raw
+        )
+    }
+
+    func updateExpense(id: String, amountCents: Int, categoryId: String, note: String, date: CalendarDate) {
+        guard let householdId = attachedHouseholdId else { return }
+        firestore.updateExpense(
+            householdId: householdId,
+            expenseId: id,
+            amountCents: amountCents,
+            categoryId: categoryId,
+            note: note,
+            date: date.raw
+        )
+        pastTotals = [:]  // date edits can move expenses across periods
+        loadPastTotals()
+    }
+
+    func deleteExpense(id: String) {
+        guard let householdId = attachedHouseholdId else { return }
+        firestore.deleteExpense(householdId: householdId, expenseId: id)
+    }
+
+    // MARK: Settings actions
+
+    func setLanguage(_ language: String) {
+        guard let uid else { return }
+        userProfile?.language = language
+        Task { try? await firestore.updateUser(uid: uid, fields: ["language": language]) }
+    }
+
+    func setDisplayCurrency(usd: Bool) {
+        guard let uid else { return }
+        userProfile?.displayCurrency = usd ? "USD" : nil
+        Task {
+            try? await self.firestore.updateUser(
+                uid: uid,
+                fields: ["displayCurrency": usd ? "USD" : NSNull()]
+            )
+            await self.refreshFXIfNeeded()
+        }
+    }
+
+    func setDefaultBudget(amountCents: Int? = nil, period: PeriodType? = nil) {
+        guard let household, let householdId = attachedHouseholdId else { return }
+        var budget = household.defaultBudget
+        if let amountCents { budget.amountCents = amountCents }
+        if let period { budget.period = period }
+        Task { try? await firestore.updateDefaultBudget(householdId: householdId, budget: budget) }
+    }
+
+    func adjustCurrentPeriodBudget(amountCents: Int) {
+        guard let current = currentPeriod, let householdId = attachedHouseholdId, amountCents > 0 else { return }
+        Task {
+            try? await firestore.updatePeriodBudget(
+                householdId: householdId,
+                startDate: current.startDate,
+                amountCents: amountCents
+            )
+        }
+    }
+}

@@ -1,0 +1,194 @@
+import Foundation
+import FirebaseFirestore
+
+// MARK: - Firestore document models
+// Mirrors shared/schema.md exactly. All money amounts are integer cents.
+
+/// `users/{uid}` — denormalized per-user convenience.
+struct UserProfile: Codable, Identifiable {
+    @DocumentID var id: String?
+    var displayName: String
+    var householdId: String?
+    var language: String?
+    var displayCurrency: String?
+    @ServerTimestamp var createdAt: Date?
+    @ServerTimestamp var updatedAt: Date?
+}
+
+/// `households/{id}.defaultBudget` — the template for new periods.
+struct DefaultBudget: Codable, Equatable {
+    var amountCents: Int
+    var period: PeriodType
+    var anchorDate: String
+}
+
+/// One entry of `households/{id}.categories` (map keyed by category id).
+struct Category: Codable, Equatable {
+    var key: String?
+    var name: String?
+    var icon: String   // Material Symbols name (web); mapped to SF Symbols client-side.
+    var color: String  // Light-mode hex; dark variant resolved from seed data.
+    var sortOrder: Int
+}
+
+/// One entry of `households/{id}.memberProfiles` (map keyed by uid).
+struct MemberProfile: Codable, Equatable {
+    var displayName: String
+    var color: String
+}
+
+/// `households/{householdId}`
+struct Household: Codable, Identifiable {
+    @DocumentID var id: String?
+    var name: String
+    var currency: String
+    var timezone: String
+    var defaultBudget: DefaultBudget
+    var memberIds: [String]
+    var memberProfiles: [String: MemberProfile]
+    var categories: [String: Category]
+    @ServerTimestamp var createdAt: Date?
+    @ServerTimestamp var updatedAt: Date?
+
+    var timeZone: TimeZone {
+        TimeZone(identifier: timezone) ?? TimeZone(identifier: "Australia/Sydney")!
+    }
+
+    /// Categories sorted for display.
+    var sortedCategories: [(id: String, category: Category)] {
+        categories
+            .map { (id: $0.key, category: $0.value) }
+            .sorted { lhs, rhs in
+                lhs.category.sortOrder == rhs.category.sortOrder
+                    ? lhs.id < rhs.id
+                    : lhs.category.sortOrder < rhs.category.sortOrder
+            }
+    }
+}
+
+/// `households/{id}/periodBudgets/{startDate}` — one materialized period.
+struct PeriodBudget: Codable, Identifiable, Equatable {
+    @DocumentID var id: String?
+    var startDate: String
+    var endDate: String
+    var period: PeriodType
+    var amountCents: Int
+    var source: String  // "default" | "custom"
+    @ServerTimestamp var createdAt: Date?
+    @ServerTimestamp var updatedAt: Date?
+
+    static func == (lhs: PeriodBudget, rhs: PeriodBudget) -> Bool {
+        lhs.startDate == rhs.startDate
+            && lhs.endDate == rhs.endDate
+            && lhs.period == rhs.period
+            && lhs.amountCents == rhs.amountCents
+            && lhs.source == rhs.source
+    }
+
+    var isCustom: Bool { source == "custom" }
+
+    var start: CalendarDate? { CalendarDate(startDate) }
+    var end: CalendarDate? { CalendarDate(endDate) }
+
+    func contains(_ date: CalendarDate) -> Bool {
+        guard let start, let end else { return false }
+        return PeriodLogic.containsDate(startDate: start, endDate: end, date: date)
+    }
+}
+
+/// `households/{id}/expenses/{expenseId}`
+struct Expense: Codable, Identifiable, Equatable {
+    @DocumentID var id: String?
+    var amountCents: Int
+    var categoryId: String
+    var note: String
+    var date: String
+    var createdBy: String
+    @ServerTimestamp var createdAt: Date?
+    @ServerTimestamp var updatedAt: Date?
+}
+
+/// An expense plus local snapshot metadata (offline "pendiente" chip).
+struct ExpenseItem: Identifiable, Equatable {
+    var expense: Expense
+    var hasPendingWrites: Bool
+
+    var id: String { expense.id ?? UUID().uuidString }
+}
+
+/// `invites/{code}` — the code IS the document ID.
+struct Invite: Codable {
+    var householdId: String
+    var createdBy: String
+    @ServerTimestamp var createdAt: Date?
+}
+
+// MARK: - Seed categories (shared/categories.json, bundled)
+
+/// Cross-platform seed category data: material→SF Symbol icon mapping and
+/// light/dark color variants.
+struct SeedCategory: Decodable {
+    struct Icon: Decodable {
+        let material: String
+        let sfSymbol: String
+    }
+    struct SeedColor: Decodable {
+        let light: String
+        let dark: String
+    }
+    let id: String
+    let key: String
+    let icon: Icon
+    let color: SeedColor
+    let sortOrder: Int
+}
+
+enum SeedCategories {
+    private struct File: Decodable {
+        let categories: [SeedCategory]
+    }
+
+    static let all: [SeedCategory] = {
+        guard let url = Bundle.main.url(forResource: "categories", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let file = try? JSONDecoder().decode(File.self, from: data)
+        else { return [] }
+        return file.categories.sorted { $0.sortOrder < $1.sortOrder }
+    }()
+
+    private static let byMaterialIcon: [String: SeedCategory] =
+        Dictionary(uniqueKeysWithValues: all.map { ($0.icon.material, $0) })
+
+    private static let byId: [String: SeedCategory] =
+        Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+
+    /// SF Symbol for a stored (material) icon name; sensible fallback for
+    /// user-created categories.
+    static func sfSymbol(forMaterialIcon icon: String) -> String {
+        byMaterialIcon[icon]?.icon.sfSymbol ?? "tag.fill"
+    }
+
+    /// Dark-mode variant of a seed category color, if we know it.
+    static func darkColor(categoryId: String, lightHex: String) -> String {
+        if let seed = byId[categoryId], seed.color.light.caseInsensitiveCompare(lightHex) == .orderedSame {
+            return seed.color.dark
+        }
+        return lightHex
+    }
+
+    /// The categories map to embed in a NEW household document (icon stored as
+    /// the material name, color as the light variant — per shared/schema.md).
+    static func householdCategoriesMap() -> [String: Category] {
+        var map: [String: Category] = [:]
+        for seed in all {
+            map[seed.id] = Category(
+                key: seed.key,
+                name: nil,
+                icon: seed.icon.material,
+                color: seed.color.light,
+                sortOrder: seed.sortOrder
+            )
+        }
+        return map
+    }
+}

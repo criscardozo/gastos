@@ -1,0 +1,606 @@
+{
+  "sourceLanguage" : "es",
+  "strings" : {
+    "adjust.foot" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Only affects the current period; it stays recorded with its amount and type." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Solo afecta al período en curso; queda registrado con su monto y tipo." } }
+      }
+    },
+    "adjust.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Adjust budget" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ajustar presupuesto" } }
+      }
+    },
+    "category.groceries" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Groceries" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Súper" } }
+      }
+    },
+    "category.coffee" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Coffee" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Café" } }
+      }
+    },
+    "category.eatingOut" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Eating out" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Salidas" } }
+      }
+    },
+    "category.transport" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Transport" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Transporte" } }
+      }
+    },
+    "category.home" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Home" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Hogar" } }
+      }
+    },
+    "category.health" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Health" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Salud" } }
+      }
+    },
+    "category.entertainment" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Entertainment" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ocio" } }
+      }
+    },
+    "category.other" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Other" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Otros" } }
+      }
+    },
+    "common.cancel" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cancelar" } }
+      }
+    },
+    "common.done" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Listo" } }
+      }
+    },
+    "common.save" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Guardar" } }
+      }
+    },
+    "config.needed.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Google Sign-In isn't configured yet" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Falta configurar Google Sign-In" } }
+      }
+    },
+    "config.needed.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replace the placeholders in GoogleService-Info.plist with the real client IDs (see apps/ios/README.md)." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Reemplazá los placeholders de GoogleService-Info.plist con los client IDs reales (ver apps/ios/README.md)." } }
+      }
+    },
+    "days.one" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1 day" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "1 día" } }
+      }
+    },
+    "days.other" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d days" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "%d días" } }
+      }
+    },
+    "empty.expenses.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No expenses yet" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin gastos todavía" } }
+      }
+    },
+    "empty.expenses.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Log the first one — it takes under 5 seconds." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cargá el primero — tarda menos de 5 segundos." } }
+      }
+    },
+    "empty.noPeriod.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Budget not set" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Presupuesto sin definir" } }
+      }
+    },
+    "empty.noPeriod.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set how much you want to spend per week or fortnight." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Definí cuánto quieren gastar por semana o quincena." } }
+      }
+    },
+    "entry.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New expense" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nuevo gasto" } }
+      }
+    },
+    "entry.edit.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit expense" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Editar gasto" } }
+      }
+    },
+    "entry.date.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Date" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fecha" } }
+      }
+    },
+    "entry.note.placeholder" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Note (optional)" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nota (opcional)" } }
+      }
+    },
+    "entry.save" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save expense" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Guardar gasto" } }
+      }
+    },
+    "entry.today" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today, %@" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Hoy, %@" } }
+      }
+    },
+    "history.today" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Hoy" } }
+      }
+    },
+    "history.yesterday" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Yesterday" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ayer" } }
+      }
+    },
+    "history.edit" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Editar" } }
+      }
+    },
+    "history.delete" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Borrar" } }
+      }
+    },
+    "history.delete.confirm" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete this expense?" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "¿Borrar este gasto?" } }
+      }
+    },
+    "history.pending" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "pending" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "pendiente" } }
+      }
+    },
+    "newPeriod.title.weekly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New week" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nueva semana" } }
+      }
+    },
+    "newPeriod.title.fortnightly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New fortnight" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nueva quincena" } }
+      }
+    },
+    "newPeriod.question" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "how much are you starting with?" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "¿con cuánto arrancan?" } }
+      }
+    },
+    "newPeriod.defaultBadge" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your default budget" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tu presupuesto por defecto" } }
+      }
+    },
+    "newPeriod.foot.weekly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The amount and type are recorded for this week.\nYou can adjust it from Settings while it's running." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "El monto y el tipo quedan registrados para esta semana.\nPodés ajustarlo desde Ajustes mientras esté en curso." } }
+      }
+    },
+    "newPeriod.foot.fortnightly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The amount and type are recorded for this fortnight.\nYou can adjust it from Settings while it's running." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "El monto y el tipo quedan registrados para esta quincena.\nPodés ajustarlo desde Ajustes mientras esté en curso." } }
+      }
+    },
+    "newPeriod.start.weekly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start the week" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Empezar la semana" } }
+      }
+    },
+    "newPeriod.start.fortnightly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start the fortnight" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Empezar la quincena" } }
+      }
+    },
+    "onboarding.tagline" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The household budget,\nbetween the two of you." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "El presupuesto de la casa,\nentre los dos." } }
+      }
+    },
+    "onboarding.google" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue with Google" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar con Google" } }
+      }
+    },
+    "onboarding.hello" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hi, %@" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Hola, %@" } }
+      }
+    },
+    "onboarding.makeHome" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shall we set up your household?" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "¿Armamos el hogar?" } }
+      }
+    },
+    "onboarding.sub" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "A household is for two: you and your partner share a single budget." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Un hogar es de dos: vos y tu pareja comparten un solo presupuesto." } }
+      }
+    },
+    "onboarding.create" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create our household" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Crear nuestro hogar" } }
+      }
+    },
+    "onboarding.create.sub" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invite your partner with a code afterwards" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Después invitás a tu pareja con un código" } }
+      }
+    },
+    "onboarding.join" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Join with a code" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Unirme con código" } }
+      }
+    },
+    "onboarding.join.sub" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your partner already created the household" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tu pareja ya creó el hogar" } }
+      }
+    },
+    "onboarding.join.button" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Join" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Unirme" } }
+      }
+    },
+    "onboarding.join.error" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "That code doesn't exist or is no longer valid." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ese código no existe o ya no es válido." } }
+      }
+    },
+    "onboarding.budget.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "How much per period?" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "¿Cuánto por período?" } }
+      }
+    },
+    "onboarding.budget.sub" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You can change it anytime from Settings." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Lo pueden cambiar cuando quieran desde Ajustes." } }
+      }
+    },
+    "onboarding.starts" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Starts" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Comienza" } }
+      }
+    },
+    "onboarding.finish" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done — spend wisely" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Listo, a gastar con criterio" } }
+      }
+    },
+    "pastPeriod.under" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ left over" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Quedaron %@" } }
+      }
+    },
+    "pastPeriod.over" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ over" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se pasaron %@" } }
+      }
+    },
+    "period.weekly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Weekly" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Semanal" } }
+      }
+    },
+    "period.fortnightly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fortnightly" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Quincenal" } }
+      }
+    },
+    "remaining.pill" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ left" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Quedan %@" } }
+      }
+    },
+    "settings.defaultBudget" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Default budget" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Presupuesto por defecto" } }
+      }
+    },
+    "settings.amount" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Amount" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Monto" } }
+      }
+    },
+    "settings.period" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Period" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Período" } }
+      }
+    },
+    "settings.default.foot" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Proposed automatically when a new period starts." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se propone automáticamente cuando arranca un período nuevo." } }
+      }
+    },
+    "settings.defaultAmount.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Default amount" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Monto por defecto" } }
+      }
+    },
+    "settings.thisPeriod" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This period" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Este período" } }
+      }
+    },
+    "settings.thisPeriod.budget.weekly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This week's budget" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Presupuesto de esta semana" } }
+      }
+    },
+    "settings.thisPeriod.budget.fortnightly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This fortnight's budget" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Presupuesto de esta quincena" } }
+      }
+    },
+    "settings.thisPeriod.sub" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Only affects the current period" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Solo afecta al período en curso" } }
+      }
+    },
+    "settings.thisPeriod.foot" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Each week or fortnight is recorded with its own amount and type, even if you later change the default." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cada semana o quincena queda registrada con su monto y su tipo, aunque después cambies el default." } }
+      }
+    },
+    "settings.adjusted" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Adjusted" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ajustado" } }
+      }
+    },
+    "settings.log" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Record" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Registro" } }
+      }
+    },
+    "settings.preferences" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preferences" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Preferencias" } }
+      }
+    },
+    "settings.usd" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Also show in USD" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ver también en USD" } }
+      }
+    },
+    "settings.usd.foot" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Approximate (≈). The real amount stays in AUD." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aproximado (≈). El monto real sigue en AUD." } }
+      }
+    },
+    "settings.language" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Language" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Idioma" } }
+      }
+    },
+    "settings.household" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your household" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tu hogar" } }
+      }
+    },
+    "settings.invite.label" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invite code" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Código de invitación" } }
+      }
+    },
+    "settings.copy" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Copiar" } }
+      }
+    },
+    "settings.copied" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copied" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Copiado" } }
+      }
+    },
+    "settings.signout" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign out" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cerrar sesión" } }
+      }
+    },
+    "source.default" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "default" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "por defecto" } }
+      }
+    },
+    "source.custom" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "custom" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "ajustado" } }
+      }
+    },
+    "state.comfortable" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "On track" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Van bien" } }
+      }
+    },
+    "state.warning" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Running low" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Queda poco" } }
+      }
+    },
+    "state.over" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Over budget" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se pasaron" } }
+      }
+    },
+    "summary.remaining" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You have left" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Te queda" } }
+      }
+    },
+    "summary.spent" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Spent" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Gastado" } }
+      }
+    },
+    "summary.of" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "of %@" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "de %@" } }
+      }
+    },
+    "summary.byCategory" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "By category" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Por categoría" } }
+      }
+    },
+    "summary.betweenUs" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Between the two of you" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Entre los dos" } }
+      }
+    },
+    "summary.pastPeriods" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Previous periods" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Períodos anteriores" } }
+      }
+    },
+    "summary.pastPeriods.foot" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Each period keeps its own budget: amount and whether it was weekly or fortnightly." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cada período guarda su propio presupuesto: monto y si fue semanal o quincenal." } }
+      }
+    },
+    "summary.periodBudget" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Period budget" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Presupuesto del período" } }
+      }
+    },
+    "summary.adjust" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Adjust" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ajustar" } }
+      }
+    },
+    "tab.new" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nuevo" } }
+      }
+    },
+    "tab.summary" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Summary" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Resumen" } }
+      }
+    },
+    "tab.history" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "History" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Historial" } }
+      }
+    },
+    "tab.settings" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ajustes" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

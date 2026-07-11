@@ -1,0 +1,689 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2CC4BB92F1CB68711C723A14 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 7BDAA615B344F7D33E02779C /* GoogleSignInSwift */; };
+		49E2809F85C38193CDA8E175 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 145F6B37DD56D3F48641A9AB /* Theme.swift */; };
+		4A6170B92E597704ED1A35D9 /* GastosDiariosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86228DE8CD158F7CBF6F706A /* GastosDiariosApp.swift */; };
+		4A7C9399EB868F5BD37FCEE2 /* PeriodLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */; };
+		4E0559786DE3931FCA38453B /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ED43CCFFBE449FFB095396B /* AuthService.swift */; };
+		5172346AA7A7E3798CDDB9FD /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 88C4CEE8AB2BD7C3B1A50660 /* GoogleService-Info.plist */; };
+		57088CAAA6CBF0A900D6546B /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 0C6A902D5FD08D33DF0CB379 /* FirebaseFirestore */; };
+		5E46E4B94AD5C7F23B172691 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6536FA32700C9D56775F646 /* OnboardingView.swift */; };
+		64A277BCB7F020EF239963C3 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E33FD8DDEB4A07F1B2A435 /* L10n.swift */; };
+		6C5BE67620D8309FBFC6AA29 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */; };
+		7C7BB44D55BFA7138E41FA4A /* NewPeriodSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC5C06310A005683DBEFB6B4 /* NewPeriodSheet.swift */; };
+		8268094E7E032831B3671199 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C8F75E05B2CB5526FAED626 /* AppModel.swift */; };
+		8DEF436DCA6C18809AB5721A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */; };
+		8FC0D32FDCEB87496FE15427 /* FXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11945CEB1AA2DB45FA94F42C /* FXService.swift */; };
+		98CF0F503439808C29ADD186 /* MoneyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */; };
+		9F9E15C2ABBF4A7A747FDC1E /* period-test-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = C61FCF0E69A7236D256390A7 /* period-test-vectors.json */; };
+		A7E3EB7757720198B6CAB1C7 /* FirestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73D2B1C84483CD1A063D9EDF /* FirestoreService.swift */; };
+		B088F40899D33FEB92EE2A8A /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23612A2AE85E20827C54AF6A /* Models.swift */; };
+		C003724BF4470744B6B53B53 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C12B6B3B51CC9E2962B1CE /* Components.swift */; };
+		C19497155C651CCEC6F0E5E9 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */; };
+		C85234FD7E915451EBD5B306 /* ExpenseFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87966E98F3C0C867AE517CE9 /* ExpenseFormView.swift */; };
+		C92E8EBD9E46D90366CB2EA9 /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */; };
+		DE10CA45FBC616EAE3F58B0E /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 899B0F90EA1747BB99A5B325 /* FirebaseAuth */; };
+		E3369B40B60E8E9F1C03A0CF /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = B2DE59304825CBC116B66700 /* categories.json */; };
+		E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */; };
+		EC2434DE5909830DA8DB749F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D3934372BE7A86D42D837236 /* GoogleSignIn */; };
+		F66E126B602E61FCCC04EA5B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A3DE79D792BD15A233F74D /* SettingsView.swift */; };
+		F6C3A5A2215B37A39404FBF6 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1033958EAF0770812248EF2 /* HistoryView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3305006560AA7F7A2AEA76B7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E5E643F7313A6B9B20269C15 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BB77704655A94E52B0EDAC2D;
+			remoteInfo = GastosDiarios;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		11945CEB1AA2DB45FA94F42C /* FXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FXService.swift; sourceTree = "<group>"; };
+		145F6B37DD56D3F48641A9AB /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		1C8F75E05B2CB5526FAED626 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		23612A2AE85E20827C54AF6A /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		2B3321D9E7495AC37BDC6004 /* GastosDiarios.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GastosDiarios.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatter.swift; sourceTree = "<group>"; };
+		5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
+		6B98CA105FB223E5AFAF9A68 /* GastosDiariosTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GastosDiariosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6ED43CCFFBE449FFB095396B /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		73D2B1C84483CD1A063D9EDF /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
+		75E33FD8DDEB4A07F1B2A435 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		86228DE8CD158F7CBF6F706A /* GastosDiariosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosDiariosApp.swift; sourceTree = "<group>"; };
+		87966E98F3C0C867AE517CE9 /* ExpenseFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseFormView.swift; sourceTree = "<group>"; };
+		88C4CEE8AB2BD7C3B1A50660 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		990596864A5AD40BA5EE4803 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B2DE59304825CBC116B66700 /* categories.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = categories.json; sourceTree = "<group>"; };
+		B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Outfit-Variable.ttf"; sourceTree = "<group>"; };
+		B6536FA32700C9D56775F646 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		C1C12B6B3B51CC9E2962B1CE /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		C61FCF0E69A7236D256390A7 /* period-test-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "period-test-vectors.json"; sourceTree = "<group>"; };
+		D1033958EAF0770812248EF2 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogic.swift; sourceTree = "<group>"; };
+		F1A3DE79D792BD15A233F74D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogicTests.swift; sourceTree = "<group>"; };
+		FC5C06310A005683DBEFB6B4 /* NewPeriodSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewPeriodSheet.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BE46184CD8812337AB59EF65 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DE10CA45FBC616EAE3F58B0E /* FirebaseAuth in Frameworks */,
+				57088CAAA6CBF0A900D6546B /* FirebaseFirestore in Frameworks */,
+				EC2434DE5909830DA8DB749F /* GoogleSignIn in Frameworks */,
+				2CC4BB92F1CB68711C723A14 /* GoogleSignInSwift in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0448E3CBD3A1D278A80384D1 /* Entry */ = {
+			isa = PBXGroup;
+			children = (
+				87966E98F3C0C867AE517CE9 /* ExpenseFormView.swift */,
+			);
+			path = Entry;
+			sourceTree = "<group>";
+		};
+		04C722E8D013CF1E463B702E /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				75E33FD8DDEB4A07F1B2A435 /* L10n.swift */,
+				23612A2AE85E20827C54AF6A /* Models.swift */,
+				552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */,
+				E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		1C63D29C97EB45CDDA29BC48 /* shared */ = {
+			isa = PBXGroup;
+			children = (
+				B2DE59304825CBC116B66700 /* categories.json */,
+				C61FCF0E69A7236D256390A7 /* period-test-vectors.json */,
+			);
+			path = shared;
+			sourceTree = "<group>";
+		};
+		2D1CF1122C838CB0BF7076F1 = {
+			isa = PBXGroup;
+			children = (
+				C1031BEA647A7B4B784DE082 /* gastos-diarios */,
+				368B3AF36EB97834D9D8EA07 /* GastosDiarios */,
+				9F17DAD116300D340E9287E1 /* GastosDiariosTests */,
+				EC8E729833D56BB06134C2A4 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		368B3AF36EB97834D9D8EA07 /* GastosDiarios */ = {
+			isa = PBXGroup;
+			children = (
+				5D1B48E8613D3AB1BEAE090D /* App */,
+				04C722E8D013CF1E463B702E /* Core */,
+				99207E896B20A64741733DFB /* Design */,
+				7BDF0F46CC3046456B6179DC /* Features */,
+				EBE8D8A3C16A15FBD024270E /* Resources */,
+				A3767CF582642B7CEB8925D3 /* Services */,
+				990596864A5AD40BA5EE4803 /* Info.plist */,
+			);
+			path = GastosDiarios;
+			sourceTree = "<group>";
+		};
+		50AE58F95691BB9E5BC1893C /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		5D1B48E8613D3AB1BEAE090D /* App */ = {
+			isa = PBXGroup;
+			children = (
+				1C8F75E05B2CB5526FAED626 /* AppModel.swift */,
+				86228DE8CD158F7CBF6F706A /* GastosDiariosApp.swift */,
+				5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		6863DB5EFAF36F68CD5B49FB /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				F1A3DE79D792BD15A233F74D /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		72CF5D8BF79D96DF4DB2B25C /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				B6536FA32700C9D56775F646 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		73CAD261DF4859186CE751F8 /* History */ = {
+			isa = PBXGroup;
+			children = (
+				D1033958EAF0770812248EF2 /* HistoryView.swift */,
+			);
+			path = History;
+			sourceTree = "<group>";
+		};
+		7BDF0F46CC3046456B6179DC /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				0448E3CBD3A1D278A80384D1 /* Entry */,
+				73CAD261DF4859186CE751F8 /* History */,
+				72CF5D8BF79D96DF4DB2B25C /* Onboarding */,
+				6863DB5EFAF36F68CD5B49FB /* Settings */,
+				FC6393D243A4D33471F44C47 /* Summary */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		99207E896B20A64741733DFB /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				C1C12B6B3B51CC9E2962B1CE /* Components.swift */,
+				145F6B37DD56D3F48641A9AB /* Theme.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
+		9F17DAD116300D340E9287E1 /* GastosDiariosTests */ = {
+			isa = PBXGroup;
+			children = (
+				F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */,
+			);
+			path = GastosDiariosTests;
+			sourceTree = "<group>";
+		};
+		A3767CF582642B7CEB8925D3 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				6ED43CCFFBE449FFB095396B /* AuthService.swift */,
+				73D2B1C84483CD1A063D9EDF /* FirestoreService.swift */,
+				11945CEB1AA2DB45FA94F42C /* FXService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		C1031BEA647A7B4B784DE082 /* gastos-diarios */ = {
+			isa = PBXGroup;
+			children = (
+				1C63D29C97EB45CDDA29BC48 /* shared */,
+			);
+			name = "gastos-diarios";
+			path = ../..;
+			sourceTree = "<group>";
+		};
+		EBE8D8A3C16A15FBD024270E /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				50AE58F95691BB9E5BC1893C /* Fonts */,
+				88C4CEE8AB2BD7C3B1A50660 /* GoogleService-Info.plist */,
+				C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		EC8E729833D56BB06134C2A4 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2B3321D9E7495AC37BDC6004 /* GastosDiarios.app */,
+				6B98CA105FB223E5AFAF9A68 /* GastosDiariosTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FC6393D243A4D33471F44C47 /* Summary */ = {
+			isa = PBXGroup;
+			children = (
+				FC5C06310A005683DBEFB6B4 /* NewPeriodSheet.swift */,
+				5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */,
+			);
+			path = Summary;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B27E9CBF7F7A5606DBAA3B11 /* GastosDiariosTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 829BCF3D03A8DED098723A06 /* Build configuration list for PBXNativeTarget "GastosDiariosTests" */;
+			buildPhases = (
+				B1D55FAA70503958CC69DF35 /* Sources */,
+				6A70F1F6476F9661A2EB0655 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				88151C337B88ACB3AFE3C97F /* PBXTargetDependency */,
+			);
+			name = GastosDiariosTests;
+			packageProductDependencies = (
+			);
+			productName = GastosDiariosTests;
+			productReference = 6B98CA105FB223E5AFAF9A68 /* GastosDiariosTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		BB77704655A94E52B0EDAC2D /* GastosDiarios */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 734DB64998BB0BABE28D6DCC /* Build configuration list for PBXNativeTarget "GastosDiarios" */;
+			buildPhases = (
+				8ED912259AAD7D33784A4A48 /* Sources */,
+				86E1B94CEF935EC007D4510A /* Resources */,
+				BE46184CD8812337AB59EF65 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GastosDiarios;
+			packageProductDependencies = (
+				899B0F90EA1747BB99A5B325 /* FirebaseAuth */,
+				0C6A902D5FD08D33DF0CB379 /* FirebaseFirestore */,
+				D3934372BE7A86D42D837236 /* GoogleSignIn */,
+				7BDAA615B344F7D33E02779C /* GoogleSignInSwift */,
+			);
+			productName = GastosDiarios;
+			productReference = 2B3321D9E7495AC37BDC6004 /* GastosDiarios.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E5E643F7313A6B9B20269C15 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					B27E9CBF7F7A5606DBAA3B11 = {
+						ProvisioningStyle = Automatic;
+					};
+					BB77704655A94E52B0EDAC2D = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = CBC745525540EAECF3087BDB /* Build configuration list for PBXProject "GastosDiarios" */;
+			developmentRegion = es;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+				es,
+			);
+			mainGroup = 2D1CF1122C838CB0BF7076F1;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				EFD307EACD471E743A74DCBF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				6A235BD5566426F4A59CAFCF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = EC8E729833D56BB06134C2A4 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BB77704655A94E52B0EDAC2D /* GastosDiarios */,
+				B27E9CBF7F7A5606DBAA3B11 /* GastosDiariosTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		6A70F1F6476F9661A2EB0655 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9F9E15C2ABBF4A7A747FDC1E /* period-test-vectors.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		86E1B94CEF935EC007D4510A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5172346AA7A7E3798CDDB9FD /* GoogleService-Info.plist in Resources */,
+				C19497155C651CCEC6F0E5E9 /* Localizable.xcstrings in Resources */,
+				6C5BE67620D8309FBFC6AA29 /* Outfit-Variable.ttf in Resources */,
+				E3369B40B60E8E9F1C03A0CF /* categories.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8ED912259AAD7D33784A4A48 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8268094E7E032831B3671199 /* AppModel.swift in Sources */,
+				4E0559786DE3931FCA38453B /* AuthService.swift in Sources */,
+				C003724BF4470744B6B53B53 /* Components.swift in Sources */,
+				C85234FD7E915451EBD5B306 /* ExpenseFormView.swift in Sources */,
+				8FC0D32FDCEB87496FE15427 /* FXService.swift in Sources */,
+				A7E3EB7757720198B6CAB1C7 /* FirestoreService.swift in Sources */,
+				4A6170B92E597704ED1A35D9 /* GastosDiariosApp.swift in Sources */,
+				F6C3A5A2215B37A39404FBF6 /* HistoryView.swift in Sources */,
+				64A277BCB7F020EF239963C3 /* L10n.swift in Sources */,
+				B088F40899D33FEB92EE2A8A /* Models.swift in Sources */,
+				98CF0F503439808C29ADD186 /* MoneyFormatter.swift in Sources */,
+				7C7BB44D55BFA7138E41FA4A /* NewPeriodSheet.swift in Sources */,
+				5E46E4B94AD5C7F23B172691 /* OnboardingView.swift in Sources */,
+				E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */,
+				8DEF436DCA6C18809AB5721A /* RootView.swift in Sources */,
+				F66E126B602E61FCCC04EA5B /* SettingsView.swift in Sources */,
+				C92E8EBD9E46D90366CB2EA9 /* SummaryView.swift in Sources */,
+				49E2809F85C38193CDA8E175 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B1D55FAA70503958CC69DF35 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4A7C9399EB868F5BD37FCEE2 /* PeriodLogicTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		88151C337B88ACB3AFE3C97F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BB77704655A94E52B0EDAC2D /* GastosDiarios */;
+			targetProxy = 3305006560AA7F7A2AEA76B7 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0001DA4C7CB99226B0F26D2D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = GastosDiarios/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.cardozo.gastosdiarios;
+				PRODUCT_NAME = GastosDiarios;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		03FB30CC61FD8E5B630E859E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		091944DDAB1BB8C55DFF78DB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GastosDiarios.app/GastosDiarios";
+			};
+			name = Release;
+		};
+		7F3C4001A862B1256F2F8CD8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+		94667E258A76D6525D91C486 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = GastosDiarios/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.cardozo.gastosdiarios;
+				PRODUCT_NAME = GastosDiarios;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		FB829C8D70CC8B7A8B0680E0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GastosDiarios.app/GastosDiarios";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		734DB64998BB0BABE28D6DCC /* Build configuration list for PBXNativeTarget "GastosDiarios" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0001DA4C7CB99226B0F26D2D /* Debug */,
+				94667E258A76D6525D91C486 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		829BCF3D03A8DED098723A06 /* Build configuration list for PBXNativeTarget "GastosDiariosTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FB829C8D70CC8B7A8B0680E0 /* Debug */,
+				091944DDAB1BB8C55DFF78DB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CBC745525540EAECF3087BDB /* Build configuration list for PBXProject "GastosDiarios" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				03FB30CC61FD8E5B630E859E /* Debug */,
+				7F3C4001A862B1256F2F8CD8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		6A235BD5566426F4A59CAFCF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+		EFD307EACD471E743A74DCBF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0C6A902D5FD08D33DF0CB379 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EFD307EACD471E743A74DCBF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		7BDAA615B344F7D33E02779C /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6A235BD5566426F4A59CAFCF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		899B0F90EA1747BB99A5B325 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EFD307EACD471E743A74DCBF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		D3934372BE7A86D42D837236 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6A235BD5566426F4A59CAFCF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = E5E643F7313A6B9B20269C15 /* Project object */;
+}
