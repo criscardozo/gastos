@@ -36,24 +36,29 @@ struct MainTabView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        @Bindable var model = model
         let l10n = model.l10n
-        TabView {
+        TabView(selection: $model.selectedTab) {
             QuickEntryView()
                 .tabItem {
                     Label(l10n.t("tab.new"), systemImage: "plus.circle.fill")
                 }
+                .tag(AppModel.MainTab.entry)
             SummaryView()
                 .tabItem {
                     Label(l10n.t("tab.summary"), systemImage: "chart.pie.fill")
                 }
+                .tag(AppModel.MainTab.summary)
             HistoryView()
                 .tabItem {
                     Label(l10n.t("tab.history"), systemImage: "list.bullet.rectangle.fill")
                 }
+                .tag(AppModel.MainTab.history)
             SettingsView()
                 .tabItem {
                     Label(l10n.t("tab.settings"), systemImage: "gearshape.fill")
                 }
+                .tag(AppModel.MainTab.settings)
         }
     }
 }

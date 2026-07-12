@@ -23,6 +23,7 @@
 		8DEF436DCA6C18809AB5721A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */; };
 		8FC0D32FDCEB87496FE15427 /* FXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11945CEB1AA2DB45FA94F42C /* FXService.swift */; };
 		98CF0F503439808C29ADD186 /* MoneyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */; };
+		9ED3E316CDD7541FFB9D1270 /* QuickEntryIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */; };
 		9F9E15C2ABBF4A7A747FDC1E /* period-test-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = C61FCF0E69A7236D256390A7 /* period-test-vectors.json */; };
 		A7E3EB7757720198B6CAB1C7 /* FirestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73D2B1C84483CD1A063D9EDF /* FirestoreService.swift */; };
 		B088F40899D33FEB92EE2A8A /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23612A2AE85E20827C54AF6A /* Models.swift */; };
@@ -65,6 +66,7 @@
 		86228DE8CD158F7CBF6F706A /* GastosDiariosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosDiariosApp.swift; sourceTree = "<group>"; };
 		87966E98F3C0C867AE517CE9 /* ExpenseFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseFormView.swift; sourceTree = "<group>"; };
 		88C4CEE8AB2BD7C3B1A50660 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickEntryIntent.swift; sourceTree = "<group>"; };
 		990596864A5AD40BA5EE4803 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A21D8B26F267E4D4FF49927C /* BudgetAmountEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetAmountEditor.swift; sourceTree = "<group>"; };
 		B2DE59304825CBC116B66700 /* categories.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = categories.json; sourceTree = "<group>"; };
@@ -161,6 +163,7 @@
 			children = (
 				1C8F75E05B2CB5526FAED626 /* AppModel.swift */,
 				86228DE8CD158F7CBF6F706A /* GastosDiariosApp.swift */,
+				94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */,
 				5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */,
 			);
 			path = App;
@@ -398,6 +401,7 @@
 				7C7BB44D55BFA7138E41FA4A /* NewPeriodSheet.swift in Sources */,
 				5E46E4B94AD5C7F23B172691 /* OnboardingView.swift in Sources */,
 				E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */,
+				9ED3E316CDD7541FFB9D1270 /* QuickEntryIntent.swift in Sources */,
 				8DEF436DCA6C18809AB5721A /* RootView.swift in Sources */,
 				F66E126B602E61FCCC04EA5B /* SettingsView.swift in Sources */,
 				C92E8EBD9E46D90366CB2EA9 /* SummaryView.swift in Sources */,

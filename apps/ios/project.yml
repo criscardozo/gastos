@@ -59,6 +59,11 @@ targets:
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:
               - com.googleusercontent.apps.56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8
+          # Deep link into quick entry (gastosdiarios://nuevo) — usable from
+          # a plain "Open URL" Shortcut as a Back Tap alternative.
+          - CFBundleTypeRole: Editor
+            CFBundleURLSchemes:
+              - gastosdiarios
     dependencies:
       - package: Firebase
         product: FirebaseAuth

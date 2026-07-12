@@ -44,6 +44,21 @@ If the client ID is ever missing or looks like a placeholder, the app still
 builds and runs — the sign-in screen shows a friendly "configuration needed"
 state instead of crashing (`AuthService.isConfigured`).
 
+## Back Tap → quick entry
+
+Back Tap can't be captured by apps directly; it runs a Shortcut, and the app
+ships an App Intent ("Registrar gasto") that opens straight into the
+quick-entry tab. One-time setup on the iPhone:
+
+1. Install the app (the intent registers automatically).
+2. **Settings → Accessibility → Touch → Back Tap → Double Tap** and pick the
+   **Registrar gasto** shortcut (listed under Shortcuts).
+
+Alternative wiring: create a plain Shortcut with "Open URL" →
+`gastosdiarios://nuevo` and assign that to Back Tap. Both paths land on the
+quick-entry screen; the intent also works via Siri ("Registrar gasto en
+Gastos Diarios").
+
 ## Firebase emulators
 
 Set the `USE_FIREBASE_EMULATORS` environment variable (e.g. to `1`) in the run

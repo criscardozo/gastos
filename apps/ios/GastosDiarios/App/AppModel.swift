@@ -40,6 +40,23 @@ final class AppModel {
     var authError: String?
     var isSigningIn = false
 
+    /// Main tab bar selection — settable from outside SwiftUI (App Intent /
+    /// URL scheme) so Back Tap → "Registrar gasto" lands on quick entry.
+    enum MainTab: Hashable {
+        case entry, summary, history, settings
+    }
+
+    var selectedTab: MainTab = .entry
+
+    /// The live instance — lets App Intents reach the model. The app has
+    /// exactly one AppModel (created in GastosDiariosApp.init).
+    private(set) static weak var shared: AppModel?
+
+    /// Jump to the quick-entry tab (Back Tap / Shortcuts / gastosdiarios://nuevo).
+    static func requestQuickEntry() {
+        shared?.selectedTab = .entry
+    }
+
     let googleSignInConfigured = AuthService.isGoogleSignInConfigured
 
     // MARK: Services & listeners
@@ -130,6 +147,7 @@ final class AppModel {
     // MARK: Lifecycle
 
     func start() {
+        AppModel.shared = self
         guard authHandle == nil else { return }
         authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor in

@@ -18,6 +18,11 @@ struct GastosDiariosApp: App {
             RootView()
                 .environment(model)
                 .onOpenURL { url in
+                    if url.scheme == "gastosdiarios" {
+                        // gastosdiarios://nuevo — deep link to quick entry.
+                        AppModel.requestQuickEntry()
+                        return
+                    }
                     _ = AuthService.handle(url: url)
                 }
                 .onAppear { model.start() }
