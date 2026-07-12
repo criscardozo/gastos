@@ -4,6 +4,7 @@ import FirebaseCore
 @main
 struct GastosDiariosApp: App {
     @State private var model: AppModel
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         FirebaseApp.configure()
@@ -26,6 +27,16 @@ struct GastosDiariosApp: App {
                     _ = AuthService.handle(url: url)
                 }
                 .onAppear { model.start() }
+                .onChange(of: scenePhase) { _, phase in
+                    guard phase == .active else { return }
+                    // iOS 18 Control (widget process) left a launch request.
+                    if QuickEntryBridge.consumePending() {
+                        AppModel.requestQuickEntry()
+                    }
+                    // Past-period aggregations aren't live — refresh on foreground.
+                    model.refreshPastTotals()
+                    model.publishWidgetSnapshot()
+                }
         }
     }
 }

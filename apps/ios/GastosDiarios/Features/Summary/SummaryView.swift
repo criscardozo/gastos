@@ -38,6 +38,8 @@ struct SummaryView: View {
         .sheet(isPresented: $showAdjustSheet) {
             AdjustPeriodBudgetSheet()
         }
+        // Past-period totals come from one-shot aggregations, not listeners.
+        .onAppear { model.refreshPastTotals() }
     }
 
     // MARK: Header
@@ -195,14 +197,21 @@ struct SummaryView: View {
         let totalCents: Int
     }
 
+    /// Synthetic bucket for expenses whose category was deleted (rendered
+    /// with the gray "Otros" fallback, never dropped from the breakdown).
+    private static let missingCategoryId = "__missing__"
+
     private var categoryTotals: [CategoryTotal] {
         guard let household = model.household else { return [] }
         var totals: [String: Int] = [:]
         for item in model.viewedExpenses {
-            totals[item.expense.categoryId, default: 0] += item.expense.amountCents
+            let id = household.categories[item.expense.categoryId] != nil
+                ? item.expense.categoryId
+                : Self.missingCategoryId
+            totals[id, default: 0] += item.expense.amountCents
         }
-        return totals.compactMap { id, total in
-            household.categories[id].map { CategoryTotal(id: id, category: $0, totalCents: total) }
+        return totals.map { id, total in
+            CategoryTotal(id: id, category: household.categories[id] ?? .missing, totalCents: total)
         }
         .sorted { $0.totalCents > $1.totalCents }
     }

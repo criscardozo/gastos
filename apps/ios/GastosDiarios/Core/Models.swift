@@ -31,6 +31,13 @@ struct Category: Codable, Equatable {
     var sortOrder: Int
 }
 
+extension Category {
+    /// Display fallback for expenses whose category was deleted: gray "tag"
+    /// circle labeled with the localized "Other" (`category.other`); the
+    /// raw categoryId is never shown.
+    static let missing = Category(key: "other", name: nil, icon: "tag", color: "#8A8577", sortOrder: .max)
+}
+
 /// One entry of `households/{id}.memberProfiles` (map keyed by uid).
 struct MemberProfile: Codable, Equatable {
     var displayName: String
@@ -162,10 +169,36 @@ enum SeedCategories {
     private static let byId: [String: SeedCategory] =
         Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
 
+    /// Curated Material Symbols set offered when creating categories. The
+    /// MATERIAL name is what gets stored (shared/schema.md); the SF Symbol
+    /// is the client-side display mapping.
+    static let curatedIcons: [(material: String, sfSymbol: String)] = [
+        ("tag", "tag.fill"),
+        ("shopping_bag", "bag.fill"),
+        ("pets", "pawprint.fill"),
+        ("flight", "airplane"),
+        ("card_giftcard", "gift.fill"),
+        ("checkroom", "tshirt.fill"),
+        ("fitness_center", "dumbbell.fill"),
+        ("local_gas_station", "fuelpump.fill"),
+        ("savings", "banknote.fill"),
+        ("sports_esports", "gamecontroller.fill"),
+        ("school", "graduationcap.fill"),
+        ("content_cut", "scissors"),
+    ]
+
+    private static let curatedByMaterial: [String: String] =
+        Dictionary(uniqueKeysWithValues: curatedIcons)
+
     /// SF Symbol for a stored (material) icon name; sensible fallback for
     /// user-created categories.
     static func sfSymbol(forMaterialIcon icon: String) -> String {
-        byMaterialIcon[icon]?.icon.sfSymbol ?? "tag.fill"
+        byMaterialIcon[icon]?.icon.sfSymbol ?? curatedByMaterial[icon] ?? "tag.fill"
+    }
+
+    /// The 8 seed colors (light variants) offered for user-created categories.
+    static var seedColorOptions: [String] {
+        all.map { $0.color.light }
     }
 
     /// Dark-mode variant of a seed category color, if we know it.

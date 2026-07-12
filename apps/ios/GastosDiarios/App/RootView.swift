@@ -27,7 +27,19 @@ struct RootView: View {
         }
         .tint(Theme.accent)
         .environment(\.locale, model.l10n.locale)
+        // Manual appearance override (Sistema/Claro/Oscuro in Settings).
+        .preferredColorScheme(model.appearance.colorScheme)
         .animation(.easeInOut(duration: 0.25), value: model.phase)
+    }
+}
+
+extension AppModel.AppearanceMode {
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
     }
 }
 

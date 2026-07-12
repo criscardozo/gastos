@@ -48,6 +48,21 @@ final class AppModel {
 
     var selectedTab: MainTab = .entry
 
+    /// Manual appearance override (per-device preference, UserDefaults).
+    enum AppearanceMode: String, CaseIterable {
+        case system, light, dark
+    }
+
+    private static let appearanceKey = "appearanceMode"
+
+    private(set) var appearance: AppearanceMode =
+        AppearanceMode(rawValue: UserDefaults.standard.string(forKey: AppModel.appearanceKey) ?? "") ?? .system
+
+    func setAppearance(_ mode: AppearanceMode) {
+        appearance = mode
+        UserDefaults.standard.set(mode.rawValue, forKey: Self.appearanceKey)
+    }
+
     /// The live instance — lets App Intents reach the model. The app has
     /// exactly one AppModel (created in GastosDiariosApp.init).
     private(set) static weak var shared: AppModel?
@@ -170,6 +185,8 @@ final class AppModel {
             inviteCode = nil
             viewedPeriodIndex = nil
             phase = .signedOut
+            lastPublishedSnapshot = nil
+            WidgetBridge.publish(nil)
             return
         }
         uid = user.uid
@@ -226,6 +243,7 @@ final class AppModel {
                 self.phase = .ready
                 self.materializeIfNeeded()
                 self.refreshExpenseListeners()
+                self.publishWidgetSnapshot()
             }
         }
         periodsListener = firestore.listenPeriodBudgets(householdId: id) { [weak self] periods in
@@ -239,6 +257,7 @@ final class AppModel {
             self.refreshExpenseListeners()
             self.checkNewPeriodPrompt()
             self.loadPastTotals()
+            self.publishWidgetSnapshot()
         }
         Task { await self.refreshFXIfNeeded() }
     }
@@ -342,6 +361,7 @@ final class AppModel {
                     if self.isViewingCurrentPeriod {
                         self.viewedExpenses = self.currentExpenses
                     }
+                    self.publishWidgetSnapshot()
                 }
             }
         }
@@ -389,14 +409,22 @@ final class AppModel {
     // MARK: Past period totals
 
     private var loadingPastTotals = false
+    private var lastPastTotalsRefresh = Date.distantPast
 
-    private func loadPastTotals() {
+    /// Fetches past-period spent totals via server-side SUM aggregations
+    /// (1 read per period) and caches them in memory keyed by startDate.
+    /// `refreshAll` re-runs every past period (they can still be edited);
+    /// otherwise only never-fetched periods are queried.
+    private func loadPastTotals(refreshAll: Bool = false) {
         guard !loadingPastTotals, let householdId = attachedHouseholdId else { return }
-        let missing = pastPeriods.filter { pastTotals[$0.startDate] == nil }
-        guard !missing.isEmpty else { return }
+        let targets = refreshAll
+            ? pastPeriods
+            : pastPeriods.filter { pastTotals[$0.startDate] == nil }
+        guard !targets.isEmpty else { return }
         loadingPastTotals = true
+        if refreshAll { lastPastTotalsRefresh = Date() }
         Task {
-            for period in missing {
+            for period in targets {
                 if let total = await firestore.fetchSpentCents(
                     householdId: householdId,
                     startDate: period.startDate,
@@ -407,6 +435,15 @@ final class AppModel {
             }
             self.loadingPastTotals = false
         }
+    }
+
+    /// Aggregations are not live queries: re-run them when the app
+    /// foregrounds or the Summary tab appears, throttled so tab switches
+    /// don't burn reads.
+    func refreshPastTotals() {
+        guard phase == .ready else { return }
+        guard Date().timeIntervalSince(lastPastTotalsRefresh) > 60 else { return }
+        loadPastTotals(refreshAll: true)
     }
 
     // MARK: FX
@@ -565,13 +602,13 @@ final class AppModel {
             note: note,
             date: date.raw
         )
-        pastTotals = [:]  // date edits can move expenses across periods
-        loadPastTotals()
+        loadPastTotals(refreshAll: true)  // date edits can move expenses across periods
     }
 
     func deleteExpense(id: String) {
         guard let householdId = attachedHouseholdId else { return }
         firestore.deleteExpense(householdId: householdId, expenseId: id)
+        loadPastTotals(refreshAll: true)  // the expense may belong to a past period
     }
 
     // MARK: Settings actions
@@ -611,5 +648,98 @@ final class AppModel {
                 amountCents: amountCents
             )
         }
+    }
+
+    // MARK: Category actions
+
+    /// Renaming ALWAYS stores a literal `name` and drops the i18n `key`
+    /// (shared/schema.md contract) — renaming back does not restore the key.
+    func renameCategory(id: String, name: String) {
+        guard let householdId = attachedHouseholdId,
+              var category = household?.categories[id]
+        else { return }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        category.key = nil
+        category.name = trimmed
+        household?.categories[id] = category  // optimistic; listener confirms
+        let data = Self.categoryData(category)
+        Task { try? await firestore.setCategory(householdId: householdId, id: id, data: data) }
+    }
+
+    /// `materialIcon` is the Material Symbols name (schema stores material
+    /// names; iOS maps them to SF Symbols for display).
+    func addCategory(name: String, colorHex: String, materialIcon: String) {
+        guard let householdId = attachedHouseholdId, let household else { return }
+        guard household.categories.count < 30 else { return }  // rules cap
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let id = "c" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased().prefix(12)
+        let sortOrder = (household.categories.values.map(\.sortOrder).max() ?? -1) + 1
+        let category = Category(key: nil, name: trimmed, icon: materialIcon, color: colorHex, sortOrder: sortOrder)
+        self.household?.categories[id] = category
+        let data = Self.categoryData(category)
+        Task { try? await firestore.setCategory(householdId: householdId, id: id, data: data) }
+    }
+
+    /// Existing expenses keep their categoryId; display falls back to the
+    /// gray "Otros" placeholder (Category.missing).
+    func deleteCategory(id: String) {
+        guard let householdId = attachedHouseholdId,
+              (household?.categories.count ?? 0) > 1  // rules require >= 1
+        else { return }
+        household?.categories.removeValue(forKey: id)
+        Task { try? await firestore.deleteCategory(householdId: householdId, id: id) }
+    }
+
+    /// List reorder: rewrites sortOrder to the new visual index.
+    func moveCategories(fromOffsets: IndexSet, toOffset: Int) {
+        guard let householdId = attachedHouseholdId, let household else { return }
+        var ordered = household.sortedCategories
+        ordered.move(fromOffsets: fromOffsets, toOffset: toOffset)
+        var orders: [String: Int] = [:]
+        for (index, entry) in ordered.enumerated() where entry.category.sortOrder != index {
+            orders[entry.id] = index
+            self.household?.categories[entry.id]?.sortOrder = index
+        }
+        guard !orders.isEmpty else { return }
+        Task { try? await firestore.updateCategorySortOrders(householdId: householdId, orders: orders) }
+    }
+
+    private static func categoryData(_ category: Category) -> [String: Any] {
+        var data: [String: Any] = [
+            "icon": category.icon,
+            "color": category.color,
+            "sortOrder": category.sortOrder,
+        ]
+        if let key = category.key { data["key"] = key }
+        if let name = category.name { data["name"] = name }
+        return data
+    }
+
+    // MARK: Widget snapshot
+
+    private var lastPublishedSnapshot: WidgetBridge.Snapshot?
+
+    /// Publishes the budget snapshot the widget renders. Called whenever
+    /// period/expense state changes; skips the write when nothing visible
+    /// changed (listeners fire often).
+    func publishWidgetSnapshot() {
+        guard phase == .ready, let period = currentPeriod, let household else { return }
+        let snapshot = WidgetBridge.Snapshot(
+            remainingCents: currentRemainingCents,
+            budgetCents: period.amountCents,
+            state: currentBudgetState.rawValue,
+            periodEndDate: period.endDate,
+            currency: household.currency,
+            timezone: household.timezone,
+            updatedAtEpoch: Int(Date().timeIntervalSince1970)
+        )
+        if var last = lastPublishedSnapshot {
+            last.updatedAtEpoch = snapshot.updatedAtEpoch
+            if last == snapshot { return }
+        }
+        lastPublishedSnapshot = snapshot
+        WidgetBridge.publish(snapshot)
     }
 }

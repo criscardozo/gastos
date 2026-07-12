@@ -305,15 +305,46 @@ final class FirestoreService {
             .delete()
     }
 
-    /// One-shot spent total for a past period (bounded range; cache-friendly).
+    /// One-shot spent total for a past period: a single server-side SUM
+    /// aggregation (1 billed read) instead of fetching every expense doc.
+    /// Bounded range as always. nil on failure (e.g. offline) so callers
+    /// keep their cached value.
     func fetchSpentCents(householdId: String, startDate: String, endDate: String) async -> Int? {
+        let sum = AggregateField.sum("amountCents")
         let query = db.collection("households").document(householdId)
             .collection("expenses")
             .whereField("date", isGreaterThanOrEqualTo: startDate)
             .whereField("date", isLessThanOrEqualTo: endDate)
-        guard let snapshot = try? await query.getDocuments() else { return nil }
-        return snapshot.documents.reduce(0) { sum, doc in
-            sum + ((doc.data()["amountCents"] as? Int) ?? 0)
+            .aggregate([sum])
+        guard let snapshot = try? await query.getAggregation(source: .server) else { return nil }
+        return (snapshot.get(sum) as? NSNumber)?.intValue
+    }
+
+    // MARK: - Categories (entries of the household doc's categories map)
+
+    /// Creates or replaces one category entry (dotted-path safe via FieldPath).
+    func setCategory(householdId: String, id: String, data: [String: Any]) async throws {
+        try await db.collection("households").document(householdId).updateData([
+            FieldPath(["categories", id]): data,
+            FieldPath(["updatedAt"]): FieldValue.serverTimestamp(),
+        ])
+    }
+
+    func deleteCategory(householdId: String, id: String) async throws {
+        try await db.collection("households").document(householdId).updateData([
+            FieldPath(["categories", id]): FieldValue.delete(),
+            FieldPath(["updatedAt"]): FieldValue.serverTimestamp(),
+        ])
+    }
+
+    /// Rewrites sortOrder for the given category ids in one update.
+    func updateCategorySortOrders(householdId: String, orders: [String: Int]) async throws {
+        var data: [AnyHashable: Any] = [
+            FieldPath(["updatedAt"]): FieldValue.serverTimestamp()
+        ]
+        for (id, order) in orders {
+            data[FieldPath(["categories", id, "sortOrder"])] = order
         }
+        try await db.collection("households").document(householdId).updateData(data)
     }
 }

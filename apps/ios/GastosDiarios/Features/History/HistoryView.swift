@@ -147,21 +147,20 @@ struct HistoryView: View {
     }
 
     private func row(_ item: ExpenseItem) -> some View {
-        let category = model.household?.categories[item.expense.categoryId]
+        // Deleted categories fall back to the gray "Otros" placeholder.
+        let category = model.household?.categories[item.expense.categoryId] ?? .missing
         let member = model.household?.memberProfiles[item.expense.createdBy]
         return HStack(spacing: 11) {
-            if let category {
-                CategoryCircle(categoryId: item.expense.categoryId, category: category, size: 38)
-            }
+            CategoryCircle(categoryId: item.expense.categoryId, category: category, size: 38)
             VStack(alignment: .leading, spacing: 1) {
                 Text(item.expense.note.isEmpty
-                     ? (category.map { l10n.categoryName($0) } ?? "—")
+                     ? l10n.categoryName(category)
                      : item.expense.note)
                     .appFont(14.5, .semibold)
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                 HStack(spacing: 5) {
-                    if !item.expense.note.isEmpty, let category {
+                    if !item.expense.note.isEmpty {
                         Text(l10n.categoryName(category))
                             .appFont(12)
                             .foregroundStyle(Theme.inkTertiary)

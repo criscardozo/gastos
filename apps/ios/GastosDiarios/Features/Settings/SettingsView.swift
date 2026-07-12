@@ -6,9 +6,22 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var showDefaultAmountSheet = false
     @State private var showPeriodBudgetSheet = false
+    @State private var showCategoriesManager = false
     @State private var copied = false
 
+    // Daily reminder (per-device preference; see ReminderService).
+    @State private var reminderEnabled = ReminderService.isEnabled
+    @State private var reminderTime = SettingsView.storedReminderTime()
+    @State private var reminderDenied = false
+
     private var l10n: L10n { model.l10n }
+
+    private static func storedReminderTime() -> Date {
+        let time = ReminderService.time
+        return Calendar.current.date(
+            bySettingHour: time.hour, minute: time.minute, second: 0, of: Date()
+        ) ?? Date()
+    }
 
     var body: some View {
         ScrollView {
@@ -22,6 +35,7 @@ struct SettingsView: View {
                 currentPeriodSection
                 logSection
                 preferencesSection
+                categoriesSection
                 householdSection
                 signOutRow
                 aboutSection
@@ -37,7 +51,43 @@ struct SettingsView: View {
         .sheet(isPresented: $showPeriodBudgetSheet) {
             AdjustPeriodBudgetSheet()
         }
+        .sheet(isPresented: $showCategoriesManager) {
+            CategoriesManagerView()
+        }
         .onAppear { model.ensureInviteCode() }
+        .task {
+            // Surface the system-level denial when the toggle was left on.
+            if reminderEnabled, await ReminderService.isDenied() {
+                reminderDenied = true
+            }
+        }
+        .onChange(of: reminderEnabled) { _, enabled in
+            let l10n = self.l10n
+            Task {
+                if enabled {
+                    let granted = await ReminderService.enable(l10n: l10n)
+                    if granted {
+                        reminderDenied = false
+                    } else {
+                        reminderEnabled = false
+                        reminderDenied = true
+                    }
+                } else {
+                    ReminderService.disable()
+                }
+            }
+        }
+        .onChange(of: reminderTime) { _, newValue in
+            let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+            let l10n = self.l10n
+            Task {
+                await ReminderService.setTime(
+                    hour: comps.hour ?? 21,
+                    minute: comps.minute ?? 0,
+                    l10n: l10n
+                )
+            }
+        }
     }
 
     // MARK: Default budget
@@ -236,10 +286,138 @@ struct SettingsView: View {
                         .fixedSize()
                     }
                     .padding(.vertical, 13)
+                    Divider().overlay(Theme.separator)
+                    appearanceRow
+                    Divider().overlay(Theme.separator)
+                    reminderRows
                 }
             }
-            .padding(.bottom, 10)
+            if reminderDenied {
+                Text(l10n.t("settings.reminder.denied"))
+                    .appFont(12)
+                    .foregroundStyle(Theme.inkTertiary)
+                    .padding(.horizontal, 4)
+            }
         }
+        .padding(.bottom, 10)
+    }
+
+    /// Manual appearance: Sistema / Claro / Oscuro (per-device preference).
+    private var appearanceRow: some View {
+        HStack(spacing: 11) {
+            Text(l10n.t("settings.appearance"))
+                .appFont(14.5, .semibold)
+                .foregroundStyle(Theme.ink)
+            Spacer()
+            SegmentedPill(
+                options: [
+                    (AppModel.AppearanceMode.system, l10n.t("appearance.system")),
+                    (AppModel.AppearanceMode.light, l10n.t("appearance.light")),
+                    (AppModel.AppearanceMode.dark, l10n.t("appearance.dark")),
+                ],
+                selection: Binding(
+                    get: { model.appearance },
+                    set: { model.setAppearance($0) }
+                )
+            )
+            .fixedSize()
+        }
+        .padding(.vertical, 13)
+    }
+
+    /// Daily reminder toggle + hour picker (local notification, per-device).
+    @ViewBuilder
+    private var reminderRows: some View {
+        HStack(spacing: 11) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(l10n.t("settings.reminder"))
+                    .appFont(14.5, .semibold)
+                    .foregroundStyle(Theme.ink)
+                Text(l10n.t("settings.reminder.foot"))
+                    .appFont(11.5)
+                    .foregroundStyle(Theme.inkTertiary)
+            }
+            Spacer()
+            Toggle("", isOn: $reminderEnabled)
+                .labelsHidden()
+                .tint(Theme.green)
+        }
+        .padding(.vertical, 13)
+        if reminderEnabled {
+            Divider().overlay(Theme.separator)
+            HStack(spacing: 11) {
+                Text(l10n.t("settings.reminder.time"))
+                    .appFont(14.5, .semibold)
+                    .foregroundStyle(Theme.ink)
+                Spacer()
+                DatePicker("", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.compact)
+                    .labelsHidden()
+            }
+            .padding(.vertical, 8)
+        }
+    }
+
+    // MARK: Categories
+
+    private var categoriesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                SectionLabel(text: l10n.t("settings.categories"))
+                Spacer()
+                Text(l10n.t("categories.count", model.household?.categories.count ?? 0))
+                    .appFont(11, .semibold)
+                    .foregroundStyle(Theme.inkTertiary)
+            }
+            .padding(.horizontal, 4)
+            Button {
+                showCategoriesManager = true
+            } label: {
+                Card(padding: EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16)) {
+                    categoriesList
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.bottom, 10)
+    }
+
+    private var categoriesList: some View {
+        let entries = model.household?.sortedCategories ?? []
+        return VStack(spacing: 0) {
+            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                HStack(spacing: 11) {
+                    CategoryCircle(categoryId: entry.id, category: entry.category, size: 30)
+                    Text(l10n.categoryName(entry.category))
+                        .appFont(14, .semibold)
+                        .foregroundStyle(Theme.ink)
+                    Spacer()
+                    if index == 0 {
+                        editPill
+                    }
+                }
+                .padding(.vertical, 8)
+                if index < entries.count - 1 {
+                    Divider().overlay(Theme.separator)
+                }
+            }
+        }
+    }
+
+    private var editPill: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "pencil")
+                .font(.system(size: 11, weight: .bold))
+            Text(l10n.t("categories.edit"))
+                .appFont(12, .bold)
+        }
+        .foregroundStyle(Theme.ink)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Theme.surface)
+        .clipShape(Capsule())
+        .overlay(Capsule().strokeBorder(Theme.borderPill, lineWidth: 1))
     }
 
     // MARK: Household

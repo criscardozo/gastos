@@ -64,6 +64,13 @@ targets:
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:
               - gastosdiarios
+    # App group shared with the widget extension (budget snapshot handoff).
+    # NOTE: minimal on purpose — free personal team signing.
+    entitlements:
+      path: GastosDiarios/GastosDiarios.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.dev.cardozo.gastosdiarios
     dependencies:
       - package: Firebase
         product: FirebaseAuth
@@ -73,6 +80,38 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
+      - target: GastosDiariosWidget
+
+  GastosDiariosWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: GastosDiariosWidget
+      # The quick-entry App Intent is compiled into BOTH targets so the
+      # iOS 18 Control can launch it (WIDGET_EXTENSION conditionals inside).
+      - path: GastosDiarios/App/QuickEntryIntent.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastosdiarios.widget
+        PRODUCT_NAME: GastosDiariosWidget
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) WIDGET_EXTENSION"
+    info:
+      path: GastosDiariosWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Gastos Diarios
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: GastosDiariosWidget/GastosDiariosWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.dev.cardozo.gastosdiarios
 
   GastosDiariosTests:
     type: bundle.unit-test
