@@ -1,0 +1,78 @@
+{
+  "sourceLanguage" : "es",
+  "strings" : {
+    "category.coffee" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Coffee" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Café" } }
+      }
+    },
+    "category.eatingOut" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Eating out" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Salidas" } }
+      }
+    },
+    "category.entertainment" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Entertainment" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ocio" } }
+      }
+    },
+    "category.groceries" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Groceries" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Súper" } }
+      }
+    },
+    "category.health" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Health" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Salud" } }
+      }
+    },
+    "category.home" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Home" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Hogar" } }
+      }
+    },
+    "category.other" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Other" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Otros" } }
+      }
+    },
+    "category.transport" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Transport" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Transporte" } }
+      }
+    },
+    "watch.remaining" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ left" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Quedan %@" } }
+      }
+    },
+    "watch.save" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Guardar" } }
+      }
+    },
+    "watch.saved" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved ✓" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Guardado ✓" } }
+      }
+    },
+    "watch.saved.sync" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Syncs with your phone" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se sincroniza con el teléfono" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

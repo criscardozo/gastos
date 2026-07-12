@@ -144,6 +144,21 @@ final class AppModel {
 
     var showUSD: Bool { userProfile?.displayCurrency == "USD" }
 
+    /// Expenses available for quick-entry suggestions — derived ONLY from what
+    /// is already loaded in memory (current + viewed period), so it never adds
+    /// an unbounded listener or extra reads. Deduped by document id.
+    var suggestionExpenses: [Expense] {
+        var seen = Set<String>()
+        var result: [Expense] = []
+        for item in currentExpenses + viewedExpenses {
+            guard let id = item.expense.id else { continue }
+            if seen.insert(id).inserted {
+                result.append(item.expense)
+            }
+        }
+        return result
+    }
+
     var members: [(uid: String, profile: MemberProfile)] {
         guard let household else { return [] }
         return household.memberIds.compactMap { uid in
@@ -163,6 +178,9 @@ final class AppModel {
 
     func start() {
         AppModel.shared = self
+        // Watch relay: the phone (authenticated) writes expenses the watch
+        // sends over WatchConnectivity. Safe to call before sign-in.
+        WatchSyncService.shared.start()
         guard authHandle == nil else { return }
         authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor in
@@ -592,6 +610,34 @@ final class AppModel {
         )
     }
 
+    /// Persists an expense relayed from the Apple Watch. Deduped by `clientId`
+    /// (also used as the Firestore doc id) so a WatchConnectivity redelivery
+    /// never double-writes. Drops gracefully when there's no household/uid yet.
+    private static let watchProcessedKey = "watchProcessedClientIds"
+
+    func saveExpenseFromWatch(clientId: String, amountCents: Int, categoryId: String, dateYMD: String) {
+        guard let householdId = attachedHouseholdId, let uid else { return }
+        guard amountCents > 0, CalendarDate(dateYMD) != nil else { return }
+
+        // Idempotency guard: skip payloads we've already processed.
+        var processed = UserDefaults.standard.stringArray(forKey: Self.watchProcessedKey) ?? []
+        guard !processed.contains(clientId) else { return }
+        processed.append(clientId)
+        // Keep the set small (last 50 ids).
+        if processed.count > 50 { processed.removeFirst(processed.count - 50) }
+        UserDefaults.standard.set(processed, forKey: Self.watchProcessedKey)
+
+        firestore.createExpense(
+            householdId: householdId,
+            uid: uid,
+            amountCents: amountCents,
+            categoryId: categoryId,
+            note: "",
+            date: dateYMD,
+            expenseId: clientId
+        )
+    }
+
     func updateExpense(id: String, amountCents: Int, categoryId: String, note: String, date: CalendarDate) {
         guard let householdId = attachedHouseholdId else { return }
         firestore.updateExpense(
@@ -741,5 +787,11 @@ final class AppModel {
         }
         lastPublishedSnapshot = snapshot
         WidgetBridge.publish(snapshot)
+        WatchSyncService.shared.updateBudgetContext(
+            remainingCents: snapshot.remainingCents,
+            budgetCents: snapshot.budgetCents,
+            state: snapshot.state,
+            currency: snapshot.currency
+        )
     }
 }

@@ -263,12 +263,16 @@ final class FirestoreService {
         amountCents: Int,
         categoryId: String,
         note: String,
-        date: String
+        date: String,
+        expenseId: String? = nil
     ) {
         // Fire-and-forget (offline-first): the local write resolves instantly
-        // and syncs when back online.
-        db.collection("households").document(householdId)
-            .collection("expenses").document()
+        // and syncs when back online. A caller-supplied `expenseId` (used for
+        // Watch relay idempotency) makes a redelivered payload overwrite the
+        // same doc instead of creating a duplicate.
+        let collection = db.collection("households").document(householdId).collection("expenses")
+        let document = expenseId.map { collection.document($0) } ?? collection.document()
+        document
             .setData([
                 "amountCents": amountCents,
                 "categoryId": categoryId,

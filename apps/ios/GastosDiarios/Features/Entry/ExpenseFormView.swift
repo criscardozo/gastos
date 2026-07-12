@@ -161,11 +161,41 @@ struct ExpenseFormView: View {
 
     private var canSave: Bool { amount.cents > 0 && selectedCategoryId != nil }
 
+    // MARK: Suggestions (derived from in-memory expenses only)
+
+    /// Recent-amount chips for the selected category — only while the amount is
+    /// still empty (they are quick-fills, not a live filter).
+    private var recentAmounts: [Int] {
+        guard !isEditing, amount.isEmpty else { return [] }
+        return Suggestions.recentAmounts(
+            from: model.suggestionExpenses,
+            categoryId: selectedCategoryId,
+            limit: 3
+        )
+    }
+
+    /// Note autocomplete suggestions, filtered by what's typed so far. Drops a
+    /// suggestion identical to the current note (nothing to fill).
+    private var noteSuggestions: [String] {
+        guard !isEditing else { return [] }
+        let typed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        return Suggestions.topNotes(
+            from: model.suggestionExpenses,
+            categoryId: selectedCategoryId,
+            matching: note,
+            limit: 4
+        )
+        .filter { $0.caseInsensitiveCompare(typed) != .orderedSame }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             header
             heroAmount
             categoryRow
+            if !recentAmounts.isEmpty {
+                amountChips
+            }
             noteField
             KeypadView(separatorLabel: separator) { key in
                 amount.tap(key)
@@ -185,10 +215,71 @@ struct ExpenseFormView: View {
         .sheet(isPresented: $showDatePicker) {
             datePickerSheet
         }
+        .toolbar {
+            if noteFocused, !noteSuggestions.isEmpty {
+                ToolbarItemGroup(placement: .keyboard) {
+                    noteSuggestionBar
+                }
+            }
+        }
         .onAppear(perform: load)
     }
 
     // MARK: Pieces
+
+    /// Horizontal recent-amount quick-fill pills, shown under the category row.
+    private var amountChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(recentAmounts, id: \.self) { cents in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        withAnimation(.snappy(duration: 0.15)) {
+                            amount = .fromCents(cents)
+                        }
+                    } label: {
+                        Text(MoneyFormatter.audCompact(cents, locale: l10n.locale))
+                            .appFont(13, .semibold)
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.ink)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Theme.fill)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+        .padding(.horizontal, -20)
+        .padding(.bottom, 12)
+    }
+
+    /// Note autocomplete pills, hosted in the keyboard toolbar so they sit just
+    /// above the system keyboard while the note field is focused.
+    private var noteSuggestionBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(noteSuggestions, id: \.self) { suggestion in
+                    Button {
+                        note = suggestion
+                        noteFocused = false
+                    } label: {
+                        Text(suggestion)
+                            .appFont(14, .semibold)
+                            .foregroundStyle(Theme.accentStrong)
+                            .lineLimit(1)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(Theme.accentSoft)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
 
     private var header: some View {
         HStack {
