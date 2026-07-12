@@ -55,6 +55,20 @@ pnpm test:rules         # security-rules tests (starts its own emulator)
 pnpm test:web           # period-logic + unit tests
 ```
 
+## Backup (manual, free)
+
+Firestore has no free managed export, so `pnpm backup` dumps the whole project
+(households + subcollections, users, invites) to a timestamped JSON in
+`backups/` (gitignored):
+
+1. Firebase console → Project settings → **Service accounts** → *Generate new
+   private key*. Save it as `firebase/service-account.json` (gitignored) or
+   anywhere and point `GOOGLE_APPLICATION_CREDENTIALS` at it.
+2. `pnpm backup` (or `GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json pnpm backup`).
+
+The service account is a GCP feature — free on the Spark plan. Timestamps are
+serialized to ISO strings so the JSON round-trips cleanly.
+
 ## iOS
 
 ```sh

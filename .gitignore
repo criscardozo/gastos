@@ -26,6 +26,9 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 firebase/rules-tests/coverage/
+# Service account key (backup script) + local backups — never commit
+firebase/service-account.json
+backups/
 
 # Xcode
 apps/ios/*.xcodeproj/xcuserdata/
