@@ -75,6 +75,7 @@
     "personAll": "Persona: ambos",
     "personFilter": "Persona: {name}",
     "searchPlaceholder": "Buscar en las notas…",
+    "exportCsv": "Exportar CSV",
     "addPlaceholder": "Agregar gasto: monto · categoría · nota · fecha",
     "amountPlaceholder": "0,00",
     "notePlaceholder": "Nota (opcional)",
@@ -105,6 +106,10 @@
     "language": "Idioma",
     "spanish": "Español",
     "english": "English",
+    "theme": "Tema",
+    "themeSystem": "Sistema",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro",
     "inviteCode": "Código de invitación",
     "copy": "Copiar",
     "copied": "¡Copiado!",
@@ -132,6 +137,25 @@
     "home": "Hogar",
     "health": "Salud",
     "entertainment": "Ocio",
-    "other": "Otros"
+    "other": "Otros",
+    "deleted": "Categoría eliminada"
+  },
+  "categoryManager": {
+    "title": "Categorías",
+    "nameLabel": "Nombre de la categoría",
+    "namePlaceholder": "Nueva categoría",
+    "add": "Agregar categoría",
+    "save": "Agregar",
+    "cancel": "Cancelar",
+    "color": "Color",
+    "icon": "Ícono",
+    "colorOption": "Color {color}",
+    "iconOption": "Ícono {icon}",
+    "rename": "Renombrar {name}",
+    "moveUp": "Subir {name}",
+    "moveDown": "Bajar {name}",
+    "delete": "Eliminar {name}",
+    "deleteConfirm": "¿Eliminar la categoría \"{name}\"? Los gastos ya cargados van a mostrarla como \"Categoría eliminada\".",
+    "maxReached": "Llegaron al máximo de 30 categorías."
   }
 }

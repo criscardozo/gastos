@@ -47,8 +47,13 @@
 }
 
 /* ── Dark ──────────────────────────────────────────────────────────────── */
+/* The dark token block appears TWICE on purpose (CSS cannot share a block
+   between a media query and a selector without indirection): once for
+   system-dark (unless the user forced light via html[data-theme="light"])
+   and once for the manual html[data-theme="dark"] override.
+   KEEP BOTH BLOCKS IDENTICAL when editing tokens. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #191410;
     --surface: #242019;
     --ink: #f6eee2;
@@ -79,6 +84,39 @@
 
     --key-shadow: none;
   }
+}
+
+/* Manual dark override — same values as the media-query block above. */
+:root[data-theme="dark"] {
+  --bg: #191410;
+  --surface: #242019;
+  --ink: #f6eee2;
+  --ink-secondary: #a2937f;
+  --ink-tertiary: #6e6153;
+  --line-card: rgba(246, 238, 226, 0.08);
+  --line-pill: rgba(246, 238, 226, 0.1);
+  --line-soft: rgba(246, 238, 226, 0.06);
+  --fill: rgba(246, 238, 226, 0.07);
+  --track: rgba(246, 238, 226, 0.08);
+
+  --good: #40be74;
+  --good-text: #6fd79a;
+  --good-bg: rgba(64, 190, 116, 0.16);
+
+  --member-blue: #4b87e8;
+  --member-pink: #ef6d9c;
+
+  --cat-groceries: #57c282;
+  --cat-coffee: #c99465;
+  --cat-eatingOut: #f79a4a;
+  --cat-transport: #6d9eec;
+  --cat-home: #a78deb;
+  --cat-health: #ef6d9c;
+  --cat-entertainment: #db6fc7;
+  --cat-other: #a79f8d;
+  --cat-circle-alpha: 16%;
+
+  --key-shadow: none;
 }
 
 /* ── Tailwind theme mapping ───────────────────────────────────────────── */

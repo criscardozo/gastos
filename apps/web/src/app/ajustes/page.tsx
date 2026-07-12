@@ -17,6 +17,7 @@ import {
 import { Icon } from "@/components/ui/icon";
 import { AvatarPair } from "@/components/ui/avatar";
 import { Segmented } from "@/components/ui/segmented";
+import { CategoriesCard } from "@/components/categories-card";
 import {
   BudgetCurrencyControls,
   entryToAudCents,
@@ -33,6 +34,12 @@ import {
 import { formatCents } from "@/lib/money";
 import { formatPeriodRange } from "@/lib/dates";
 import type { PeriodType } from "@/lib/periods";
+import {
+  applyTheme,
+  readStoredTheme,
+  storeTheme,
+  type ThemePref,
+} from "@/lib/theme";
 
 /* Amount that flips into a small inline editor on click. */
 function EditableAmount({
@@ -168,6 +175,18 @@ export default function SettingsPage() {
 
   const [copied, setCopied] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+
+  // Manual theme (per-device, localStorage) — read after mount to avoid a
+  // server/client hydration mismatch.
+  const [theme, setTheme] = useState<ThemePref>("system");
+  useEffect(() => {
+    setTheme(readStoredTheme());
+  }, []);
+  const changeTheme = (next: ThemePref) => {
+    setTheme(next);
+    storeTheme(next);
+    applyTheme(next);
+  };
 
   const householdFull = (household?.memberIds.length ?? 0) >= 2;
   const householdId = household?.id ?? null;
@@ -338,7 +357,7 @@ export default function SettingsPage() {
             }
           />
         </div>
-        <div className="flex items-center gap-[11px] py-3">
+        <div className="flex items-center gap-[11px] border-b border-soft py-3">
           <span className="flex-1 text-sm font-semibold text-ink">
             {t("language")}
           </span>
@@ -354,7 +373,25 @@ export default function SettingsPage() {
             }}
           />
         </div>
+        <div className="flex items-center gap-[11px] py-3">
+          <span className="flex-1 text-sm font-semibold text-ink">
+            {t("theme")}
+          </span>
+          <Segmented<ThemePref>
+            ariaLabel={t("theme")}
+            options={[
+              { value: "system", label: t("themeSystem") },
+              { value: "light", label: t("themeLight") },
+              { value: "dark", label: t("themeDark") },
+            ]}
+            value={theme}
+            onChange={changeTheme}
+          />
+        </div>
       </div>
+
+      {/* Categories */}
+      <CategoriesCard household={household} />
 
       {/* Household + invite */}
       <div className="flex items-center gap-3.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">

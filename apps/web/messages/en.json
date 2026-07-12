@@ -75,6 +75,7 @@
     "personAll": "Person: both",
     "personFilter": "Person: {name}",
     "searchPlaceholder": "Search the notes…",
+    "exportCsv": "Export CSV",
     "addPlaceholder": "Add expense: amount · category · note · date",
     "amountPlaceholder": "0.00",
     "notePlaceholder": "Note (optional)",
@@ -105,6 +106,10 @@
     "language": "Language",
     "spanish": "Español",
     "english": "English",
+    "theme": "Theme",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
     "inviteCode": "Invite code",
     "copy": "Copy",
     "copied": "Copied!",
@@ -132,6 +137,25 @@
     "home": "Home",
     "health": "Health",
     "entertainment": "Entertainment",
-    "other": "Other"
+    "other": "Other",
+    "deleted": "Deleted category"
+  },
+  "categoryManager": {
+    "title": "Categories",
+    "nameLabel": "Category name",
+    "namePlaceholder": "New category",
+    "add": "Add category",
+    "save": "Add",
+    "cancel": "Cancel",
+    "color": "Colour",
+    "icon": "Icon",
+    "colorOption": "Colour {color}",
+    "iconOption": "Icon {icon}",
+    "rename": "Rename {name}",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "delete": "Delete {name}",
+    "deleteConfirm": "Delete the \"{name}\" category? Existing expenses will show it as \"Deleted category\".",
+    "maxReached": "You've reached the maximum of 30 categories."
   }
 }

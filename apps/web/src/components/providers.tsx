@@ -42,6 +42,7 @@ import {
   containsDate,
   todayInTimezone,
 } from "@/lib/periods";
+import { applyTheme, readStoredTheme } from "@/lib/theme";
 
 export type Locale = "es" | "en";
 
@@ -158,6 +159,12 @@ export function ackNewPeriod(householdId: string, startDate: string): void {
 /* ── Provider implementation ───────────────────────────────────────────── */
 
 export function Providers({ children }: { children: ReactNode }) {
+  /* Theme — the inline script in layout.tsx already set data-theme before
+   * paint; re-applying here also syncs <meta name="theme-color">. */
+  useEffect(() => {
+    applyTheme(readStoredTheme());
+  }, []);
+
   /* Locale — Spanish by default; English only by explicit user choice
    * (settings toggle → cookie / user doc), never from the browser locale. */
   const [locale, setLocaleState] = useState<Locale>("es");

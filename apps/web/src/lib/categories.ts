@@ -39,6 +39,48 @@ export function seedCategoriesMap(): Record<string, CategoryDef> {
 
 const seedById = new Map(seedCategories.map((c) => [c.id, c]));
 
+/** Rules cap: households/{id}.categories map may hold at most 30 entries. */
+export const MAX_CATEGORIES = 30;
+
+/** The 8 seed palette colors (light variants) offered for custom categories. */
+export const CATEGORY_PALETTE: string[] = seedCategories.map(
+  (c) => c.color.light,
+);
+
+/** Curated Material Symbols for custom categories. */
+export const CATEGORY_ICONS: string[] = [
+  "shopping_basket",
+  "local_cafe",
+  "restaurant",
+  "directions_bus",
+  "home",
+  "favorite",
+  "movie",
+  "shopping_bag",
+  "pets",
+  "flight",
+  "fitness_center",
+  "school",
+  "redeem",
+  "local_gas_station",
+  "checkroom",
+  "savings",
+];
+
+/**
+ * Random id for a custom category. Plain lowercase alphanumerics so the id
+ * is safe inside a Firestore field path ("categories.<id>").
+ */
+export function newCategoryId(existing: Record<string, unknown>): string {
+  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  for (;;) {
+    const bytes = crypto.getRandomValues(new Uint8Array(10));
+    let id = "c";
+    for (const byte of bytes) id += alphabet[byte % alphabet.length];
+    if (!(id in existing)) return id;
+  }
+}
+
 /**
  * Theme-aware CSS color for a category: seed categories resolve through a
  * CSS variable (light/dark pair from categories.json); custom categories

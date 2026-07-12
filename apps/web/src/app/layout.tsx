@@ -31,6 +31,15 @@ export default function RootLayout({
   return (
     <html lang="es" className={outfit.variable}>
       <body className="font-sans antialiased">
+        {/* Apply the stored manual theme BEFORE first paint (blocking inline
+            script as the first body node) so a forced light/dark never
+            flashes the system theme. Key must match THEME_STORAGE_KEY. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{var t=localStorage.getItem("gd:theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();',
+          }}
+        />
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>

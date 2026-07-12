@@ -166,6 +166,7 @@ export default function ExpensesPage() {
   const t = useTranslations("expenses");
   const tEmpty = useTranslations("empty");
   const tDash = useTranslations("dashboard");
+  const tCat = useTranslations("categories");
   const { locale } = useLocale();
   const { user } = useAuth();
   const { household, periods, currentPeriod, today } = useHousehold();
@@ -328,6 +329,40 @@ export default function ExpensesPage() {
     await deleteExpense(fb.db, household.id, e.id);
   };
 
+  /* CSV export of the CURRENTLY FILTERED list (client-side download). */
+  const exportCsv = () => {
+    const escape = (value: string): string =>
+      /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+    const header = ["fecha", "categoria", "nota", "monto_aud", "creado_por"];
+    const lines = [header.join(",")];
+    for (const e of sorted) {
+      lines.push(
+        [
+          e.date,
+          escape(
+            categories.find((c) => c.id === e.categoryId)?.label ??
+              tCat("deleted"),
+          ),
+          escape(e.note),
+          (e.amountCents / 100).toFixed(2), // decimal with dot
+          escape(
+            household.memberProfiles[e.createdBy]?.displayName ?? e.createdBy,
+          ),
+        ].join(","),
+      );
+    }
+    // UTF-8 BOM so Excel detects the encoding (accents in notes/names).
+    const blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `gastos-${selected?.startDate ?? "todos"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   /* Row rendering */
   const renderRow = (e: Expense, flat: boolean) => {
     if (editingId === e.id && editForm !== null) {
@@ -361,8 +396,10 @@ export default function ExpensesPage() {
     }
 
     const def = household.categories[e.categoryId];
+    // Deleted category: neutral icon (below) + a readable label, never the
+    // raw doc id.
     const catLabel =
-      categories.find((c) => c.id === e.categoryId)?.label ?? e.categoryId;
+      categories.find((c) => c.id === e.categoryId)?.label ?? tCat("deleted");
     const profile = household.memberProfiles[e.createdBy];
     return (
       <div
@@ -443,14 +480,28 @@ export default function ExpensesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-[22px] font-bold text-ink">{t("title")}</h1>
-        <Segmented
-          options={[
-            { value: "grouped", label: t("groupedByDay") },
-            { value: "flat", label: t("flatList") },
-          ]}
-          value={grouped}
-          onChange={setGrouped}
-        />
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={exportCsv}
+            disabled={sorted.length === 0}
+            className="flex items-center gap-1.5 rounded-full border border-pill bg-surface px-3 py-[5px] disabled:opacity-40"
+            title={t("exportCsv")}
+          >
+            <Icon name="download" size={15} className="text-ink-2" />
+            <span className="text-xs font-semibold text-ink-2">
+              {t("exportCsv")}
+            </span>
+          </button>
+          <Segmented
+            options={[
+              { value: "grouped", label: t("groupedByDay") },
+              { value: "flat", label: t("flatList") },
+            ]}
+            value={grouped}
+            onChange={setGrouped}
+          />
+        </div>
       </div>
 
       {/* Filters */}

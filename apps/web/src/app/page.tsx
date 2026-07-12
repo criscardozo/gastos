@@ -12,8 +12,16 @@ import { Icon } from "@/components/ui/icon";
 import { Avatar } from "@/components/ui/avatar";
 import { ProgressBar, stateBarColor } from "@/components/ui/progress-bar";
 import { StatePill } from "@/components/ui/state-pill";
-import { useExpensesRange } from "@/lib/firebase/hooks";
-import type { Expense, Household } from "@/lib/firebase/converters";
+import {
+  primePeriodTotal,
+  useExpensesRange,
+  usePastPeriodTotals,
+} from "@/lib/firebase/hooks";
+import type {
+  Expense,
+  Household,
+  PeriodBudget,
+} from "@/lib/firebase/converters";
 import { budgetState, containsDate, daysBetween } from "@/lib/periods";
 import {
   formatApproxUsd,
@@ -28,8 +36,9 @@ function useCategoryLabel() {
   const t = useTranslations("categories");
   return (household: Household, categoryId: string): string => {
     const def = household.categories[categoryId];
-    if (def === undefined) return categoryId;
-    return def.key !== undefined ? t(def.key) : (def.name ?? categoryId);
+    // Deleted category: readable fallback, never the raw doc id.
+    if (def === undefined) return t("deleted");
+    return def.key !== undefined ? t(def.key) : (def.name ?? t("deleted"));
   };
 }
 
@@ -46,15 +55,60 @@ export default function DashboardPage() {
 
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
 
-  // One bounded listener covering every loaded period (hero + trend).
-  const windowStart = periods.length > 0 ? periods[0].startDate : null;
-  const windowEnd =
-    periods.length > 0 ? periods[periods.length - 1].endDate : null;
-  const { expenses } = useExpensesRange(
+  // Selected period (defaults to the current one). Computed before the
+  // early returns because the listeners below key on it.
+  const fallback = currentPeriod ?? periods[periods.length - 1] ?? null;
+  const selected =
+    (selectedStart !== null
+      ? periods.find((p) => p.startDate === selectedStart)
+      : undefined) ?? fallback;
+  const isCurrent =
+    currentPeriod !== null &&
+    selected !== null &&
+    selected.startDate === currentPeriod.startDate;
+
+  // Live listener bounded to the SELECTED period (hero, split, breakdown).
+  const { expenses, loading: expensesLoading } = useExpensesRange(
     household?.id ?? null,
-    windowStart,
-    windowEnd,
+    selected?.startDate ?? null,
+    selected?.endDate ?? null,
   );
+
+  // The CURRENT period always keeps a live listener for the trend bar; when
+  // the selected period IS the current one, the listener above covers it
+  // (passing null here avoids a duplicate).
+  const { expenses: currentExpenses } = useExpensesRange(
+    isCurrent ? null : (household?.id ?? null),
+    currentPeriod?.startDate ?? null,
+    currentPeriod?.endDate ?? null,
+  );
+
+  // Past (non-current, non-selected) trend periods come from one sum()
+  // aggregation each (1 read) instead of streaming their expense docs.
+  const pastTrendPeriods = periods
+    .slice(-6)
+    .filter(
+      (p) =>
+        p.startDate !== currentPeriod?.startDate &&
+        p.startDate !== selected?.startDate,
+    );
+  const pastTotals = usePastPeriodTotals(
+    household?.id ?? null,
+    pastTrendPeriods,
+  );
+
+  // While a past period is open its docs are live on the client — seed the
+  // aggregation cache so navigating away doesn't cost an extra read.
+  useEffect(() => {
+    if (household === null || selected === null || isCurrent || expensesLoading) {
+      return;
+    }
+    primePeriodTotal(
+      household.id,
+      selected.startDate,
+      sumCents(expenses.filter((e) => containsDate(selected, e.date))),
+    );
+  }, [household, selected, isCurrent, expensesLoading, expenses]);
 
   /* Display-only FX */
   const wantsUsd = userDoc?.displayCurrency === "USD";
@@ -74,12 +128,6 @@ export default function DashboardPage() {
   }, [wantsUsd]);
 
   if (household === null) return null;
-
-  const fallback = currentPeriod ?? periods[periods.length - 1] ?? null;
-  const selected =
-    (selectedStart !== null
-      ? periods.find((p) => p.startDate === selectedStart)
-      : undefined) ?? fallback;
 
   if (selected === null) {
     return (
@@ -119,8 +167,6 @@ export default function DashboardPage() {
   const budget = selected.amountCents;
   const remaining = budget - spent;
   const state = budgetState(spent, budget);
-  const isCurrent =
-    currentPeriod !== null && selected.startDate === currentPeriod.startDate;
   const daysLeft =
     today !== null && isCurrent
       ? Math.max(daysBetween(today, selected.endDate) + 1, 0)
@@ -146,11 +192,21 @@ export default function DashboardPage() {
     .sort((a, b) => b.amount - a.amount);
   const maxCategory = breakdown[0]?.amount ?? 0;
 
-  /* Trend: last up-to-6 loaded periods */
+  /* Trend: last up-to-6 loaded periods. Selected + current come from their
+     live listeners; every other (past) period from the aggregation cache. */
+  const spentForTrend = (p: PeriodBudget): number => {
+    if (p.startDate === selected.startDate) {
+      return sumCents(expenses.filter((e) => containsDate(p, e.date)));
+    }
+    if (currentPeriod !== null && p.startDate === currentPeriod.startDate) {
+      return sumCents(currentExpenses.filter((e) => containsDate(p, e.date)));
+    }
+    return pastTotals[p.startDate] ?? 0;
+  };
   const trendPeriods = periods.slice(-6);
   const trend = trendPeriods.map((p) => ({
     period: p,
-    spent: sumCents(expenses.filter((e) => containsDate(p, e.date))),
+    spent: spentForTrend(p),
   }));
   const trendScale = Math.max(
     ...trend.map((x) => Math.max(x.spent, x.period.amountCents)),

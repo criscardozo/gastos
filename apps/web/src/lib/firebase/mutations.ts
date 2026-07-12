@@ -7,16 +7,21 @@ import {
   arrayUnion,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   serverTimestamp,
   setDoc,
   updateDoc,
-  writeBatch,
   type Firestore,
 } from "firebase/firestore";
 
-import { seedCategoriesMap, CREATOR_COLOR, JOINER_COLOR } from "../categories";
+import {
+  seedCategoriesMap,
+  CREATOR_COLOR,
+  JOINER_COLOR,
+  type CategoryDef,
+} from "../categories";
 import type { PeriodRange, PeriodType } from "../periods";
 import { inviteConverter } from "./converters";
 
@@ -65,9 +70,17 @@ export async function updateUserDisplayCurrency(
 }
 
 /**
- * Create the household and link users/{uid}.householdId in ONE batch — the
- * rules verify the link with getAfter(), so both writes must commit together.
- * Returns the new household id.
+ * Create the household, then link users/{uid}.householdId — sequentially,
+ * NOT in a batch, on purpose. A batch flips the user doc locally (latency
+ * compensation) the moment commit() is called, so the household and
+ * periodBudgets listeners that key on householdId race the server commit,
+ * get permission-denied from the rules' get() on the not-yet-existing
+ * household, and die permanently (the app then hangs after onboarding).
+ * Awaiting the household create first guarantees the doc exists server-side
+ * before any listener starts; the rules' getAfter() link check passes either
+ * way. Worst case on a failure between the two writes is an invisible orphan
+ * household plus the onboarding error state — strictly better than dead
+ * listeners. Returns the new household id.
  */
 export async function createHousehold(
   db: Firestore,
@@ -79,8 +92,7 @@ export async function createHousehold(
   anchorDate: string,
 ): Promise<string> {
   const householdRef = doc(collection(db, "households"));
-  const batch = writeBatch(db);
-  batch.set(householdRef, {
+  await setDoc(householdRef, {
     name,
     currency: DEFAULT_CURRENCY,
     timezone: DEFAULT_TIMEZONE,
@@ -93,11 +105,10 @@ export async function createHousehold(
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
-  batch.update(doc(db, "users", uid), {
+  await updateDoc(doc(db, "users", uid), {
     householdId: householdRef.id,
     updatedAt: serverTimestamp(),
   });
-  await batch.commit();
   return householdRef.id;
 }
 
@@ -226,6 +237,44 @@ export async function updateDefaultBudget(
   }
   if (changes.period !== undefined) {
     fields["defaultBudget.period"] = changes.period;
+  }
+  await updateDoc(doc(db, "households", householdId), fields);
+}
+
+/**
+ * Single write path for the household categories map (add / rename /
+ * reorder / delete). `null` deletes an entry. Entries are written whole:
+ * seed categories keep their translatable `key` unless the caller replaces
+ * it with a literal `name` (rename), per shared/schema.md. Uses the member
+ * update branch of the rules (only `categories` + `updatedAt` change).
+ */
+export async function updateHouseholdCategories(
+  db: Firestore,
+  householdId: string,
+  changes: Record<string, CategoryDef | null>,
+): Promise<void> {
+  const fields: Record<string, unknown> = { updatedAt: serverTimestamp() };
+  for (const [id, def] of Object.entries(changes)) {
+    if (def === null) {
+      fields[`categories.${id}`] = deleteField();
+    } else {
+      // Build the stored entry explicitly — Firestore rejects `undefined`
+      // values, and key/name are mutually exclusive.
+      fields[`categories.${id}`] =
+        def.key !== undefined
+          ? {
+              key: def.key,
+              icon: def.icon,
+              color: def.color,
+              sortOrder: def.sortOrder,
+            }
+          : {
+              name: def.name ?? "",
+              icon: def.icon,
+              color: def.color,
+              sortOrder: def.sortOrder,
+            };
+    }
   }
   await updateDoc(doc(db, "households", householdId), fields);
 }
