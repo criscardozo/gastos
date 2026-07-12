@@ -158,16 +158,13 @@ export function ackNewPeriod(householdId: string, startDate: string): void {
 /* ── Provider implementation ───────────────────────────────────────────── */
 
 export function Providers({ children }: { children: ReactNode }) {
-  /* Locale */
+  /* Locale — Spanish by default; English only by explicit user choice
+   * (settings toggle → cookie / user doc), never from the browser locale. */
   const [locale, setLocaleState] = useState<Locale>("es");
   useEffect(() => {
     const fromCookie = readCookieLocale();
     if (fromCookie !== null) {
       setLocaleState(fromCookie);
-      return;
-    }
-    if (navigator.language.toLowerCase().startsWith("en")) {
-      setLocaleState("en");
     }
   }, []);
   const setLocale = useCallback((next: Locale) => {

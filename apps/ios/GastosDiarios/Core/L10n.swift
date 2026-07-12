@@ -28,14 +28,13 @@ struct L10n {
         String(format: t(key), locale: locale, arguments: args)
     }
 
-    /// System/browser-independent resolution: explicit user choice, else the
-    /// device's preferred language, defaulting to Spanish.
+    /// Spanish by default; English only by explicit user choice (the language
+    /// setting stored on users/{uid}) — never from the device language.
     static func resolve(userLanguage: String?) -> L10n {
         if let userLanguage, ["es", "en"].contains(userLanguage) {
             return L10n(language: userLanguage)
         }
-        let preferred = Locale.preferredLanguages.first ?? "es"
-        return L10n(language: preferred.hasPrefix("en") ? "en" : "es")
+        return L10n(language: "es")
     }
 
     // MARK: Category names
