@@ -1,76 +1,211 @@
 {
   "sourceLanguage" : "es",
   "strings" : {
+    "$" : {
+
+    },
     "category.coffee" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Coffee" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Café" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coffee"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Café"
+          }
+        }
       }
     },
     "category.eatingOut" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Eating out" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Salidas" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eating out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salidas"
+          }
+        }
       }
     },
     "category.entertainment" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Entertainment" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ocio" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entertainment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocio"
+          }
+        }
       }
     },
     "category.groceries" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Groceries" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Súper" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Groceries"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Súper"
+          }
+        }
       }
     },
     "category.health" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Health" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Salud" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Health"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salud"
+          }
+        }
       }
     },
     "category.home" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Home" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Hogar" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hogar"
+          }
+        }
       }
     },
     "category.other" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Other" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Otros" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otros"
+          }
+        }
       }
     },
     "category.transport" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Transport" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Transporte" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transport"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transporte"
+          }
+        }
       }
     },
     "watch.remaining" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ left" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Quedan %@" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ left"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quedan %@"
+          }
+        }
       }
     },
     "watch.save" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Guardar" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardar"
+          }
+        }
       }
     },
     "watch.saved" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved ✓" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Guardado ✓" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved ✓"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado ✓"
+          }
+        }
       }
     },
     "watch.saved.sync" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Syncs with your phone" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se sincroniza con el teléfono" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncs with your phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se sincroniza con el teléfono"
+          }
+        }
       }
     }
   },

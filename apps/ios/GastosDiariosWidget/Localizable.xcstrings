@@ -1,154 +1,167 @@
 {
-  "sourceLanguage": "es",
-  "strings": {
-    "Abre la carga rápida de gastos.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens quick expense entry."
+  "sourceLanguage" : "es",
+  "strings" : {
+    "$" : {
+
+    },
+    "Abre la carga rápida de gastos." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens quick expense entry."
           }
         }
       }
     },
-    "Registrar gasto": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Log expense"
+    "Registrar gasto" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log expense"
           }
         }
       }
     },
-    "widget.days.one": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 day"
+    "widget.days.one" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 day"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 día"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 día"
           }
         }
       }
     },
-    "widget.days.other": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d days"
+    "widget.days.other" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d days"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d días"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d días"
           }
         }
       }
     },
-    "widget.description": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "How much you have left this period."
+    "widget.description" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much you have left this period."
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cuánto te queda del período."
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuánto te queda del período."
           }
         }
       }
     },
-    "widget.empty.body": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No period data yet."
+    "widget.empty.body" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No period data yet."
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sin datos del período todavía."
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin datos del período todavía."
           }
         }
       }
     },
-    "widget.empty.title": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open the app"
+    "widget.empty.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the app"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abrí la app"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrí la app"
           }
         }
       }
     },
-    "widget.name": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Budget"
+    "widget.name" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Budget"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Presupuesto"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Presupuesto"
           }
         }
       }
     },
-    "widget.remaining": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ left"
+    "widget.remaining" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ left"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quedan %@"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quedan %@"
           }
         }
       }
     },
-    "widget.remaining.label": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Left"
+    "widget.remaining.label" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Left"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quedan"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quedan"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

@@ -485,15 +485,19 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					B27E9CBF7F7A5606DBAA3B11 = {
+						DevelopmentTeam = FA737M2U79;
 						ProvisioningStyle = Automatic;
 					};
 					BB77704655A94E52B0EDAC2D = {
+						DevelopmentTeam = FA737M2U79;
 						ProvisioningStyle = Automatic;
 					};
 					CA80E83009431AB805515F6A = {
+						DevelopmentTeam = FA737M2U79;
 						ProvisioningStyle = Automatic;
 					};
 					FDC38A1B3C147B9B2FB09856 = {
+						DevelopmentTeam = FA737M2U79;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -708,6 +712,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = FA737M2U79;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -849,6 +854,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = FA737M2U79;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
