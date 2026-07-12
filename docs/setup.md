@@ -7,19 +7,17 @@ security boundary is `firebase/firestore.rules`, never config secrecy.
 
 1. **Firestore**: create the database in **Native mode** on the **`(default)`** database
    (the Spark free tier only applies to `(default)`). Location: `australia-southeast1`.
-2. **Auth**: enable the **Google** sign-in provider (Authentication → Sign-in method).
+2. **Auth**: ✅ done — the **Google** sign-in provider is enabled
+   (Authentication → Sign-in method).
 3. **Deploy rules & indexes** (from the repo root):
    ```sh
    firebase deploy --only firestore:rules,firestore:indexes --config firebase/firebase.json --project qcris-gastos-diarios
    ```
-4. **iOS app config**: after enabling Google sign-in, download a fresh
-   `GoogleService-Info.plist` from Project settings → Your apps → iOS
-   (bundle `dev.cardozo.gastosdiarios`) and replace
-   `apps/ios/GastosDiarios/Resources/GoogleService-Info.plist`.
-   The committed one has `CLIENT_ID` / `REVERSED_CLIENT_ID` **placeholders** — Google
-   Sign-In will not work until you replace them. Then update the
-   `com.googleusercontent.apps.…` URL scheme in `apps/ios/project.yml` (info →
-   CFBundleURLTypes) to match `REVERSED_CLIENT_ID` and re-run `xcodegen`.
+4. **iOS app config**: ✅ done — `apps/ios/GastosDiarios/Resources/GoogleService-Info.plist`
+   carries the real `CLIENT_ID` / `REVERSED_CLIENT_ID` (downloaded after enabling
+   the Google provider), and `apps/ios/project.yml` has the matching `GIDClientID`
+   + URL scheme. If the plist is ever re-downloaded with a different client ID,
+   keep those three in sync and re-run `xcodegen` (see `apps/ios/README.md`).
 
 ## Vercel (web)
 

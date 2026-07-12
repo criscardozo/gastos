@@ -25,14 +25,14 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.REPLACE_ME</string>
+				<string>com.googleusercontent.apps.56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GIDClientID</key>
-	<string>REPLACE_ME.apps.googleusercontent.com</string>
+	<string>56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8.apps.googleusercontent.com</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Outfit-Variable.ttf</string>

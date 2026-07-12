@@ -30,36 +30,19 @@ The unit tests validate the Swift period logic against every vector in
 `shared/period-test-vectors.json` (the same vectors the web TS implementation
 must pass).
 
-## Google Sign-In configuration (REQUIRED before sign-in works)
-
-Property lists cannot carry comments, so this is documented here instead:
+## Google Sign-In configuration
 
 `GastosDiarios/Resources/GoogleService-Info.plist` is the real Firebase config for
-`dev.cardozo.gastosdiarios` **plus two placeholder keys** that Firebase only issues
-once the Google sign-in provider is enabled in the console:
+`dev.cardozo.gastosdiarios`, downloaded **after** enabling the Google sign-in
+provider, so it carries real `CLIENT_ID` / `REVERSED_CLIENT_ID` values. The same
+values are wired in `project.yml` → `Info.plist` (`GIDClientID` and the
+`CFBundleURLTypes` URL scheme) — **keep the three in sync**: if the plist is ever
+re-downloaded with a different client ID, update `project.yml` and re-run
+`xcodegen`.
 
-| Key | Placeholder value |
-|---|---|
-| `CLIENT_ID` | `REPLACE_ME.apps.googleusercontent.com` |
-| `REVERSED_CLIENT_ID` | `com.googleusercontent.apps.REPLACE_ME` |
-
-The same placeholders appear in `project.yml` → `Info.plist` (`GIDClientID` and the
-`CFBundleURLTypes` URL scheme).
-
-To wire up real sign-in (see also `docs/setup.md` at the repo root):
-
-1. In the [Firebase console](https://console.firebase.google.com/project/qcris-gastos-diarios)
-   enable **Authentication → Sign-in method → Google**.
-2. Re-download `GoogleService-Info.plist` for the iOS app (it now contains real
-   `CLIENT_ID` / `REVERSED_CLIENT_ID` values) and replace
-   `GastosDiarios/Resources/GoogleService-Info.plist` with it.
-3. In `project.yml`, replace both `REPLACE_ME` occurrences:
-   - `GIDClientID` → the `CLIENT_ID` value from the plist.
-   - The `CFBundleURLSchemes` entry → the `REVERSED_CLIENT_ID` value.
-4. Run `xcodegen` again.
-
-Until then the app builds and runs, but the sign-in screen shows a friendly
-"configuration needed" state instead of crashing.
+If the client ID is ever missing or looks like a placeholder, the app still
+builds and runs — the sign-in screen shows a friendly "configuration needed"
+state instead of crashing (`AuthService.isConfigured`).
 
 ## Firebase emulators
 

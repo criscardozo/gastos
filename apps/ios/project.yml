@@ -51,15 +51,13 @@ targets:
           - UIInterfaceOrientationPortrait
         UIAppFonts:
           - Outfit-Variable.ttf
-        # Google Sign-In configuration. PLACEHOLDERS: after enabling the Google
-        # provider in the Firebase console, download the real
-        # GoogleService-Info.plist and replace REPLACE_ME here and in
-        # Resources/GoogleService-Info.plist (see apps/ios/README.md).
-        GIDClientID: REPLACE_ME.apps.googleusercontent.com
+        # Google Sign-In configuration — must match CLIENT_ID /
+        # REVERSED_CLIENT_ID in Resources/GoogleService-Info.plist.
+        GIDClientID: 56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8.apps.googleusercontent.com
         CFBundleURLTypes:
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:
-              - com.googleusercontent.apps.REPLACE_ME
+              - com.googleusercontent.apps.56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8
     dependencies:
       - package: Firebase
         product: FirebaseAuth
