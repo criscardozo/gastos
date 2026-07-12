@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import { AvatarPair } from "@/components/ui/avatar";
+import { PiggyMark } from "@/components/brand";
 import { useHousehold } from "@/components/providers";
 
 const NAV = [
@@ -31,7 +32,7 @@ export function Sidebar() {
     <aside className="flex w-[232px] flex-none flex-col gap-1.5 border-r border-line px-4 py-[22px]">
       <div className="mb-[22px] flex items-center gap-2.5 px-2">
         <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-accent">
-          <Icon name="savings" size={19} className="text-white" />
+          <PiggyMark size={24} variant="cream" />
         </div>
         <span className="text-base font-bold text-ink">Gastos Diarios</span>
       </div>

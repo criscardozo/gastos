@@ -29,6 +29,7 @@
 		C19497155C651CCEC6F0E5E9 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */; };
 		C85234FD7E915451EBD5B306 /* ExpenseFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87966E98F3C0C867AE517CE9 /* ExpenseFormView.swift */; };
 		C92E8EBD9E46D90366CB2EA9 /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */; };
+		D1D835112EBEB73ADD5E788C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB86DA59B8D86AC1BE949A16 /* Assets.xcassets */; };
 		DE10CA45FBC616EAE3F58B0E /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 899B0F90EA1747BB99A5B325 /* FirebaseAuth */; };
 		E3369B40B60E8E9F1C03A0CF /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = B2DE59304825CBC116B66700 /* categories.json */; };
 		E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */; };
@@ -52,7 +53,7 @@
 		145F6B37DD56D3F48641A9AB /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		1C8F75E05B2CB5526FAED626 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		23612A2AE85E20827C54AF6A /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		2B3321D9E7495AC37BDC6004 /* GastosDiarios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GastosDiarios.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B3321D9E7495AC37BDC6004 /* GastosDiarios.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GastosDiarios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatter.swift; sourceTree = "<group>"; };
 		5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
@@ -74,6 +75,7 @@
 		E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogic.swift; sourceTree = "<group>"; };
 		F1A3DE79D792BD15A233F74D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogicTests.swift; sourceTree = "<group>"; };
+		FB86DA59B8D86AC1BE949A16 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FC5C06310A005683DBEFB6B4 /* NewPeriodSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewPeriodSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -238,6 +240,7 @@
 			isa = PBXGroup;
 			children = (
 				50AE58F95691BB9E5BC1893C /* Fonts */,
+				FB86DA59B8D86AC1BE949A16 /* Assets.xcassets */,
 				88C4CEE8AB2BD7C3B1A50660 /* GoogleService-Info.plist */,
 				C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */,
 			);
@@ -362,6 +365,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D1D835112EBEB73ADD5E788C /* Assets.xcassets in Resources */,
 				5172346AA7A7E3798CDDB9FD /* GoogleService-Info.plist in Resources */,
 				C19497155C651CCEC6F0E5E9 /* Localizable.xcstrings in Resources */,
 				6C5BE67620D8309FBFC6AA29 /* Outfit-Variable.ttf in Resources */,
@@ -422,7 +426,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FA737M2U79;
 				INFOPLIST_FILE = GastosDiarios/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -585,7 +588,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FA737M2U79;
 				INFOPLIST_FILE = GastosDiarios/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

@@ -10,13 +10,13 @@ import { useAuth, useHousehold, useUserDoc } from "@/components/providers";
 import { Onboarding } from "@/components/onboarding/onboarding";
 import { Sidebar } from "@/components/sidebar";
 import { NewPeriodSheet } from "@/components/new-period-sheet";
-import { Icon } from "@/components/ui/icon";
+import { PiggyMark } from "@/components/brand";
 
 function LoadingScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg">
       <div className="flex h-[64px] w-[64px] animate-pulse items-center justify-center rounded-[20px] bg-accent shadow-[0_12px_28px_rgba(255,92,57,.35)]">
-        <Icon name="savings" size={32} className="text-white" />
+        <PiggyMark size={44} variant="cream" />
       </div>
     </div>
   );

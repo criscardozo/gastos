@@ -9,6 +9,7 @@ import { signInWithPopup } from "firebase/auth";
 
 import { useAuth, useLocale, ackNewPeriod } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
+import { GoogleG, PiggyMark } from "@/components/brand";
 import { AmountInput } from "@/components/ui/amount-input";
 import { Segmented } from "@/components/ui/segmented";
 import { getFirebaseClient } from "@/lib/firebase/client";
@@ -39,15 +40,7 @@ function Dots({ active }: { active: 0 | 1 | 2 }) {
 }
 
 function GoogleMark() {
-  return (
-    <span
-      className="inline-block h-[22px] w-[22px] rounded-full"
-      style={{
-        background:
-          "conic-gradient(from -45deg,#EA4335 0 25%,#FBBC05 0 50%,#34A853 0 75%,#4285F4 0)",
-      }}
-    />
-  );
+  return <GoogleG size={22} />;
 }
 
 function LoginStep() {
@@ -69,7 +62,7 @@ function LoginStep() {
   return (
     <div className="flex w-full max-w-[380px] flex-col items-center">
       <div className="mb-6 flex h-[88px] w-[88px] items-center justify-center rounded-[28px] bg-accent shadow-[0_12px_28px_rgba(255,92,57,.35)]">
-        <Icon name="savings" size={44} className="text-white" />
+        <PiggyMark size={64} variant="cream" />
       </div>
       <h1 className="text-center text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-ink">
         Gastos

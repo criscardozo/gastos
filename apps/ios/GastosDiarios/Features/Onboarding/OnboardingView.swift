@@ -56,9 +56,10 @@ struct OnboardingView: View {
                 .fill(Theme.accent)
                 .frame(width: 88, height: 88)
                 .overlay(
-                    Image(systemName: "banknote.fill")
-                        .font(.system(size: 40, weight: .medium))
-                        .foregroundStyle(.white)
+                    Image("PiggyCream")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 64, height: 64)
                 )
                 .shadow(color: Color(hex: "#FF5C39", alpha: 0.35), radius: 14, y: 12)
                 .padding(.bottom, 24)
@@ -433,20 +434,9 @@ private struct BudgetSetupStep: View {
 
 private struct GoogleG: View {
     var body: some View {
-        AngularGradient(
-            stops: [
-                .init(color: Color(hex: "#EA4335"), location: 0.00),
-                .init(color: Color(hex: "#EA4335"), location: 0.25),
-                .init(color: Color(hex: "#FBBC05"), location: 0.25),
-                .init(color: Color(hex: "#FBBC05"), location: 0.50),
-                .init(color: Color(hex: "#34A853"), location: 0.50),
-                .init(color: Color(hex: "#34A853"), location: 0.75),
-                .init(color: Color(hex: "#4285F4"), location: 0.75),
-                .init(color: Color(hex: "#4285F4"), location: 1.00),
-            ],
-            center: .center,
-            angle: .degrees(-45)
-        )
-        .clipShape(Circle())
+        // Official multi-colour Google "G" (vector asset).
+        Image("GoogleLogo")
+            .resizable()
+            .scaledToFit()
     }
 }
