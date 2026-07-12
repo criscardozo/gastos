@@ -19,6 +19,22 @@ security boundary is `firebase/firestore.rules`, never config secrecy.
    + URL scheme. If the plist is ever re-downloaded with a different client ID,
    keep those three in sync and re-run `xcodegen` (see `apps/ios/README.md`).
 
+## API key restriction (recommended, free, 5 minutes)
+
+The client config is public by design, but restricting each API key cuts off
+quota abuse from outside your apps. In
+[Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials?project=qcris-gastos-diarios)
+(sign in with the project owner account):
+
+1. **iOS key** (`AIzaSyC825...`, auto-created as "iOS key"): under
+   *Application restrictions* choose **iOS apps** and add bundle ID
+   `dev.cardozo.gastosdiarios`.
+2. **Browser key** (`AIzaSyCFjR...`, auto-created as "Browser key"): choose
+   **Websites** and add `gastos-diarios-web.vercel.app`, plus
+   `localhost:3000` for local dev (and any custom domain later).
+3. Leave *API restrictions* on "Don't restrict key" (Firebase needs its own
+   set), or restrict to Identity Toolkit + Token Service + Firestore APIs.
+
 ## Vercel (web)
 
 1. Import the GitHub repo in Vercel; set **Root Directory** to `apps/web`
