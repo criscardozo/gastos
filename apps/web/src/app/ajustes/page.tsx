@@ -17,6 +17,11 @@ import {
 import { Icon } from "@/components/ui/icon";
 import { AvatarPair } from "@/components/ui/avatar";
 import { Segmented } from "@/components/ui/segmented";
+import {
+  BudgetCurrencyControls,
+  entryToAudCents,
+  useBudgetCurrency,
+} from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   createInvite,
@@ -25,7 +30,7 @@ import {
   updateUserDisplayCurrency,
   updateUserLanguage,
 } from "@/lib/firebase/mutations";
-import { formatCents, parseAmountToCents } from "@/lib/money";
+import { formatCents } from "@/lib/money";
 import { formatPeriodRange } from "@/lib/dates";
 import type { PeriodType } from "@/lib/periods";
 
@@ -46,29 +51,56 @@ function EditableAmount({
   const t = useTranslations("settings");
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
+  const {
+    currency: entryCurrency,
+    setCurrency: setEntryCurrency,
+    usdRate,
+  } = useBudgetCurrency();
 
   const commit = () => {
-    const parsed = parseAmountToCents(value);
+    const parsed = entryToAudCents(value, entryCurrency, usdRate);
     if (parsed !== null && parsed !== cents) onSave(parsed);
     setEditing(false);
   };
 
   if (editing) {
     return (
-      <input
-        autoFocus
-        type="text"
-        inputMode="decimal"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") setEditing(false);
+      <div
+        className="flex flex-col items-end gap-1.5"
+        onBlur={(e) => {
+          // Commit only when focus leaves the whole editor (input + toggle).
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+            commit();
+          }
         }}
-        className="tnum w-28 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-right text-sm font-semibold text-ink outline-none"
-        aria-label={t("editAmount")}
-      />
+      >
+        <input
+          autoFocus
+          type="text"
+          inputMode="decimal"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") setEditing(false);
+          }}
+          className="tnum w-28 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-right text-sm font-semibold text-ink outline-none"
+          aria-label={t("editAmount")}
+        />
+        {/* preventDefault keeps the input focused while clicking the toggle
+            (Safari does not focus buttons on click, so relatedTarget alone
+            would commit-and-close before the click lands). */}
+        <div onMouseDown={(e) => e.preventDefault()}>
+          <BudgetCurrencyControls
+            amount={value}
+            currency={entryCurrency}
+            onCurrencyChange={setEntryCurrency}
+            usdRate={usdRate}
+            locale={locale}
+            align="end"
+          />
+        </div>
+      </div>
     );
   }
   return (
@@ -81,6 +113,7 @@ function EditableAmount({
             useGrouping: false,
           }),
         );
+        setEntryCurrency("AUD");
         setEditing(true);
       }}
       className={`tnum text-sm ${

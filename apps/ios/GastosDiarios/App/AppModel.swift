@@ -398,6 +398,15 @@ final class AppModel {
         usdRate = await fx.audToUsdRate()
     }
 
+    /// AUD→USD rate for bi-currency budget ENTRY. Unlike `refreshFXIfNeeded`,
+    /// it is independent of the USD display preference: typing a budget in
+    /// USD is offered whenever a daily rate is available. nil (offline with
+    /// an empty cache) means the editors stay AUD-only.
+    func budgetEntryUSDRate() async -> Double? {
+        if let usdRate { return usdRate }
+        return await fx.audToUsdRate()
+    }
+
     // MARK: Auth actions
 
     func signInWithGoogle() {

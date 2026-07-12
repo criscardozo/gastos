@@ -1057,6 +1057,23 @@
         }
       }
     },
+    "settings.about" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acerca de"
+          }
+        }
+      }
+    },
     "settings.adjusted" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1244,6 +1261,23 @@
         }
       }
     },
+    "settings.openWeb" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the web app"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir la web"
+          }
+        }
+      }
+    },
     "settings.period" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1410,6 +1444,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aproximado (≈). El monto real sigue en AUD."
+          }
+        }
+      }
+    },
+    "settings.version" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión"
           }
         }
       }

@@ -298,7 +298,7 @@ private struct BudgetSetupStep: View {
     @Environment(AppModel.self) private var model
     var onBack: () -> Void
 
-    @State private var amount = AmountInput.fromCents(90000)
+    @State private var budget = BudgetEntryAmount.fromAUDCents(90000)
     @State private var period: PeriodType = .fortnightly
     @State private var startDate: CalendarDate?
     @State private var showDatePicker = false
@@ -335,20 +335,8 @@ private struct BudgetSetupStep: View {
                 .padding(.bottom, 24)
 
             VStack(spacing: 18) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("$")
-                        .appFont(24, .semibold)
-                        .foregroundStyle(Theme.inkTertiary)
-                    Text(amount.display(separator: separator))
-                        .amountStyle(48, .bold)
-                        .kerning(-0.03 * 48)
-                        .foregroundStyle(Theme.ink)
-                    Text("AUD")
-                        .appFont(15, .semibold)
-                        .foregroundStyle(Theme.inkTertiary)
-                        .padding(.leading, 4)
-                }
-                .frame(maxWidth: .infinity)
+                BudgetAmountEditor(value: $budget, fontSize: 48, symbolSize: 24)
+                    .frame(maxWidth: .infinity)
 
                 SegmentedPill(
                     options: [
@@ -388,7 +376,7 @@ private struct BudgetSetupStep: View {
             .padding(.bottom, 14)
 
             KeypadView(separatorLabel: separator) { key in
-                amount.tap(key)
+                budget.tap(key)
             }
 
             Spacer()
@@ -397,7 +385,7 @@ private struct BudgetSetupStep: View {
                 title: l10n.t("onboarding.finish"),
                 icon: nil,
                 height: 56,
-                enabled: amount.cents > 0 && !creating
+                enabled: budget.audCents > 0 && !creating
             ) {
                 create()
             }
@@ -421,7 +409,7 @@ private struct BudgetSetupStep: View {
         creating = true
         Task {
             await model.createHousehold(
-                amountCents: amount.cents,
+                amountCents: budget.audCents,
                 period: period,
                 anchorDate: effectiveStart
             )

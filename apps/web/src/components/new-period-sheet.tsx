@@ -12,10 +12,14 @@ import { useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { AmountInput } from "@/components/ui/amount-input";
 import { Segmented } from "@/components/ui/segmented";
+import {
+  BudgetCurrencyControls,
+  entryToAudCents,
+  useBudgetCurrency,
+} from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { updatePeriodAmount } from "@/lib/firebase/mutations";
 import { formatPeriodRange } from "@/lib/dates";
-import { parseAmountToCents } from "@/lib/money";
 import type { PeriodBudget } from "@/lib/firebase/converters";
 
 export function NewPeriodSheet({ period }: { period: PeriodBudget }) {
@@ -32,8 +36,9 @@ export function NewPeriodSheet({ period }: { period: PeriodBudget }) {
   );
   const [saving, setSaving] = useState(false);
 
+  const { currency, setCurrency, usdRate } = useBudgetCurrency();
   const weekly = period.period === "weekly";
-  const cents = parseAmountToCents(amount);
+  const cents = entryToAudCents(amount, currency, usdRate);
   const changed = cents !== null && cents !== period.amountCents;
 
   const confirm = async () => {
@@ -89,9 +94,21 @@ export function NewPeriodSheet({ period }: { period: PeriodBudget }) {
 
         <div className="flex flex-col gap-3.5 rounded-[20px] border border-line bg-surface p-[18px]">
           <div className="flex items-center justify-center gap-2.5">
-            <AmountInput value={amount} onChange={setAmount} fontSize={46} />
+            <AmountInput
+              value={amount}
+              onChange={setAmount}
+              fontSize={46}
+              suffix={currency === "USD" ? "USD" : undefined}
+            />
             <Icon name="edit" size={18} className="text-ink-3" />
           </div>
+          <BudgetCurrencyControls
+            amount={amount}
+            currency={currency}
+            onCurrencyChange={setCurrency}
+            usdRate={usdRate}
+            locale={locale}
+          />
           <div className="flex items-center gap-[5px] self-center rounded-full bg-good-bg px-[11px] py-1">
             <span className="text-[11.5px] font-bold text-good-text">
               {changed ? t("adjustedBadge") : t("defaultBadge")}

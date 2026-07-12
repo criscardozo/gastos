@@ -110,6 +110,9 @@
     "copied": "¡Copiado!",
     "editAmount": "Editar monto"
   },
+  "budgetEntry": {
+    "currencyToggle": "Moneda del monto"
+  },
   "newPeriod": {
     "titleWeekly": "Nueva semana",
     "titleFortnightly": "Nueva quincena",

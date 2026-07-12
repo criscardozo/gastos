@@ -8,7 +8,7 @@ struct NewPeriodSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
 
-    @State private var amount = AmountInput()
+    @State private var budget = BudgetEntryAmount()
     @State private var loaded = false
     @State private var editingAmount = false
 
@@ -37,23 +37,10 @@ struct NewPeriodSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(spacing: 14) {
-                HStack(alignment: .center, spacing: 10) {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("$")
-                            .appFont(22, .semibold)
-                            .foregroundStyle(Theme.inkTertiary)
-                        Text(amount.display(separator: separator))
-                            .amountStyle(46, .bold)
-                            .kerning(-0.03 * 46)
-                            .foregroundStyle(Theme.ink)
-                    }
-                    Image(systemName: "pencil")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Theme.inkTertiary)
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-                .onTapGesture { editingAmount = true }
+                BudgetAmountEditor(value: $budget, showsCurrencyCode: false, showsEditIcon: true)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                    .onTapGesture { editingAmount = true }
 
                 if isDefaultAmount {
                     Text(l10n.t("newPeriod.defaultBadge"))
@@ -86,7 +73,7 @@ struct NewPeriodSheet: View {
 
             if editingAmount {
                 KeypadView(separatorLabel: separator) { key in
-                    amount.tap(key)
+                    budget.tap(key)
                 }
             } else {
                 Text(l10n.t(isWeekly ? "newPeriod.foot.weekly" : "newPeriod.foot.fortnightly"))
@@ -100,9 +87,9 @@ struct NewPeriodSheet: View {
             PrimaryCTA(
                 title: l10n.t(isWeekly ? "newPeriod.start.weekly" : "newPeriod.start.fortnightly"),
                 height: 56,
-                enabled: amount.cents > 0
+                enabled: budget.audCents > 0
             ) {
-                model.confirmNewPeriod(amountCents: amount.cents)
+                model.confirmNewPeriod(amountCents: budget.audCents)
                 dismiss()
             }
         }
@@ -114,11 +101,11 @@ struct NewPeriodSheet: View {
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            amount = .fromCents(period?.amountCents ?? 0)
+            budget = .fromAUDCents(period?.amountCents ?? 0)
         }
     }
 
     private var isDefaultAmount: Bool {
-        amount.cents == model.household?.defaultBudget.amountCents
+        budget.audCents == model.household?.defaultBudget.amountCents
     }
 }

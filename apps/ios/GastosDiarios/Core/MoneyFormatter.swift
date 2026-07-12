@@ -47,4 +47,10 @@ enum MoneyFormatter {
         let text = formatter.string(from: NSNumber(value: usd)) ?? ""
         return "≈ \(text)"
     }
+
+    /// Approximate AUD equivalent while entering an amount in USD:
+    /// "≈ $1.375,00 AUD". Display-only.
+    static func approxAUD(_ audCents: Int, locale: Locale) -> String {
+        "≈ \(aud(audCents, locale: locale)) AUD"
+    }
 }

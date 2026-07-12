@@ -110,6 +110,9 @@
     "copied": "Copied!",
     "editAmount": "Edit amount"
   },
+  "budgetEntry": {
+    "currencyToggle": "Amount currency"
+  },
   "newPeriod": {
     "titleWeekly": "New week",
     "titleFortnightly": "New fortnight",

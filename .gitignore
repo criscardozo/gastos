@@ -37,3 +37,4 @@ DerivedData/
 # Test output
 coverage/
 .vitest/
+apps/web/tsconfig.tsbuildinfo

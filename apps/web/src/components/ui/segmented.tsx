@@ -8,6 +8,7 @@ interface SegmentedProps<T extends string> {
   size?: "sm" | "lg";
   disabled?: boolean;
   stretch?: boolean;
+  ariaLabel?: string;
 }
 
 export function Segmented<T extends string>({
@@ -17,12 +18,14 @@ export function Segmented<T extends string>({
   size = "sm",
   disabled = false,
   stretch = false,
+  ariaLabel,
 }: SegmentedProps<T>) {
   const pad = size === "lg" ? "px-3 py-2.5 text-sm" : "px-3 py-1 text-xs";
   return (
     <div
       className={`flex rounded-full bg-fill p-[3px] ${stretch ? "w-full" : ""}`}
       role="tablist"
+      aria-label={ariaLabel}
     >
       {options.map((opt) => {
         const active = opt.value === value;

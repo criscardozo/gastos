@@ -385,7 +385,7 @@ struct SummaryView: View {
 struct AdjustPeriodBudgetSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
-    @State private var amount = AmountInput()
+    @State private var budget = BudgetEntryAmount()
     @State private var loaded = false
 
     private var l10n: L10n { model.l10n }
@@ -410,26 +410,18 @@ struct AdjustPeriodBudgetSheet: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("$")
-                    .appFont(22, .semibold)
-                    .foregroundStyle(Theme.inkTertiary)
-                Text(amount.display(separator: separator))
-                    .amountStyle(46, .bold)
-                    .kerning(-0.03 * 46)
-                    .foregroundStyle(Theme.ink)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(Theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .strokeBorder(Theme.border, lineWidth: 1)
-            )
+            BudgetAmountEditor(value: $budget, showsCurrencyCode: false)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(Theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .strokeBorder(Theme.border, lineWidth: 1)
+                )
 
             KeypadView(separatorLabel: separator) { key in
-                amount.tap(key)
+                budget.tap(key)
             }
 
             Text(l10n.t("adjust.foot"))
@@ -437,8 +429,8 @@ struct AdjustPeriodBudgetSheet: View {
                 .foregroundStyle(Theme.inkTertiary)
                 .multilineTextAlignment(.center)
 
-            PrimaryCTA(title: l10n.t("common.save"), height: 56, enabled: amount.cents > 0) {
-                model.adjustCurrentPeriodBudget(amountCents: amount.cents)
+            PrimaryCTA(title: l10n.t("common.save"), height: 56, enabled: budget.audCents > 0) {
+                model.adjustCurrentPeriodBudget(amountCents: budget.audCents)
                 dismiss()
             }
         }
@@ -449,7 +441,7 @@ struct AdjustPeriodBudgetSheet: View {
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            amount = .fromCents(model.currentPeriod?.amountCents ?? 0)
+            budget = .fromAUDCents(model.currentPeriod?.amountCents ?? 0)
         }
     }
 }

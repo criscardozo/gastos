@@ -24,6 +24,7 @@ struct SettingsView: View {
                 preferencesSection
                 householdSection
                 signOutRow
+                aboutSection
             }
             .padding(.horizontal, 20)
             .padding(.top, 6)
@@ -353,6 +354,53 @@ struct SettingsView: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: About
+
+    private var aboutSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionLabel(text: l10n.t("settings.about"))
+                .padding(.horizontal, 4)
+            Card {
+                VStack(spacing: 0) {
+                    HStack(spacing: 11) {
+                        Text(l10n.t("settings.version"))
+                            .appFont(14.5, .semibold)
+                            .foregroundStyle(Theme.ink)
+                        Spacer()
+                        Text(appVersion)
+                            .appFont(14.5, .semibold)
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.inkSecondary)
+                    }
+                    .padding(.vertical, 13)
+                    Divider().overlay(Theme.separator)
+                    Link(destination: URL(string: "https://gastos-diarios-web.vercel.app")!) {
+                        HStack(spacing: 11) {
+                            Text(l10n.t("settings.openWeb"))
+                                .appFont(14.5, .semibold)
+                                .foregroundStyle(Theme.ink)
+                            Spacer()
+                            Image(systemName: "arrow.up.forward.square")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(Theme.inkTertiary)
+                        }
+                        .padding(.vertical, 13)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.top, 10)
+    }
+
+    /// "1.0.0 (1)" from the bundle.
+    private var appVersion: String {
+        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
+        return "\(short) (\(build))"
+    }
+
     private var chevron: some View {
         Image(systemName: "chevron.right")
             .font(.system(size: 13, weight: .semibold))
@@ -365,7 +413,7 @@ struct SettingsView: View {
 struct DefaultAmountSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
-    @State private var amount = AmountInput()
+    @State private var budget = BudgetEntryAmount()
     @State private var loaded = false
 
     private var l10n: L10n { model.l10n }
@@ -388,34 +436,22 @@ struct DefaultAmountSheet: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("$")
-                    .appFont(22, .semibold)
-                    .foregroundStyle(Theme.inkTertiary)
-                Text(amount.display(separator: separator))
-                    .amountStyle(46, .bold)
-                    .kerning(-0.03 * 46)
-                    .foregroundStyle(Theme.ink)
-                Text("AUD")
-                    .appFont(15, .semibold)
-                    .foregroundStyle(Theme.inkTertiary)
-                    .padding(.leading, 4)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(Theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .strokeBorder(Theme.border, lineWidth: 1)
-            )
+            BudgetAmountEditor(value: $budget)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(Theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .strokeBorder(Theme.border, lineWidth: 1)
+                )
 
             KeypadView(separatorLabel: separator) { key in
-                amount.tap(key)
+                budget.tap(key)
             }
 
-            PrimaryCTA(title: l10n.t("common.save"), height: 56, enabled: amount.cents > 0) {
-                model.setDefaultBudget(amountCents: amount.cents)
+            PrimaryCTA(title: l10n.t("common.save"), height: 56, enabled: budget.audCents > 0) {
+                model.setDefaultBudget(amountCents: budget.audCents)
                 dismiss()
             }
         }
@@ -426,7 +462,7 @@ struct DefaultAmountSheet: View {
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            amount = .fromCents(model.household?.defaultBudget.amountCents ?? 0)
+            budget = .fromAUDCents(model.household?.defaultBudget.amountCents ?? 0)
         }
     }
 }

@@ -56,6 +56,16 @@ export function formatApproxUsd(cents: number, locale: string): string {
   return `≈ US$ ${formatter.format(cents / 100)}`;
 }
 
+/** "≈ $186,90 AUD" approximate-AUD badge text shown while an amount is being
+ * typed in USD (display-only conversion). */
+export function formatApproxAud(cents: number, locale: string): string {
+  const formatter = new Intl.NumberFormat(numberLocale(locale), {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `≈ $${formatter.format(cents / 100)} AUD`;
+}
+
 /**
  * Parse free-form amount input into integer cents. Accepts comma decimals
  * ("12,50"), dot decimals ("12.50") and thousand separators ("1.050,00").

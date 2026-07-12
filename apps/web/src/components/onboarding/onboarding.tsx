@@ -12,13 +12,17 @@ import { Icon } from "@/components/ui/icon";
 import { GoogleG, PiggyMark } from "@/components/brand";
 import { AmountInput } from "@/components/ui/amount-input";
 import { Segmented } from "@/components/ui/segmented";
+import {
+  BudgetCurrencyControls,
+  entryToAudCents,
+  useBudgetCurrency,
+} from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   createHousehold,
   joinHousehold,
   DEFAULT_TIMEZONE,
 } from "@/lib/firebase/mutations";
-import { parseAmountToCents } from "@/lib/money";
 import { formatLongDate } from "@/lib/dates";
 import { todayInTimezone, type PeriodType } from "@/lib/periods";
 
@@ -206,7 +210,8 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState(false);
 
-  const cents = parseAmountToCents(amount);
+  const { currency, setCurrency, usdRate } = useBudgetCurrency();
+  const cents = entryToAudCents(amount, currency, usdRate);
   const valid = cents !== null && name.trim() !== "" && startDate !== "";
 
   const create = async () => {
@@ -249,7 +254,16 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
           aria-label={t("householdName")}
           className="rounded-xl border border-pill bg-bg px-3.5 py-3 text-[15px] font-semibold text-ink outline-none"
         />
-        <AmountInput value={amount} onChange={setAmount} suffix="AUD" />
+        <div className="flex flex-col gap-2.5">
+          <AmountInput value={amount} onChange={setAmount} suffix={currency} />
+          <BudgetCurrencyControls
+            amount={amount}
+            currency={currency}
+            onCurrencyChange={setCurrency}
+            usdRate={usdRate}
+            locale={locale}
+          />
+        </div>
         <Segmented
           options={[
             { value: "weekly", label: tp("weekly") },
