@@ -87,7 +87,9 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "noResults": "Nothing here",
-    "noResultsHint": "No expense matches those filters."
+    "noResultsHint": "No expense matches those filters.",
+    "recentAmounts": "Recent amounts:",
+    "useAmount": "Use {amount}"
   },
   "empty": {
     "noExpensesTitle": "No expenses yet",

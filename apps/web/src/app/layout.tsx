@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 
-import "material-symbols/rounded.css";
 import "./globals.css";
 
 import { Providers } from "@/components/providers";

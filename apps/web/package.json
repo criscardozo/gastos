@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "firebase": "^12.16.0",
-    "material-symbols": "^0.45.7",
     "next": "^15.5.20",
     "next-intl": "^4.13.2",
     "react": "^19.2.7",

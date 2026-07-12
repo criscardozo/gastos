@@ -87,7 +87,9 @@
     "today": "Hoy",
     "yesterday": "Ayer",
     "noResults": "Nada por acá",
-    "noResultsHint": "Ningún gasto coincide con esos filtros."
+    "noResultsHint": "Ningún gasto coincide con esos filtros.",
+    "recentAmounts": "Montos recientes:",
+    "useAmount": "Usar {amount}"
   },
   "empty": {
     "noExpensesTitle": "Sin gastos todavía",

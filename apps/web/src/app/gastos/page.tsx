@@ -4,6 +4,7 @@
 // list, inline edit and delete per row.
 
 import {
+  useId,
   useMemo,
   useRef,
   useState,
@@ -26,7 +27,7 @@ import {
 } from "@/lib/firebase/mutations";
 import type { Expense, Household, PeriodBudget } from "@/lib/firebase/converters";
 import { categoryCircleBg, categoryColor, type CategoryDef } from "@/lib/categories";
-import { formatCents, parseAmountToCents } from "@/lib/money";
+import { formatCents, formatCentsCompact, parseAmountToCents } from "@/lib/money";
 import { formatDayHeading, formatPeriodRange, formatShortDate } from "@/lib/dates";
 import { addDays } from "@/lib/periods";
 
@@ -107,13 +108,20 @@ function ExpenseFormFields({
   setForm,
   categories,
   amountRef,
+  noteSuggestions,
 }: {
   form: FormState;
   setForm: (next: FormState) => void;
   categories: SortedCategory[];
   amountRef?: React.RefObject<HTMLInputElement | null>;
+  /** Most frequent recent notes offered as native autocomplete options. */
+  noteSuggestions?: string[];
 }) {
   const t = useTranslations("expenses");
+  // Unique per instance so the add and edit rows never share a datalist id.
+  const noteListId = useId();
+  const hasNoteSuggestions =
+    noteSuggestions !== undefined && noteSuggestions.length > 0;
   return (
     <>
       <input
@@ -145,8 +153,16 @@ function ExpenseFormFields({
         placeholder={t("notePlaceholder")}
         aria-label={t("notePlaceholder")}
         maxLength={200}
+        list={hasNoteSuggestions ? noteListId : undefined}
         className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] text-ink outline-none"
       />
+      {hasNoteSuggestions && (
+        <datalist id={noteListId}>
+          {noteSuggestions.map((note) => (
+            <option key={note} value={note} />
+          ))}
+        </datalist>
+      )}
       <input
         type="date"
         value={form.date}
@@ -236,6 +252,60 @@ export default function ExpensesPage() {
   const sorted = [...filtered].sort(
     (a, b) => b.date.localeCompare(a.date) || byCreated(a, b),
   );
+
+  /* Add-row suggestions — derived ONLY from the already-loaded period
+     expenses (no extra Firestore reads). Notes ranked by frequency, amounts
+     by recency for the currently selected category. Thin history → empty. */
+  const noteSuggestions = (() => {
+    const counts = new Map<
+      string,
+      { text: string; count: number; lastMs: number }
+    >();
+    for (const e of expenses) {
+      const note = e.note.trim();
+      if (note === "") continue;
+      const key = note.toLowerCase();
+      const ms = e.createdAt?.toMillis() ?? 0;
+      const prev = counts.get(key);
+      if (prev !== undefined) {
+        prev.count += 1;
+        if (ms > prev.lastMs) {
+          prev.lastMs = ms;
+          prev.text = note; // keep the most recent casing/spelling
+        }
+      } else {
+        counts.set(key, { text: note, count: 1, lastMs: ms });
+      }
+    }
+    return [...counts.values()]
+      .sort((a, b) => b.count - a.count || b.lastMs - a.lastMs)
+      .slice(0, 5)
+      .map((v) => v.text);
+  })();
+
+  const amountSuggestions = (() => {
+    const catId = effectiveAddForm.categoryId;
+    const seen = new Set<number>();
+    const out: number[] = [];
+    for (const e of [...expenses].sort(byCreated)) {
+      if (e.categoryId !== catId || seen.has(e.amountCents)) continue;
+      seen.add(e.amountCents);
+      out.push(e.amountCents);
+      if (out.length >= 3) break;
+    }
+    return out;
+  })();
+
+  /* Fill the amount field from a recent-amount chip (uses the same decimal
+     format as the inline input so parseAmountToCents accepts it). */
+  const fillAmount = (cents: number) => {
+    const str = (cents / 100).toLocaleString(
+      locale === "es" ? "es-AR" : "en-AU",
+      { minimumFractionDigits: 2, useGrouping: false },
+    );
+    setAddForm({ ...addForm, amount: str });
+    amountRef.current?.focus();
+  };
 
   const days: { date: string; rows: Expense[]; total: number }[] = [];
   for (const e of sorted) {
@@ -372,6 +442,7 @@ export default function ExpensesPage() {
             form={editForm}
             setForm={setEditForm}
             categories={categories}
+            noteSuggestions={noteSuggestions}
           />
           <button
             type="button"
@@ -568,24 +639,48 @@ export default function ExpensesPage() {
 
       {/* Inline add row */}
       <div
-        className="flex flex-wrap items-center gap-3 rounded-2xl bg-surface px-4 py-2.5"
+        className="flex flex-col gap-2 rounded-2xl bg-surface px-4 py-2.5"
         style={{ border: "2px dashed rgba(255,92,57,.4)" }}
       >
-        <Icon name="add_circle" size={20} className="text-accent" />
-        <ExpenseFormFields
-          form={effectiveAddForm}
-          setForm={setAddForm}
-          categories={categories}
-          amountRef={amountRef}
-        />
-        <button
-          type="button"
-          onClick={() => void submitAdd()}
-          disabled={saving || parseAmountToCents(effectiveAddForm.amount) === null}
-          className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
-        >
-          {t("save")}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Icon name="add_circle" size={20} className="text-accent" />
+          <ExpenseFormFields
+            form={effectiveAddForm}
+            setForm={setAddForm}
+            categories={categories}
+            amountRef={amountRef}
+            noteSuggestions={noteSuggestions}
+          />
+          <button
+            type="button"
+            onClick={() => void submitAdd()}
+            disabled={saving || parseAmountToCents(effectiveAddForm.amount) === null}
+            className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
+          >
+            {t("save")}
+          </button>
+        </div>
+        {amountSuggestions.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pl-8">
+            <span className="text-[11px] font-semibold text-ink-3">
+              {t("recentAmounts")}
+            </span>
+            {amountSuggestions.map((cents) => {
+              const label = formatCentsCompact(cents, household.currency, locale);
+              return (
+                <button
+                  key={cents}
+                  type="button"
+                  onClick={() => fillAmount(cents)}
+                  aria-label={t("useAmount", { amount: label })}
+                  className="tnum rounded-full border border-pill bg-fill px-2.5 py-1 text-[12px] font-semibold text-ink-2 hover:bg-track"
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Rows */}
