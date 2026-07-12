@@ -38,3 +38,4 @@ DerivedData/
 coverage/
 .vitest/
 apps/web/tsconfig.tsbuildinfo
+.gstack/

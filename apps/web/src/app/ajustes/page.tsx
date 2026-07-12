@@ -224,8 +224,8 @@ export default function SettingsPage() {
     <div className="mx-auto flex w-[660px] max-w-full flex-col gap-3.5">
       <h1 className="mb-1 text-[22px] font-bold text-ink">{t("title")}</h1>
 
-      {/* Default budget + this period */}
-      <div className="grid grid-cols-2 gap-3.5">
+      {/* Default budget + this period — stacked below lg (iPad portrait) */}
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
         <div className="flex flex-col gap-2.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">
           <span className="section-label">{t("defaultBudget")}</span>
           <div className="flex items-center justify-between">

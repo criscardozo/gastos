@@ -163,8 +163,8 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-[18px]">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-y-2">
+        <div className="flex flex-wrap items-center gap-3.5 gap-y-2">
           <h1 className="text-[22px] font-bold text-ink">
             {t("dashboard.title")}
           </h1>
@@ -184,7 +184,7 @@ export default function DashboardPage() {
                 className={selectedIndex > 0 ? "text-ink-2" : "text-ink-3 opacity-50"}
               />
             </button>
-            <span className="px-1.5 text-[13.5px] font-semibold text-ink">
+            <span className="whitespace-nowrap px-1.5 text-[13.5px] font-semibold text-ink">
               {formatPeriodRange(selected.startDate, selected.endDate, locale)}
             </span>
             <button
@@ -205,7 +205,7 @@ export default function DashboardPage() {
               />
             </button>
           </div>
-          <span className="rounded-full bg-fill px-3 py-[5px] text-[12.5px] font-semibold text-ink-2">
+          <span className="whitespace-nowrap rounded-full bg-fill px-3 py-[5px] text-[12.5px] font-semibold text-ink-2">
             {t(chipKey, {
               amount: formatCentsCompact(budget, household.currency, locale),
             })}{" "}

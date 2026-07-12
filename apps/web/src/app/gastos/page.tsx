@@ -332,7 +332,7 @@ export default function ExpensesPage() {
   const renderRow = (e: Expense, flat: boolean) => {
     if (editingId === e.id && editForm !== null) {
       return (
-        <div key={e.id} className="flex items-center gap-3 py-[9px]">
+        <div key={e.id} className="flex flex-wrap items-center gap-3 py-[9px]">
           <ExpenseFormFields
             form={editForm}
             setForm={setEditForm}
@@ -368,9 +368,11 @@ export default function ExpensesPage() {
       <div
         key={e.id}
         className={`grid items-center gap-3 py-[9px] ${
+          // Below lg (iPad portrait) the category/date columns are hidden and
+          // the note takes the remaining space — the full grid needs ~900px.
           flat
-            ? "grid-cols-[44px_1.6fr_1fr_90px_120px_110px_76px]"
-            : "grid-cols-[44px_1.6fr_1fr_120px_110px_76px]"
+            ? "grid-cols-[44px_minmax(0,1fr)_34px_auto_76px] lg:grid-cols-[44px_1.6fr_1fr_90px_120px_110px_76px]"
+            : "grid-cols-[44px_minmax(0,1fr)_34px_auto_76px] lg:grid-cols-[44px_1.6fr_1fr_120px_110px_76px]"
         }`}
       >
         <div
@@ -392,9 +394,11 @@ export default function ExpensesPage() {
         <span className="truncate text-sm font-semibold text-ink">
           {e.note !== "" ? e.note : catLabel}
         </span>
-        <span className="truncate text-[13px] text-ink-2">{catLabel}</span>
+        <span className="hidden truncate text-[13px] text-ink-2 lg:block">
+          {catLabel}
+        </span>
         {flat && (
-          <span className="tnum text-[13px] text-ink-2">
+          <span className="tnum hidden text-[13px] text-ink-2 lg:block">
             {formatShortDate(e.date, locale)}
           </span>
         )}
@@ -513,7 +517,7 @@ export default function ExpensesPage() {
 
       {/* Inline add row */}
       <div
-        className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-2.5"
+        className="flex flex-wrap items-center gap-3 rounded-2xl bg-surface px-4 py-2.5"
         style={{ border: "2px dashed rgba(255,92,57,.4)" }}
       >
         <Icon name="add_circle" size={20} className="text-accent" />

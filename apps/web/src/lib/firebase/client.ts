@@ -9,6 +9,7 @@ import {
   connectAuthEmulator,
   getAuth,
   GoogleAuthProvider,
+  signInWithCredential,
   type Auth,
 } from "firebase/auth";
 import {
@@ -47,6 +48,26 @@ export function getFirebaseClient(): FirebaseClient | null {
       disableWarnings: true,
     });
     connectFirestoreEmulator(db, "localhost", 8080);
+
+    // QA hook, emulator-only: signInWithPopup cannot be automated in a
+    // headless browser, and the Auth emulator accepts any fabricated Google
+    // credential. Never bundled in production (useEmulators is build-time).
+    (
+      window as unknown as {
+        __devSignIn?: (name?: string, email?: string) => Promise<unknown>;
+      }
+    ).__devSignIn = (name = "Cristian Test", email = "cristian@test.dev") =>
+      signInWithCredential(
+        auth,
+        GoogleAuthProvider.credential(
+          JSON.stringify({
+            sub: email.replace(/[^a-z0-9]/gi, ""),
+            email,
+            email_verified: true,
+            name,
+          }),
+        ),
+      );
   }
 
   client = { app, auth, db, googleProvider: new GoogleAuthProvider() };
