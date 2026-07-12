@@ -76,6 +76,11 @@ targets:
       # Shared cross-platform period-logic test vectors (Swift + TS must both pass).
       - path: ../../shared/period-test-vectors.json
         buildPhase: resources
+    settings:
+      base:
+        # Test bundles have no Info.plist of their own; codesigning requires one.
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastosdiarios.tests
     dependencies:
       - target: GastosDiarios
 
