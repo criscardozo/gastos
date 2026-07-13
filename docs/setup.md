@@ -30,8 +30,8 @@ quota abuse from outside your apps. In
    *Application restrictions* choose **iOS apps** and add bundle ID
    `dev.cardozo.gastosdiarios`.
 2. **Browser key** (`AIzaSyCFjR...`, auto-created as "Browser key"): choose
-   **Websites** and add `gastos-diarios-web.vercel.app`, plus
-   `localhost:3000` for local dev (and any custom domain later).
+   **Websites** and add `gastos.cardozo.dev` and `gastos-diarios-web.vercel.app`,
+   plus `localhost:3000` for local dev.
 3. Leave *API restrictions* on "Don't restrict key" (Firebase needs its own
    set), or restrict to Identity Toolkit + Token Service + Firestore APIs.
 
@@ -66,6 +66,14 @@ subdomain:
    add `gastos.cardozo.dev`, or `signInWithPopup` throws
    `auth/unauthorized-domain` on the new domain. No code change is needed —
    the Firebase `authDomain` stays `qcris-gastos-diarios.firebaseapp.com`.
+5. **Make it the canonical URL (optional).** Vercel → Settings → Domains: use
+   the `⋯` menu on `gastos.cardozo.dev` → **Set as Production Domain**, then on
+   `gastos-diarios-web.vercel.app` choose **Redirect to** → `gastos.cardozo.dev`
+   (308). After that the app answers on one canonical URL and the `.vercel.app`
+   forwards to it. The in-app "open the web" link (iOS Settings) already points
+   at `https://gastos.cardozo.dev`.
+
+`gastos.cardozo.dev` is live (Let's Encrypt cert, auto-renewed).
 
 ## Local development
 

@@ -552,7 +552,7 @@ struct SettingsView: View {
                     }
                     .padding(.vertical, 13)
                     Divider().overlay(Theme.separator)
-                    Link(destination: URL(string: "https://gastos-diarios-web.vercel.app")!) {
+                    Link(destination: URL(string: "https://gastos.cardozo.dev")!) {
                         HStack(spacing: 11) {
                             Text(l10n.t("settings.openWeb"))
                                 .appFont(14.5, .semibold)
