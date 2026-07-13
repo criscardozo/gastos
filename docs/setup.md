@@ -45,6 +45,28 @@ quota abuse from outside your apps. In
 3. Add the production domain (`*.vercel.app` and any custom domain) to
    Firebase Auth → Settings → **Authorized domains**, or Google sign-in popups will fail.
 
+### Custom domain (e.g. `gastos.cardozo.dev`)
+
+The apex `cardozo.dev` is registered at Namecheap. To serve the app from a
+subdomain:
+
+1. **Vercel** → project `gastos-diarios-web` → Settings → Domains → add
+   `gastos.cardozo.dev`. Vercel shows the DNS record to create — for a
+   subdomain it's a **CNAME** (value like `cname.vercel-dns-0.com`; use the
+   exact value Vercel displays).
+2. **Namecheap** → Domain List → `cardozo.dev` → Manage → Advanced DNS → Add
+   New Record: `CNAME Record`, Host `gastos`, Value = the Vercel CNAME target,
+   TTL Automatic. Remove any pre-existing record for the `gastos` host.
+   (Assumes `cardozo.dev` uses Namecheap BasicDNS; if the nameservers point
+   elsewhere, add the CNAME there.)
+3. Wait for DNS to propagate (minutes to ~1 h). Vercel auto-provisions the
+   HTTPS certificate; the domain flips to "Valid Configuration". `.dev` is
+   HSTS-preloaded, so it's always HTTPS.
+4. **Firebase Auth** → Authentication → Settings → **Authorized domains** →
+   add `gastos.cardozo.dev`, or `signInWithPopup` throws
+   `auth/unauthorized-domain` on the new domain. No code change is needed —
+   the Firebase `authDomain` stays `qcris-gastos-diarios.firebaseapp.com`.
+
 ## Local development
 
 ```sh
