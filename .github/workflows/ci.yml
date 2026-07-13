@@ -4,6 +4,10 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  # The iOS job runs on macOS runners (10x minute multiplier), so it is
+  # manual-only to stay well within the free tier. Trigger it from the
+  # Actions tab ("Run workflow") or: gh workflow run CI
+  workflow_dispatch:
 
 jobs:
   web:
@@ -66,9 +70,11 @@ jobs:
 
   ios:
     name: iOS — build & period-logic tests
-    # macOS runners are free for public repos; for a private repo they burn
-    # minutes fast — keep this job manual-friendly.
-    if: github.event_name == 'pull_request' || github.ref_name == 'main' || github.ref_name == 'master'
+    # macOS runners bill at a 10x minute multiplier, so this job is manual
+    # only (workflow_dispatch) to stay within the free tier — the web/rules
+    # jobs below run on Ubuntu (1x). iOS is also verified locally on each
+    # change. Run it on demand from the Actions tab or: gh workflow run CI
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v7
