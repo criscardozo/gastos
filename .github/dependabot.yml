@@ -7,18 +7,30 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
-      # One PR for the routine minor/patch churn; majors stay separate.
+      # One PR for the routine churn.
       minor-and-patch:
         update-types:
           - minor
           - patch
+    ignore:
+      # Majors are opt-in. Framework/toolchain jumps (Next, React, TypeScript,
+      # ESLint, @types/node) either break the build or need a manual migration
+      # — e.g. TypeScript 7 breaks Next's config loader. Bump those by hand.
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
 
-  # CI action versions
+  # CI action versions — majors here are low-risk and worth taking; grouped
+  # into a single PR.
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns:
+          - "*"
 
   # iOS Swift Package Manager dependencies (Firebase, GoogleSignIn)
   - package-ecosystem: swift
@@ -26,3 +38,15 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    groups:
+      swift-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Firebase pins GTMSessionFetcher / GTMAppAuth / GoogleAds transitively;
+      # bumping their majors independently breaks the resolved graph. Let the
+      # Firebase SDK major drive them.
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
