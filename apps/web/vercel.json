@@ -1,5 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "//": "Skip Vercel preview builds for Dependabot branches. Their previews add no value (GitHub Actions CI validates every PR) and fail on things unrelated to our code — TypeScript 7 breaking Next's config loader, pnpm's minimum-release-age guard on freshly published versions. Exit 0 = skip build, exit 1 = build. main and any human branch still build normally.",
   "ignoreCommand": "if echo \"$VERCEL_GIT_COMMIT_REF\" | grep -q '^dependabot/'; then exit 0; else exit 1; fi"
 }
