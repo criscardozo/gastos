@@ -107,7 +107,7 @@ service cloud.firestore {
     // ============================ users ============================
 
     function isValidUser(data) {
-      return data.keys().hasOnly(['displayName', 'householdId', 'language', 'displayCurrency', 'createdAt', 'updatedAt'])
+      return data.keys().hasOnly(['displayName', 'householdId', 'language', 'displayCurrency', 'defaultEntryCurrency', 'createdAt', 'updatedAt'])
         && data.keys().hasAll(['displayName', 'createdAt', 'updatedAt'])
         && data.displayName is string
         && data.displayName.size() >= 1 && data.displayName.size() <= 80
@@ -115,7 +115,9 @@ service cloud.firestore {
             || (data.householdId is string && data.householdId.size() >= 1 && data.householdId.size() <= 60))
         && (!('language' in data) || data.language == null || data.language in ['es', 'en'])
         && (!('displayCurrency' in data) || data.displayCurrency == null
-            || (data.displayCurrency is string && data.displayCurrency.matches('^[A-Z]{3}$')));
+            || (data.displayCurrency is string && data.displayCurrency.matches('^[A-Z]{3}$')))
+        && (!('defaultEntryCurrency' in data) || data.defaultEntryCurrency == null
+            || data.defaultEntryCurrency in ['AUD', 'USD']);
     }
 
     // If householdId is set, the user must actually be a member of that
@@ -237,7 +239,7 @@ service cloud.firestore {
       // ------------------------ expenses ------------------------
 
       function isValidExpense(data) {
-        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt'])
+        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt', 'entryCurrency', 'entryAmountCents'])
           && data.keys().hasAll(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt'])
           && data.amountCents is int
           && data.amountCents > 0 && data.amountCents <= 10000000
@@ -245,7 +247,20 @@ service cloud.firestore {
           && data.categoryId.size() >= 1 && data.categoryId.size() <= 40
           && data.note is string && data.note.size() <= 200
           && isCalendarDate(data.date)
-          && data.createdBy is string;
+          && data.createdBy is string
+          // Bi-currency: amountCents is ALWAYS the canonical household currency
+          // (AUD). Optional fields record the currency the user actually typed
+          // in and that original amount, for display. Present together or not
+          // at all; absent ⇒ entered in the canonical currency.
+          && isValidEntryCurrency(data);
+      }
+
+      // entryCurrency + entryAmountCents are optional but co-dependent.
+      function isValidEntryCurrency(data) {
+        return (!('entryCurrency' in data) && !('entryAmountCents' in data))
+          || (data.entryCurrency in ['AUD', 'USD']
+              && data.entryAmountCents is int
+              && data.entryAmountCents > 0 && data.entryAmountCents <= 10000000);
       }
 
       match /expenses/{expenseId} {

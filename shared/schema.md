@@ -21,6 +21,7 @@ authorization, not this doc.
 | `householdId` | string \| null | Set after creating/joining a household |
 | `language` | `"es"` \| `"en"` \| null | null → follow system/browser |
 | `displayCurrency` | string \| null | e.g. `"USD"`. Display-only FX toggle; null → off |
+| `defaultEntryCurrency` | `"AUD"` \| `"USD"` \| null | Which currency the expense-entry switch starts on. null → AUD |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
 ### `households/{householdId}`
@@ -73,12 +74,26 @@ Rules of the chain:
 
 | Field | Type | Notes |
 |---|---|---|
-| `amountCents` | int | > 0. Integer cents, never floats |
+| `amountCents` | int | > 0. **Canonical: always the household `currency` (AUD)**, integer cents. Everything that sums money (budget, totals, split, trend, widget, aggregation, CSV) reads this |
 | `categoryId` | string | Key into `household.categories` |
 | `note` | string | May be empty |
 | `date` | string `YYYY-MM-DD` | Local calendar date in the HOUSEHOLD timezone |
 | `createdBy` | uid | Attribution only, not ownership — either member can edit/delete |
+| `entryCurrency` | `"AUD"` \| `"USD"` \| absent | Optional. The currency the user actually entered. **Absent ⇒ entered in the canonical currency (AUD)** |
+| `entryAmountCents` | int \| absent | Optional. The original amount in `entryCurrency`. Present iff `entryCurrency` is. Display-only; never summed |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
+
+**Bi-currency model.** `amountCents` is always AUD (the household canonical
+currency) so budgets and every total stay deterministic and offline-safe — no
+historical expense re-converts when the FX rate moves. When a user enters an
+expense in USD, the client converts USD→AUD with that day's rate (snapshot at
+entry time) and stores the AUD result in `amountCents`, plus `entryCurrency:
+"USD"` and `entryAmountCents` (the USD the user typed) so the app can display
+the original ("US$ 7.00"). Entered in AUD ⇒ both optional fields omitted (docs
+stay identical to the pre-bi-currency shape; older expenses need no migration).
+FX (frankfurter, daily-cached) is needed only at entry time; if unavailable the
+USD option is disabled and entry falls back to AUD. The per-user default entry
+currency lives on `users/{uid}.defaultEntryCurrency`.
 
 An expense belongs to the period whose `[startDate, endDate]` contains its `date`.
 Queries are lexicographic string ranges: `date >= start && date <= end`, which is why the
