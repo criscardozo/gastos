@@ -131,6 +131,7 @@
     "statusError": "Error",
     "reasonBadDate": "Invalid date",
     "reasonBadAmount": "Invalid amount",
+    "reasonBadCurrency": "Invalid currency (use AUD or USD)",
     "reasonNoColumns": "Missing columns (fecha, categoria, monto_aud)",
     "importButton": "{count, plural, one {Import # expense} other {Import # expenses}}",
     "importing": "Importing…",

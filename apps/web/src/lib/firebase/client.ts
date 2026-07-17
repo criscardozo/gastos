@@ -44,10 +44,17 @@ export function getFirebaseClient(): FirebaseClient | null {
   });
 
   if (useEmulators) {
-    connectAuthEmulator(auth, "http://localhost:9099", {
+    // Emulator host/ports are env-configurable so E2E can run against a suite
+    // on alternate ports when the defaults (9099/8080) are taken by another
+    // local process. Production/default behavior is unchanged.
+    const host = process.env.NEXT_PUBLIC_EMULATOR_HOST ?? "localhost";
+    const authPort = process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT ?? "9099";
+    const firestorePort =
+      process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? "8080";
+    connectAuthEmulator(auth, `http://${host}:${authPort}`, {
       disableWarnings: true,
     });
-    connectFirestoreEmulator(db, "localhost", 8080);
+    connectFirestoreEmulator(db, host, Number(firestorePort));
 
     // QA hook, emulator-only: signInWithPopup cannot be automated in a
     // headless browser, and the Auth emulator accepts any fabricated Google

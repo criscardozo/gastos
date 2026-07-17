@@ -131,6 +131,7 @@
     "statusError": "Error",
     "reasonBadDate": "Fecha inválida",
     "reasonBadAmount": "Monto inválido",
+    "reasonBadCurrency": "Moneda inválida (usá AUD o USD)",
     "reasonNoColumns": "Faltan columnas (fecha, categoria, monto_aud)",
     "importButton": "{count, plural, one {Importar # gasto} other {Importar # gastos}}",
     "importing": "Importando…",
