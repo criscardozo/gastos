@@ -28,6 +28,7 @@ import {
   createInvite,
   updateDefaultBudget,
   updatePeriodAmount,
+  updateUserDefaultEntryCurrency,
   updateUserDisplayCurrency,
   updateUserLanguage,
 } from "@/lib/firebase/mutations";
@@ -353,6 +354,24 @@ export default function SettingsPage() {
             onChange={(next) =>
               withDb((db) =>
                 updateUserDisplayCurrency(db, user.uid, next ? "USD" : null),
+              )
+            }
+          />
+        </div>
+        <div className="flex items-center gap-[11px] border-b border-soft py-3">
+          <span className="flex-1 text-sm font-semibold text-ink">
+            {t("defaultCurrency")}
+          </span>
+          <Segmented<"AUD" | "USD">
+            ariaLabel={t("defaultCurrency")}
+            options={[
+              { value: "AUD", label: "AUD" },
+              { value: "USD", label: "USD" },
+            ]}
+            value={userDoc?.defaultEntryCurrency ?? "AUD"}
+            onChange={(next) =>
+              withDb((db) =>
+                updateUserDefaultEntryCurrency(db, user.uid, next),
               )
             }
           />

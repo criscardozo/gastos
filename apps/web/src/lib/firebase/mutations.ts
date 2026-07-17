@@ -69,6 +69,17 @@ export async function updateUserDisplayCurrency(
   });
 }
 
+export async function updateUserDefaultEntryCurrency(
+  db: Firestore,
+  uid: string,
+  defaultEntryCurrency: "AUD" | "USD",
+): Promise<void> {
+  await updateDoc(doc(db, "users", uid), {
+    defaultEntryCurrency,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 /**
  * Create the household, then link users/{uid}.householdId — sequentially,
  * NOT in a batch, on purpose. A batch flips the user doc locally (latency
@@ -280,10 +291,27 @@ export async function updateHouseholdCategories(
 }
 
 export interface ExpenseInput {
+  /** ALWAYS canonical AUD integer cents (converted from USD when needed). */
   amountCents: number;
   categoryId: string;
   note: string;
   date: string;
+  /** Set to "USD" only when the user entered in USD; omit/undefined ⇒ AUD. */
+  entryCurrency?: "AUD" | "USD";
+  /** The USD integer cents the user typed. Required when entryCurrency==="USD". */
+  entryAmountCents?: number;
+}
+
+/** The optional bi-currency keys, written ONLY for a USD entry. Absent for AUD
+ * so the doc shape stays byte-identical to the pre-bi-currency shape and the
+ * rules' hasOnly() check passes (never write null/undefined). */
+function entryCurrencyFields(
+  input: ExpenseInput,
+): { entryCurrency: "USD"; entryAmountCents: number } | null {
+  if (input.entryCurrency === "USD" && input.entryAmountCents !== undefined) {
+    return { entryCurrency: "USD", entryAmountCents: input.entryAmountCents };
+  }
+  return null;
 }
 
 export async function addExpense(
@@ -293,12 +321,14 @@ export async function addExpense(
   input: ExpenseInput,
 ): Promise<void> {
   const ref = doc(collection(db, "households", householdId, "expenses"));
+  const entry = entryCurrencyFields(input);
   await setDoc(ref, {
     amountCents: input.amountCents,
     categoryId: input.categoryId,
     note: input.note,
     date: input.date,
     createdBy: uid,
+    ...(entry ?? {}),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -310,11 +340,16 @@ export async function updateExpense(
   expenseId: string,
   input: ExpenseInput,
 ): Promise<void> {
+  const entry = entryCurrencyFields(input);
   await updateDoc(doc(db, "households", householdId, "expenses", expenseId), {
     amountCents: input.amountCents,
     categoryId: input.categoryId,
     note: input.note,
     date: input.date,
+    // Switching a USD expense back to AUD must REMOVE the keys (deleteField),
+    // not write null — otherwise the rules' shape check rejects the write.
+    entryCurrency: entry ? entry.entryCurrency : deleteField(),
+    entryAmountCents: entry ? entry.entryAmountCents : deleteField(),
     updatedAt: serverTimestamp(),
   });
 }

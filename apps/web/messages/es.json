@@ -150,6 +150,7 @@
     "thisPeriodNote": "Solo afecta al período en curso; queda registrado con su monto y tipo.",
     "showUsd": "Ver también en USD",
     "showUsdHint": "Aproximado (≈). El monto real sigue en AUD.",
+    "defaultCurrency": "Moneda por defecto",
     "language": "Idioma",
     "spanish": "Español",
     "english": "English",
