@@ -30,6 +30,7 @@ import { categoryCircleBg, categoryColor, type CategoryDef } from "@/lib/categor
 import { formatCents, formatCentsCompact, parseAmountToCents } from "@/lib/money";
 import { formatDayHeading, formatPeriodRange, formatShortDate } from "@/lib/dates";
 import { addDays } from "@/lib/periods";
+import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
 
 /* ── Small helpers ─────────────────────────────────────────────────────── */
 
@@ -399,38 +400,21 @@ export default function ExpensesPage() {
     await deleteExpense(fb.db, household.id, e.id);
   };
 
-  /* CSV export of the CURRENTLY FILTERED list (client-side download). */
+  /* CSV export of the CURRENTLY FILTERED list (client-side download).
+     Shares the builder with the Datos page so the format stays in sync. */
   const exportCsv = () => {
-    const escape = (value: string): string =>
-      /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-    const header = ["fecha", "categoria", "nota", "monto_aud", "creado_por"];
-    const lines = [header.join(",")];
-    for (const e of sorted) {
-      lines.push(
-        [
-          e.date,
-          escape(
-            categories.find((c) => c.id === e.categoryId)?.label ??
-              tCat("deleted"),
-          ),
-          escape(e.note),
-          (e.amountCents / 100).toFixed(2), // decimal with dot
-          escape(
-            household.memberProfiles[e.createdBy]?.displayName ?? e.createdBy,
-          ),
-        ].join(","),
-      );
-    }
-    // UTF-8 BOM so Excel detects the encoding (accents in notes/names).
-    const blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
-      type: "text/csv;charset=utf-8",
+    const memberNames = Object.fromEntries(
+      Object.entries(household.memberProfiles).map(([uid, p]) => [
+        uid,
+        p.displayName,
+      ]),
+    );
+    const csv = buildExpensesCsv(sorted, {
+      categories,
+      members: memberNames,
+      deletedLabel: tCat("deleted"),
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `gastos-${selected?.startDate ?? "todos"}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(`gastos-${selected?.startDate ?? "todos"}.csv`, csv);
   };
 
   /* Row rendering */

@@ -12,6 +12,7 @@ import { useHousehold } from "@/components/providers";
 const NAV = [
   { href: "/", icon: "donut_small", key: "summary" },
   { href: "/gastos", icon: "receipt_long", key: "expenses" },
+  { href: "/datos", icon: "database", key: "data" },
   { href: "/ajustes", icon: "settings", key: "settings" },
 ] as const;
 
