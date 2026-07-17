@@ -40,6 +40,12 @@ enum MoneyFormatter {
         return formatter.string(from: decimal(fromCents: cents)) ?? "0"
     }
 
+    /// Original USD amount the user entered: "US$ 7,00" (es) / "US$ 7.00"
+    /// (en). Display-only — this is `entryAmountCents`, never summed.
+    static func usd(_ cents: Int, locale: Locale) -> String {
+        formatter(locale: locale, symbol: "US$ ").string(from: decimal(fromCents: cents)) ?? "US$ 0"
+    }
+
     /// Approximate FX display: "≈ US$ 186,90". Display-only, never persisted.
     static func approxUSD(audCents: Int, rate: Double, locale: Locale) -> String {
         let usd = (Double(audCents) / 100.0) * rate

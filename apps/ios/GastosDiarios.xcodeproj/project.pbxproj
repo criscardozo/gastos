@@ -25,6 +25,7 @@
 		5455A60CA071010D3B53B606 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC439A76443D441CA1E59FBA /* WidgetBridge.swift */; };
 		57088CAAA6CBF0A900D6546B /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 0C6A902D5FD08D33DF0CB379 /* FirebaseFirestore */; };
 		5E46E4B94AD5C7F23B172691 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6536FA32700C9D56775F646 /* OnboardingView.swift */; };
+		640D8D41EB8C7A28FF96E037 /* ExpenseCurrencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64713318537584A1DE652757 /* ExpenseCurrencyTests.swift */; };
 		64A277BCB7F020EF239963C3 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E33FD8DDEB4A07F1B2A435 /* L10n.swift */; };
 		6946D942898FFB0E720BE6A8 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F2F3CF0DA3B43BF2B52F6274 /* Localizable.xcstrings */; };
 		6C5BE67620D8309FBFC6AA29 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */; };
@@ -122,6 +123,7 @@
 		552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatter.swift; sourceTree = "<group>"; };
 		5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
+		64713318537584A1DE652757 /* ExpenseCurrencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseCurrencyTests.swift; sourceTree = "<group>"; };
 		68782F8F6E6DBE2B3A582B62 /* GastosDiarios.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GastosDiarios.entitlements; sourceTree = "<group>"; };
 		6B98CA105FB223E5AFAF9A68 /* GastosDiariosTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GastosDiariosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6ED43CCFFBE449FFB095396B /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
@@ -317,6 +319,7 @@
 		9F17DAD116300D340E9287E1 /* GastosDiariosTests */ = {
 			isa = PBXGroup;
 			children = (
+				64713318537584A1DE652757 /* ExpenseCurrencyTests.swift */,
 				F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */,
 				E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */,
 			);
@@ -617,6 +620,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				640D8D41EB8C7A28FF96E037 /* ExpenseCurrencyTests.swift in Sources */,
 				4A7C9399EB868F5BD37FCEE2 /* PeriodLogicTests.swift in Sources */,
 				358B81D7BBDE72EE00BB04A4 /* SuggestionsTests.swift in Sources */,
 			);

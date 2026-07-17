@@ -177,13 +177,34 @@ struct HistoryView: View {
                 }
             }
             Spacer()
-            Text(MoneyFormatter.aud(item.expense.amountCents, locale: l10n.locale))
-                .appFont(14.5, .bold)
-                .monospacedDigit()
-                .foregroundStyle(Theme.ink)
+            amountLabel(item.expense)
             MemberAvatar(profile: member, size: 22)
         }
         .padding(.vertical, 2)
+    }
+
+    /// USD entries lead with the original amount ("US$ 7,00") and show the
+    /// stored AUD equivalent as a muted secondary; AUD entries render exactly
+    /// as before. Day totals/subtotals always sum the canonical AUD.
+    @ViewBuilder
+    private func amountLabel(_ expense: Expense) -> some View {
+        if let entry = expense.displayEntry, entry.currency == "USD" {
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(MoneyFormatter.usd(entry.amountCents, locale: l10n.locale))
+                    .appFont(14.5, .bold)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.ink)
+                Text(MoneyFormatter.aud(expense.amountCents, locale: l10n.locale))
+                    .appFont(11.5, .semibold)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.inkTertiary)
+            }
+        } else {
+            Text(MoneyFormatter.aud(expense.amountCents, locale: l10n.locale))
+                .appFont(14.5, .bold)
+                .monospacedDigit()
+                .foregroundStyle(Theme.ink)
+        }
     }
 
     private var emptyState: some View {

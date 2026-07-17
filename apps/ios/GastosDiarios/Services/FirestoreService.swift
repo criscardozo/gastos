@@ -264,6 +264,8 @@ final class FirestoreService {
         categoryId: String,
         note: String,
         date: String,
+        entryCurrency: String? = nil,
+        entryAmountCents: Int? = nil,
         expenseId: String? = nil
     ) {
         // Fire-and-forget (offline-first): the local write resolves instantly
@@ -272,16 +274,23 @@ final class FirestoreService {
         // same doc instead of creating a duplicate.
         let collection = db.collection("households").document(householdId).collection("expenses")
         let document = expenseId.map { collection.document($0) } ?? collection.document()
-        document
-            .setData([
-                "amountCents": amountCents,
-                "categoryId": categoryId,
-                "note": note,
-                "date": date,
-                "createdBy": uid,
-                "createdAt": FieldValue.serverTimestamp(),
-                "updatedAt": FieldValue.serverTimestamp(),
-            ])
+        var data: [String: Any] = [
+            "amountCents": amountCents,
+            "categoryId": categoryId,
+            "note": note,
+            "date": date,
+            "createdBy": uid,
+            "createdAt": FieldValue.serverTimestamp(),
+            "updatedAt": FieldValue.serverTimestamp(),
+        ]
+        // Bi-currency: write both fields together, or omit both entirely (the
+        // rules forbid extra keys / a lone field). AUD entries stay identical
+        // to the pre-bi-currency doc shape.
+        if let entryCurrency, let entryAmountCents {
+            data["entryCurrency"] = entryCurrency
+            data["entryAmountCents"] = entryAmountCents
+        }
+        document.setData(data)
     }
 
     func updateExpense(
@@ -290,17 +299,30 @@ final class FirestoreService {
         amountCents: Int,
         categoryId: String,
         note: String,
-        date: String
+        date: String,
+        entryCurrency: String? = nil,
+        entryAmountCents: Int? = nil
     ) {
+        var data: [String: Any] = [
+            "amountCents": amountCents,
+            "categoryId": categoryId,
+            "note": note,
+            "date": date,
+            "updatedAt": FieldValue.serverTimestamp(),
+        ]
+        if let entryCurrency, let entryAmountCents {
+            data["entryCurrency"] = entryCurrency
+            data["entryAmountCents"] = entryAmountCents
+        } else {
+            // Editing a USD expense back to AUD must strip both fields (a
+            // no-op when they were already absent) — the rules require the
+            // co-dependent pair to be present together or not at all.
+            data["entryCurrency"] = FieldValue.delete()
+            data["entryAmountCents"] = FieldValue.delete()
+        }
         db.collection("households").document(householdId)
             .collection("expenses").document(expenseId)
-            .updateData([
-                "amountCents": amountCents,
-                "categoryId": categoryId,
-                "note": note,
-                "date": date,
-                "updatedAt": FieldValue.serverTimestamp(),
-            ])
+            .updateData(data)
     }
 
     func deleteExpense(householdId: String, expenseId: String) {

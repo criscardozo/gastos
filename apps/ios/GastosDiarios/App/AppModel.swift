@@ -144,6 +144,11 @@ final class AppModel {
 
     var showUSD: Bool { userProfile?.displayCurrency == "USD" }
 
+    /// Currency the expense-entry switch starts on. Absent/nil ⇒ AUD.
+    var defaultEntryCurrency: String {
+        userProfile?.defaultEntryCurrency == "USD" ? "USD" : "AUD"
+    }
+
     /// Expenses available for quick-entry suggestions — derived ONLY from what
     /// is already loaded in memory (current + viewed period), so it never adds
     /// an unbounded listener or extra reads. Deduped by document id.
@@ -598,7 +603,14 @@ final class AppModel {
 
     // MARK: Expense actions
 
-    func saveExpense(amountCents: Int, categoryId: String, note: String, date: CalendarDate?) {
+    func saveExpense(
+        amountCents: Int,
+        categoryId: String,
+        note: String,
+        date: CalendarDate?,
+        entryCurrency: String? = nil,
+        entryAmountCents: Int? = nil
+    ) {
         guard let householdId = attachedHouseholdId, let uid else { return }
         firestore.createExpense(
             householdId: householdId,
@@ -606,7 +618,9 @@ final class AppModel {
             amountCents: amountCents,
             categoryId: categoryId,
             note: note,
-            date: (date ?? today).raw
+            date: (date ?? today).raw,
+            entryCurrency: entryCurrency,
+            entryAmountCents: entryAmountCents
         )
     }
 
@@ -638,7 +652,15 @@ final class AppModel {
         )
     }
 
-    func updateExpense(id: String, amountCents: Int, categoryId: String, note: String, date: CalendarDate) {
+    func updateExpense(
+        id: String,
+        amountCents: Int,
+        categoryId: String,
+        note: String,
+        date: CalendarDate,
+        entryCurrency: String? = nil,
+        entryAmountCents: Int? = nil
+    ) {
         guard let householdId = attachedHouseholdId else { return }
         firestore.updateExpense(
             householdId: householdId,
@@ -646,7 +668,9 @@ final class AppModel {
             amountCents: amountCents,
             categoryId: categoryId,
             note: note,
-            date: date.raw
+            date: date.raw,
+            entryCurrency: entryCurrency,
+            entryAmountCents: entryAmountCents
         )
         loadPastTotals(refreshAll: true)  // date edits can move expenses across periods
     }
@@ -675,6 +699,14 @@ final class AppModel {
             )
             await self.refreshFXIfNeeded()
         }
+    }
+
+    /// Per-user default entry currency ("AUD" | "USD"). Stored literally (both
+    /// are valid per shared/schema.md); the entry switch reads it on open.
+    func setDefaultEntryCurrency(_ currency: String) {
+        guard let uid, ["AUD", "USD"].contains(currency) else { return }
+        userProfile?.defaultEntryCurrency = currency
+        Task { try? await firestore.updateUser(uid: uid, fields: ["defaultEntryCurrency": currency]) }
     }
 
     func setDefaultBudget(amountCents: Int? = nil, period: PeriodType? = nil) {

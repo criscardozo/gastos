@@ -272,6 +272,22 @@ struct SettingsView: View {
                     .padding(.vertical, 13)
                     Divider().overlay(Theme.separator)
                     HStack(spacing: 11) {
+                        Text(l10n.t("settings.entryCurrency"))
+                            .appFont(14.5, .semibold)
+                            .foregroundStyle(Theme.ink)
+                        Spacer()
+                        SegmentedPill(
+                            options: [("AUD", "AUD"), ("USD", "USD")],
+                            selection: Binding(
+                                get: { model.defaultEntryCurrency },
+                                set: { model.setDefaultEntryCurrency($0) }
+                            )
+                        )
+                        .fixedSize()
+                    }
+                    .padding(.vertical, 13)
+                    Divider().overlay(Theme.separator)
+                    HStack(spacing: 11) {
                         Text(l10n.t("settings.language"))
                             .appFont(14.5, .semibold)
                             .foregroundStyle(Theme.ink)

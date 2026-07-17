@@ -53,10 +53,42 @@ struct BudgetEntryAmount: Equatable {
         input.tap(key)
     }
 
+    /// Fills an AUD amount (e.g. a recent-amount quick-fill chip, which is
+    /// always a canonical AUD value) without discarding the cached rate.
+    mutating func setAUDCents(_ cents: Int) {
+        input = .fromCents(cents)
+        currency = .aud
+    }
+
     static func fromAUDCents(_ cents: Int) -> BudgetEntryAmount {
         var value = BudgetEntryAmount()
         value.input = .fromCents(cents)
         return value
+    }
+
+    /// Restores a USD entry into the editor (editing a USD expense): the typed
+    /// value is the original USD cents; `rate` re-derives the AUD equivalent.
+    static func fromUSDCents(_ cents: Int, rate: Double?) -> BudgetEntryAmount {
+        var value = BudgetEntryAmount()
+        value.rate = rate
+        value.input = .fromCents(cents)
+        value.currency = .usd
+        return value
+    }
+
+    // MARK: Bi-currency expense storage
+
+    /// `entryCurrency` to persist on an expense: "USD" only for a USD entry
+    /// with a live rate; nil in AUD (canonical) so the doc omits both optional
+    /// fields (shared/schema.md co-dependency).
+    var storedEntryCurrency: String? {
+        (currency == .usd && (rate ?? 0) > 0) ? "USD" : nil
+    }
+
+    /// `entryAmountCents` to persist: the original USD cents the user typed,
+    /// present iff `storedEntryCurrency` is.
+    var storedEntryAmountCents: Int? {
+        storedEntryCurrency == nil ? nil : input.cents
     }
 }
 

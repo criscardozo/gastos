@@ -142,7 +142,8 @@ struct ExpenseFormView: View {
     let mode: Mode
     var onDone: (() -> Void)?
 
-    @State private var amount = AmountInput()
+    @State private var amount = BudgetEntryAmount()
+    @State private var didInitCurrency = false
     @State private var selectedCategoryId: String?
     @State private var note = ""
     @State private var pickedDate: CalendarDate?
@@ -159,14 +160,14 @@ struct ExpenseFormView: View {
 
     private var effectiveDate: CalendarDate { pickedDate ?? model.today }
 
-    private var canSave: Bool { amount.cents > 0 && selectedCategoryId != nil }
+    private var canSave: Bool { amount.audCents > 0 && selectedCategoryId != nil }
 
     // MARK: Suggestions (derived from in-memory expenses only)
 
     /// Recent-amount chips for the selected category — only while the amount is
     /// still empty (they are quick-fills, not a live filter).
     private var recentAmounts: [Int] {
-        guard !isEditing, amount.isEmpty else { return [] }
+        guard !isEditing, amount.input.isEmpty else { return [] }
         return Suggestions.recentAmounts(
             from: model.suggestionExpenses,
             categoryId: selectedCategoryId,
@@ -223,6 +224,14 @@ struct ExpenseFormView: View {
             }
         }
         .onAppear(perform: load)
+        .task {
+            // Daily AUD→USD rate for bi-currency entry (cached; nil offline
+            // with an empty cache → the USD option stays hidden, AUD-only).
+            if amount.rate == nil {
+                amount.rate = await model.budgetEntryUSDRate()
+            }
+            applyInitialCurrency()
+        }
     }
 
     // MARK: Pieces
@@ -235,7 +244,7 @@ struct ExpenseFormView: View {
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         withAnimation(.snappy(duration: 0.15)) {
-                            amount = .fromCents(cents)
+                            amount.setAUDCents(cents)
                         }
                     } label: {
                         Text(MoneyFormatter.audCompact(cents, locale: l10n.locale))
@@ -318,24 +327,58 @@ struct ExpenseFormView: View {
     }
 
     private var heroAmount: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
+            // AUD | USD switch — only when a daily rate is available; without
+            // it entry is AUD-only and this row disappears entirely.
+            if amount.rate != nil {
+                SegmentedPill(
+                    options: [
+                        (BudgetEntryCurrency.aud, "AUD"),
+                        (BudgetEntryCurrency.usd, "USD"),
+                    ],
+                    selection: Binding(
+                        get: { amount.currency },
+                        set: { newValue in
+                            withAnimation(.snappy(duration: 0.15)) { amount.switchTo(newValue) }
+                        }
+                    )
+                )
+                .fixedSize()
+            }
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("$")
+                Text(amount.currency == .usd ? "US$" : "$")
                     .appFont(30, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
-                Text(amount.display(separator: separator))
+                Text(amount.input.display(separator: separator))
                     .amountStyle(66, .bold)
                     .kerning(-0.03 * 66)
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.4)
                     .contentTransition(.numericText())
-                    .animation(.snappy(duration: 0.15), value: amount)
+                    .animation(.snappy(duration: 0.15), value: amount.input)
+            }
+            if let approx = approxText {
+                Text(approx)
+                    .appFont(13, .semibold)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.inkTertiary)
             }
             datePill
         }
         .frame(maxHeight: .infinity)
         .frame(minHeight: 110)
+    }
+
+    /// "≈ US$ 6,86" while typing AUD; "≈ $10,50 AUD" while typing USD.
+    private var approxText: String? {
+        guard let rate = amount.rate, rate > 0 else { return nil }
+        switch amount.currency {
+        case .aud:
+            return MoneyFormatter.approxUSD(audCents: amount.input.cents, rate: rate, locale: l10n.locale)
+        case .usd:
+            return MoneyFormatter.approxAUD(amount.audCents, locale: l10n.locale)
+        }
     }
 
     private var datePill: some View {
@@ -446,25 +489,57 @@ struct ExpenseFormView: View {
             }
             return
         }
-        amount = .fromCents(item.expense.amountCents)
+        // Baseline: edit the canonical AUD amount. A USD original (if any) is
+        // restored in `applyInitialCurrency` once the daily rate is known.
+        amount = .fromAUDCents(item.expense.amountCents)
         selectedCategoryId = item.expense.categoryId
         note = item.expense.note
         pickedDate = CalendarDate(item.expense.date)
     }
 
+    /// Runs once after the FX rate resolves: seeds the entry currency from the
+    /// user's default (create) or the expense's original currency (edit). A
+    /// no-op without a rate — the USD option isn't offered then.
+    private func applyInitialCurrency() {
+        guard !didInitCurrency else { return }
+        didInitCurrency = true
+        guard amount.rate != nil else { return }
+        switch mode {
+        case .create:
+            if model.defaultEntryCurrency == "USD" {
+                amount.currency = .usd
+            }
+        case .edit(let item):
+            if let entry = item.expense.displayEntry, entry.currency == "USD" {
+                amount = .fromUSDCents(entry.amountCents, rate: amount.rate)
+            }
+        }
+    }
+
     private func save() {
-        guard let categoryId = selectedCategoryId, amount.cents > 0 else { return }
+        guard let categoryId = selectedCategoryId, amount.audCents > 0 else { return }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
+        // `audCents` is the canonical AUD (USD converted with the daily rate);
+        // the stored* fields carry the USD original, or nil for an AUD entry
+        // (both omitted).
         switch mode {
         case .create:
             model.saveExpense(
-                amountCents: amount.cents,
+                amountCents: amount.audCents,
                 categoryId: categoryId,
                 note: note.trimmingCharacters(in: .whitespacesAndNewlines),
-                date: pickedDate
+                date: pickedDate,
+                entryCurrency: amount.storedEntryCurrency,
+                entryAmountCents: amount.storedEntryAmountCents
             )
-            // Reset for the next quick entry.
-            amount = AmountInput()
+            // Reset for the next quick entry, keeping the cached rate and the
+            // user's default entry currency.
+            var next = BudgetEntryAmount()
+            next.rate = amount.rate
+            if model.defaultEntryCurrency == "USD", amount.rate != nil {
+                next.currency = .usd
+            }
+            amount = next
             note = ""
             pickedDate = nil
             noteFocused = false
@@ -472,10 +547,12 @@ struct ExpenseFormView: View {
             if let id = item.expense.id, let date = pickedDate ?? CalendarDate(item.expense.date) {
                 model.updateExpense(
                     id: id,
-                    amountCents: amount.cents,
+                    amountCents: amount.audCents,
                     categoryId: categoryId,
                     note: note.trimmingCharacters(in: .whitespacesAndNewlines),
-                    date: date
+                    date: date,
+                    entryCurrency: amount.storedEntryCurrency,
+                    entryAmountCents: amount.storedEntryAmountCents
                 )
             }
             onDone?()
