@@ -21,16 +21,16 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/eslintrc": "^3.3.6",
     "@playwright/test": "^1.61.1",
-    "@tailwindcss/postcss": "^4.1.10",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "eslint": "^9.30.0",
+    "eslint": "^9.39.5",
     "eslint-config-next": "^15.5.20",
-    "postcss": "^8.5.0",
-    "tailwindcss": "^4.1.10",
+    "postcss": "^8.5.20",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.9.0",
     "vitest": "^4.0.0"
   }
