@@ -253,25 +253,6 @@ struct SettingsView: View {
             Card {
                 VStack(spacing: 0) {
                     HStack(spacing: 11) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(l10n.t("settings.usd"))
-                                .appFont(14.5, .semibold)
-                                .foregroundStyle(Theme.ink)
-                            Text(l10n.t("settings.usd.foot"))
-                                .appFont(11.5)
-                                .foregroundStyle(Theme.inkTertiary)
-                        }
-                        Spacer()
-                        Toggle("", isOn: Binding(
-                            get: { model.showUSD },
-                            set: { model.setDisplayCurrency(usd: $0) }
-                        ))
-                        .labelsHidden()
-                        .tint(Theme.green)
-                    }
-                    .padding(.vertical, 13)
-                    Divider().overlay(Theme.separator)
-                    HStack(spacing: 11) {
                         Text(l10n.t("settings.entryCurrency"))
                             .appFont(14.5, .semibold)
                             .foregroundStyle(Theme.ink)

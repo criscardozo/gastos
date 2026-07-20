@@ -9,6 +9,10 @@ struct HistoryView: View {
 
     private var l10n: L10n { model.l10n }
 
+    /// Active entry currency drives which column is emphasized; reads the
+    /// persisted preference so the entry switch flips it live.
+    private var activeUSD: Bool { model.defaultEntryCurrency == "USD" }
+
     private struct DayGroup: Identifiable {
         let date: CalendarDate
         let items: [ExpenseItem]
@@ -123,10 +127,18 @@ struct HistoryView: View {
             )
             .appFont(13)
             Spacer()
-            Text(MoneyFormatter.aud(group.totalCents, locale: l10n.locale))
-                .appFont(12.5, .semibold)
-                .monospacedDigit()
-                .foregroundStyle(Theme.inkSecondary)
+            HStack(spacing: 6) {
+                Text(MoneyFormatter.aud(group.totalCents, locale: l10n.locale))
+                    .appFont(12.5, .semibold)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.inkSecondary)
+                if let rate = model.usdRate, rate > 0 {
+                    Text(MoneyFormatter.approxUSD(audCents: group.totalCents, rate: rate, locale: l10n.locale))
+                        .appFont(11.5, .semibold)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.inkTertiary)
+                }
+            }
         }
         .textCase(nil)
     }
@@ -183,22 +195,27 @@ struct HistoryView: View {
         .padding(.vertical, 2)
     }
 
-    /// USD entries lead with the original amount ("US$ 7,00") and show the
-    /// stored AUD equivalent as a muted secondary; AUD entries render exactly
-    /// as before. Day totals/subtotals always sum the canonical AUD.
+    /// Two right-aligned columns — an AUD amount and a USD amount. The AUD is
+    /// exact (from `amountCents`); the USD is exact ("US$ …", no ≈) only for a
+    /// USD-entered expense's original, otherwise approximate (≈) from the AUD.
+    /// The column matching the ACTIVE currency is emphasized (ink, bold), the
+    /// other muted (tertiary, semibold). Without a rate: a single AUD column.
     @ViewBuilder
     private func amountLabel(_ expense: Expense) -> some View {
-        if let entry = expense.displayEntry, entry.currency == "USD" {
+        if let rate = model.usdRate, rate > 0 {
+            let audText = MoneyFormatter.aud(expense.amountCents, locale: l10n.locale)
+            let usdText = expense.isUSDEntry
+                ? MoneyFormatter.usd(expense.entryAmountCents ?? 0, locale: l10n.locale)
+                : MoneyFormatter.approxUSD(audCents: expense.amountCents, rate: rate, locale: l10n.locale)
             VStack(alignment: .trailing, spacing: 1) {
-                Text(MoneyFormatter.usd(entry.amountCents, locale: l10n.locale))
-                    .appFont(14.5, .bold)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.ink)
-                Text(MoneyFormatter.aud(expense.amountCents, locale: l10n.locale))
-                    .appFont(11.5, .semibold)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.inkTertiary)
+                Text(audText)
+                    .appFont(activeUSD ? 12 : 14.5, activeUSD ? .semibold : .bold)
+                    .foregroundStyle(activeUSD ? Theme.inkTertiary : Theme.ink)
+                Text(usdText)
+                    .appFont(activeUSD ? 14.5 : 12, activeUSD ? .bold : .semibold)
+                    .foregroundStyle(activeUSD ? Theme.ink : Theme.inkTertiary)
             }
+            .monospacedDigit()
         } else {
             Text(MoneyFormatter.aud(expense.amountCents, locale: l10n.locale))
                 .appFont(14.5, .bold)

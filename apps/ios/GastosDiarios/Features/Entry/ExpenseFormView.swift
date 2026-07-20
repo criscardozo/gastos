@@ -34,6 +34,34 @@ struct AmountInput: Equatable {
         return value.replacingOccurrences(of: ",", with: separator)
     }
 
+    /// Normalizes free-typed text from a native decimal-pad `TextField` into
+    /// the canonical `self.text`. The locale separator (and a stray ".") map
+    /// to ",", everything that isn't a digit or separator is stripped, and the
+    /// same caps `tap` enforces apply: at most 7 integer digits and 2 decimals.
+    mutating func setDisplay(_ typed: String, separator: String) {
+        // Map the locale separator (and a raw ".") to the canonical comma.
+        var normalized = typed.replacingOccurrences(of: separator, with: ",")
+        normalized = normalized.replacingOccurrences(of: ".", with: ",")
+        // Keep only digits and commas.
+        normalized = String(normalized.filter { $0.isNumber || $0 == "," })
+        // Split on the FIRST separator; anything after is decimals.
+        let hasSeparator = normalized.contains(",")
+        let parts = normalized.split(separator: ",", omittingEmptySubsequences: false)
+        // Integer part: cap at 7 digits, strip leading zeros (keep a lone "0").
+        var whole = String((parts.first ?? "").prefix(7))
+        while whole.count > 1 && whole.hasPrefix("0") { whole.removeFirst() }
+        if parts.count > 1 {
+            // Decimals: cap at 2.
+            let decimals = String(parts[1].prefix(2))
+            text = whole + "," + decimals
+        } else if hasSeparator {
+            // Trailing separator with no decimals yet ("12,").
+            text = whole + ","
+        } else {
+            text = whole
+        }
+    }
+
     mutating func tap(_ key: KeypadKey) {
         switch key {
         case .digit(let digit):
@@ -142,13 +170,18 @@ struct ExpenseFormView: View {
     let mode: Mode
     var onDone: (() -> Void)?
 
+    /// Which input owns the native keyboard. The amount field auto-focuses on
+    /// open so the decimal pad rises immediately; the note field takes over
+    /// when tapped (and swaps the keyboard toolbar to note suggestions).
+    private enum Field: Hashable { case amount, note }
+
     @State private var amount = BudgetEntryAmount()
     @State private var didInitCurrency = false
     @State private var selectedCategoryId: String?
     @State private var note = ""
     @State private var pickedDate: CalendarDate?
     @State private var showDatePicker = false
-    @FocusState private var noteFocused: Bool
+    @FocusState private var focus: Field?
 
     private var l10n: L10n { model.l10n }
     private var separator: String { l10n.language == "en" ? "." : "," }
@@ -190,40 +223,62 @@ struct ExpenseFormView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            heroAmount
-            categoryRow
-            if !recentAmounts.isEmpty {
-                amountChips
+        // NavigationStack (bar hidden) hosts the keyboard toolbar accessory —
+        // `.keyboard` placement needs a navigation container to attach to.
+        NavigationStack {
+            VStack(spacing: 0) {
+                header
+                heroAmount
+                categoryRow
+                if !recentAmounts.isEmpty {
+                    amountChips
+                }
+                noteField
+                // Bottom CTA for when the keyboard is dismissed; while a field
+                // is focused the keyboard toolbar carries the "Guardar" action.
+                PrimaryCTA(
+                    title: l10n.t(isEditing ? "common.save" : "entry.save"),
+                    enabled: canSave
+                ) {
+                    save()
+                }
             }
-            noteField
-            KeypadView(separatorLabel: separator) { key in
-                amount.tap(key)
-            }
-            .padding(.bottom, 14)
-            PrimaryCTA(
-                title: l10n.t(isEditing ? "common.save" : "entry.save"),
-                enabled: canSave
-            ) {
-                save()
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, isEditing ? 18 : 6)
-        .padding(.bottom, 8)
-        .background(Theme.bg.ignoresSafeArea())
-        .sheet(isPresented: $showDatePicker) {
-            datePickerSheet
-        }
-        .toolbar {
-            if noteFocused, !noteSuggestions.isEmpty {
-                ToolbarItemGroup(placement: .keyboard) {
-                    noteSuggestionBar
+            .padding(.horizontal, 20)
+            .padding(.top, isEditing ? 18 : 6)
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.bg.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .toolbar {
+                if focus == .amount {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button(l10n.t(isEditing ? "common.save" : "entry.save")) {
+                            save()
+                        }
+                        .appFont(15, .bold)
+                        .foregroundStyle(canSave ? Theme.accentStrong : Theme.inkTertiary)
+                        .disabled(!canSave)
+                    }
+                } else if focus == .note, !noteSuggestions.isEmpty {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        noteSuggestionBar
+                    }
                 }
             }
         }
-        .onAppear(perform: load)
+        .sheet(isPresented: $showDatePicker) {
+            datePickerSheet
+        }
+        .onAppear {
+            load()
+            // Raise the native decimal pad on the amount field. A short hop
+            // past the current run loop makes the focus reliably bring up the
+            // keyboard once the field is in the hierarchy.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                focus = .amount
+            }
+        }
         .task {
             // Daily AUD→USD rate for bi-currency entry (cached; nil offline
             // with an empty cache → the USD option stays hidden, AUD-only).
@@ -273,7 +328,7 @@ struct ExpenseFormView: View {
                 ForEach(noteSuggestions, id: \.self) { suggestion in
                     Button {
                         note = suggestion
-                        noteFocused = false
+                        focus = nil
                     } label: {
                         Text(suggestion)
                             .appFont(14, .semibold)
@@ -307,21 +362,51 @@ struct ExpenseFormView: View {
         .padding(.bottom, 4)
     }
 
-    /// "Quedan $287,60" pill colored by budget state.
+    /// Active entry currency drives the primary display currency. Reads the
+    /// persisted preference so toggling the AUD|USD switch flips it live.
+    private var activeUSD: Bool { model.defaultEntryCurrency == "USD" }
+
+    /// "Quedan $287,60" pill colored by budget state, showing BOTH currencies:
+    /// the active one on top, the other muted beneath. Two intentional
+    /// single-line rows (never wraps) sized to content so it sits cleanly
+    /// beside the title. AUD-only without a rate.
     private var remainingPill: some View {
         let state = model.currentBudgetState
-        let remaining = MoneyFormatter.aud(model.currentRemainingCents, locale: l10n.locale)
+        let remaining = model.currentRemainingCents
         return HStack(spacing: 7) {
             Circle()
                 .fill(Theme.stateBarColor(state))
-                .frame(width: 8, height: 8)
-            Text(l10n.t("remaining.pill", remaining))
-                .appFont(13, .semibold)
-                .monospacedDigit()
-                .foregroundStyle(Theme.stateTextColor(state))
+                .frame(width: 7, height: 7)
+            if let rate = model.usdRate, rate > 0 {
+                let primary = activeUSD
+                    ? MoneyFormatter.usd(fromAUDCents: remaining, rate: rate, locale: l10n.locale)
+                    : MoneyFormatter.aud(remaining, locale: l10n.locale)
+                let secondary = activeUSD
+                    ? MoneyFormatter.aud(remaining, locale: l10n.locale)
+                    : MoneyFormatter.approxUSD(audCents: remaining, rate: rate, locale: l10n.locale)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(l10n.t("remaining.pill", primary))
+                        .appFont(12.5, .semibold)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.stateTextColor(state))
+                        .lineLimit(1)
+                    Text(secondary)
+                        .appFont(10.5, .semibold)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.stateTextColor(state).opacity(0.6))
+                        .lineLimit(1)
+                }
+            } else {
+                Text(l10n.t("remaining.pill", MoneyFormatter.aud(remaining, locale: l10n.locale)))
+                    .appFont(13, .semibold)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.stateTextColor(state))
+                    .lineLimit(1)
+            }
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 7)
+        .fixedSize()
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
         .background(Theme.statePillBg(state))
         .clipShape(Capsule())
     }
@@ -329,7 +414,9 @@ struct ExpenseFormView: View {
     private var heroAmount: some View {
         VStack(spacing: 12) {
             // AUD | USD switch — only when a daily rate is available; without
-            // it entry is AUD-only and this row disappears entirely.
+            // it entry is AUD-only and this row disappears entirely. Toggling
+            // both re-expresses the typed value AND persists the app-wide
+            // active currency (which drives the bi-currency display).
             if amount.rate != nil {
                 SegmentedPill(
                     options: [
@@ -340,23 +427,32 @@ struct ExpenseFormView: View {
                         get: { amount.currency },
                         set: { newValue in
                             withAnimation(.snappy(duration: 0.15)) { amount.switchTo(newValue) }
+                            // Only the quick-entry switch owns the app-wide
+                            // active currency; toggling it inside the edit
+                            // sheet must not flip the global preference.
+                            if !isEditing {
+                                model.setDefaultEntryCurrency(newValue == .usd ? "USD" : "AUD")
+                            }
                         }
                     )
                 )
                 .fixedSize()
             }
+            // Editable hero amount driven by the native decimal pad. Bound
+            // through the canonical `AmountInput`, so cents/audCents/switchTo
+            // and the recent-amount chips all keep working.
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(amount.currency == .usd ? "US$" : "$")
                     .appFont(30, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
-                Text(amount.input.display(separator: separator))
+                TextField("0", text: amountText)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.center)
+                    .fixedSize()
                     .amountStyle(66, .bold)
                     .kerning(-0.03 * 66)
                     .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.4)
-                    .contentTransition(.numericText())
-                    .animation(.snappy(duration: 0.15), value: amount.input)
+                    .focused($focus, equals: .amount)
             }
             if let approx = approxText {
                 Text(approx)
@@ -367,7 +463,17 @@ struct ExpenseFormView: View {
             datePill
         }
         .frame(maxHeight: .infinity)
-        .frame(minHeight: 110)
+        .frame(minHeight: 90)
+    }
+
+    /// Bridges the native `TextField` to the canonical `AmountInput`: reads the
+    /// locale-formatted display, writes back through `setDisplay` (which caps
+    /// digits/decimals), so `cents`, `audCents` and the chips stay in sync.
+    private var amountText: Binding<String> {
+        Binding(
+            get: { amount.input.display(separator: separator) },
+            set: { amount.input.setDisplay($0, separator: separator) }
+        )
     }
 
     /// "≈ US$ 6,86" while typing AUD; "≈ $10,50 AUD" while typing USD.
@@ -454,7 +560,7 @@ struct ExpenseFormView: View {
             TextField(l10n.t("entry.note.placeholder"), text: $note)
                 .appFont(15)
                 .foregroundStyle(Theme.ink)
-                .focused($noteFocused)
+                .focused($focus, equals: .note)
                 .submitLabel(.done)
         }
         .padding(.horizontal, 16)
@@ -542,7 +648,8 @@ struct ExpenseFormView: View {
             amount = next
             note = ""
             pickedDate = nil
-            noteFocused = false
+            // Keep the decimal pad up on the amount field for the next entry.
+            focus = .amount
         case .edit(let item):
             if let id = item.expense.id, let date = pickedDate ?? CalendarDate(item.expense.date) {
                 model.updateExpense(

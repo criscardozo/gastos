@@ -46,6 +46,15 @@ enum MoneyFormatter {
         formatter(locale: locale, symbol: "US$ ").string(from: decimal(fromCents: cents)) ?? "US$ 0"
     }
 
+    /// USD figure converted from an AUD anchor, rendered WITHOUT the ≈ mark:
+    /// "US$ 186,90". Used only when USD is the ACTIVE display currency and the
+    /// exact AUD anchor is shown right alongside it, so the USD figure reads as
+    /// the primary value and the AUD next to it is the exact source of truth.
+    static func usd(fromAUDCents audCents: Int, rate: Double, locale: Locale) -> String {
+        let usd = (Double(audCents) / 100.0) * rate
+        return formatter(locale: locale, symbol: "US$ ").string(from: NSNumber(value: usd)) ?? "US$ 0"
+    }
+
     /// Approximate FX display: "≈ US$ 186,90". Display-only, never persisted.
     static func approxUSD(audCents: Int, rate: Double, locale: Locale) -> String {
         let usd = (Double(audCents) / 100.0) * rate

@@ -471,8 +471,11 @@ final class AppModel {
 
     // MARK: FX
 
+    /// Populates the daily AUD→USD rate for the bi-currency DISPLAY (remaining
+    /// pill, history/summary columns). Fetched on household attach regardless
+    /// of any preference; nil (offline, empty cache) ⇒ everything falls back
+    /// to AUD-only.
     func refreshFXIfNeeded() async {
-        guard showUSD else { return }
         usdRate = await fx.audToUsdRate()
     }
 

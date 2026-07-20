@@ -17,6 +17,41 @@ struct SummaryView: View {
         PeriodLogic.budgetState(spentCents: spentCents, budgetCents: budgetCents)
     }
 
+    /// Active entry currency drives the primary display currency; reads the
+    /// persisted preference so the entry switch flips it live.
+    private var activeUSD: Bool { model.defaultEntryCurrency == "USD" }
+
+    /// A right/left-aligned AUD + USD pair for an AUD sum. The active currency
+    /// is emphasized (ink, bold), the other muted (tertiary, semibold). The
+    /// USD figure is approximate (≈) since it is converted from the AUD sum.
+    /// AUD-only when no rate is available.
+    @ViewBuilder
+    private func dualCurrency(
+        _ audCents: Int,
+        alignment: HorizontalAlignment,
+        primary: CGFloat,
+        secondary: CGFloat
+    ) -> some View {
+        if let rate = model.usdRate, rate > 0 {
+            let audText = MoneyFormatter.aud(audCents, locale: l10n.locale)
+            let usdText = MoneyFormatter.approxUSD(audCents: audCents, rate: rate, locale: l10n.locale)
+            VStack(alignment: alignment, spacing: 1) {
+                Text(audText)
+                    .appFont(activeUSD ? secondary : primary, activeUSD ? .semibold : .bold)
+                    .foregroundStyle(activeUSD ? Theme.inkTertiary : Theme.ink)
+                Text(usdText)
+                    .appFont(activeUSD ? primary : secondary, activeUSD ? .bold : .semibold)
+                    .foregroundStyle(activeUSD ? Theme.ink : Theme.inkTertiary)
+            }
+            .monospacedDigit()
+        } else {
+            Text(MoneyFormatter.aud(audCents, locale: l10n.locale))
+                .appFont(primary, .bold)
+                .monospacedDigit()
+                .foregroundStyle(Theme.ink)
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -75,14 +110,17 @@ struct SummaryView: View {
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(MoneyFormatter.aud(remainingCents, locale: l10n.locale))
+                // Primary = active currency (large); secondary = the other,
+                // shown as a muted chip. USD is exact ("US$ …", no ≈) only
+                // because the AUD anchor sits right beside it.
+                Text(heroPrimaryRemaining)
                     .amountStyle(52, .bold)
                     .kerning(-0.03 * 52)
                     .foregroundStyle(state == .over ? Theme.red : Theme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-                if model.showUSD, let rate = model.usdRate {
-                    Text(MoneyFormatter.approxUSD(audCents: remainingCents, rate: rate, locale: l10n.locale))
+                if let secondary = heroSecondaryRemaining {
+                    Text(secondary)
                         .appFont(13, .semibold)
                         .monospacedDigit()
                         .foregroundStyle(Theme.inkSecondary)
@@ -124,6 +162,17 @@ struct SummaryView: View {
                 }
             }
 
+            // Muted USD equivalent of spent / budget (AUD-derived ⇒ ≈).
+            if let rate = model.usdRate, rate > 0 {
+                (
+                    Text(MoneyFormatter.approxUSD(audCents: spentCents, rate: rate, locale: l10n.locale))
+                    + Text(" " + l10n.t("summary.of", MoneyFormatter.usd(fromAUDCents: budgetCents, rate: rate, locale: l10n.locale)))
+                )
+                .appFont(12, .semibold)
+                .monospacedDigit()
+                .foregroundStyle(Theme.inkTertiary)
+            }
+
             budgetInsetRow(period)
         }
         .padding(EdgeInsets(top: 22, leading: 20, bottom: 22, trailing: 20))
@@ -133,6 +182,23 @@ struct SummaryView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
+    }
+
+    /// Hero remaining in the active currency (large). USD converts the AUD
+    /// remaining with the daily rate; without a rate it stays AUD.
+    private var heroPrimaryRemaining: String {
+        if activeUSD, let rate = model.usdRate, rate > 0 {
+            return MoneyFormatter.usd(fromAUDCents: remainingCents, rate: rate, locale: l10n.locale)
+        }
+        return MoneyFormatter.aud(remainingCents, locale: l10n.locale)
+    }
+
+    /// Hero remaining in the OTHER currency (muted chip); nil without a rate.
+    private var heroSecondaryRemaining: String? {
+        guard let rate = model.usdRate, rate > 0 else { return nil }
+        return activeUSD
+            ? MoneyFormatter.aud(remainingCents, locale: l10n.locale)                       // exact anchor
+            : MoneyFormatter.approxUSD(audCents: remainingCents, rate: rate, locale: l10n.locale)
     }
 
     private var daysLeftPrefix: Text {
@@ -233,10 +299,12 @@ struct SummaryView: View {
                                             .appFont(13.5, .semibold)
                                             .foregroundStyle(Theme.ink)
                                         Spacer()
-                                        Text(MoneyFormatter.aud(entry.totalCents, locale: l10n.locale))
-                                            .appFont(13.5, .semibold)
-                                            .monospacedDigit()
-                                            .foregroundStyle(Theme.ink)
+                                        dualCurrency(
+                                            entry.totalCents,
+                                            alignment: .trailing,
+                                            primary: 13.5,
+                                            secondary: 11
+                                        )
                                     }
                                     MiniBar(
                                         color: Theme.categoryColor(id: entry.id, lightHex: entry.category.color),
@@ -282,10 +350,7 @@ struct SummaryView: View {
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
             }
-            Text(MoneyFormatter.aud(total, locale: l10n.locale))
-                .appFont(19, .bold)
-                .monospacedDigit()
-                .foregroundStyle(Theme.ink)
+            dualCurrency(total, alignment: .leading, primary: 19, secondary: 12)
             MiniBar(color: Theme.avatarColor(hex: profile.color), fraction: fraction)
         }
         .padding(14)
