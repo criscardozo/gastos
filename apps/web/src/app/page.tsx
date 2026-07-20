@@ -7,9 +7,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
-import { useHousehold, useLocale, useUserDoc } from "@/components/providers";
+import { useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { Avatar } from "@/components/ui/avatar";
+import { AmountPair } from "@/components/ui/amount-pair";
 import { ProgressBar, stateBarColor } from "@/components/ui/progress-bar";
 import { StatePill } from "@/components/ui/state-pill";
 import {
@@ -27,10 +28,16 @@ import {
   formatApproxUsd,
   formatCents,
   formatCentsCompact,
+  formatUsd,
 } from "@/lib/money";
 import { formatPeriodRange, formatShortDate } from "@/lib/dates";
 import { categoryCircleBg, categoryColor, memberColor } from "@/lib/categories";
-import { convertCents, fetchUsdRate } from "@/lib/fx";
+import { convertCents } from "@/lib/fx";
+import {
+  effectiveCurrency,
+  useActiveCurrency,
+  useUsdRate,
+} from "@/lib/use-currency";
 
 function useCategoryLabel() {
   const t = useTranslations("categories");
@@ -50,8 +57,13 @@ export default function DashboardPage() {
   const t = useTranslations();
   const { locale } = useLocale();
   const { household, periods, currentPeriod, today } = useHousehold();
-  const { userDoc } = useUserDoc();
   const categoryLabel = useCategoryLabel();
+
+  // Active currency (persisted per user) drives the primary display currency;
+  // the daily rate is display-only and degrades to AUD when unavailable.
+  const active = useActiveCurrency();
+  const usdRate = useUsdRate();
+  const effective = effectiveCurrency(active, usdRate);
 
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
 
@@ -109,23 +121,6 @@ export default function DashboardPage() {
       sumCents(expenses.filter((e) => containsDate(selected, e.date))),
     );
   }, [household, selected, isCurrent, expensesLoading, expenses]);
-
-  /* Display-only FX */
-  const wantsUsd = userDoc?.displayCurrency === "USD";
-  const [usdRate, setUsdRate] = useState<number | null>(null);
-  useEffect(() => {
-    if (!wantsUsd) {
-      setUsdRate(null);
-      return;
-    }
-    let cancelled = false;
-    void fetchUsdRate().then((rate) => {
-      if (!cancelled) setUsdRate(rate);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [wantsUsd]);
 
   if (household === null) return null;
 
@@ -299,11 +294,15 @@ export default function DashboardPage() {
               className="tnum text-[54px] font-bold leading-none tracking-[-0.03em]"
               style={{ color: state === "over" ? "var(--over)" : "var(--ink)" }}
             >
-              {formatCents(remaining, household.currency, locale)}
+              {effective === "USD" && usdRate !== null
+                ? formatUsd(convertCents(remaining, usdRate), locale)
+                : formatCents(remaining, household.currency, locale)}
             </span>
-            {wantsUsd && usdRate !== null && (
+            {usdRate !== null && (
               <span className="tnum rounded-full bg-fill px-2.5 py-1 text-[13px] font-semibold text-ink-2">
-                {formatApproxUsd(convertCents(remaining, usdRate), locale)}
+                {effective === "USD"
+                  ? formatCents(remaining, household.currency, locale)
+                  : formatApproxUsd(convertCents(remaining, usdRate), locale)}
               </span>
             )}
           </div>
@@ -346,9 +345,13 @@ export default function DashboardPage() {
                 <span className="flex-1 truncate text-[13.5px] font-semibold text-ink">
                   {m.profile.displayName.split(" ")[0]}
                 </span>
-                <span className="tnum text-sm font-bold text-ink">
-                  {formatCents(m.amount, household.currency, locale)}
-                </span>
+                <AmountPair
+                  audCents={m.amount}
+                  usdRate={usdRate}
+                  active={effective}
+                  locale={locale}
+                  size="lg"
+                />
               </div>
               <div className="h-[7px] rounded bg-soft">
                 <div
@@ -410,13 +413,16 @@ export default function DashboardPage() {
                 />
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <div className="flex items-baseline justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <span className="text-[13px] font-semibold text-ink">
                     {categoryLabel(household, b.id)}
                   </span>
-                  <span className="tnum text-[13px] font-semibold text-ink">
-                    {formatCents(b.amount, household.currency, locale)}
-                  </span>
+                  <AmountPair
+                    audCents={b.amount}
+                    usdRate={usdRate}
+                    active={effective}
+                    locale={locale}
+                  />
                 </div>
                 <div className="h-[5px] overflow-hidden rounded-[3px] bg-soft">
                   <div

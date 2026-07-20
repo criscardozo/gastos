@@ -22,6 +22,7 @@ import {
 } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { Avatar } from "@/components/ui/avatar";
+import { AmountPair } from "@/components/ui/amount-pair";
 import { Segmented } from "@/components/ui/segmented";
 import {
   BudgetCurrencyControls,
@@ -35,16 +36,20 @@ import {
   addExpense,
   deleteExpense,
   updateExpense,
+  updateUserDefaultEntryCurrency,
   type ExpenseInput,
 } from "@/lib/firebase/mutations";
 import type { Expense, Household, PeriodBudget } from "@/lib/firebase/converters";
 import { categoryCircleBg, categoryColor, type CategoryDef } from "@/lib/categories";
 import {
-  formatApproxUsd,
   formatCents,
   formatCentsCompact,
   parseAmountToCents,
 } from "@/lib/money";
+import {
+  effectiveCurrency,
+  useActiveCurrency,
+} from "@/lib/use-currency";
 import { formatDayHeading, formatPeriodRange, formatShortDate } from "@/lib/dates";
 import { addDays } from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
@@ -269,6 +274,11 @@ export default function ExpensesPage() {
     usdRate: editUsdRate,
   } = useBudgetCurrency();
 
+  // Active display currency (persisted). The add-row toggle writes it (below),
+  // so switching the entry currency also flips every figure to that currency.
+  const active = useActiveCurrency();
+  const effective = effectiveCurrency(active, usdRate);
+
   // Seed the add row from the user's preferred entry currency once it loads —
   // never clobbering a choice already made on the row this session.
   const addCurrencyInit = useRef(false);
@@ -418,6 +428,16 @@ export default function ExpensesPage() {
   const addEntryCurrency: EntryCurrency = usdRate === null ? "AUD" : addCurrency;
   const editEntryCurrency: EntryCurrency =
     editUsdRate === null ? "AUD" : editCurrency;
+
+  // Changing the add-row currency also persists it as the app-wide active
+  // currency (drives the primary display currency everywhere, incl. the
+  // dashboard remaining). The edit-row toggle does NOT — it only affects the
+  // expense being edited.
+  const changeAddCurrency = (c: EntryCurrency) => {
+    setAddCurrency(c);
+    const fb = getFirebaseClient();
+    if (fb !== null) void updateUserDefaultEntryCurrency(fb.db, user.uid, c);
+  };
 
   /* Mutations */
   const submitAdd = async () => {
@@ -608,22 +628,19 @@ export default function ExpensesPage() {
             />
           )}
         </div>
-        {e.entryCurrency === "USD" && e.entryAmountCents !== undefined ? (
-          // Canonical AUD stays the bold figure (every total reads it); the
-          // originally entered USD shows beneath it, ≈-style like the badges.
-          <div className="flex flex-col items-end leading-tight">
-            <span className="tnum text-sm font-bold text-ink">
-              {formatCents(e.amountCents, household.currency, locale)}
-            </span>
-            <span className="tnum text-[11px] font-semibold text-ink-3">
-              {formatApproxUsd(e.entryAmountCents, locale)}
-            </span>
-          </div>
-        ) : (
-          <span className="tnum text-right text-sm font-bold text-ink">
-            {formatCents(e.amountCents, household.currency, locale)}
-          </span>
-        )}
+        {/* Two currencies per row: AUD (canonical, exact) + USD. A USD-entered
+            expense shows its exact original; otherwise USD is a ≈ conversion.
+            The active currency is emphasized, the other muted. */}
+        <AmountPair
+          audCents={e.amountCents}
+          usdExactCents={
+            e.entryCurrency === "USD" ? e.entryAmountCents : undefined
+          }
+          usdRate={usdRate}
+          active={effective}
+          locale={locale}
+          size="lg"
+        />
         <div className="flex justify-end gap-1.5">
           <button
             type="button"
@@ -753,7 +770,7 @@ export default function ExpensesPage() {
             amountRef={amountRef}
             noteSuggestions={noteSuggestions}
             currency={addCurrency}
-            onCurrencyChange={setAddCurrency}
+            onCurrencyChange={changeAddCurrency}
             usdRate={usdRate}
             locale={locale}
           />

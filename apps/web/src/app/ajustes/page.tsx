@@ -1,7 +1,7 @@
 "use client";
 
 // Ajustes (design 4c): default budget vs current period, preferences
-// (USD display toggle, language), household + invite code, sign out.
+// (active currency, language, theme), household + invite code, sign out.
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -29,7 +29,6 @@ import {
   updateDefaultBudget,
   updatePeriodAmount,
   updateUserDefaultEntryCurrency,
-  updateUserDisplayCurrency,
   updateUserLanguage,
 } from "@/lib/firebase/mutations";
 import { formatCents } from "@/lib/money";
@@ -130,33 +129,6 @@ function EditableAmount({
       title={t("editAmount")}
     >
       {formatCents(cents, currency, locale)}
-    </button>
-  );
-}
-
-function Toggle({
-  checked,
-  onChange,
-  ariaLabel,
-}: {
-  checked: boolean;
-  onChange: (next: boolean) => void;
-  ariaLabel: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={ariaLabel}
-      onClick={() => onChange(!checked)}
-      className="relative h-[26px] w-11 flex-none rounded-full transition-colors"
-      style={{ background: checked ? "var(--good)" : "var(--track)" }}
-    >
-      <span
-        className="absolute top-[2px] h-[22px] w-[22px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-all"
-        style={{ left: checked ? 20 : 2 }}
-      />
     </button>
   );
 }
@@ -344,26 +316,14 @@ export default function SettingsPage() {
         <div className="flex items-center gap-[11px] border-b border-soft py-3">
           <div className="flex flex-1 flex-col gap-0.5">
             <span className="text-sm font-semibold text-ink">
-              {t("showUsd")}
+              {t("activeCurrency")}
             </span>
-            <span className="text-xs text-ink-3">{t("showUsdHint")}</span>
+            <span className="text-xs text-ink-3">
+              {t("activeCurrencyHint")}
+            </span>
           </div>
-          <Toggle
-            checked={userDoc?.displayCurrency === "USD"}
-            ariaLabel={t("showUsd")}
-            onChange={(next) =>
-              withDb((db) =>
-                updateUserDisplayCurrency(db, user.uid, next ? "USD" : null),
-              )
-            }
-          />
-        </div>
-        <div className="flex items-center gap-[11px] border-b border-soft py-3">
-          <span className="flex-1 text-sm font-semibold text-ink">
-            {t("defaultCurrency")}
-          </span>
           <Segmented<"AUD" | "USD">
-            ariaLabel={t("defaultCurrency")}
+            ariaLabel={t("activeCurrency")}
             options={[
               { value: "AUD", label: "AUD" },
               { value: "USD", label: "USD" },
