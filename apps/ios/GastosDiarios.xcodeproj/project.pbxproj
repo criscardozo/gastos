@@ -27,6 +27,7 @@
 		5E46E4B94AD5C7F23B172691 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6536FA32700C9D56775F646 /* OnboardingView.swift */; };
 		640D8D41EB8C7A28FF96E037 /* ExpenseCurrencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64713318537584A1DE652757 /* ExpenseCurrencyTests.swift */; };
 		64A277BCB7F020EF239963C3 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E33FD8DDEB4A07F1B2A435 /* L10n.swift */; };
+		680E4B8C6F5A7FE48B79B090 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 03D045921BA5FA8C21C1F897 /* Assets.xcassets */; };
 		6946D942898FFB0E720BE6A8 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F2F3CF0DA3B43BF2B52F6274 /* Localizable.xcstrings */; };
 		6C5BE67620D8309FBFC6AA29 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */; };
 		7C7BB44D55BFA7138E41FA4A /* NewPeriodSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC5C06310A005683DBEFB6B4 /* NewPeriodSheet.swift */; };
@@ -111,6 +112,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		03D045921BA5FA8C21C1F897 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		11945CEB1AA2DB45FA94F42C /* FXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FXService.swift; sourceTree = "<group>"; };
 		145F6B37DD56D3F48641A9AB /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		1C8F75E05B2CB5526FAED626 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
@@ -268,6 +270,7 @@
 		72C1916B67069ECD0FBF118C /* GastosDiariosWatch */ = {
 			isa = PBXGroup;
 			children = (
+				03D045921BA5FA8C21C1F897 /* Assets.xcassets */,
 				BAEA9BBAFF633250640CC1BC /* GastosDiariosWatchApp.swift */,
 				24370CD3C5C4E80E76227FF0 /* Info.plist */,
 				F2F3CF0DA3B43BF2B52F6274 /* Localizable.xcstrings */,
@@ -525,9 +528,9 @@
 			projectRoot = "";
 			targets = (
 				BB77704655A94E52B0EDAC2D /* GastosDiarios */,
-				B27E9CBF7F7A5606DBAA3B11 /* GastosDiariosTests */,
-				CA80E83009431AB805515F6A /* GastosDiariosWatch */,
 				FDC38A1B3C147B9B2FB09856 /* GastosDiariosWidget */,
+				CA80E83009431AB805515F6A /* GastosDiariosWatch */,
+				B27E9CBF7F7A5606DBAA3B11 /* GastosDiariosTests */,
 			);
 		};
 /* End PBXProject section */
@@ -537,6 +540,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				680E4B8C6F5A7FE48B79B090 /* Assets.xcassets in Resources */,
 				6946D942898FFB0E720BE6A8 /* Localizable.xcstrings in Resources */,
 				E2B11B14C6758B571316975F /* categories.json in Resources */,
 			);
