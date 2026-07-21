@@ -247,11 +247,32 @@ struct ExpenseFormView: View {
             .padding(.top, isEditing ? 18 : 6)
             .padding(.bottom, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Theme.bg.ignoresSafeArea())
+            // Tap any empty area to dismiss the keyboard (brings the tab bar
+            // back). A reliable, discoverable escape that doesn't depend on the
+            // keyboard accessory toolbar rendering. Interactive controls sit in
+            // front and receive their taps first.
+            .background(
+                Theme.bg
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture { focus = nil }
+            )
             .toolbar(.hidden, for: .navigationBar)
+            // Hide the main tab bar while a field is focused: with the keyboard
+            // up it would otherwise bleed through the keyboard's translucent
+            // bottom strip. The keyboard toolbar's "▾" dismisses to bring it
+            // back. (No-op in the edit sheet, which has no tab bar.)
+            .toolbar(focus == nil ? .visible : .hidden, for: .tabBar)
             .toolbar {
                 if focus == .amount {
                     ToolbarItemGroup(placement: .keyboard) {
+                        Button {
+                            focus = nil
+                        } label: {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Theme.inkSecondary)
+                        }
                         Spacer()
                         Button(l10n.t(isEditing ? "common.save" : "entry.save")) {
                             save()
