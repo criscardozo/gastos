@@ -21,6 +21,11 @@ enum WidgetBridge {
         /// same way the app does.
         var timezone: String
         var updatedAtEpoch: Int
+        /// Daily AUD→USD rate for the bi-currency line; nil ⇒ AUD-only.
+        /// Optional so an older snapshot still decodes.
+        var usdRate: Double?
+        /// The user's active currency ("AUD" | "USD"); nil ⇒ AUD.
+        var activeCurrency: String?
     }
 
     static let snapshotKey = "budgetSnapshot"

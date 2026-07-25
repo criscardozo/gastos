@@ -36,7 +36,9 @@ final class WatchConnectivityModel: NSObject, ObservableObject {
             remainingCents: remaining,
             budgetCents: context["budgetCents"] as? Int ?? 0,
             state: context["state"] as? String ?? "comfortable",
-            currency: context["currency"] as? String ?? "AUD"
+            currency: context["currency"] as? String ?? "AUD",
+            usdRate: context["usdRate"] as? Double,
+            activeCurrency: context["activeCurrency"] as? String
         )
         DispatchQueue.main.async { self.budget = budget }
     }

@@ -14,6 +14,11 @@ struct BudgetSnapshot: Codable {
     /// IANA household timezone used for the days-left computation.
     var timezone: String
     var updatedAtEpoch: Int
+    /// Daily AUD→USD rate for the bi-currency line; nil ⇒ AUD-only.
+    /// Optional so a snapshot written by an older app build still decodes.
+    var usdRate: Double?
+    /// The user's active currency ("AUD" | "USD"); nil ⇒ AUD.
+    var activeCurrency: String?
 
     static let appGroupId = "group.dev.cardozo.gastosdiarios"
     static let key = "budgetSnapshot"
@@ -36,7 +41,9 @@ struct BudgetSnapshot: Codable {
             periodEndDate: formatter.string(from: end),
             currency: "AUD",
             timezone: TimeZone.current.identifier,
-            updatedAtEpoch: Int(Date().timeIntervalSince1970)
+            updatedAtEpoch: Int(Date().timeIntervalSince1970),
+            usdRate: 0.65,
+            activeCurrency: "AUD"
         )
     }
 
@@ -75,6 +82,40 @@ struct BudgetSnapshot: Codable {
         formatter.maximumFractionDigits = decimals
         let amount = NSDecimalNumber(value: remainingCents).dividing(by: 100)
         return formatter.string(from: amount) ?? "$0"
+    }
+
+    /// True when USD is the active currency AND a rate is available.
+    private var usdIsPrimary: Bool {
+        activeCurrency == "USD" && (usdRate ?? 0) > 0
+    }
+
+    /// Remaining in the ACTIVE currency — the widget's headline figure.
+    func formattedRemainingPrimary(compact: Bool = false) -> String {
+        guard usdIsPrimary, let rate = usdRate else {
+            return formattedRemaining(compact: compact)
+        }
+        return Self.formatUSD(Double(remainingCents) / 100.0 * rate, compact: compact)
+    }
+
+    /// The other currency, shown small beneath the headline; nil ⇒ AUD-only
+    /// (no rate), in which case the widget renders exactly as before.
+    func formattedRemainingSecondary() -> String? {
+        guard let rate = usdRate, rate > 0 else { return nil }
+        if usdIsPrimary {
+            return formattedRemaining()  // exact AUD anchor
+        }
+        return "≈ " + Self.formatUSD(Double(remainingCents) / 100.0 * rate)
+    }
+
+    private static func formatUSD(_ amount: Double, compact: Bool = false) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = .autoupdatingCurrent
+        formatter.currencySymbol = "US$ "
+        let decimals = compact && amount == amount.rounded() ? 0 : 2
+        formatter.minimumFractionDigits = decimals
+        formatter.maximumFractionDigits = decimals
+        return formatter.string(from: NSNumber(value: amount)) ?? "US$ 0"
     }
 
     /// Whole-dollar short form for the Lock Screen circular family ("$288").

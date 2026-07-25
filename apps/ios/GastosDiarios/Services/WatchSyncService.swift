@@ -26,6 +26,8 @@ final class WatchSyncService: NSObject {
         static let budgetCents = "budgetCents"
         static let state = "state"
         static let currency = "currency"
+        static let usdRate = "usdRate"
+        static let activeCurrency = "activeCurrency"
     }
 
     #if canImport(WatchConnectivity)
@@ -48,14 +50,25 @@ final class WatchSyncService: NSObject {
 
     /// Pushes the latest budget snapshot to the watch. Cheap and coalescing:
     /// `updateApplicationContext` only keeps the most recent value.
-    func updateBudgetContext(remainingCents: Int, budgetCents: Int, state: String, currency: String) {
+    func updateBudgetContext(
+        remainingCents: Int,
+        budgetCents: Int,
+        state: String,
+        currency: String,
+        usdRate: Double? = nil,
+        activeCurrency: String? = nil
+    ) {
         #if canImport(WatchConnectivity)
-        let context: [String: Any] = [
+        var context: [String: Any] = [
             Key.remainingCents: remainingCents,
             Key.budgetCents: budgetCents,
             Key.state: state,
             Key.currency: currency,
         ]
+        // Optional bi-currency extras — omitted when there is no daily rate,
+        // so the watch simply stays AUD-only.
+        if let usdRate { context[Key.usdRate] = usdRate }
+        if let activeCurrency { context[Key.activeCurrency] = activeCurrency }
         guard let session, session.activationState == .activated else {
             pendingContext = context
             return
