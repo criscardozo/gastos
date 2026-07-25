@@ -639,6 +639,7 @@ export default function ExpensesPage() {
           usdRate={usdRate}
           active={effective}
           locale={locale}
+          currency={household.currency}
           size="lg"
         />
         <div className="flex justify-end gap-1.5">

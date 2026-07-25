@@ -17,6 +17,7 @@ export function AmountPair({
   usdRate,
   active,
   locale,
+  currency = "AUD",
   size = "sm",
 }: {
   audCents: number;
@@ -25,10 +26,12 @@ export function AmountPair({
   usdRate: number | null;
   active: ActiveCurrency;
   locale: string;
+  /** The household's canonical currency (always what `audCents` is in). */
+  currency?: string;
   /** Primary figure size. */
   size?: "sm" | "lg";
 }) {
-  const aud = formatCents(audCents, "AUD", locale);
+  const aud = formatCents(audCents, currency, locale);
   const usd =
     usdExactCents !== undefined
       ? formatUsd(usdExactCents, locale)

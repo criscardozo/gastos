@@ -350,6 +350,7 @@ export default function DashboardPage() {
                   usdRate={usdRate}
                   active={effective}
                   locale={locale}
+                  currency={household.currency}
                   size="lg"
                 />
               </div>
@@ -422,6 +423,7 @@ export default function DashboardPage() {
                     usdRate={usdRate}
                     active={effective}
                     locale={locale}
+                    currency={household.currency}
                   />
                 </div>
                 <div className="h-[5px] overflow-hidden rounded-[3px] bg-soft">

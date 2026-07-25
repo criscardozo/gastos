@@ -31,7 +31,7 @@ import { Icon } from "@/components/ui/icon";
 import { Segmented } from "@/components/ui/segmented";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { expenseConverter, type Expense } from "@/lib/firebase/converters";
-import { formatApproxUsd, formatCents, parseAmountToCents } from "@/lib/money";
+import { formatCents, formatUsd, parseAmountToCents } from "@/lib/money";
 import { formatPeriodRange } from "@/lib/dates";
 import { addDays, type PeriodRange } from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv, parseCsv } from "@/lib/export/csv";
@@ -663,7 +663,9 @@ export default function DataPage() {
                                 )}
                               </span>
                               <span className="text-[11px] font-semibold text-ink-3">
-                                {formatApproxUsd(r.entryAmountCents, locale)}
+                                {/* The CSV's original USD amount is exact, not
+                                    a conversion — no ≈ prefix. */}
+                                {formatUsd(r.entryAmountCents, locale)}
                               </span>
                             </div>
                           ) : (
