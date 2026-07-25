@@ -36,6 +36,9 @@ apps/ios/*.xcodeproj/project.xcworkspace/xcuserdata/
 xcuserdata/
 DerivedData/
 *.xcresult
+# Build output of install-device.sh (device sideload) and ad-hoc xcodebuild runs
+apps/ios/build-device/
+apps/ios/build/
 
 # Test output
 coverage/
