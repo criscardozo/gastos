@@ -20,8 +20,8 @@ authorization, not this doc.
 | `displayName` | string | From the auth profile; editable |
 | `householdId` | string \| null | Set after creating/joining a household |
 | `language` | `"es"` \| `"en"` \| null | null → follow system/browser |
-| `displayCurrency` | string \| null | e.g. `"USD"`. Display-only FX toggle; null → off |
-| `defaultEntryCurrency` | `"AUD"` \| `"USD"` \| null | Which currency the expense-entry switch starts on. null → AUD |
+| `displayCurrency` | string \| null | **Deprecated** — the old "also show USD" toggle. No client reads or writes it; the rules still accept it so older builds don't break. Superseded by `defaultEntryCurrency` |
+| `defaultEntryCurrency` | `"AUD"` \| `"USD"` \| null | The user's **active currency**: it seeds the expense-entry switch AND is the primary display currency across the app (remaining, totals, list rows, widget, watch). The other currency is shown alongside it. null → AUD |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
 ### `households/{householdId}`
@@ -91,9 +91,12 @@ entry time) and stores the AUD result in `amountCents`, plus `entryCurrency:
 "USD"` and `entryAmountCents` (the USD the user typed) so the app can display
 the original ("US$ 7.00"). Entered in AUD ⇒ both optional fields omitted (docs
 stay identical to the pre-bi-currency shape; older expenses need no migration).
-FX (frankfurter, daily-cached) is needed only at entry time; if unavailable the
-USD option is disabled and entry falls back to AUD. The per-user default entry
-currency lives on `users/{uid}.defaultEntryCurrency`.
+FX (frankfurter, daily-cached) is required at entry time; if unavailable the
+USD option is disabled and entry falls back to AUD. It is ALSO used, purely for
+display, to show both currencies side by side — those converted figures are
+always marked `≈`, while `amountCents` and a USD entry's `entryAmountCents` are
+exact. The per-user active currency lives on `users/{uid}.defaultEntryCurrency`
+(see the users table).
 
 An expense belongs to the period whose `[startDate, endDate]` contains its `date`.
 Queries are lexicographic string ranges: `date >= start && date <= end`, which is why the

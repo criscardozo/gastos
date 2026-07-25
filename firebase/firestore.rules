@@ -15,7 +15,10 @@ rules_version = '2';
 //   - householdId: string|null (optional; denormalized convenience — when set,
 //     the user must be a member of that household after this write)
 //   - language: "es"|"en"|null (optional)
-//   - displayCurrency: string|null (optional, ISO 4217 uppercase)
+//   - displayCurrency: string|null (optional, ISO 4217 uppercase; DEPRECATED —
+//     no client writes it any more, still accepted for older builds)
+//   - defaultEntryCurrency: "AUD"|"USD"|null (optional; the user's active
+//     currency — entry switch + primary display currency)
 //   - createdAt: timestamp (required, server time, immutable)
 //   - updatedAt: timestamp (required, server time)
 //
