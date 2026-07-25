@@ -11,3 +11,8 @@ allowBuilds:
   re2: true
   sharp: true
   unrs-resolver: true
+
+# Force a patched postcss into Next's transitive tree (Next still pins an
+# affected 8.5.x). Build-time only — kept until Next ships the bump itself.
+overrides:
+  postcss: ^8.5.18
