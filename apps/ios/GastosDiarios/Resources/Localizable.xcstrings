@@ -1,9 +1,7 @@
 {
   "sourceLanguage" : "es",
   "strings" : {
-    " · %@ " : {
-
-    },
+    " · %@ " : {},
     "%@ · %@" : {
       "localizations" : {
         "es" : {
@@ -1817,40 +1815,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Solo afecta al período en curso"
-          }
-        }
-      }
-    },
-    "settings.usd" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Also show in USD"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver también en USD"
-          }
-        }
-      }
-    },
-    "settings.usd.foot" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Approximate (≈). The real amount stays in AUD."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aproximado (≈). El monto real sigue en AUD."
           }
         }
       }

@@ -260,28 +260,15 @@ struct ExpenseFormView: View {
             .toolbar(.hidden, for: .navigationBar)
             // Hide the main tab bar while a field is focused: with the keyboard
             // up it would otherwise bleed through the keyboard's translucent
-            // bottom strip. The keyboard toolbar's "▾" dismisses to bring it
-            // back. (No-op in the edit sheet, which has no tab bar.)
+            // bottom strip. Tapping any empty area (above) dismisses the
+            // keyboard and brings it back. (No-op in the edit sheet, which has
+            // no tab bar.)
             .toolbar(focus == nil ? .visible : .hidden, for: .tabBar)
             .toolbar {
-                if focus == .amount {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        Button {
-                            focus = nil
-                        } label: {
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Theme.inkSecondary)
-                        }
-                        Spacer()
-                        Button(l10n.t(isEditing ? "common.save" : "entry.save")) {
-                            save()
-                        }
-                        .appFont(15, .bold)
-                        .foregroundStyle(canSave ? Theme.accentStrong : Theme.inkTertiary)
-                        .disabled(!canSave)
-                    }
-                } else if focus == .note, !noteSuggestions.isEmpty {
+                // Note autocomplete only. There is deliberately NO accessory
+                // bar for the amount field: saving is covered by the always
+                // visible bottom CTA and dismissing by the background tap.
+                if focus == .note, !noteSuggestions.isEmpty {
                     ToolbarItemGroup(placement: .keyboard) {
                         noteSuggestionBar
                     }

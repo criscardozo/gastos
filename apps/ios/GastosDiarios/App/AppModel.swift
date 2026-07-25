@@ -142,8 +142,6 @@ final class AppModel {
         )
     }
 
-    var showUSD: Bool { userProfile?.displayCurrency == "USD" }
-
     /// Currency the expense-entry switch starts on. Absent/nil ⇒ AUD.
     var defaultEntryCurrency: String {
         userProfile?.defaultEntryCurrency == "USD" ? "USD" : "AUD"
@@ -477,6 +475,8 @@ final class AppModel {
     /// to AUD-only.
     func refreshFXIfNeeded() async {
         usdRate = await fx.audToUsdRate()
+        // The widget/watch snapshot carries the rate — republish once it lands.
+        publishWidgetSnapshot()
     }
 
     /// AUD→USD rate for bi-currency budget ENTRY. Unlike `refreshFXIfNeeded`,
@@ -485,7 +485,14 @@ final class AppModel {
     /// an empty cache) means the editors stay AUD-only.
     func budgetEntryUSDRate() async -> Double? {
         if let usdRate { return usdRate }
-        return await fx.audToUsdRate()
+        // Cache it: display (remaining pill, columns) reads `usdRate`, so
+        // sharing the same snapshot keeps entry and display consistent.
+        let rate = await fx.audToUsdRate()
+        if let rate {
+            usdRate = rate
+            publishWidgetSnapshot()
+        }
+        return rate
     }
 
     // MARK: Auth actions
@@ -692,23 +699,12 @@ final class AppModel {
         Task { try? await firestore.updateUser(uid: uid, fields: ["language": language]) }
     }
 
-    func setDisplayCurrency(usd: Bool) {
-        guard let uid else { return }
-        userProfile?.displayCurrency = usd ? "USD" : nil
-        Task {
-            try? await self.firestore.updateUser(
-                uid: uid,
-                fields: ["displayCurrency": usd ? "USD" : NSNull()]
-            )
-            await self.refreshFXIfNeeded()
-        }
-    }
-
     /// Per-user default entry currency ("AUD" | "USD"). Stored literally (both
     /// are valid per shared/schema.md); the entry switch reads it on open.
     func setDefaultEntryCurrency(_ currency: String) {
         guard let uid, ["AUD", "USD"].contains(currency) else { return }
         userProfile?.defaultEntryCurrency = currency
+        publishWidgetSnapshot()  // active currency drives the widget/watch figure
         Task { try? await firestore.updateUser(uid: uid, fields: ["defaultEntryCurrency": currency]) }
     }
 
@@ -814,7 +810,9 @@ final class AppModel {
             periodEndDate: period.endDate,
             currency: household.currency,
             timezone: household.timezone,
-            updatedAtEpoch: Int(Date().timeIntervalSince1970)
+            updatedAtEpoch: Int(Date().timeIntervalSince1970),
+            usdRate: usdRate,
+            activeCurrency: defaultEntryCurrency
         )
         if var last = lastPublishedSnapshot {
             last.updatedAtEpoch = snapshot.updatedAtEpoch
@@ -826,7 +824,9 @@ final class AppModel {
             remainingCents: snapshot.remainingCents,
             budgetCents: snapshot.budgetCents,
             state: snapshot.state,
-            currency: snapshot.currency
+            currency: snapshot.currency,
+            usdRate: snapshot.usdRate,
+            activeCurrency: snapshot.activeCurrency
         )
     }
 }

@@ -10,7 +10,6 @@ struct UserProfile: Codable, Identifiable {
     var displayName: String
     var householdId: String?
     var language: String?
-    var displayCurrency: String?
     /// Which currency the expense-entry switch starts on ("AUD" | "USD").
     /// Absent/nil ⇒ AUD. See shared/schema.md.
     var defaultEntryCurrency: String?

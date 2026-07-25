@@ -41,7 +41,6 @@ export async function ensureUserDoc(
     displayName: displayName || "—",
     householdId: null,
     language: null,
-    displayCurrency: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -54,17 +53,6 @@ export async function updateUserLanguage(
 ): Promise<void> {
   await updateDoc(doc(db, "users", uid), {
     language,
-    updatedAt: serverTimestamp(),
-  });
-}
-
-export async function updateUserDisplayCurrency(
-  db: Firestore,
-  uid: string,
-  displayCurrency: string | null,
-): Promise<void> {
-  await updateDoc(doc(db, "users", uid), {
-    displayCurrency,
     updatedAt: serverTimestamp(),
   });
 }

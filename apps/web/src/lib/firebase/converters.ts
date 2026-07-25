@@ -17,7 +17,6 @@ export interface UserDoc {
   displayName: string;
   householdId: string | null;
   language: "es" | "en" | null;
-  displayCurrency: string | null;
   /** Which currency the expense-entry toggle starts on. null ⇒ AUD. */
   defaultEntryCurrency: "AUD" | "USD" | null;
 }
@@ -92,7 +91,6 @@ export const userConverter = readOnly<UserDoc>((snap) => {
     displayName: (data.displayName as string) ?? "",
     householdId: (data.householdId as string | null) ?? null,
     language: (data.language as "es" | "en" | null) ?? null,
-    displayCurrency: (data.displayCurrency as string | null) ?? null,
     defaultEntryCurrency:
       (data.defaultEntryCurrency as "AUD" | "USD" | null) ?? null,
   };
