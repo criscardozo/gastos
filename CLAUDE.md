@@ -11,7 +11,7 @@ Implemented from `docs/PLAN.md` (architecture decisions + phases — read it bef
 A household expense tracker for 2 users (Cristian + wife) who share a single weekly/fortnightly budget. Two clients, no custom backend:
 
 - `apps/ios/` — SwiftUI app (iOS 17+, MVVM with `@Observable`, Firebase iOS SDK via SPM) optimized for fast expense entry.
-- `apps/web/` — Next.js App Router + TypeScript + Tailwind + next-intl, fully client-rendered, deployed on Vercel Hobby. Charts are plain styled divs per the design (no chart library).
+- `apps/web/` — Next.js App Router + TypeScript + Tailwind + next-intl, fully client-rendered, deployed on Vercel Hobby. Charts are plain styled divs per the design (no chart library). Also an installable **PWA** (service worker in `public/sw.js`, manifest + safe-area handling), which is how the app stays permanently on the iPhone without Apple signing. One codebase, two layouts: sidebar from `lg` up, bottom tab bar below it, with `/nuevo` mirroring the iOS quick-entry screen.
 - `firebase/` — Firestore security rules, indexes, emulator config, and rules tests (vitest + `@firebase/rules-unit-testing`).
 - `shared/` — the cross-platform contract: `schema.md` (Firestore schema source of truth), `categories.json`, `period-test-vectors.json`.
 

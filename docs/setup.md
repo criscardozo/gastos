@@ -100,6 +100,28 @@ This needs ONE console change per domain that serves the app:
 Localhost needs no extra setup: `next dev` applies the same rewrite, and
 `localhost` is authorized by default.
 
+## Install the PWA on an iPhone
+
+The web app is installable, which is how it stays on the phone permanently —
+unlike the sideloaded iOS build, a home-screen web app is not code-signed and
+never expires.
+
+1. Open `https://gastos.cardozo.dev` in **Safari** (not Chrome — only Safari can
+   install to the home screen on iOS).
+2. Share → **Add to Home Screen**.
+3. Launch it from the icon. It runs standalone (no browser chrome), signs in via
+   redirect (see the same-origin auth handler above) and works offline: the
+   shell is precached by the service worker and Firestore keeps its own local
+   cache, so expenses entered without signal sync when connectivity returns.
+
+After changing the manifest, remove the icon and re-add it — iOS caches the
+manifest at install time.
+
+What a PWA cannot do on iOS, and why the native app still exists: home-screen
+widgets, the Apple Watch app, Back Tap / App Intents, and scheduled local
+notifications. Both clients read the same Firestore data, so they can be used
+interchangeably.
+
 ## Local development
 
 ```sh
