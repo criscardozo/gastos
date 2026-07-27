@@ -14,7 +14,7 @@ import { PiggyMark } from "@/components/brand";
 
 function LoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-bg">
       <div className="flex h-[64px] w-[64px] animate-pulse items-center justify-center rounded-[20px] bg-accent shadow-[0_12px_28px_rgba(255,92,57,.35)]">
         <PiggyMark size={44} variant="cream" />
       </div>
@@ -54,10 +54,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     currentPeriod.startDate === newPeriodStart;
 
   return (
-    <div className="flex h-screen bg-bg">
+    <div className="safe-x flex h-[100dvh] bg-bg">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[1176px] px-8 py-[26px]">{children}</div>
+        <div className="safe-y mx-auto max-w-[1176px] px-8 py-[26px]">
+          {children}
+        </div>
       </main>
       {showNewPeriodSheet && <NewPeriodSheet period={currentPeriod} />}
     </div>

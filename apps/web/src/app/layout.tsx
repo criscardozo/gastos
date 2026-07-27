@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/app-shell";
+import { ServiceWorkerRegistrar } from "@/components/service-worker";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -15,6 +16,13 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "Gastos Diarios",
   description: "El presupuesto de la casa, entre los dos.",
+  // Installed-app behaviour on iOS. The manifest covers modern iOS, but the
+  // legacy meta tags still matter on older versions.
+  appleWebApp: {
+    capable: true,
+    title: "Gastos",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
@@ -22,6 +30,12 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "#FAF6EF" },
     { media: "(prefers-color-scheme: dark)", color: "#191410" },
   ],
+  // Extend under the notch and the home indicator; every edge the content
+  // must avoid is then handled explicitly via env(safe-area-inset-*).
+  viewportFit: "cover",
+  // The app is a fixed-height shell — zooming just breaks the layout, and an
+  // accidental double-tap zoom during quick entry is pure friction.
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -39,6 +53,7 @@ export default function RootLayout({
               '(function(){try{var t=localStorage.getItem("gd:theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();',
           }}
         />
+        <ServiceWorkerRegistrar />
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>

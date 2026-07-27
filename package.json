@@ -10,6 +10,7 @@
     "test": "pnpm --filter web test && pnpm --filter rules-tests test",
     "test:web": "pnpm --filter web test",
     "test:rules": "pnpm --filter rules-tests test",
+    "verify:pwa": "pnpm --filter web verify:pwa",
     "emulators": "firebase emulators:start --config firebase/firebase.json --project qcris-gastos-diarios",
     "backup": "node scripts/backup.mjs"
   },

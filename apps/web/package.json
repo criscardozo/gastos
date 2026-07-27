@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "verify:pwa": "node scripts/verify-pwa.mjs"
   },
   "dependencies": {
     "firebase": "^12.16.0",

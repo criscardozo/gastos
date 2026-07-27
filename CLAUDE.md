@@ -44,6 +44,7 @@ All JS commands run from the repo root (pnpm workspace):
 - `pnpm dev` — Next.js dev server (`apps/web`).
 - `pnpm typecheck && pnpm lint && pnpm build` — web checks.
 - `pnpm test:web` — vitest, includes the period-logic vector tests.
+- `pnpm verify:pwa` — PWA smoke check (service worker + offline cold start). Needs a PRODUCTION build already serving: `pnpm build && pnpm --filter web exec next start -p 3112`.
 - `pnpm test:rules` — Firestore rules tests (spins up the emulator via `firebase emulators:exec`; needs Java).
 - `pnpm emulators` — local emulator suite (Auth 9099, Firestore 8080, UI 4000).
 - iOS: `cd apps/ios && xcodegen && open GastosDiarios.xcodeproj`. CLI tests:
