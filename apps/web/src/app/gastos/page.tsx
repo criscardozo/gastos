@@ -12,6 +12,7 @@ import {
   type ChangeEvent,
   type ReactNode,
 } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import {
@@ -584,12 +585,12 @@ export default function ExpensesPage() {
     return (
       <div
         key={e.id}
-        className={`grid items-center gap-3 py-[9px] ${
+        className={`grid items-center gap-2 py-[9px] lg:gap-3 ${
           // Below lg (iPad portrait) the category/date columns are hidden and
           // the note takes the remaining space — the full grid needs ~900px.
           flat
-            ? "grid-cols-[44px_minmax(0,1fr)_34px_auto_76px] lg:grid-cols-[44px_1.6fr_1fr_90px_120px_110px_76px]"
-            : "grid-cols-[44px_minmax(0,1fr)_34px_auto_76px] lg:grid-cols-[44px_1.6fr_1fr_120px_110px_76px]"
+            ? "grid-cols-[38px_minmax(0,1fr)_26px_auto_68px] lg:grid-cols-[44px_1.6fr_1fr_90px_120px_110px_76px]"
+            : "grid-cols-[38px_minmax(0,1fr)_26px_auto_68px] lg:grid-cols-[44px_1.6fr_1fr_120px_110px_76px]"
         }`}
       >
         <div
@@ -608,8 +609,18 @@ export default function ExpensesPage() {
             }}
           />
         </div>
-        <span className="truncate text-sm font-semibold text-ink">
-          {e.note !== "" ? e.note : catLabel}
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm font-semibold text-ink">
+            {e.note !== "" ? e.note : catLabel}
+          </span>
+          {e.pendingWrite && (
+            <span
+              className="flex flex-none items-center gap-1 text-[11px] font-semibold text-ink-3"
+              title={t("pending")}
+            >
+              <Icon name="cloud_off" size={13} className="text-ink-3" />
+            </span>
+          )}
         </span>
         <span className="hidden truncate text-[13px] text-ink-2 lg:block">
           {catLabel}
@@ -669,14 +680,14 @@ export default function ExpensesPage() {
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-y-2">
         <h1 className="text-[22px] font-bold text-ink">{t("title")}</h1>
         <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={exportCsv}
             disabled={sorted.length === 0}
-            className="flex items-center gap-1.5 rounded-full border border-pill bg-surface px-3 py-[5px] disabled:opacity-40"
+            className="hidden items-center gap-1.5 rounded-full border border-pill bg-surface px-3 py-[5px] disabled:opacity-40 lg:flex"
             title={t("exportCsv")}
           >
             <Icon name="download" size={15} className="text-ink-2" />
@@ -757,9 +768,18 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      {/* Inline add row */}
+      {/* Quick-entry shortcut — the phone's replacement for the add row below */}
+      <Link
+        href="/nuevo"
+        className="flex items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-bold text-white shadow-[0_6px_16px_rgba(255,92,57,.3)] lg:hidden"
+      >
+        <Icon name="add" size={18} className="text-white" />
+        {tDash("newExpense")}
+      </Link>
+
+      {/* Inline add row (desktop: five controls on one line) */}
       <div
-        className="flex flex-col gap-2 rounded-2xl bg-surface px-4 py-2.5"
+        className="hidden flex-col gap-2 rounded-2xl bg-surface px-4 py-2.5 lg:flex"
         style={{ border: "2px dashed rgba(255,92,57,.4)" }}
       >
         <div className="flex flex-wrap items-center gap-3">
@@ -831,7 +851,7 @@ export default function ExpensesPage() {
             <button
               type="button"
               onClick={() => amountRef.current?.focus()}
-              className="rounded-full bg-accent px-[13px] py-1.5 text-xs font-bold text-white"
+              className="hidden rounded-full bg-accent px-[13px] py-1.5 text-xs font-bold text-white lg:block"
             >
               {tDash("newExpense")}
             </button>

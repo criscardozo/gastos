@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import { useAuth, useHousehold, useUserDoc } from "@/components/providers";
 import { Onboarding } from "@/components/onboarding/onboarding";
 import { Sidebar } from "@/components/sidebar";
+import { MobileNav } from "@/components/mobile-nav";
 import { NewPeriodSheet } from "@/components/new-period-sheet";
 import { PiggyMark } from "@/components/brand";
 
@@ -56,11 +57,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="safe-x flex h-[100dvh] bg-bg">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="safe-y mx-auto max-w-[1176px] px-8 py-[26px]">
+      <main className="flex-1 overflow-y-auto overscroll-y-contain">
+        {/* pb leaves room for the fixed tab bar (its own safe-area inset is
+            handled inside MobileNav); from lg up the sidebar takes over. */}
+        <div className="safe-y mx-auto max-w-[1176px] px-4 py-5 pb-[92px] lg:px-8 lg:py-[26px] lg:pb-[26px]">
           {children}
         </div>
       </main>
+      <MobileNav />
       {showNewPeriodSheet && <NewPeriodSheet period={currentPeriod} />}
     </div>
   );

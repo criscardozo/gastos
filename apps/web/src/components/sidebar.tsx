@@ -10,6 +10,7 @@ import { PiggyMark } from "@/components/brand";
 import { useHousehold } from "@/components/providers";
 
 const NAV = [
+  { href: "/nuevo", icon: "add_circle", key: "new" },
   { href: "/", icon: "donut_small", key: "summary" },
   { href: "/gastos", icon: "receipt_long", key: "expenses" },
   { href: "/datos", icon: "database", key: "data" },
@@ -30,7 +31,7 @@ export function Sidebar() {
       : [];
 
   return (
-    <aside className="flex w-[232px] flex-none flex-col gap-1.5 border-r border-line px-4 py-[22px]">
+    <aside className="hidden w-[232px] flex-none flex-col gap-1.5 border-r border-line px-4 py-[22px] lg:flex">
       <div className="mb-[22px] flex items-center gap-2.5 px-2">
         <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-accent">
           <PiggyMark size={24} variant="cream" />

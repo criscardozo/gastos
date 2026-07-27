@@ -5,6 +5,7 @@
     "loading": "Cargando…"
   },
   "nav": {
+    "new": "Nuevo",
     "summary": "Resumen",
     "expenses": "Gastos",
     "data": "Datos",
@@ -90,7 +91,8 @@
     "noResults": "Nada por acá",
     "noResultsHint": "Ningún gasto coincide con esos filtros.",
     "recentAmounts": "Montos recientes:",
-    "useAmount": "Usar {amount}"
+    "useAmount": "Usar {amount}",
+    "pending": "Pendiente de sincronizar"
   },
   "empty": {
     "noExpensesTitle": "Sin gastos todavía",
@@ -205,5 +207,9 @@
     "delete": "Eliminar {name}",
     "deleteConfirm": "¿Eliminar la categoría \"{name}\"? Los gastos ya cargados van a mostrarla como \"Categoría eliminada\".",
     "maxReached": "Llegaron al máximo de 30 categorías."
+  },
+  "quickEntry": {
+    "currency": "Moneda del monto",
+    "saved": "¡Guardado!"
   }
 }

@@ -281,8 +281,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Hero + split */}
-      <div className="grid grid-cols-[1.35fr_1fr] gap-4">
-        <div className="flex flex-col gap-[13px] rounded-[22px] border border-line bg-surface px-6 py-[22px]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr]">
+        <div className="flex flex-col gap-[13px] rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6 lg:py-[22px]">
           <div className="flex items-center justify-between">
             <span className="text-[13px] font-semibold text-ink-2">
               {t("dashboard.remaining")}
@@ -291,7 +291,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-baseline gap-3">
             <span
-              className="tnum text-[54px] font-bold leading-none tracking-[-0.03em]"
+              className="tnum text-[40px] font-bold leading-none tracking-[-0.03em] sm:text-[54px]"
               style={{ color: state === "over" ? "var(--over)" : "var(--ink)" }}
             >
               {effective === "USD" && usdRate !== null
@@ -330,7 +330,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3.5 rounded-[22px] border border-line bg-surface px-6 py-5">
+        <div className="flex flex-col gap-3.5 rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6">
           <span className="text-[13px] font-semibold text-ink-2">
             {t("dashboard.betweenTwo")}
           </span>
@@ -377,8 +377,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Category breakdown + trend */}
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_1.35fr] gap-4">
-        <div className="flex flex-col gap-1 rounded-[22px] border border-line bg-surface px-6 py-5">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_1.35fr]">
+        <div className="flex flex-col gap-1 rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6">
           <span className="mb-2 text-[13px] font-semibold text-ink-2">
             {t("dashboard.byCategory")}
           </span>
@@ -442,7 +442,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        <div className="flex flex-col gap-2.5 rounded-[22px] border border-line bg-surface px-6 py-5">
+        <div className="flex flex-col gap-2.5 rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6">
           <div className="flex items-baseline justify-between">
             <span className="text-[13px] font-semibold text-ink-2">
               {t("dashboard.trend")}
@@ -451,7 +451,7 @@ export default function DashboardPage() {
               {t("dashboard.trendHint")}
             </span>
           </div>
-          <div className="flex flex-1 items-stretch gap-[18px] pt-2">
+          <div className="flex flex-1 items-stretch gap-3 overflow-x-auto pt-2 lg:gap-[18px]">
             {trend.map(({ period: p, spent: pSpent }) => {
               const over = pSpent > p.amountCents;
               const isCurrentBar =
@@ -467,7 +467,7 @@ export default function DashboardPage() {
               return (
                 <div
                   key={p.startDate}
-                  className="flex min-w-0 flex-1 flex-col gap-2"
+                  className="flex min-w-[62px] flex-1 flex-col gap-2"
                 >
                   <div className="relative flex min-h-[140px] flex-1 items-end">
                     <div

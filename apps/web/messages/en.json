@@ -5,6 +5,7 @@
     "loading": "Loading…"
   },
   "nav": {
+    "new": "New",
     "summary": "Summary",
     "expenses": "Expenses",
     "data": "Data",
@@ -90,7 +91,8 @@
     "noResults": "Nothing here",
     "noResultsHint": "No expense matches those filters.",
     "recentAmounts": "Recent amounts:",
-    "useAmount": "Use {amount}"
+    "useAmount": "Use {amount}",
+    "pending": "Waiting to sync"
   },
   "empty": {
     "noExpensesTitle": "No expenses yet",
@@ -205,5 +207,9 @@
     "delete": "Delete {name}",
     "deleteConfirm": "Delete the \"{name}\" category? Existing expenses will show it as \"Deleted category\".",
     "maxReached": "You've reached the maximum of 30 categories."
+  },
+  "quickEntry": {
+    "currency": "Amount currency",
+    "saved": "Saved!"
   }
 }
