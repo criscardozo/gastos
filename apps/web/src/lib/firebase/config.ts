@@ -2,13 +2,32 @@
 // Firestore security rules are the security boundary, not this config.
 // Each value can be overridden via NEXT_PUBLIC_FIREBASE_* env vars (Vercel).
 
+/** Firebase's own auth domain — the fallback when we can't serve the handler
+ * ourselves (server render, or a host without the proxy). */
+const FIREBASE_AUTH_DOMAIN = "qcris-gastos-diarios.firebaseapp.com";
+
+/**
+ * Where Firebase's auth handler lives, from the browser's point of view.
+ *
+ * next.config.ts proxies `/__/auth/*` to Firebase, so ANY host serving this
+ * app also serves the handler on its own origin. Reporting that origin as the
+ * authDomain is what makes `signInWithRedirect` survive Safari's storage
+ * partitioning — and redirect is the only flow an installed PWA can rely on.
+ * Falls back to Firebase's domain during SSR/prerender, where there is no
+ * window (auth only ever runs client-side).
+ */
+function resolveAuthDomain(): string {
+  const explicit = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+  if (explicit !== undefined && explicit !== "") return explicit;
+  if (typeof window === "undefined") return FIREBASE_AUTH_DOMAIN;
+  return window.location.host;
+}
+
 export const firebaseConfig = {
   apiKey:
     process.env.NEXT_PUBLIC_FIREBASE_API_KEY ??
     "AIzaSyCFjRzCIzkg3Lkh44J1UxwNV1w9EBbMX6s",
-  authDomain:
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ??
-    "qcris-gastos-diarios.firebaseapp.com",
+  authDomain: resolveAuthDomain(),
   projectId:
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "qcris-gastos-diarios",
   storageBucket:

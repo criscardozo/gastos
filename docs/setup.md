@@ -63,9 +63,8 @@ subdomain:
    HTTPS certificate; the domain flips to "Valid Configuration". `.dev` is
    HSTS-preloaded, so it's always HTTPS.
 4. **Firebase Auth** → Authentication → Settings → **Authorized domains** →
-   add `gastos.cardozo.dev`, or `signInWithPopup` throws
-   `auth/unauthorized-domain` on the new domain. No code change is needed —
-   the Firebase `authDomain` stays `qcris-gastos-diarios.firebaseapp.com`.
+   add `gastos.cardozo.dev`, or sign-in throws `auth/unauthorized-domain` on
+   the new domain.
 5. **Make it the canonical URL (optional).** Vercel → Settings → Domains: use
    the `⋯` menu on `gastos.cardozo.dev` → **Set as Production Domain**, then on
    `gastos-diarios-web.vercel.app` choose **Redirect to** → `gastos.cardozo.dev`
@@ -74,6 +73,32 @@ subdomain:
    at `https://gastos.cardozo.dev`.
 
 `gastos.cardozo.dev` is live (Let's Encrypt cert, auto-renewed).
+
+### Same-origin auth handler (required for the installed PWA)
+
+The app serves Firebase's auth handler from its own origin: `next.config.ts`
+rewrites `/__/auth/*` to `<project>.firebaseapp.com`, and `authDomain` is set to
+whatever host the app is loaded from (`src/lib/firebase/config.ts`).
+
+Why: with the default cross-origin `authDomain`, Safari's storage partitioning
+breaks `signInWithRedirect`, which is why this app used `signInWithPopup`. A
+popup cannot be relied on inside an INSTALLED PWA — standalone mode opens a
+detached browser context and the handshake back to the app is lost. Serving the
+handler same-origin makes redirect work, so the home-screen app can sign in.
+The app picks the flow automatically: popup in a browser tab, redirect when
+running standalone.
+
+This needs ONE console change per domain that serves the app:
+
+1. **Google Cloud Console** → APIs & Services → **Credentials** → the *Web
+   client* OAuth 2.0 client ID (the one Firebase created) → **Authorized
+   redirect URIs** → add `https://gastos.cardozo.dev/__/auth/handler`.
+   Without it Google rejects the sign-in with **`redirect_uri_mismatch`**.
+2. The domain must also be in Firebase Auth → **Authorized domains** (step 4
+   above).
+
+Localhost needs no extra setup: `next dev` applies the same rewrite, and
+`localhost` is authorized by default.
 
 ## Local development
 

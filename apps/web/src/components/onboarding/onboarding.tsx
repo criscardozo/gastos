@@ -3,9 +3,8 @@
 // Onboarding (design 1g): login → create-or-join household → budget setup.
 // Three progress dots; the active dot is a 20px-wide coral pill.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { signInWithPopup } from "firebase/auth";
 
 import { useAuth, useLocale, ackNewPeriod } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
@@ -18,6 +17,10 @@ import {
   useBudgetCurrency,
 } from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
+import {
+  completeRedirectSignIn,
+  signInWithGoogle,
+} from "@/lib/firebase/sign-in";
 import {
   createHousehold,
   joinHousehold,
@@ -50,16 +53,30 @@ function GoogleMark() {
 function LoginStep() {
   const t = useTranslations();
   const [error, setError] = useState(false);
+  // True from the moment a redirect is kicked off until the page unloads, so
+  // the button can't be hit twice while Safari is navigating away.
+  const [busy, setBusy] = useState(false);
+
+  // Surface a failed redirect sign-in on the way back from Google; a
+  // successful one is picked up by onAuthStateChanged.
+  useEffect(() => {
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    void completeRedirectSignIn(fb.auth).catch(() => setError(true));
+  }, []);
 
   const signIn = async () => {
     const fb = getFirebaseClient();
     if (fb === null) return;
     setError(false);
+    setBusy(true);
     try {
-      // signInWithPopup only — signInWithRedirect breaks under Safari ITP.
-      await signInWithPopup(fb.auth, fb.googleProvider);
+      // Popup in a browser tab, redirect in an installed PWA — see sign-in.ts.
+      await signInWithGoogle(fb.auth, fb.googleProvider);
     } catch {
       setError(true);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -79,7 +96,8 @@ function LoginStep() {
       <button
         type="button"
         onClick={() => void signIn()}
-        className="flex h-14 w-full items-center justify-center gap-2.5 rounded-full border border-pill bg-surface shadow-[0_2px_8px_rgba(36,26,16,.06)]"
+        disabled={busy}
+        className="flex h-14 w-full items-center justify-center gap-2.5 rounded-full border border-pill bg-surface shadow-[0_2px_8px_rgba(36,26,16,.06)] disabled:opacity-60"
       >
         <GoogleMark />
         <span className="text-[15.5px] font-bold text-ink">
