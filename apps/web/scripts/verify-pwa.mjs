@@ -33,6 +33,18 @@ if (!reachable) {
   process.exit(1);
 }
 
+
+/** Poll from Node (not an in-page rAF loop, which contends with the worker's
+ * cache writes) until `probe` returns true or the timeout elapses. */
+async function until(probe, timeoutMs = 25_000, everyMs = 500) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await probe().catch(() => false)) return true;
+    await new Promise((r) => setTimeout(r, everyMs));
+  }
+  return false;
+}
+
 const browser = await chromium.launch();
 const context = await browser.newContext({
   viewport: { width: 390, height: 844 }, // phone-sized, like the installed app
@@ -41,28 +53,43 @@ const page = await context.newPage();
 
 // 1) The worker installs and takes control of the page.
 await page.goto(BASE, { waitUntil: "load" });
-const controlled = await page
-  .waitForFunction(
+const controlled = await until(() =>
+  page.evaluate(
     async () =>
       (await navigator.serviceWorker.getRegistration()) !== undefined &&
       navigator.serviceWorker.controller !== null,
-    null,
-    { timeout: 20_000 },
-  )
-  .then(() => true)
-  .catch(() => false);
+  ),
+);
 check("service worker registers and takes control", controlled);
 
-// 2) The shell routes are precached at install time.
+// 2) The shell routes and their assets are precached at install time.
+// Wait for the install to settle before asserting (and before cutting the
+// network below) — precaching the chunks takes a moment after the worker
+// takes control.
+await until(() =>
+  page.evaluate(async () => {
+    const names = await caches.keys();
+    if (names.length === 0) return false;
+    const cache = await caches.open(names[0]);
+    const keys = (await cache.keys()).map((r) => new URL(r.url).pathname);
+    return (
+      keys.includes("/") &&
+      keys.filter((u) => u.startsWith("/_next/static/")).length >= 10
+    );
+  }),
+);
+
 const cached = await page.evaluate(async () => {
   const names = await caches.keys();
   const cache = await caches.open(names[0]);
   return (await cache.keys()).map((r) => new URL(r.url).pathname);
 });
+const staticCount = cached.filter((u) => u.startsWith("/_next/static/")).length;
 check(
-  "app shell is precached",
-  ["/", "/gastos", "/ajustes", "/datos"].every((p) => cached.includes(p)),
-  cached.filter((u) => !u.startsWith("/_next")).join(" "),
+  "app shell + assets are precached",
+  ["/", "/gastos", "/ajustes", "/datos"].every((p) => cached.includes(p)) &&
+    staticCount >= 10,
+  `${cached.filter((u) => !u.startsWith("/_next")).join(" ")} + ${staticCount} assets`,
 );
 
 // 3) The point of all this: a cold start with the network cut.
@@ -89,9 +116,17 @@ check("an unvisited route opens offline", deepRoute);
 
 // 5) The auth handler must never be served from the cache.
 await context.setOffline(false);
-const authStatus = await page.evaluate(() =>
-  fetch("/__/auth/handler").then((r) => r.status),
-);
+// Re-navigate first: evaluating straight after the previous goto can race the
+// execution context being torn down.
+await page.goto(BASE, { waitUntil: "domcontentloaded" });
+let authStatus = 0;
+try {
+  authStatus = await page.evaluate(() =>
+    fetch("/__/auth/handler").then((r) => r.status),
+  );
+} catch (error) {
+  console.error(`  (auth handler probe failed: ${String(error).slice(0, 120)})`);
+}
 check("auth handler bypasses the cache", authStatus === 200, `HTTP ${authStatus}`);
 
 await browser.close();

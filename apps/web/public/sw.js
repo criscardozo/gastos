@@ -14,7 +14,7 @@
  * Bump VERSION to retire every old cache on the next activation.
  */
 
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = `gd-${VERSION}`;
 
 /** Routes worth having available on a cold offline start. */
@@ -26,10 +26,35 @@ self.addEventListener("install", (event) => {
       const cache = await caches.open(CACHE);
       // Individually, so one 404 can't fail the whole install.
       await Promise.allSettled(SHELL.map((url) => cache.add(url)));
+      await precacheShellAssets(cache);
       await self.skipWaiting();
     })(),
   );
 });
+
+/**
+ * Cache the JS/CSS the shell references.
+ *
+ * Without this the FIRST visit is not actually offline-capable: the page's
+ * chunks were already fetched before this worker took control, so they never
+ * entered the cache and an offline reload would render an empty shell. The
+ * asset URLs aren't known at author time, so they're read out of the shell
+ * HTML we just cached. Fonts live in the CSS and are picked up on first use.
+ */
+async function precacheShellAssets(cache) {
+  try {
+    const response = await cache.match("/");
+    if (response === undefined) return;
+    const html = await response.text();
+    const urls = new Set(
+      [...html.matchAll(/["'](\/_next\/static\/[^"']+)["']/g)].map((m) => m[1]),
+    );
+    await Promise.allSettled([...urls].map((url) => cache.add(url)));
+  } catch {
+    // Best effort: a partial precache still beats none, and everything is
+    // cached on demand as soon as it's requested through the worker.
+  }
+}
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
