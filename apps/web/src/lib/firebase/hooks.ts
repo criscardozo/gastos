@@ -55,6 +55,10 @@ export function useExpensesRange(
     ).withConverter(expenseConverter);
     const unsubscribe = onSnapshot(
       q,
+      // includeMetadataChanges so the "pending" chip clears as soon as the
+      // server acknowledges a queued write. Metadata changes are local — they
+      // don't cost reads.
+      { includeMetadataChanges: true },
       (snap) => {
         setState({ expenses: snap.docs.map((d) => d.data()), loading: false });
       },

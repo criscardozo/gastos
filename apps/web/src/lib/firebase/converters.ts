@@ -63,6 +63,9 @@ export interface Expense {
   entryCurrency?: "AUD" | "USD";
   /** Original amount in `entryCurrency`. Present iff `entryCurrency` is. Display-only. */
   entryAmountCents?: number;
+  /** Written locally but not yet acknowledged by the server — the expense is
+   * queued offline. Local state, never a stored field. */
+  pendingWrite: boolean;
 }
 
 export interface Invite {
@@ -131,6 +134,7 @@ export const expenseConverter = readOnly<Expense>((snap) => {
     date: data.date as string,
     createdBy: data.createdBy as string,
     createdAt: (data.createdAt as Timestamp | null) ?? null,
+    pendingWrite: snap.metadata.hasPendingWrites,
   };
   // Bi-currency: read the optional entry fields only when both are present
   // (schema guarantees they are co-dependent). Absent ⇒ entered in AUD.
