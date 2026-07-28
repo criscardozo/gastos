@@ -89,6 +89,15 @@ struct L10n {
             .string(from: instant(of: date, in: timeZone))
     }
 
+    /// "28 jul, 13:48" — an absolute instant in the DEVICE timezone (used for
+    /// the signing expiry, which is a wall-clock moment, not a ledger date).
+    func shortDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.setLocalizedDateFormatFromTemplate("d MMM HH:mm")
+        return formatter.string(from: date)
+    }
+
     /// "1 – 14 de julio" (same month) / "29 jun – 5 jul" — period navigator.
     func periodRange(start: CalendarDate, end: CalendarDate, timeZone: TimeZone, long: Bool = true) -> String {
         let startInstant = instant(of: start, in: timeZone)

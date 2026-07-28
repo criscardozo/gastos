@@ -548,6 +548,10 @@ struct SettingsView: View {
                             .foregroundStyle(Theme.inkSecondary)
                     }
                     .padding(.vertical, 13)
+                    if let expiry = SigningExpiryService.expiryDate {
+                        Divider().overlay(Theme.separator)
+                        signingExpiryRow(expiry)
+                    }
                     Divider().overlay(Theme.separator)
                     Link(destination: URL(string: "https://gastos.cardozo.dev")!) {
                         HStack(spacing: 11) {
@@ -567,6 +571,36 @@ struct SettingsView: View {
             }
         }
         .padding(.top, 10)
+    }
+
+    /// Free-account signing lasts 7 days; show exactly when this build dies.
+    /// Only rendered when a provisioning profile exists (never in Simulator).
+    private func signingExpiryRow(_ expiry: Date) -> some View {
+        let days = SigningExpiryService.daysRemaining() ?? 0
+        let expired = days < 0
+        let colour: Color = expired || days <= 1
+            ? Theme.redText
+            : (days <= 2 ? Theme.accentStrong : Theme.inkSecondary)
+        return HStack(spacing: 11) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(l10n.t("signing.row.title"))
+                    .appFont(14.5, .semibold)
+                    .foregroundStyle(Theme.ink)
+                Text(l10n.shortDate(expiry))
+                    .appFont(11.5)
+                    .foregroundStyle(Theme.inkTertiary)
+            }
+            Spacer()
+            Text(
+                expired
+                    ? l10n.t("signing.row.expired")
+                    : (days == 0 ? l10n.t("signing.row.today") : l10n.t("signing.row.days", days))
+            )
+            .appFont(13, .bold)
+            .monospacedDigit()
+            .foregroundStyle(colour)
+        }
+        .padding(.vertical, 13)
     }
 
     /// "1.0.0 (1)" from the bundle.

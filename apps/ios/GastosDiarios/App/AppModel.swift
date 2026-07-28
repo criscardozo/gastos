@@ -181,6 +181,9 @@ final class AppModel {
 
     func start() {
         AppModel.shared = self
+        // The signing expiry moves with every re-signing, so re-schedule the
+        // warnings each launch. Never prompts for permission (see the service).
+        Task { await SigningExpiryService.scheduleWarnings(l10n: self.l10n) }
         // Watch relay: the phone (authenticated) writes expenses the watch
         // sends over WatchConnectivity. Safe to call before sign-in.
         WatchSyncService.shared.start()

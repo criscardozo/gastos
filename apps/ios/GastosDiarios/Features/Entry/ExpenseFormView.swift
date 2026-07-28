@@ -228,6 +228,9 @@ struct ExpenseFormView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 header
+                if !isEditing, SigningExpiryService.isExpiringSoon() {
+                    signingExpiryBanner
+                }
                 heroAmount
                 categoryRow
                 if !recentAmounts.isEmpty {
@@ -417,6 +420,45 @@ struct ExpenseFormView: View {
         .padding(.vertical, 6)
         .background(Theme.statePillBg(state))
         .clipShape(Capsule())
+    }
+
+    /// Permanent warning on the home screen for the last two days of the
+    /// free-account signature. Not dismissible on purpose: once the build
+    /// expires the app stops launching, so this is the last chance to notice.
+    /// Hidden entirely when there is no profile (Simulator) or more than two
+    /// days are left.
+    @ViewBuilder
+    private var signingExpiryBanner: some View {
+        let days = SigningExpiryService.daysRemaining() ?? 0
+        let expired = days < 0
+        let urgent = days <= 1
+        HStack(spacing: 9) {
+            Image(systemName: expired ? "exclamationmark.octagon.fill" : "exclamationmark.triangle.fill")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(urgent ? Theme.redText : Theme.accentStrong)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(expiryHeadline(days: days, expired: expired))
+                    .appFont(13, .bold)
+                    .foregroundStyle(urgent ? Theme.redText : Theme.accentStrong)
+                Text(l10n.t("signing.banner.body"))
+                    .appFont(11.5)
+                    .foregroundStyle(Theme.inkSecondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(urgent ? Theme.redBg : Theme.accentSoft)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.bottom, 10)
+    }
+
+    private func expiryHeadline(days: Int, expired: Bool) -> String {
+        if expired { return l10n.t("signing.banner.expired") }
+        if days == 0 { return l10n.t("signing.banner.today") }
+        if days == 1 { return l10n.t("signing.banner.tomorrow") }
+        return l10n.t("signing.banner.days", days)
     }
 
     private var heroAmount: some View {
