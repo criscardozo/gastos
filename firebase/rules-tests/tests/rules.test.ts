@@ -208,6 +208,38 @@ describe("households/{id} — create & member access", () => {
     await assertFails(setDoc(ref, householdDoc(ALICE, { currency: "aud" })));
   });
 
+  it("either member can rename the household", async () => {
+    await seedHousehold(true);
+    await assertSucceeds(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD), {
+        name: "Casa Cardozo",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // Not just the creator — the joiner may rename it too.
+    await assertSucceeds(
+      updateDoc(doc(db(env, BOB), "households", HOUSEHOLD), {
+        name: "Nuestra casa",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("rejects an empty or oversized household name", async () => {
+    await seedHousehold();
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD);
+    await assertFails(
+      updateDoc(ref, { name: "", updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(ref, { name: "x".repeat(61), updatedAt: serverTimestamp() }),
+    );
+    // 60 is the documented maximum, and must still pass.
+    await assertSucceeds(
+      updateDoc(ref, { name: "x".repeat(60), updatedAt: serverTimestamp() }),
+    );
+  });
+
   it("a member can edit settings but not the roster", async () => {
     await seedHousehold(true);
     const ref = doc(db(env, ALICE), "households", HOUSEHOLD);

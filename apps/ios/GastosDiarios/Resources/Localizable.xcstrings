@@ -1547,6 +1547,40 @@
         }
       }
     },
+    "settings.household.name.placeholder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Household name"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nombre del hogar"
+          }
+        }
+      }
+    },
+    "settings.household.rename" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename the household"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renombrar el hogar"
+          }
+        }
+      }
+    },
     "settings.invite.label" : {
       "extractionState" : "stale",
       "localizations" : {

@@ -163,7 +163,8 @@
     "inviteCode": "Invite code",
     "copy": "Copy",
     "copied": "Copied!",
-    "editAmount": "Edit amount"
+    "editAmount": "Edit amount",
+    "renameHousehold": "Rename the household"
   },
   "budgetEntry": {
     "currencyToggle": "Amount currency"

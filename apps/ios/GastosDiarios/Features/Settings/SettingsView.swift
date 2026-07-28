@@ -8,6 +8,9 @@ struct SettingsView: View {
     @State private var showPeriodBudgetSheet = false
     @State private var showCategoriesManager = false
     @State private var copied = false
+    @State private var renamingHousehold = false
+    @State private var householdNameDraft = ""
+
 
     // Daily reminder (per-device preference; see ReminderService).
     @State private var reminderEnabled = ReminderService.isEnabled
@@ -432,9 +435,13 @@ struct SettingsView: View {
                                     .overlay(Circle().strokeBorder(Theme.surface, lineWidth: 2))
                             }
                         }
-                        Text(memberNames)
-                            .appFont(14.5, .semibold)
-                            .foregroundStyle(Theme.ink)
+                        VStack(alignment: .leading, spacing: 1) {
+                            householdNameButton
+                            Text(memberNames)
+                                .appFont(12)
+                                .foregroundStyle(Theme.inkTertiary)
+                                .lineLimit(1)
+                        }
                     }
                     if model.members.count < 2 {
                         inviteCard
@@ -443,6 +450,37 @@ struct SettingsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.bottom, 10)
+        }
+    }
+
+    /// Tapping the household name opens a rename prompt — same capability the
+    /// web has; either member may rename.
+    private var householdNameButton: some View {
+        Button {
+            householdNameDraft = model.household?.name ?? ""
+            renamingHousehold = true
+        } label: {
+            HStack(spacing: 5) {
+                Text(model.household?.name ?? "")
+                    .appFont(14.5, .semibold)
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                Image(systemName: "pencil")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.inkTertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .alert(
+            l10n.t("settings.household.rename"),
+            isPresented: $renamingHousehold
+        ) {
+            TextField(l10n.t("settings.household.name.placeholder"), text: $householdNameDraft)
+            Button(l10n.t("common.save")) {
+                model.setHouseholdName(householdNameDraft)
+            }
+            Button(l10n.t("common.cancel"), role: .cancel) {}
         }
     }
 

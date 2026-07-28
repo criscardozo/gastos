@@ -224,6 +224,19 @@ export async function updatePeriodAmount(
   );
 }
 
+/** Rename the household. Either member may do it (the rules' member-edit
+ * branch); `name` is validated there as 1..60 characters. */
+export async function updateHouseholdName(
+  db: Firestore,
+  householdId: string,
+  name: string,
+): Promise<void> {
+  await updateDoc(doc(db, "households", householdId), {
+    name,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 /** Change the default template — only affects future periods. */
 export async function updateDefaultBudget(
   db: Firestore,

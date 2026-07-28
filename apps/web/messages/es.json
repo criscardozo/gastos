@@ -163,7 +163,8 @@
     "inviteCode": "Código de invitación",
     "copy": "Copiar",
     "copied": "¡Copiado!",
-    "editAmount": "Editar monto"
+    "editAmount": "Editar monto",
+    "renameHousehold": "Renombrar el hogar"
   },
   "budgetEntry": {
     "currencyToggle": "Moneda del monto"

@@ -711,6 +711,16 @@ final class AppModel {
         Task { try? await firestore.updateUser(uid: uid, fields: ["defaultEntryCurrency": currency]) }
     }
 
+    /// Renames the household, trimming and capping to the 60 characters the
+    /// rules accept. Applied optimistically; the listener confirms.
+    func setHouseholdName(_ name: String) {
+        guard let householdId = attachedHouseholdId else { return }
+        let trimmed = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60))
+        guard !trimmed.isEmpty, trimmed != household?.name else { return }
+        household?.name = trimmed
+        Task { try? await firestore.updateHouseholdName(householdId: householdId, name: trimmed) }
+    }
+
     func setDefaultBudget(amountCents: Int? = nil, period: PeriodType? = nil) {
         guard let household, let householdId = attachedHouseholdId else { return }
         var budget = household.defaultBudget

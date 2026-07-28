@@ -27,6 +27,7 @@ import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   createInvite,
   updateDefaultBudget,
+  updateHouseholdName,
   updatePeriodAmount,
   updateUserDefaultEntryCurrency,
   updateUserLanguage,
@@ -129,6 +130,61 @@ function EditableAmount({
       title={t("editAmount")}
     >
       {formatCents(cents, currency, locale)}
+    </button>
+  );
+}
+
+/** Household name that flips into an inline editor on click. Empty input is
+ * rejected rather than saved — the rules require 1..60 characters. */
+function EditableHouseholdName({
+  name,
+  onSave,
+}: {
+  name: string;
+  onSave: (name: string) => void;
+}) {
+  const t = useTranslations("settings");
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+
+  const commit = () => {
+    const trimmed = value.trim().slice(0, 60);
+    if (trimmed !== "" && trimmed !== name) onSave(trimmed);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        type="text"
+        maxLength={60}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        aria-label={t("renameHousehold")}
+        className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-sm font-semibold text-ink outline-none"
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setValue(name);
+        setEditing(true);
+      }}
+      title={t("renameHousehold")}
+      className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+    >
+      <span className="truncate text-sm font-semibold text-ink underline-offset-4 hover:underline">
+        {name}
+      </span>
+      <Icon name="edit" size={14} className="flex-none text-ink-3" />
     </button>
   );
 }
@@ -375,9 +431,12 @@ export default function SettingsPage() {
       {/* Household + invite */}
       <div className="flex items-center gap-3.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">
         <AvatarPair members={members} size={30} />
-        <span className="flex-1 truncate text-sm font-semibold text-ink">
-          {household.name}
-        </span>
+        <EditableHouseholdName
+          name={household.name}
+          onSave={(name) =>
+            withDb((db) => updateHouseholdName(db, household.id, name))
+          }
+        />
         {!householdFull && inviteCode !== null && (
           <div
             className="flex items-center gap-2.5 rounded-xl px-3 py-2"

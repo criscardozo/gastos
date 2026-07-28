@@ -201,6 +201,15 @@ final class FirestoreService {
 
     // MARK: - Household settings
 
+    /// Renames the household. Either member may do it; the rules validate the
+    /// name as 1...60 characters.
+    func updateHouseholdName(householdId: String, name: String) async throws {
+        try await db.collection("households").document(householdId).updateData([
+            "name": name,
+            "updatedAt": FieldValue.serverTimestamp(),
+        ])
+    }
+
     func updateDefaultBudget(householdId: String, budget: DefaultBudget) async throws {
         try await db.collection("households").document(householdId).updateData([
             "defaultBudget": [
