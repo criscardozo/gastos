@@ -20,6 +20,13 @@ function resolveAuthDomain(): string {
   const explicit = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
   if (explicit !== undefined && explicit !== "") return explicit;
   if (typeof window === "undefined") return FIREBASE_AUTH_DOMAIN;
+  // Firebase always builds the handler URL as https://<authDomain>/__/auth/…
+  // — there is no way to make it http. So over a plain-http origin (the local
+  // dev server) pointing it at ourselves yields https://localhost:3000/…,
+  // which fails with ERR_SSL_PROTOCOL_ERROR. Fall back to Firebase's own
+  // domain there; localhost is an authorised domain out of the box, and the
+  // same-origin proxy is only needed on the deployed HTTPS site anyway.
+  if (window.location.protocol !== "https:") return FIREBASE_AUTH_DOMAIN;
   return window.location.host;
 }
 
