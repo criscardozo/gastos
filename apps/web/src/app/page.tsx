@@ -1,7 +1,8 @@
 "use client";
 
-// Resumen (design 4a): hero budget state, per-person split, category
-// breakdown and the per-period trend chart (plain divs, no chart library).
+// Inicio (design 4a, formerly "Resumen"): hero budget state, the period and
+// month spend readouts, category breakdown and the per-period trend chart
+// (plain divs, no chart library).
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -290,7 +291,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/gastos"
-          className="flex items-center gap-2 rounded-full bg-accent px-[18px] py-2.5 shadow-[0_6px_16px_rgba(255,92,57,.3)]"
+          className="hidden items-center gap-2 rounded-full bg-accent px-[18px] py-2.5 shadow-[0_6px_16px_rgba(255,92,57,.3)] lg:flex"
         >
           <Icon name="add" size={18} className="text-white" />
           <span className="text-sm font-bold text-white">
@@ -639,6 +640,18 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Phone-only floating action button. Sits clear of the 57px tab bar
+          (measured) plus the home-indicator inset, within thumb reach, and
+          goes straight to quick entry. Hidden from lg up, where the header
+          button above takes over. */}
+      <Link
+        href="/nuevo"
+        aria-label={t("dashboard.newExpense")}
+        className="fixed right-4 bottom-[calc(57px+1rem+env(safe-area-inset-bottom))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-accent shadow-[0_8px_24px_rgba(255,92,57,.45)] active:scale-95 lg:hidden"
+      >
+        <Icon name="add" size={26} className="text-white" />
+      </Link>
     </div>
   );
 }

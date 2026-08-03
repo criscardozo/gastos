@@ -6,7 +6,7 @@
   },
   "nav": {
     "new": "Nuevo",
-    "summary": "Resumen",
+    "summary": "Inicio",
     "expenses": "Gastos",
     "data": "Datos",
     "settings": "Ajustes",
@@ -54,7 +54,7 @@
     "over": "Se pasaron"
   },
   "dashboard": {
-    "title": "Resumen",
+    "title": "Inicio",
     "newExpense": "Nuevo gasto",
     "remaining": "Te queda",
     "spentOf": "Gastado <strong>{spent}</strong> de {budget}",

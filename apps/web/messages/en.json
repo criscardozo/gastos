@@ -6,7 +6,7 @@
   },
   "nav": {
     "new": "New",
-    "summary": "Summary",
+    "summary": "Home",
     "expenses": "Expenses",
     "data": "Data",
     "settings": "Settings",
@@ -54,7 +54,7 @@
     "over": "Over budget"
   },
   "dashboard": {
-    "title": "Summary",
+    "title": "Home",
     "newExpense": "New expense",
     "remaining": "You have left",
     "spentOf": "Spent <strong>{spent}</strong> of {budget}",

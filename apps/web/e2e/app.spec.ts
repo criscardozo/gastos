@@ -79,7 +79,7 @@ test("sign in, onboard, add expenses (AUD + USD), export/import CSV, switch lang
 
   // Dashboard "Te queda" reflects it: 900,00 − 12,50 = 887,50. (Checked before
   // the USD expense below so this figure stays deterministic.)
-  await page.getByRole("link", { name: "Resumen" }).click();
+  await page.getByRole("link", { name: "Inicio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible();
   await expect(page.getByText("$887,50").first()).toBeVisible();
 
