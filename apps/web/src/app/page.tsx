@@ -574,7 +574,12 @@ export default function DashboardPage() {
               {t("dashboard.trendHint")}
             </span>
           </div>
-          <div className="flex flex-1 items-stretch gap-3 overflow-x-auto pt-2 lg:gap-[18px]">
+          {/* px-1 gives the budget markers their -left-1/-right-1 overhang room:
+              without it the last one spills 4px past the edge and the box
+              reports as scrollable, showing a scrollbar under bars that fit.
+              Real overflow still scrolls (six periods on a phone), just
+              without the chrome. */}
+          <div className="no-scrollbar flex flex-1 items-stretch gap-3 overflow-x-auto px-1 pt-2 lg:gap-[18px]">
             {trend.map(({ period: p, spent: pSpent }) => {
               const over = pSpent > p.amountCents;
               const isCurrentBar =

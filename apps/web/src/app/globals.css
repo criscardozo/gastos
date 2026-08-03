@@ -200,3 +200,15 @@ button {
    collides with Tailwind's pt-* at equal specificity and silently wins by
    source order, zeroing the page padding on desktop where the inset is 0.
    Vertical insets are folded into the padding value itself (app-shell.tsx). */
+
+/* Horizontal scrollers where the cut-off content is the affordance and the
+   scrollbar is just noise (the trend chart). Scrolling itself is untouched —
+   touch, trackpad and keyboard all still work. */
+.no-scrollbar {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* old Edge */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;                  /* WebKit / Blink */
+}
