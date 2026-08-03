@@ -122,8 +122,15 @@ export function useMonthTotal(
   /** Any date inside the month, "YYYY-MM-DD" in the household timezone. */
   today: string | null,
   categoryIds: string[] | null = null,
-): { total: number | null; range: PeriodRange | null } {
+): {
+  total: number | null;
+  status: "loading" | "ready" | "error";
+  range: PeriodRange | null;
+} {
   const [total, setTotal] = useState<number | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const range = useMemo<PeriodRange | null>(() => {
     if (today === null) return null;
     const [year, month] = today.split("-");
@@ -141,11 +148,13 @@ export function useMonthTotal(
   useEffect(() => {
     if (householdId === null || range === null) {
       setTotal(null);
+      setStatus("loading");
       return;
     }
     const fb = getFirebaseClient();
     if (fb === null) return;
     let cancelled = false;
+    setStatus("loading");
     void fetchPeriodTotal(
       fb.db,
       householdId,
@@ -153,17 +162,21 @@ export function useMonthTotal(
       serializedCategories === "" ? null : serializedCategories.split("+"),
     )
       .then((value) => {
-        if (!cancelled) setTotal(value);
+        if (cancelled) return;
+        setTotal(value);
+        setStatus("ready");
       })
       .catch(() => {
-        if (!cancelled) setTotal(null);
+        if (cancelled) return;
+        setTotal(null);
+        setStatus("error");
       });
     return () => {
       cancelled = true;
     };
   }, [householdId, range, serializedCategories]);
 
-  return { total, range };
+  return { total, status, range };
 }
 
 /** Server-side spend total for a range (1 read, cached for the session).
