@@ -71,7 +71,9 @@
     "spentThisMonth": "Spent this month",
     "loading": "Loading…",
     "carriedOver": "Includes {amount} left over from the previous period",
-    "carriedDeficit": "Less {amount} overspent in the previous period"
+    "carriedDeficit": "Less {amount} overspent in the previous period",
+    "monthUnavailable": "Not available right now",
+    "periodCrossesMonth": "Heads-up: the running period started on {date}, so some of its spending falls in the previous month."
   },
   "expenses": {
     "title": "Expenses",
@@ -107,7 +109,7 @@
     "title": "Data",
     "subtitle": "Export your expenses or import from a CSV.",
     "exportTitle": "Export",
-    "exportHint": "Pick a range and download your expenses as CSV or PDF.",
+    "exportHint": "Pick a range and download your expenses as CSV, PDF or Excel, or send them to Google Drive.",
     "rangeWeek": "This week",
     "rangeCurrent": "Current period",
     "rangePrevious": "Previous period",
@@ -148,7 +150,12 @@
     "total": "Total",
     "expensesCount": "{count, plural, one {# expense} other {# expenses}}",
     "categoriesLabel": "Categories to export",
-    "categoriesAll": "All"
+    "categoriesAll": "All",
+    "exportExcel": "Excel",
+    "exportDrive": "Google Drive",
+    "exporting": "Building…",
+    "exportingDrive": "Uploading…",
+    "exportError": "We couldn't build the export. Try again."
   },
   "settings": {
     "title": "Settings",

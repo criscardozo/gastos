@@ -35,7 +35,12 @@ import { formatCents, formatUsd, parseAmountToCents } from "@/lib/money";
 import { formatPeriodRange } from "@/lib/dates";
 import { addDays, type PeriodRange } from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv, parseCsv } from "@/lib/export/csv";
-import { exportExpensesPdf } from "@/lib/export/pdf";
+import { exportExpensesPdf, type PdfExportOptions } from "@/lib/export/pdf";
+import {
+  buildExpensesWorkbook,
+  downloadWorkbook,
+} from "@/lib/export/spreadsheet";
+import { DriveExportError, exportToGoogleDrive } from "@/lib/export/drive";
 
 /* ── Pure helpers ──────────────────────────────────────────────────────── */
 
@@ -112,6 +117,9 @@ export default function DataPage() {
   const [exportCategories, setExportCategories] = useState<string[] | null>(
     null,
   );
+  const [exportPhase, setExportPhase] = useState<
+    "idle" | "excel" | "drive" | "error"
+  >("idle");
 
   // Import state.
   const [preview, setPreview] = useState<PreviewRow[] | null>(null);
@@ -262,8 +270,9 @@ export default function DataPage() {
     downloadCsv(`${fileBase}.csv`, csv);
   };
 
-  const exportPdf = async () => {
-    if (range === null) return;
+  /** The one payload every branded export renders — PDF, Excel and Sheets. */
+  const buildExportPayload = (extension: string): PdfExportOptions | null => {
+    if (range === null) return null;
     const totalsMap = new Map<string, number>();
     for (const e of rows) {
       totalsMap.set(e.categoryId, (totalsMap.get(e.categoryId) ?? 0) + e.amountCents);
@@ -271,8 +280,8 @@ export default function DataPage() {
     const categoryTotals = [...totalsMap.entries()]
       .map(([id, amountCents]) => ({ label: catLabelOf(id), amountCents }))
       .sort((a, b) => b.amountCents - a.amountCents);
-    await exportExpensesPdf({
-      filename: `${fileBase}.pdf`,
+    return {
+      filename: `${fileBase}.${extension}`,
       title: "Gastos Diarios",
       householdName: household.name,
       rangeLabel: `${formatPeriodRange(range.startDate, range.endDate, locale, "short")} ${range.endDate.slice(0, 4)}`,
@@ -297,7 +306,47 @@ export default function DataPage() {
         total: t("total"),
         countLine: t("expensesCount", { count: rows.length }),
       },
-    });
+    };
+  };
+
+  const exportPdf = async () => {
+    const payload = buildExportPayload("pdf");
+    if (payload !== null) await exportExpensesPdf(payload);
+  };
+
+  const exportExcel = async () => {
+    const payload = buildExportPayload("xlsx");
+    if (payload === null) return;
+    setExportPhase("excel");
+    try {
+      downloadWorkbook(payload.filename, await buildExpensesWorkbook(payload));
+      setExportPhase("idle");
+    } catch {
+      setExportPhase("error");
+    }
+  };
+
+  const exportDrive = async () => {
+    const payload = buildExportPayload("xlsx");
+    const fb = getFirebaseClient();
+    if (payload === null || fb === null) return;
+    setExportPhase("drive");
+    try {
+      const url = await exportToGoogleDrive(
+        fb.auth,
+        payload.filename,
+        await buildExpensesWorkbook(payload),
+      );
+      setExportPhase("idle");
+      window.open(url, "_blank", "noopener");
+    } catch (error) {
+      // Closing Google's dialog is a choice, not a failure worth shouting about.
+      setExportPhase(
+        error instanceof DriveExportError && error.kind === "cancelled"
+          ? "idle"
+          : "error",
+      );
+    }
   };
 
   /* ── Import ──────────────────────────────────────────────────────────── */
@@ -551,6 +600,12 @@ export default function DataPage() {
           )}
         </div>
 
+        {exportPhase === "error" && (
+          <span className="text-[12.5px] font-semibold text-over">
+            {t("exportError")}
+          </span>
+        )}
+
         {/* Which categories go into the export */}
         {rangeCategoryIds.length > 0 && (
           <div className="flex flex-col gap-2 border-t border-soft pt-3.5">
@@ -621,6 +676,26 @@ export default function DataPage() {
             >
               <Icon name="download" size={15} className="text-ink-2" />
               {t("exportPdf")}
+            </button>
+            <button
+              type="button"
+              onClick={() => void exportExcel()}
+              disabled={!canExport || exportPhase === "excel"}
+              className="flex items-center gap-1.5 rounded-full border border-pill bg-surface px-4 py-2 text-[13px] font-bold text-ink disabled:opacity-40"
+            >
+              <Icon name="download" size={15} className="text-ink-2" />
+              {exportPhase === "excel" ? t("exporting") : t("exportExcel")}
+            </button>
+            {/* Drive gets the emphasis: it's the one that lands somewhere
+                shareable rather than in the downloads folder. */}
+            <button
+              type="button"
+              onClick={() => void exportDrive()}
+              disabled={!canExport || exportPhase === "drive"}
+              className="flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-[13px] font-bold text-white shadow-[0_6px_16px_rgba(255,92,57,.3)] disabled:opacity-40 disabled:shadow-none"
+            >
+              <Icon name="arrow_forward" size={15} className="text-white" />
+              {exportPhase === "drive" ? t("exportingDrive") : t("exportDrive")}
             </button>
           </div>
         </div>

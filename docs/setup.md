@@ -122,6 +122,35 @@ widgets, the Apple Watch app, Back Tap / App Intents, and scheduled local
 notifications. Both clients read the same Firestore data, so they can be used
 interchangeably.
 
+## Google Drive export (one-time, free)
+
+The Datos page can push an export straight to Drive as a Google Sheet. It uses
+the narrow `drive.file` scope, which grants access ONLY to files this app
+creates — never to the rest of the Drive. The token is requested at export
+time (Firebase Auth doesn't retain the OAuth access token), so Google shows a
+consent dialog the first time.
+
+Two console steps, without which uploads fail with HTTP 403:
+
+1. **Enable the Drive API** — Google Cloud Console → APIs & Services →
+   Library → *Google Drive API* → Enable. Direct link:
+   `https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=56331687585`
+   Without it Drive answers *"Google Drive API has not been used in project … or
+   it is disabled"*.
+2. **OAuth consent screen** — if the app is still in *Testing*, add the
+   household's Google accounts under **Test users**, otherwise Google refuses
+   the extra scope. `drive.file` is a non-sensitive scope, so no app
+   verification is required.
+
+The export builds the same styled workbook the Excel download produces and
+uploads it with `mimeType: application/vnd.google-apps.spreadsheet`, so Drive
+converts it on the way in and the sheet keeps the colours, number formats and
+subtotals.
+
+Note for the installed PWA: the consent step uses a popup, which is reliable in
+a browser tab but not in standalone mode. Export from the browser if the dialog
+doesn't appear.
+
 ## Local development
 
 ```sh
