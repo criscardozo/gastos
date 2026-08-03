@@ -31,7 +31,7 @@ import { Icon } from "@/components/ui/icon";
 import { Segmented } from "@/components/ui/segmented";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { expenseConverter, type Expense } from "@/lib/firebase/converters";
-import { formatCents, formatUsd, parseAmountToCents } from "@/lib/money";
+import { formatCents, parseAmountToCents } from "@/lib/money";
 import { formatPeriodRange } from "@/lib/dates";
 import { addDays, type PeriodRange } from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv, parseCsv } from "@/lib/export/csv";
@@ -84,12 +84,8 @@ interface PreviewRow {
   date: string;
   categoryId: string;
   amountCents: number | null;
-  /** Entry currency parsed from the optional `moneda` column (default AUD). */
-  entryCurrency: "AUD" | "USD";
-  /** Original amount in `entryCurrency` (integer cents) — only set for USD. */
-  entryAmountCents: number | null;
   status: "ok" | "mapped" | "error";
-  reasonKey?: "reasonBadDate" | "reasonBadAmount" | "reasonBadCurrency";
+  reasonKey?: "reasonBadDate" | "reasonBadAmount";
 }
 
 // Amount cap mirrors the security rule (1..10_000_000 cents).
@@ -356,24 +352,15 @@ export default function DataPage() {
     const nonEmpty = grid.filter((r) => r.some((c) => c.trim() !== ""));
     if (nonEmpty.length === 0) return null;
     const header = nonEmpty[0];
-    // `moneda` + `monto_original` are optional: files exported before the
-    // bi-currency feature (or edited by hand) still import as AUD.
-    const idx = {
-      date: -1,
-      category: -1,
-      note: -1,
-      amount: -1,
-      currency: -1,
-      original: -1,
-    };
+    // Unknown columns are ignored, so files exported by older versions (which
+    // carried `moneda`/`monto_original`) still import from their monto_aud.
+    const idx = { date: -1, category: -1, note: -1, amount: -1 };
     header.forEach((cell, i) => {
       const f = fold(cell);
       if (f === "fecha") idx.date = i;
       else if (f === "categoria") idx.category = i;
       else if (f === "nota") idx.note = i;
       else if (f === "monto_aud") idx.amount = i;
-      else if (f === "moneda") idx.currency = i;
-      else if (f === "monto_original") idx.original = i;
     });
     if (idx.date < 0 || idx.category < 0 || idx.amount < 0) return null;
 
@@ -382,35 +369,13 @@ export default function DataPage() {
       const rawDate = (cells[idx.date] ?? "").trim();
       const rawCategory = (cells[idx.category] ?? "").trim();
       const rawAmount = (cells[idx.amount] ?? "").trim();
-      const rawCurrency = (idx.currency >= 0 ? (cells[idx.currency] ?? "") : "")
-        .trim();
-      const rawOriginal = (idx.original >= 0 ? (cells[idx.original] ?? "") : "")
-        .trim();
       const note = (idx.note >= 0 ? (cells[idx.note] ?? "") : "")
         .trim()
         .slice(0, MAX_NOTE_LEN);
 
       const dateOk = isRealDate(rawDate);
-      // monto_aud is always the canonical AUD (do NOT re-convert on import —
-      // the CSV carries both figures already).
       const parsed = parseAmountToCents(rawAmount);
       const amountOk = parsed !== null && parsed <= MAX_AMOUNT_CENTS;
-
-      // Currency: absent/empty ⇒ AUD; only AUD/USD are valid.
-      const folded = fold(rawCurrency);
-      const currency: "AUD" | "USD" | null =
-        folded === "" || folded === "aud"
-          ? "AUD"
-          : folded === "usd"
-            ? "USD"
-            : null;
-
-      // For USD, the entered original must itself be a valid positive amount.
-      const parsedOriginal =
-        currency === "USD" ? parseAmountToCents(rawOriginal) : null;
-      const originalOk =
-        currency !== "USD" ||
-        (parsedOriginal !== null && parsedOriginal <= MAX_AMOUNT_CENTS);
 
       const matched = matchCategory(rawCategory);
       const categoryId = matched ?? "other";
@@ -420,10 +385,7 @@ export default function DataPage() {
       if (!dateOk) {
         status = "error";
         reasonKey = "reasonBadDate";
-      } else if (currency === null) {
-        status = "error";
-        reasonKey = "reasonBadCurrency";
-      } else if (!amountOk || !originalOk) {
+      } else if (!amountOk) {
         status = "error";
         reasonKey = "reasonBadAmount";
       } else if (matched === null) {
@@ -440,8 +402,6 @@ export default function DataPage() {
         date: rawDate,
         categoryId,
         amountCents: amountOk ? parsed : null,
-        entryCurrency: currency ?? "AUD",
-        entryAmountCents: currency === "USD" ? parsedOriginal : null,
         status,
         reasonKey,
       });
@@ -485,23 +445,12 @@ export default function DataPage() {
           const ref = doc(
             collection(fb.db, "households", household.id, "expenses"),
           );
-          // USD rows carry the entered original alongside the canonical AUD;
-          // AUD rows omit the keys entirely so the doc shape stays identical to
-          // the pre-bi-currency shape the rules' hasOnly() check expects.
-          const entry =
-            r.entryCurrency === "USD" && r.entryAmountCents !== null
-              ? {
-                  entryCurrency: "USD" as const,
-                  entryAmountCents: r.entryAmountCents,
-                }
-              : null;
           batch.set(ref, {
             amountCents: r.amountCents as number,
             categoryId: r.categoryId,
             note: r.note,
             date: r.date,
             createdBy: user.uid,
-            ...(entry ?? {}),
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           });
@@ -788,29 +737,13 @@ export default function DataPage() {
                         {r.note || "—"}
                       </td>
                       <td className="tnum px-3 py-2 text-right font-semibold text-ink">
-                        {r.amountCents !== null ? (
-                          r.entryCurrency === "USD" &&
-                          r.entryAmountCents !== null ? (
-                            <div className="flex flex-col items-end leading-tight">
-                              <span>
-                                {formatCents(
-                                  r.amountCents,
-                                  household.currency,
-                                  locale,
-                                )}
-                              </span>
-                              <span className="text-[11px] font-semibold text-ink-3">
-                                {/* The CSV's original USD amount is exact, not
-                                    a conversion — no ≈ prefix. */}
-                                {formatUsd(r.entryAmountCents, locale)}
-                              </span>
-                            </div>
-                          ) : (
-                            formatCents(r.amountCents, household.currency, locale)
-                          )
-                        ) : (
-                          r.rawAmount || "—"
-                        )}
+                        {r.amountCents !== null
+                          ? formatCents(
+                              r.amountCents,
+                              household.currency,
+                              locale,
+                            )
+                          : r.rawAmount || "—"}
                       </td>
                       <td className="px-3 py-2">{statusBadge(r)}</td>
                     </tr>

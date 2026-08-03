@@ -5,43 +5,25 @@
 // circles, note and date. Desktop keeps the inline add row in /gastos; this
 // route stays usable there too, just centred.
 //
-// No new business logic: amounts, FX and the active currency all go through
-// the same helpers the rest of the app uses.
+// No new business logic: amounts go through the same helpers the rest of the
+// app uses.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import {
-  useAuth,
-  useHousehold,
-  useLocale,
-  useUserDoc,
-} from "@/components/providers";
+import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
-import { Segmented } from "@/components/ui/segmented";
-import {
-  entryToAudCents,
-  useBudgetCurrency,
-  type EntryCurrency,
-} from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
-import {
-  addExpense,
-  updateUserDefaultEntryCurrency,
-} from "@/lib/firebase/mutations";
+import { addExpense } from "@/lib/firebase/mutations";
 import { useExpensesRange } from "@/lib/firebase/hooks";
 import {
   categoryCircleBg,
   categoryColor,
   countsToBudget,
 } from "@/lib/categories";
-import { convertCents, usdToAudCents } from "@/lib/fx";
 import {
-  formatApproxAud,
-  formatApproxUsd,
   formatCents,
   formatCentsCompact,
-  formatUsd,
   parseAmountToCents,
 } from "@/lib/money";
 import { budgetState, containsDate } from "@/lib/periods";
@@ -55,7 +37,6 @@ export default function QuickEntryPage() {
   const tEntry = useTranslations("quickEntry");
   const { locale } = useLocale();
   const { user } = useAuth();
-  const { userDoc } = useUserDoc();
   const { household, currentPeriod, today } = useHousehold();
 
   const [amount, setAmount] = useState("");
@@ -65,17 +46,6 @@ export default function QuickEntryPage() {
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const amountRef = useRef<HTMLInputElement | null>(null);
-
-  const { currency, setCurrency, usdRate } = useBudgetCurrency();
-
-  // Seed the switch from the stored active currency, without clobbering a
-  // choice already made on this screen.
-  const seeded = useRef(false);
-  useEffect(() => {
-    if (seeded.current || userDoc === null) return;
-    seeded.current = true;
-    setCurrency(userDoc.defaultEntryCurrency ?? "AUD");
-  }, [userDoc, setCurrency]);
 
   // Live totals for the remaining pill (bounded to the current period).
   const { expenses } = useExpensesRange(
@@ -103,10 +73,7 @@ export default function QuickEntryPage() {
       : (categories[0]?.id ?? null);
   const effectiveDate = date !== "" ? date : (today ?? "");
 
-  // No FX rate ⇒ AUD-only entry, exactly like the native app.
-  const entryCurrency: EntryCurrency = usdRate === null ? "AUD" : currency;
-  const typedCents = parseAmountToCents(amount);
-  const audCents = entryToAudCents(amount, entryCurrency, usdRate);
+  const audCents = parseAmountToCents(amount);
   const canSave =
     audCents !== null && effectiveCategoryId !== null && effectiveDate !== "";
 
@@ -123,7 +90,6 @@ export default function QuickEntryPage() {
   const budget = currentPeriod?.amountCents ?? 0;
   const remaining = budget - spent;
   const state = budgetState(spent, budget);
-  const activeIsUsd = entryCurrency === "USD" && usdRate !== null;
 
   /* Recent amounts for the selected category (from what's already loaded). */
   const recentAmounts = (() => {
@@ -148,23 +114,6 @@ export default function QuickEntryPage() {
       useGrouping: false,
     });
 
-  /** Flip the switch AND persist it — this is the app-wide active currency. */
-  const changeCurrency = (next: EntryCurrency) => {
-    setCurrency(next);
-    // Re-express what's typed so the effective amount stays about the same.
-    if (typedCents !== null && usdRate !== null) {
-      setAmount(
-        asInput(
-          next === "USD"
-            ? convertCents(typedCents, usdRate)
-            : usdToAudCents(typedCents, usdRate),
-        ),
-      );
-    }
-    const fb = getFirebaseClient();
-    if (fb !== null) void updateUserDefaultEntryCurrency(fb.db, user.uid, next);
-  };
-
   const save = async () => {
     const fb = getFirebaseClient();
     if (fb === null || !canSave || audCents === null) return;
@@ -175,9 +124,6 @@ export default function QuickEntryPage() {
         categoryId: effectiveCategoryId,
         note: note.trim(),
         date: effectiveDate,
-        ...(entryCurrency === "USD" && typedCents !== null
-          ? { entryCurrency: "USD" as const, entryAmountCents: typedCents }
-          : {}),
       });
       // Reset for the next entry, keeping category and currency.
       setAmount("");
@@ -189,14 +135,6 @@ export default function QuickEntryPage() {
       setSaving(false);
     }
   };
-
-  /* "≈ US$ 6,86" under the hero while typing (the other currency). */
-  const approx =
-    typedCents === null || usdRate === null
-      ? null
-      : entryCurrency === "AUD"
-        ? formatApproxUsd(convertCents(typedCents, usdRate), locale)
-        : formatApproxAud(usdToAudCents(typedCents, usdRate), locale);
 
   return (
     <div className="mx-auto flex w-full max-w-[520px] flex-col gap-4">
@@ -217,17 +155,8 @@ export default function QuickEntryPage() {
             <div className="flex flex-col leading-tight">
               <span className="tnum whitespace-nowrap text-[12.5px] font-bold text-ink">
                 {tDash("remaining")}{" "}
-                {activeIsUsd && usdRate !== null
-                  ? formatUsd(convertCents(remaining, usdRate), locale)
-                  : formatCents(remaining, household.currency, locale)}
+                {formatCents(remaining, household.currency, locale)}
               </span>
-              {usdRate !== null && (
-                <span className="tnum whitespace-nowrap text-[10.5px] font-semibold text-ink-3">
-                  {activeIsUsd
-                    ? formatCents(remaining, household.currency, locale)
-                    : formatApproxUsd(convertCents(remaining, usdRate), locale)}
-                </span>
-              )}
             </div>
           </div>
         )}
@@ -235,21 +164,8 @@ export default function QuickEntryPage() {
 
       {/* Hero amount — native decimal keypad */}
       <div className="flex flex-col items-center gap-3 rounded-[22px] border border-line bg-surface px-5 py-6">
-        {usdRate !== null && (
-          <Segmented<EntryCurrency>
-            options={[
-              { value: "AUD", label: "AUD" },
-              { value: "USD", label: "USD" },
-            ]}
-            value={entryCurrency}
-            onChange={changeCurrency}
-            ariaLabel={tEntry("currency")}
-          />
-        )}
         <div className="tnum flex w-full items-baseline justify-center gap-1.5">
-          <span className="text-[26px] font-semibold text-ink-3">
-            {entryCurrency === "USD" ? "US$" : "$"}
-          </span>
+          <span className="text-[26px] font-semibold text-ink-3">$</span>
           <input
             ref={amountRef}
             type="text"
@@ -266,11 +182,6 @@ export default function QuickEntryPage() {
             className="w-auto min-w-[1ch] border-none bg-transparent p-0 text-center text-[56px] font-bold leading-none tracking-[-0.03em] text-ink outline-none placeholder:text-ink-3"
           />
         </div>
-        {approx !== null && (
-          <span className="tnum text-[13px] font-semibold text-ink-3">
-            {approx}
-          </span>
-        )}
       </div>
 
       {/* Recent amounts for this category */}

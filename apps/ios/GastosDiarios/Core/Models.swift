@@ -10,9 +10,6 @@ struct UserProfile: Codable, Identifiable {
     var displayName: String
     var householdId: String?
     var language: String?
-    /// Which currency the expense-entry switch starts on ("AUD" | "USD").
-    /// Absent/nil ⇒ AUD. See shared/schema.md.
-    var defaultEntryCurrency: String?
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
 }
@@ -122,34 +119,14 @@ struct PeriodBudget: Codable, Identifiable, Equatable {
 /// `households/{id}/expenses/{expenseId}`
 struct Expense: Codable, Identifiable, Equatable {
     @DocumentID var id: String?
-    /// ALWAYS AUD (household canonical currency). Everything that sums money
-    /// reads this — never `entryAmountCents`.
+    /// The household currency (AUD) — the only currency anyone types.
     var amountCents: Int
     var categoryId: String
     var note: String
     var date: String
     var createdBy: String
-    /// The currency the user actually entered ("AUD" | "USD"). Absent ⇒ AUD.
-    /// Present together with `entryAmountCents` or not at all.
-    var entryCurrency: String?
-    /// The original amount in `entryCurrency`, integer cents. Display-only,
-    /// never summed. Present iff `entryCurrency` is.
-    var entryAmountCents: Int?
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
-
-    /// The original currency + amount the user typed, when it differs from the
-    /// canonical AUD (i.e. a USD entry). nil ⇒ entered in AUD and displays
-    /// exactly like a pre-bi-currency expense.
-    var displayEntry: (currency: String, amountCents: Int)? {
-        guard let entryCurrency, let entryAmountCents else { return nil }
-        return (entryCurrency, entryAmountCents)
-    }
-
-    /// True when this expense was entered in USD (has both optional fields).
-    var isUSDEntry: Bool {
-        entryCurrency == "USD" && entryAmountCents != nil
-    }
 }
 
 /// An expense plus local snapshot metadata (offline "pendiente" chip).

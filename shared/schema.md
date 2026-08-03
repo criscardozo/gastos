@@ -20,8 +20,8 @@ authorization, not this doc.
 | `displayName` | string | From the auth profile; editable |
 | `householdId` | string \| null | Set after creating/joining a household |
 | `language` | `"es"` \| `"en"` \| null | null → follow system/browser |
-| `displayCurrency` | string \| null | **Deprecated** — the old "also show USD" toggle. No client reads or writes it; the rules still accept it so older builds don't break. Superseded by `defaultEntryCurrency` |
-| `defaultEntryCurrency` | `"AUD"` \| `"USD"` \| null | The user's **active currency**: it seeds the expense-entry switch AND is the primary display currency across the app (remaining, totals, list rows, widget, watch). The other currency is shown alongside it. null → AUD |
+| `displayCurrency` | string \| null | **Deprecated** — the old "also show USD" toggle. No client reads or writes it; the rules still accept it so older builds don't break |
+| `defaultEntryCurrency` | `"AUD"` \| `"USD"` \| null | **Deprecated** — AUD is the only entry currency. No client reads or writes it, but the existing user docs still carry it, so the rules keep accepting it (dropping it from `hasOnly()` would make every later update of those docs fail) |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
 ### `households/{householdId}`
@@ -83,29 +83,19 @@ Rules of the chain:
 
 | Field | Type | Notes |
 |---|---|---|
-| `amountCents` | int | > 0. **Canonical: always the household `currency` (AUD)**, integer cents. Everything that sums money (budget, totals, split, trend, widget, aggregation, CSV) reads this |
+| `amountCents` | int | > 0. Always the household `currency` (AUD), integer cents. Everything that sums money (budget, totals, trend, widget, aggregation, CSV) reads this |
 | `categoryId` | string | Key into `household.categories` |
 | `note` | string | May be empty |
 | `date` | string `YYYY-MM-DD` | Local calendar date in the HOUSEHOLD timezone |
 | `createdBy` | uid | Attribution only, not ownership — either member can edit/delete |
-| `entryCurrency` | `"AUD"` \| `"USD"` \| absent | Optional. The currency the user actually entered. **Absent ⇒ entered in the canonical currency (AUD)** |
-| `entryAmountCents` | int \| absent | Optional. The original amount in `entryCurrency`. Present iff `entryCurrency` is. Display-only; never summed |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
-**Bi-currency model.** `amountCents` is always AUD (the household canonical
-currency) so budgets and every total stay deterministic and offline-safe — no
-historical expense re-converts when the FX rate moves. When a user enters an
-expense in USD, the client converts USD→AUD with that day's rate (snapshot at
-entry time) and stores the AUD result in `amountCents`, plus `entryCurrency:
-"USD"` and `entryAmountCents` (the USD the user typed) so the app can display
-the original ("US$ 7.00"). Entered in AUD ⇒ both optional fields omitted (docs
-stay identical to the pre-bi-currency shape; older expenses need no migration).
-FX (frankfurter, daily-cached) is required at entry time; if unavailable the
-USD option is disabled and entry falls back to AUD. It is ALSO used, purely for
-display, to show both currencies side by side — those converted figures are
-always marked `≈`, while `amountCents` and a USD entry's `entryAmountCents` are
-exact. The per-user active currency lives on `users/{uid}.defaultEntryCurrency`
-(see the users table).
+**Single currency.** `amountCents` is the household currency (AUD) — the only
+currency anyone types, and the only one any total reads. The app converts
+nothing and calls no FX API: the previous bi-currency entry switch, the
+`entryCurrency`/`entryAmountCents` pair and the daily frankfurter snapshot are
+all gone. A USD figure only ever reaches an expense from the bank (the amount it
+actually charged); that lives in its own field, added by the verification work.
 
 An expense belongs to the period whose `[startDate, endDate]` contains its `date`.
 Queries are lexicographic string ranges: `date >= start && date <= end`, which is why the

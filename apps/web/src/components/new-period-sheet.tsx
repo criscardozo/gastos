@@ -12,11 +12,7 @@ import { useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { AmountInput } from "@/components/ui/amount-input";
 import { Segmented } from "@/components/ui/segmented";
-import {
-  BudgetCurrencyControls,
-  entryToAudCents,
-  useBudgetCurrency,
-} from "@/components/budget-amount-field";
+import { parseBudgetAmount } from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { updatePeriodAmount } from "@/lib/firebase/mutations";
 import { formatPeriodRange } from "@/lib/dates";
@@ -36,9 +32,8 @@ export function NewPeriodSheet({ period }: { period: PeriodBudget }) {
   );
   const [saving, setSaving] = useState(false);
 
-  const { currency, setCurrency, usdRate } = useBudgetCurrency();
   const weekly = period.period === "weekly";
-  const cents = entryToAudCents(amount, currency, usdRate);
+  const cents = parseBudgetAmount(amount);
   const changed = cents !== null && cents !== period.amountCents;
 
   const confirm = async () => {
@@ -98,17 +93,9 @@ export function NewPeriodSheet({ period }: { period: PeriodBudget }) {
               value={amount}
               onChange={setAmount}
               fontSize={46}
-              suffix={currency === "USD" ? "USD" : undefined}
             />
             <Icon name="edit" size={18} className="text-ink-3" />
           </div>
-          <BudgetCurrencyControls
-            amount={amount}
-            currency={currency}
-            onCurrencyChange={setCurrency}
-            usdRate={usdRate}
-            locale={locale}
-          />
           <div className="flex items-center gap-[5px] self-center rounded-full bg-good-bg px-[11px] py-1">
             <span className="text-[11.5px] font-bold text-good-text">
               {changed ? t("adjustedBadge") : t("defaultBadge")}

@@ -17,8 +17,6 @@ export interface UserDoc {
   displayName: string;
   householdId: string | null;
   language: "es" | "en" | null;
-  /** Which currency the expense-entry toggle starts on. null ⇒ AUD. */
-  defaultEntryCurrency: "AUD" | "USD" | null;
 }
 
 export interface MemberProfile {
@@ -65,10 +63,6 @@ export interface Expense {
   date: string;
   createdBy: string;
   createdAt: Timestamp | null;
-  /** Currency the user actually typed in. Absent ⇒ entered in AUD (canonical). */
-  entryCurrency?: "AUD" | "USD";
-  /** Original amount in `entryCurrency`. Present iff `entryCurrency` is. Display-only. */
-  entryAmountCents?: number;
   /** Written locally but not yet acknowledged by the server — the expense is
    * queued offline. Local state, never a stored field. */
   pendingWrite: boolean;
@@ -100,8 +94,6 @@ export const userConverter = readOnly<UserDoc>((snap) => {
     displayName: (data.displayName as string) ?? "",
     householdId: (data.householdId as string | null) ?? null,
     language: (data.language as "es" | "en" | null) ?? null,
-    defaultEntryCurrency:
-      (data.defaultEntryCurrency as "AUD" | "USD" | null) ?? null,
   };
 });
 
@@ -143,15 +135,6 @@ export const expenseConverter = readOnly<Expense>((snap) => {
     createdAt: (data.createdAt as Timestamp | null) ?? null,
     pendingWrite: snap.metadata.hasPendingWrites,
   };
-  // Bi-currency: read the optional entry fields only when both are present
-  // (schema guarantees they are co-dependent). Absent ⇒ entered in AUD.
-  if (
-    (data.entryCurrency === "AUD" || data.entryCurrency === "USD") &&
-    typeof data.entryAmountCents === "number"
-  ) {
-    expense.entryCurrency = data.entryCurrency;
-    expense.entryAmountCents = data.entryAmountCents;
-  }
   return expense;
 });
 

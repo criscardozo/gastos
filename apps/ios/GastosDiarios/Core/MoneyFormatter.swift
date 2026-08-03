@@ -40,32 +40,10 @@ enum MoneyFormatter {
         return formatter.string(from: decimal(fromCents: cents)) ?? "0"
     }
 
-    /// Original USD amount the user entered: "US$ 7,00" (es) / "US$ 7.00"
-    /// (en). Display-only — this is `entryAmountCents`, never summed.
+    /// The amount the bank actually charged in USD: "US$ 7,00" (es) /
+    /// "US$ 7.00" (en). Always exact — the app never converts anything, it only
+    /// ever shows a figure that came from the bank.
     static func usd(_ cents: Int, locale: Locale) -> String {
         formatter(locale: locale, symbol: "US$ ").string(from: decimal(fromCents: cents)) ?? "US$ 0"
-    }
-
-    /// USD figure converted from an AUD anchor, rendered WITHOUT the ≈ mark:
-    /// "US$ 186,90". Used only when USD is the ACTIVE display currency and the
-    /// exact AUD anchor is shown right alongside it, so the USD figure reads as
-    /// the primary value and the AUD next to it is the exact source of truth.
-    static func usd(fromAUDCents audCents: Int, rate: Double, locale: Locale) -> String {
-        let usd = (Double(audCents) / 100.0) * rate
-        return formatter(locale: locale, symbol: "US$ ").string(from: NSNumber(value: usd)) ?? "US$ 0"
-    }
-
-    /// Approximate FX display: "≈ US$ 186,90". Display-only, never persisted.
-    static func approxUSD(audCents: Int, rate: Double, locale: Locale) -> String {
-        let usd = (Double(audCents) / 100.0) * rate
-        let formatter = formatter(locale: locale, symbol: "US$ ")
-        let text = formatter.string(from: NSNumber(value: usd)) ?? ""
-        return "≈ \(text)"
-    }
-
-    /// Approximate AUD equivalent while entering an amount in USD:
-    /// "≈ $1.375,00 AUD". Display-only.
-    static func approxAUD(_ audCents: Int, locale: Locale) -> String {
-        "≈ \(aud(audCents, locale: locale)) AUD"
     }
 }

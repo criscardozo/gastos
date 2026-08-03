@@ -4,7 +4,6 @@
 // list, inline edit and delete per row.
 
 import {
-  useEffect,
   useId,
   useMemo,
   useRef,
@@ -15,29 +14,16 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
-import {
-  useAuth,
-  useHousehold,
-  useLocale,
-  useUserDoc,
-} from "@/components/providers";
+import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { Avatar } from "@/components/ui/avatar";
-import { AmountPair } from "@/components/ui/amount-pair";
 import { Segmented } from "@/components/ui/segmented";
-import {
-  BudgetCurrencyControls,
-  entryToAudCents,
-  useBudgetCurrency,
-  type EntryCurrency,
-} from "@/components/budget-amount-field";
 import { useExpensesRange } from "@/lib/firebase/hooks";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   addExpense,
   deleteExpense,
   updateExpense,
-  updateUserDefaultEntryCurrency,
   type ExpenseInput,
 } from "@/lib/firebase/mutations";
 import type { Expense, Household, PeriodBudget } from "@/lib/firebase/converters";
@@ -47,10 +33,6 @@ import {
   formatCentsCompact,
   parseAmountToCents,
 } from "@/lib/money";
-import {
-  effectiveCurrency,
-  useActiveCurrency,
-} from "@/lib/use-currency";
 import { formatDayHeading, formatPeriodRange, formatShortDate } from "@/lib/dates";
 import { addDays } from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
@@ -133,10 +115,6 @@ function ExpenseFormFields({
   categories,
   amountRef,
   noteSuggestions,
-  currency,
-  onCurrencyChange,
-  usdRate,
-  locale,
 }: {
   form: FormState;
   setForm: (next: FormState) => void;
@@ -144,11 +122,6 @@ function ExpenseFormFields({
   amountRef?: React.RefObject<HTMLInputElement | null>;
   /** Most frequent recent notes offered as native autocomplete options. */
   noteSuggestions?: string[];
-  /** Bi-currency entry toggle state (AUD default, USD converts on save). */
-  currency: EntryCurrency;
-  onCurrencyChange: (currency: EntryCurrency) => void;
-  usdRate: number | null;
-  locale: string;
 }) {
   const t = useTranslations("expenses");
   // Unique per instance so the add and edit rows never share a datalist id.
@@ -166,15 +139,6 @@ function ExpenseFormFields({
         placeholder={t("amountPlaceholder")}
         aria-label={t("amountPlaceholder")}
         className="tnum w-24 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] font-semibold text-ink outline-none"
-      />
-      {/* AUD | USD toggle + live ≈ conversion; renders nothing without an FX
-          rate, so entry falls back to AUD-only exactly as before. */}
-      <BudgetCurrencyControls
-        amount={form.amount}
-        currency={currency}
-        onCurrencyChange={onCurrencyChange}
-        usdRate={usdRate}
-        locale={locale}
       />
       <select
         value={form.categoryId}
@@ -218,25 +182,12 @@ function ExpenseFormFields({
   );
 }
 
-/** Turn a typed entry-row amount into the ExpenseInput money fields: always
- * canonical AUD `amountCents`, plus the USD original when the row is in USD.
- * Returns null when the amount can't be parsed (or USD without a rate). */
+/** Typed amount → the expense's AUD cents, or null when unparsable. */
 function buildAmountFields(
   amount: string,
-  currency: EntryCurrency,
-  usdRate: number | null,
-): Pick<
-  ExpenseInput,
-  "amountCents" | "entryCurrency" | "entryAmountCents"
-> | null {
-  const amountCents = entryToAudCents(amount, currency, usdRate);
-  if (amountCents === null) return null;
-  if (currency === "USD") {
-    const usdCents = parseAmountToCents(amount);
-    if (usdCents === null) return null;
-    return { amountCents, entryCurrency: "USD", entryAmountCents: usdCents };
-  }
-  return { amountCents };
+): Pick<ExpenseInput, "amountCents"> | null {
+  const amountCents = parseAmountToCents(amount);
+  return amountCents === null ? null : { amountCents };
 }
 
 /* ── Page ──────────────────────────────────────────────────────────────── */
@@ -248,7 +199,6 @@ export default function ExpensesPage() {
   const tCat = useTranslations("categories");
   const { locale } = useLocale();
   const { user } = useAuth();
-  const { userDoc } = useUserDoc();
   const { household, periods, currentPeriod, today } = useHousehold();
 
   const [grouped, setGrouped] = useState<"grouped" | "flat">("grouped");
@@ -260,34 +210,6 @@ export default function ExpensesPage() {
   const [editForm, setEditForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const amountRef = useRef<HTMLInputElement | null>(null);
-
-  // Bi-currency entry: one toggle for the add row, one for the edit row. The
-  // daily FX rate is fetched once (cached); when it's null the toggle hides
-  // and entry behaves exactly as AUD-only.
-  const {
-    currency: addCurrency,
-    setCurrency: setAddCurrency,
-    usdRate,
-  } = useBudgetCurrency();
-  const {
-    currency: editCurrency,
-    setCurrency: setEditCurrency,
-    usdRate: editUsdRate,
-  } = useBudgetCurrency();
-
-  // Active display currency (persisted). The add-row toggle writes it (below),
-  // so switching the entry currency also flips every figure to that currency.
-  const active = useActiveCurrency();
-  const effective = effectiveCurrency(active, usdRate);
-
-  // Seed the add row from the user's preferred entry currency once it loads —
-  // never clobbering a choice already made on the row this session.
-  const addCurrencyInit = useRef(false);
-  useEffect(() => {
-    if (addCurrencyInit.current || userDoc === null) return;
-    addCurrencyInit.current = true;
-    setAddCurrency(userDoc.defaultEntryCurrency ?? "AUD");
-  }, [userDoc, setAddCurrency]);
 
   const fallbackPeriod: PeriodBudget | null =
     currentPeriod ?? periods[periods.length - 1] ?? null;
@@ -425,29 +347,10 @@ export default function ExpensesPage() {
     };
   };
 
-  /* Bi-currency: with no FX rate the toggle is hidden, so force AUD. */
-  const addEntryCurrency: EntryCurrency = usdRate === null ? "AUD" : addCurrency;
-  const editEntryCurrency: EntryCurrency =
-    editUsdRate === null ? "AUD" : editCurrency;
-
-  // Changing the add-row currency also persists it as the app-wide active
-  // currency (drives the primary display currency everywhere, incl. the
-  // dashboard remaining). The edit-row toggle does NOT — it only affects the
-  // expense being edited.
-  const changeAddCurrency = (c: EntryCurrency) => {
-    setAddCurrency(c);
-    const fb = getFirebaseClient();
-    if (fb !== null) void updateUserDefaultEntryCurrency(fb.db, user.uid, c);
-  };
-
   /* Mutations */
   const submitAdd = async () => {
     const fb = getFirebaseClient();
-    const money = buildAmountFields(
-      effectiveAddForm.amount,
-      addEntryCurrency,
-      usdRate,
-    );
+    const money = buildAmountFields(effectiveAddForm.amount);
     if (fb === null || money === null || effectiveAddForm.date === "") return;
     setSaving(true);
     try {
@@ -465,17 +368,9 @@ export default function ExpensesPage() {
   };
 
   const startEdit = (e: Expense) => {
-    // Edit a USD-entered expense in USD (showing the original) only when a
-    // rate is available; otherwise fall back to editing the canonical AUD.
-    const asUsd =
-      e.entryCurrency === "USD" &&
-      e.entryAmountCents !== undefined &&
-      editUsdRate !== null;
-    const shownCents = asUsd ? e.entryAmountCents! : e.amountCents;
     setEditingId(e.id);
-    setEditCurrency(asUsd ? "USD" : "AUD");
     setEditForm({
-      amount: (shownCents / 100).toLocaleString(
+      amount: (e.amountCents / 100).toLocaleString(
         locale === "es" ? "es-AR" : "en-AU",
         { minimumFractionDigits: 2, useGrouping: false },
       ),
@@ -488,11 +383,7 @@ export default function ExpensesPage() {
   const submitEdit = async () => {
     const fb = getFirebaseClient();
     if (fb === null || editingId === null || editForm === null) return;
-    const money = buildAmountFields(
-      editForm.amount,
-      editEntryCurrency,
-      editUsdRate,
-    );
+    const money = buildAmountFields(editForm.amount);
     if (money === null || editForm.date === "") return;
     const input: ExpenseInput = {
       ...money,
@@ -549,10 +440,6 @@ export default function ExpensesPage() {
             setForm={setEditForm}
             categories={categories}
             noteSuggestions={noteSuggestions}
-            currency={editCurrency}
-            onCurrencyChange={setEditCurrency}
-            usdRate={editUsdRate}
-            locale={locale}
           />
           <button
             type="button"
@@ -639,20 +526,9 @@ export default function ExpensesPage() {
             />
           )}
         </div>
-        {/* Two currencies per row: AUD (canonical, exact) + USD. A USD-entered
-            expense shows its exact original; otherwise USD is a ≈ conversion.
-            The active currency is emphasized, the other muted. */}
-        <AmountPair
-          audCents={e.amountCents}
-          usdExactCents={
-            e.entryCurrency === "USD" ? e.entryAmountCents : undefined
-          }
-          usdRate={usdRate}
-          active={effective}
-          locale={locale}
-          currency={household.currency}
-          size="lg"
-        />
+        <span className="tnum text-right text-sm font-bold text-ink">
+          {formatCents(e.amountCents, household.currency, locale)}
+        </span>
         <div className="flex justify-end gap-1.5">
           <button
             type="button"
@@ -790,10 +666,6 @@ export default function ExpensesPage() {
             categories={categories}
             amountRef={amountRef}
             noteSuggestions={noteSuggestions}
-            currency={addCurrency}
-            onCurrencyChange={changeAddCurrency}
-            usdRate={usdRate}
-            locale={locale}
           />
           <button
             type="button"

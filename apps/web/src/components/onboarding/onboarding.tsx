@@ -11,11 +11,7 @@ import { Icon } from "@/components/ui/icon";
 import { GoogleG, PiggyMark } from "@/components/brand";
 import { AmountInput } from "@/components/ui/amount-input";
 import { Segmented } from "@/components/ui/segmented";
-import {
-  BudgetCurrencyControls,
-  entryToAudCents,
-  useBudgetCurrency,
-} from "@/components/budget-amount-field";
+import { parseBudgetAmount } from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   completeRedirectSignIn,
@@ -228,8 +224,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState(false);
 
-  const { currency, setCurrency, usdRate } = useBudgetCurrency();
-  const cents = entryToAudCents(amount, currency, usdRate);
+  const cents = parseBudgetAmount(amount);
   const valid = cents !== null && name.trim() !== "" && startDate !== "";
 
   const create = async () => {
@@ -273,14 +268,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
           className="rounded-xl border border-pill bg-bg px-3.5 py-3 text-[15px] font-semibold text-ink outline-none"
         />
         <div className="flex flex-col gap-2.5">
-          <AmountInput value={amount} onChange={setAmount} suffix={currency} />
-          <BudgetCurrencyControls
-            amount={amount}
-            currency={currency}
-            onCurrencyChange={setCurrency}
-            usdRate={usdRate}
-            locale={locale}
-          />
+          <AmountInput value={amount} onChange={setAmount} />
         </div>
         <Segmented
           options={[

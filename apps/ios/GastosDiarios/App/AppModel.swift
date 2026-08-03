@@ -31,7 +31,6 @@ final class AppModel {
     private(set) var viewedExpenses: [ExpenseItem] = []
     /// Spent totals for past periods, keyed by startDate.
     private(set) var pastTotals: [String: Int] = [:]
-    private(set) var usdRate: Double?
     /// Calendar-month spend (budgeted categories only), from one server-side
     /// sum. nil while loading or when the query failed.
     private(set) var monthSpentCents: Int?
@@ -81,7 +80,6 @@ final class AppModel {
 
     private let auth = AuthService()
     private let firestore = FirestoreService()
-    private let fx = FXService()
 
     private var authHandle: AuthStateDidChangeListenerHandle?
     private var userListener: ListenerRegistration?
@@ -169,11 +167,6 @@ final class AppModel {
             spentCents: currentSpentCents,
             budgetCents: currentPeriod?.amountCents ?? 0
         )
-    }
-
-    /// Currency the expense-entry switch starts on. Absent/nil ⇒ AUD.
-    var defaultEntryCurrency: String {
-        userProfile?.defaultEntryCurrency == "USD" ? "USD" : "AUD"
     }
 
     /// Expenses available for quick-entry suggestions — derived ONLY from what
@@ -337,7 +330,6 @@ final class AppModel {
             self.loadMonthTotal()
             self.publishWidgetSnapshot()
         }
-        Task { await self.refreshFXIfNeeded() }
     }
 
     // MARK: Period materialization
@@ -558,34 +550,6 @@ final class AppModel {
         }
     }
 
-    // MARK: FX
-
-    /// Populates the daily AUD→USD rate for the bi-currency DISPLAY (remaining
-    /// pill, history/summary columns). Fetched on household attach regardless
-    /// of any preference; nil (offline, empty cache) ⇒ everything falls back
-    /// to AUD-only.
-    func refreshFXIfNeeded() async {
-        usdRate = await fx.audToUsdRate()
-        // The widget/watch snapshot carries the rate — republish once it lands.
-        publishWidgetSnapshot()
-    }
-
-    /// AUD→USD rate for bi-currency budget ENTRY. Unlike `refreshFXIfNeeded`,
-    /// it is independent of the USD display preference: typing a budget in
-    /// USD is offered whenever a daily rate is available. nil (offline with
-    /// an empty cache) means the editors stay AUD-only.
-    func budgetEntryUSDRate() async -> Double? {
-        if let usdRate { return usdRate }
-        // Cache it: display (remaining pill, columns) reads `usdRate`, so
-        // sharing the same snapshot keeps entry and display consistent.
-        let rate = await fx.audToUsdRate()
-        if let rate {
-            usdRate = rate
-            publishWidgetSnapshot()
-        }
-        return rate
-    }
-
     // MARK: Auth actions
 
     func signInWithGoogle() {
@@ -708,9 +672,7 @@ final class AppModel {
         amountCents: Int,
         categoryId: String,
         note: String,
-        date: CalendarDate?,
-        entryCurrency: String? = nil,
-        entryAmountCents: Int? = nil
+        date: CalendarDate?
     ) {
         guard let householdId = attachedHouseholdId, let uid else { return }
         firestore.createExpense(
@@ -719,9 +681,7 @@ final class AppModel {
             amountCents: amountCents,
             categoryId: categoryId,
             note: note,
-            date: (date ?? today).raw,
-            entryCurrency: entryCurrency,
-            entryAmountCents: entryAmountCents
+            date: (date ?? today).raw
         )
     }
 
@@ -758,9 +718,7 @@ final class AppModel {
         amountCents: Int,
         categoryId: String,
         note: String,
-        date: CalendarDate,
-        entryCurrency: String? = nil,
-        entryAmountCents: Int? = nil
+        date: CalendarDate
     ) {
         guard let householdId = attachedHouseholdId else { return }
         firestore.updateExpense(
@@ -769,9 +727,7 @@ final class AppModel {
             amountCents: amountCents,
             categoryId: categoryId,
             note: note,
-            date: date.raw,
-            entryCurrency: entryCurrency,
-            entryAmountCents: entryAmountCents
+            date: date.raw
         )
         loadPastTotals(refreshAll: true)  // date edits can move expenses across periods
     }
@@ -788,15 +744,6 @@ final class AppModel {
         guard let uid else { return }
         userProfile?.language = language
         Task { try? await firestore.updateUser(uid: uid, fields: ["language": language]) }
-    }
-
-    /// Per-user default entry currency ("AUD" | "USD"). Stored literally (both
-    /// are valid per shared/schema.md); the entry switch reads it on open.
-    func setDefaultEntryCurrency(_ currency: String) {
-        guard let uid, ["AUD", "USD"].contains(currency) else { return }
-        userProfile?.defaultEntryCurrency = currency
-        publishWidgetSnapshot()  // active currency drives the widget/watch figure
-        Task { try? await firestore.updateUser(uid: uid, fields: ["defaultEntryCurrency": currency]) }
     }
 
     /// Renames the household, trimming and capping to the 60 characters the
@@ -932,9 +879,7 @@ final class AppModel {
             periodEndDate: period.endDate,
             currency: household.currency,
             timezone: household.timezone,
-            updatedAtEpoch: Int(Date().timeIntervalSince1970),
-            usdRate: usdRate,
-            activeCurrency: defaultEntryCurrency
+            updatedAtEpoch: Int(Date().timeIntervalSince1970)
         )
         if var last = lastPublishedSnapshot {
             last.updatedAtEpoch = snapshot.updatedAtEpoch
@@ -946,9 +891,7 @@ final class AppModel {
             remainingCents: snapshot.remainingCents,
             budgetCents: snapshot.budgetCents,
             state: snapshot.state,
-            currency: snapshot.currency,
-            usdRate: snapshot.usdRate,
-            activeCurrency: snapshot.activeCurrency
+            currency: snapshot.currency
         )
     }
 }

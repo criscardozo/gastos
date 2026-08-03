@@ -17,8 +17,8 @@ Decisiones del usuario ya confirmadas:
 - **Presupuesto por período**: cada semana/quincena puede definirse su propio presupuesto.
   Existe un default (en el hogar), pero cada período queda **registrado** con su monto y su
   tipo (semanal o quincenal) — el historial de presupuestos es un dato de primera clase.
-- **Moneda**: default **AUD**, timezone **Australia/Sydney**; con display **temporal** en otra
-  moneda (ej. USD) sin persistir la conversión.
+- **Moneda**: **AUD** única, timezone **Australia/Sydney**. (Revertido: durante un tiempo hubo
+  entrada y display bi-moneda con conversión FX — ver la sección 7.)
 - **Distribución iOS**: sideload gratuito por ahora (firma que expira a los 7 días); decidir
   más adelante si pagar Apple Developer.
 
@@ -69,7 +69,7 @@ No hay servidor propio.
 ### 3. Modelo de datos (Firestore — solo la base `(default)`; el free tier aplica solo a ella)
 ```
 users/{uid}
-  displayName, householdId, language ("es"|"en"), displayCurrency ("USD"|null)
+  displayName, householdId, language ("es"|"en")   // displayCurrency/defaultEntryCurrency: deprecados
   // conveniencia desnormalizada; memberIds en el hogar es la fuente de verdad de autorización
 
 households/{householdId}
@@ -182,16 +182,15 @@ en UTC.
   `shared/period-test-vectors.json`, incluyendo transiciones de DST de Sídney (abril/octubre)
   y casos de materialización en cascada tras días sin uso.
 
-### 7. Visualización FX (AUD → moneda temporal, solo display)
-Responde al pedido de "ver el importe temporalmente en otra moneda como USD".
-- **frankfurter.app** (tasas del BCE, gratis, sin API key). Se consulta desde el cliente, cache
-  por día (`localStorage` / `UserDefaults`). El BCE publica solo días hábiles — la última tasa
-  disponible alcanza para display.
-- La conversión es **puramente de display**: nunca se guarda en Firestore. Los montos
-  convertidos se marcan como aproximados. Es un toggle temporal, no un cambio de moneda.
-- Degradación elegante: si falla el fetch de FX → mostrar solo AUD, nunca bloquear.
-- La moneda de display es por usuario (`displayCurrency` en `users/{uid}`); USD es el caso más
-  común, pero el mecanismo sirve para cualquier moneda que soporte frankfurter.
+### 7. FX — ELIMINADO (la app no convierte nada)
+Se implementó y después se **quitó por completo**: el switch AUD|USD de entrada, el display
+bi-moneda con `≈`, la moneda activa por usuario y el fetch diario a frankfurter.app.
+- Motivo: el gasto se paga en AUD y el banco lo cobra en **USD con su propia tasa**, que llega
+  por email. Una tasa estimada del BCE nunca coincide con la del banco, así que un `≈` al lado
+  del monto real no aportaba información: confundía.
+- En su lugar, el único USD que existe es **el que cobró el banco**, guardado en su propio campo
+  del gasto (ver `shared/schema.md`); mientras está vacío el gasto queda "no verificado".
+- Consecuencia: **ninguna API de FX** en ninguno de los dos clientes.
 
 ### 8. Higiene del free tier de Firestore
 - **Nunca colgar listeners sin acotar** — siempre `where date >= periodStart && date <= periodEnd`.
@@ -275,9 +274,9 @@ Gráficos por categoría (Recharts), navegación por períodos históricos, vist
 persona, gestión de categorías personalizadas.
 
 ### Fase 4 — Pulido
-Pasada completa de localización, toggle de display FX (AUD → USD u otra), estados vacíos/de
-error, refinamiento del flujo de presupuesto por período (prompt al empezar un período nuevo,
-badge "custom" vs "default"), base de layout adaptativo para iPad.
+Pasada completa de localización, estados vacíos/de error, refinamiento del flujo de presupuesto
+por período (prompt al empezar un período nuevo, badge "custom" vs "default"), base de layout
+adaptativo para iPad.
 
 ### Fase 5 — Distribución (punto de decisión)
 O bien: Apple Developer Program pago → TestFlight/App Store (agrega Sign in with Apple por la

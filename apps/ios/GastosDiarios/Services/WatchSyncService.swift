@@ -26,8 +26,6 @@ final class WatchSyncService: NSObject {
         static let budgetCents = "budgetCents"
         static let state = "state"
         static let currency = "currency"
-        static let usdRate = "usdRate"
-        static let activeCurrency = "activeCurrency"
     }
 
     #if canImport(WatchConnectivity)
@@ -54,9 +52,7 @@ final class WatchSyncService: NSObject {
         remainingCents: Int,
         budgetCents: Int,
         state: String,
-        currency: String,
-        usdRate: Double? = nil,
-        activeCurrency: String? = nil
+        currency: String
     ) {
         #if canImport(WatchConnectivity)
         var context: [String: Any] = [
@@ -65,10 +61,6 @@ final class WatchSyncService: NSObject {
             Key.state: state,
             Key.currency: currency,
         ]
-        // Optional bi-currency extras — omitted when there is no daily rate,
-        // so the watch simply stays AUD-only.
-        if let usdRate { context[Key.usdRate] = usdRate }
-        if let activeCurrency { context[Key.activeCurrency] = activeCurrency }
         guard let session, session.activationState == .activated else {
             pendingContext = context
             return

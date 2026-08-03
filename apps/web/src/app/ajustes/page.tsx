@@ -1,7 +1,7 @@
 "use client";
 
 // Ajustes (design 4c): default budget vs current period, preferences
-// (active currency, language, theme), household + invite code, sign out.
+// (language, theme), household + invite code, sign out.
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -11,25 +11,19 @@ import {
   useAuth,
   useHousehold,
   useLocale,
-  useUserDoc,
   type Locale,
 } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { AvatarPair } from "@/components/ui/avatar";
 import { Segmented } from "@/components/ui/segmented";
 import { CategoriesCard } from "@/components/categories-card";
-import {
-  BudgetCurrencyControls,
-  entryToAudCents,
-  useBudgetCurrency,
-} from "@/components/budget-amount-field";
+import { parseBudgetAmount } from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   createInvite,
   updateDefaultBudget,
   updateHouseholdName,
   updatePeriodAmount,
-  updateUserDefaultEntryCurrency,
   updateUserLanguage,
 } from "@/lib/firebase/mutations";
 import { formatCents } from "@/lib/money";
@@ -59,56 +53,29 @@ function EditableAmount({
   const t = useTranslations("settings");
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
-  const {
-    currency: entryCurrency,
-    setCurrency: setEntryCurrency,
-    usdRate,
-  } = useBudgetCurrency();
 
   const commit = () => {
-    const parsed = entryToAudCents(value, entryCurrency, usdRate);
+    const parsed = parseBudgetAmount(value);
     if (parsed !== null && parsed !== cents) onSave(parsed);
     setEditing(false);
   };
 
   if (editing) {
     return (
-      <div
-        className="flex flex-col items-end gap-1.5"
-        onBlur={(e) => {
-          // Commit only when focus leaves the whole editor (input + toggle).
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-            commit();
-          }
+      <input
+        autoFocus
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") setEditing(false);
         }}
-      >
-        <input
-          autoFocus
-          type="text"
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") setEditing(false);
-          }}
-          className="tnum w-28 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-right text-sm font-semibold text-ink outline-none"
-          aria-label={t("editAmount")}
-        />
-        {/* preventDefault keeps the input focused while clicking the toggle
-            (Safari does not focus buttons on click, so relatedTarget alone
-            would commit-and-close before the click lands). */}
-        <div onMouseDown={(e) => e.preventDefault()}>
-          <BudgetCurrencyControls
-            amount={value}
-            currency={entryCurrency}
-            onCurrencyChange={setEntryCurrency}
-            usdRate={usdRate}
-            locale={locale}
-            align="end"
-          />
-        </div>
-      </div>
+        className="tnum w-28 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-right text-sm font-semibold text-ink outline-none"
+        aria-label={t("editAmount")}
+      />
     );
   }
   return (
@@ -121,7 +88,6 @@ function EditableAmount({
             useGrouping: false,
           }),
         );
-        setEntryCurrency("AUD");
         setEditing(true);
       }}
       className={`tnum text-sm ${
@@ -226,7 +192,6 @@ export default function SettingsPage() {
   const tAuth = useTranslations("auth");
   const { locale, setLocale } = useLocale();
   const { user } = useAuth();
-  const { userDoc } = useUserDoc();
   const { household, currentPeriod } = useHousehold();
 
   const [copied, setCopied] = useState(false);
@@ -415,29 +380,6 @@ export default function SettingsPage() {
 
       {/* Preferences */}
       <div className="rounded-[18px] border border-line bg-surface px-[18px] py-1.5">
-        <div className="flex items-center gap-[11px] border-b border-soft py-3">
-          <div className="flex flex-1 flex-col gap-0.5">
-            <span className="text-sm font-semibold text-ink">
-              {t("activeCurrency")}
-            </span>
-            <span className="text-xs text-ink-3">
-              {t("activeCurrencyHint")}
-            </span>
-          </div>
-          <Segmented<"AUD" | "USD">
-            ariaLabel={t("activeCurrency")}
-            options={[
-              { value: "AUD", label: "AUD" },
-              { value: "USD", label: "USD" },
-            ]}
-            value={userDoc?.defaultEntryCurrency ?? "AUD"}
-            onChange={(next) =>
-              withDb((db) =>
-                updateUserDefaultEntryCurrency(db, user.uid, next),
-              )
-            }
-          />
-        </div>
         <div className="flex items-center gap-[11px] border-b border-soft py-3">
           <span className="flex-1 text-sm font-semibold text-ink">
             {t("language")}

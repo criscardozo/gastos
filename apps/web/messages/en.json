@@ -140,7 +140,6 @@
     "statusError": "Error",
     "reasonBadDate": "Invalid date",
     "reasonBadAmount": "Invalid amount",
-    "reasonBadCurrency": "Invalid currency (use AUD or USD)",
     "reasonNoColumns": "Missing columns (fecha, categoria, monto_aud)",
     "importButton": "{count, plural, one {Import # expense} other {Import # expenses}}",
     "importing": "Importing…",
@@ -165,8 +164,6 @@
     "thisPeriod": "This period · {range}",
     "budget": "Budget",
     "thisPeriodNote": "Only affects the current period; it stays recorded with its amount and type.",
-    "activeCurrency": "Active currency",
-    "activeCurrencyHint": "Used when entering expenses and as the primary currency across the app. The other is shown approximately (≈); the real amount always stays in AUD.",
     "language": "Language",
     "spanish": "Español",
     "english": "English",
@@ -181,9 +178,6 @@
     "renameHousehold": "Rename the household",
     "rollover": "Carry over the leftover",
     "rolloverHint": "When a new period starts, whatever was left of the previous one is added to it. An overspend carries across too."
-  },
-  "budgetEntry": {
-    "currencyToggle": "Amount currency"
   },
   "newPeriod": {
     "titleWeekly": "New week",
@@ -228,7 +222,6 @@
     "countsToBudgetHint": "The switch sets whether a category eats into the period budget. Off, the spending is still recorded."
   },
   "quickEntry": {
-    "currency": "Amount currency",
     "saved": "Saved!",
     "offBudget": "off budget"
   }

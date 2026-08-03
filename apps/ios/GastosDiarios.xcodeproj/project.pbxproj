@@ -25,7 +25,6 @@
 		5455A60CA071010D3B53B606 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC439A76443D441CA1E59FBA /* WidgetBridge.swift */; };
 		57088CAAA6CBF0A900D6546B /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 0C6A902D5FD08D33DF0CB379 /* FirebaseFirestore */; };
 		5E46E4B94AD5C7F23B172691 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6536FA32700C9D56775F646 /* OnboardingView.swift */; };
-		640D8D41EB8C7A28FF96E037 /* ExpenseCurrencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64713318537584A1DE652757 /* ExpenseCurrencyTests.swift */; };
 		64A277BCB7F020EF239963C3 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E33FD8DDEB4A07F1B2A435 /* L10n.swift */; };
 		680E4B8C6F5A7FE48B79B090 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 03D045921BA5FA8C21C1F897 /* Assets.xcassets */; };
 		6946D942898FFB0E720BE6A8 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F2F3CF0DA3B43BF2B52F6274 /* Localizable.xcstrings */; };
@@ -38,7 +37,7 @@
 		8A8E0DFCAC9E165B3E5BE2FD /* WatchEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9E2A69A862D11BA003582B8 /* WatchEntryView.swift */; };
 		8B830BAED6EB824DAF23866F /* WatchSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFD2D6C9571B18B2E78C7040 /* WatchSyncService.swift */; };
 		8DEF436DCA6C18809AB5721A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */; };
-		8FC0D32FDCEB87496FE15427 /* FXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11945CEB1AA2DB45FA94F42C /* FXService.swift */; };
+		93121744B6DC03F3CEEEE2FC /* BudgetEntryAmountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6FA9B2E125EE5FF221B75FE /* BudgetEntryAmountTests.swift */; };
 		93D1A5BEC5F8DD031294522A /* QuickEntryIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */; };
 		98CF0F503439808C29ADD186 /* MoneyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */; };
 		9AB064ED54CA05C3CAA73F45 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F53CD2A73A681E6F361C7C16 /* Localizable.xcstrings */; };
@@ -115,7 +114,6 @@
 
 /* Begin PBXFileReference section */
 		03D045921BA5FA8C21C1F897 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		11945CEB1AA2DB45FA94F42C /* FXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FXService.swift; sourceTree = "<group>"; };
 		145F6B37DD56D3F48641A9AB /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		1C8F75E05B2CB5526FAED626 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		23612A2AE85E20827C54AF6A /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -127,7 +125,6 @@
 		552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatter.swift; sourceTree = "<group>"; };
 		5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
-		64713318537584A1DE652757 /* ExpenseCurrencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseCurrencyTests.swift; sourceTree = "<group>"; };
 		68782F8F6E6DBE2B3A582B62 /* GastosDiarios.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GastosDiarios.entitlements; sourceTree = "<group>"; };
 		6B98CA105FB223E5AFAF9A68 /* GastosDiariosTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GastosDiariosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6ED43CCFFBE449FFB095396B /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
@@ -153,6 +150,7 @@
 		C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C5AA2FE7D38ADF32A88459CF /* WatchConnectivityModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityModel.swift; sourceTree = "<group>"; };
 		C61FCF0E69A7236D256390A7 /* period-test-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "period-test-vectors.json"; sourceTree = "<group>"; };
+		C6FA9B2E125EE5FF221B75FE /* BudgetEntryAmountTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetEntryAmountTests.swift; sourceTree = "<group>"; };
 		CC1B3142A37042E43AF35EC1 /* WatchSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSupport.swift; sourceTree = "<group>"; };
 		CFD2D6C9571B18B2E78C7040 /* WatchSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSyncService.swift; sourceTree = "<group>"; };
 		D1033958EAF0770812248EF2 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
@@ -326,7 +324,7 @@
 		9F17DAD116300D340E9287E1 /* GastosDiariosTests */ = {
 			isa = PBXGroup;
 			children = (
-				64713318537584A1DE652757 /* ExpenseCurrencyTests.swift */,
+				C6FA9B2E125EE5FF221B75FE /* BudgetEntryAmountTests.swift */,
 				F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */,
 				F875CB9A4249023372B6A501 /* SigningExpiryTests.swift */,
 				E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */,
@@ -339,7 +337,6 @@
 			children = (
 				6ED43CCFFBE449FFB095396B /* AuthService.swift */,
 				73D2B1C84483CD1A063D9EDF /* FirestoreService.swift */,
-				11945CEB1AA2DB45FA94F42C /* FXService.swift */,
 				7484D19116522C218B8D7881 /* ReminderService.swift */,
 				83F2CD9DC403E30E0D49F3C5 /* SigningExpiryService.swift */,
 				CFD2D6C9571B18B2E78C7040 /* WatchSyncService.swift */,
@@ -604,7 +601,6 @@
 				5294EA0188CE3A372AA24069 /* CategoriesManagerView.swift in Sources */,
 				C003724BF4470744B6B53B53 /* Components.swift in Sources */,
 				C85234FD7E915451EBD5B306 /* ExpenseFormView.swift in Sources */,
-				8FC0D32FDCEB87496FE15427 /* FXService.swift in Sources */,
 				A7E3EB7757720198B6CAB1C7 /* FirestoreService.swift in Sources */,
 				4A6170B92E597704ED1A35D9 /* GastosDiariosApp.swift in Sources */,
 				F6C3A5A2215B37A39404FBF6 /* HistoryView.swift in Sources */,
@@ -631,7 +627,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				640D8D41EB8C7A28FF96E037 /* ExpenseCurrencyTests.swift in Sources */,
+				93121744B6DC03F3CEEEE2FC /* BudgetEntryAmountTests.swift in Sources */,
 				4A7C9399EB868F5BD37FCEE2 /* PeriodLogicTests.swift in Sources */,
 				6F988A6795BF9227AEDA3A80 /* SigningExpiryTests.swift in Sources */,
 				358B81D7BBDE72EE00BB04A4 /* SuggestionsTests.swift in Sources */,

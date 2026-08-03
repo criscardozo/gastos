@@ -1564,23 +1564,6 @@
         }
       }
     },
-    "settings.entryCurrency" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Default currency"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Moneda por defecto"
-          }
-        }
-      }
-    },
     "settings.household" : {
       "extractionState" : "stale",
       "localizations" : {

@@ -17,8 +17,10 @@ rules_version = '2';
 //   - language: "es"|"en"|null (optional)
 //   - displayCurrency: string|null (optional, ISO 4217 uppercase; DEPRECATED —
 //     no client writes it any more, still accepted for older builds)
-//   - defaultEntryCurrency: "AUD"|"USD"|null (optional; the user's active
-//     currency — entry switch + primary display currency)
+//   - defaultEntryCurrency: "AUD"|"USD"|null (optional; DEPRECATED — AUD is the
+//     only entry currency now. No client reads or writes it, but existing user
+//     docs still carry it, so it stays accepted: dropping it from hasOnly()
+//     would make every later update of those docs fail)
 //   - createdAt: timestamp (required, server time, immutable)
 //   - updatedAt: timestamp (required, server time)
 //
@@ -248,7 +250,7 @@ service cloud.firestore {
       // ------------------------ expenses ------------------------
 
       function isValidExpense(data) {
-        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt', 'entryCurrency', 'entryAmountCents'])
+        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt'])
           && data.keys().hasAll(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt'])
           && data.amountCents is int
           && data.amountCents > 0 && data.amountCents <= 10000000
@@ -256,20 +258,9 @@ service cloud.firestore {
           && data.categoryId.size() >= 1 && data.categoryId.size() <= 40
           && data.note is string && data.note.size() <= 200
           && isCalendarDate(data.date)
-          && data.createdBy is string
-          // Bi-currency: amountCents is ALWAYS the canonical household currency
-          // (AUD). Optional fields record the currency the user actually typed
-          // in and that original amount, for display. Present together or not
-          // at all; absent ⇒ entered in the canonical currency.
-          && isValidEntryCurrency(data);
-      }
-
-      // entryCurrency + entryAmountCents are optional but co-dependent.
-      function isValidEntryCurrency(data) {
-        return (!('entryCurrency' in data) && !('entryAmountCents' in data))
-          || (data.entryCurrency in ['AUD', 'USD']
-              && data.entryAmountCents is int
-              && data.entryAmountCents > 0 && data.entryAmountCents <= 10000000);
+          // amountCents is the household currency (AUD) — the only currency
+          // anyone types.
+          && data.createdBy is string;
       }
 
       match /expenses/{expenseId} {

@@ -11,7 +11,6 @@ struct SettingsView: View {
     @State private var renamingHousehold = false
     @State private var householdNameDraft = ""
 
-
     // Daily reminder (per-device preference; see ReminderService).
     @State private var reminderEnabled = ReminderService.isEnabled
     @State private var reminderTime = SettingsView.storedReminderTime()
@@ -275,22 +274,6 @@ struct SettingsView: View {
                 .padding(.horizontal, 4)
             Card {
                 VStack(spacing: 0) {
-                    HStack(spacing: 11) {
-                        Text(l10n.t("settings.entryCurrency"))
-                            .appFont(14.5, .semibold)
-                            .foregroundStyle(Theme.ink)
-                        Spacer()
-                        SegmentedPill(
-                            options: [("AUD", "AUD"), ("USD", "USD")],
-                            selection: Binding(
-                                get: { model.defaultEntryCurrency },
-                                set: { model.setDefaultEntryCurrency($0) }
-                            )
-                        )
-                        .fixedSize()
-                    }
-                    .padding(.vertical, 13)
-                    Divider().overlay(Theme.separator)
                     HStack(spacing: 11) {
                         Text(l10n.t("settings.language"))
                             .appFont(14.5, .semibold)

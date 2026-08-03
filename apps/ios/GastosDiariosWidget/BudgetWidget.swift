@@ -79,22 +79,12 @@ struct BudgetWidgetView: View {
                 .font(.system(size: 11, weight: .bold))
                 .kerning(0.7)
                 .foregroundStyle(WidgetTheme.inkTertiary)
-            Text(snapshot.formattedRemainingPrimary(compact: true))
+            Text(snapshot.formattedRemaining(compact: true))
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(snapshot.state == "over" ? WidgetTheme.red : WidgetTheme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-            // The other currency, muted. Absent without an FX rate, so the
-            // widget then looks exactly as it did before bi-currency.
-            if let secondary = snapshot.formattedRemainingSecondary() {
-                Text(secondary)
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(WidgetTheme.inkTertiary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            }
             bar(snapshot)
             HStack(spacing: 4) {
                 if let days = snapshot.daysLeft() {
@@ -197,7 +187,7 @@ struct BudgetWidgetView: View {
         String(
             format: String(localized: "widget.remaining"),
             locale: .autoupdatingCurrent,
-            snapshot.formattedRemainingPrimary(compact: true)
+            snapshot.formattedRemaining(compact: true)
         )
     }
 

@@ -47,30 +47,17 @@ export function formatCentsCompact(
   return tighten(formatter.format(cents / 100));
 }
 
-/** "≈ US$ 186,90" approximate-FX badge text (display-only conversion). */
-export function formatApproxUsd(cents: number, locale: string): string {
-  return `≈ ${formatUsd(cents, locale)}`;
-}
-
-/** "US$ 186,90" — exact USD, no ≈ prefix. Used for the original amount of a
- * USD-entered expense (`entryAmountCents`, exact) and as the primary figure
- * when USD is the active currency (the AUD anchor beside it stays exact). */
+/**
+ * "US$ 186,90" — the amount the bank actually charged in USD. Always exact:
+ * the app no longer converts anything, it only ever displays a figure that
+ * came from the bank, so there is no "≈" variant any more.
+ */
 export function formatUsd(cents: number, locale: string): string {
   const formatter = new Intl.NumberFormat(numberLocale(locale), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
   return `US$ ${formatter.format(cents / 100)}`;
-}
-
-/** "≈ $186,90 AUD" approximate-AUD badge text shown while an amount is being
- * typed in USD (display-only conversion). */
-export function formatApproxAud(cents: number, locale: string): string {
-  const formatter = new Intl.NumberFormat(numberLocale(locale), {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `≈ $${formatter.format(cents / 100)} AUD`;
 }
 
 /**

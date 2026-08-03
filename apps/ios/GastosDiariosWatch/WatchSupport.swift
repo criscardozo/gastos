@@ -76,10 +76,6 @@ struct WatchBudget: Equatable {
     let budgetCents: Int
     let state: String
     let currency: String
-    /// Daily AUD→USD rate pushed by the phone; nil ⇒ AUD-only.
-    var usdRate: Double?
-    /// The user's active currency ("AUD" | "USD"); nil ⇒ AUD.
-    var activeCurrency: String?
 
     /// "$287,60" via the watch's own locale; bare "$" like the design.
     var formattedRemaining: String {
@@ -94,30 +90,4 @@ struct WatchBudget: Equatable {
         return formatter.string(from: amount) ?? "$0"
     }
 
-    private var usdIsPrimary: Bool { activeCurrency == "USD" && (usdRate ?? 0) > 0 }
-
-    /// Remaining in the ACTIVE currency (the watch's headline figure).
-    var formattedRemainingPrimary: String {
-        guard usdIsPrimary, let rate = usdRate else { return formattedRemaining }
-        return Self.formatUSD(Double(remainingCents) / 100.0 * rate)
-    }
-
-    /// The other currency, muted; nil without a rate ⇒ watch stays AUD-only.
-    var formattedRemainingSecondary: String? {
-        guard let rate = usdRate, rate > 0 else { return nil }
-        return usdIsPrimary
-            ? formattedRemaining
-            : "≈ " + Self.formatUSD(Double(remainingCents) / 100.0 * rate)
-    }
-
-    private static func formatUSD(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = .autoupdatingCurrent
-        formatter.currencySymbol = "US$ "
-        let decimals = amount == amount.rounded() ? 0 : 2
-        formatter.minimumFractionDigits = decimals
-        formatter.maximumFractionDigits = decimals
-        return formatter.string(from: NSNumber(value: amount)) ?? "US$ 0"
-    }
 }

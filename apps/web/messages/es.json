@@ -140,7 +140,6 @@
     "statusError": "Error",
     "reasonBadDate": "Fecha inválida",
     "reasonBadAmount": "Monto inválido",
-    "reasonBadCurrency": "Moneda inválida (usá AUD o USD)",
     "reasonNoColumns": "Faltan columnas (fecha, categoria, monto_aud)",
     "importButton": "{count, plural, one {Importar # gasto} other {Importar # gastos}}",
     "importing": "Importando…",
@@ -165,8 +164,6 @@
     "thisPeriod": "Este período · {range}",
     "budget": "Presupuesto",
     "thisPeriodNote": "Solo afecta al período en curso; queda registrado con su monto y tipo.",
-    "activeCurrency": "Moneda activa",
-    "activeCurrencyHint": "Se usa al ingresar gastos y como moneda principal en toda la app. La otra se muestra en aproximado (≈); el monto real siempre queda en AUD.",
     "language": "Idioma",
     "spanish": "Español",
     "english": "English",
@@ -181,9 +178,6 @@
     "renameHousehold": "Renombrar el hogar",
     "rollover": "Arrastrar lo que sobra",
     "rolloverHint": "Al arrancar un período nuevo se le suma lo que sobró del anterior. Si se pasaron, la diferencia también se arrastra."
-  },
-  "budgetEntry": {
-    "currencyToggle": "Moneda del monto"
   },
   "newPeriod": {
     "titleWeekly": "Nueva semana",
@@ -228,7 +222,6 @@
     "countsToBudgetHint": "El interruptor define si la categoría descuenta del presupuesto del período. Apagada, el gasto igual queda registrado."
   },
   "quickEntry": {
-    "currency": "Moneda del monto",
     "saved": "¡Guardado!",
     "offBudget": "no descuenta"
   }

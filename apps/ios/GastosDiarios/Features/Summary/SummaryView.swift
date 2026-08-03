@@ -20,39 +20,12 @@ struct SummaryView: View {
         PeriodLogic.budgetState(spentCents: spentCents, budgetCents: budgetCents)
     }
 
-    /// Active entry currency drives the primary display currency; reads the
-    /// persisted preference so the entry switch flips it live.
-    private var activeUSD: Bool { model.defaultEntryCurrency == "USD" }
-
-    /// A right/left-aligned AUD + USD pair for an AUD sum. The active currency
-    /// is emphasized (ink, bold), the other muted (tertiary, semibold). The
-    /// USD figure is approximate (≈) since it is converted from the AUD sum.
-    /// AUD-only when no rate is available.
-    @ViewBuilder
-    private func dualCurrency(
-        _ audCents: Int,
-        alignment: HorizontalAlignment,
-        primary: CGFloat,
-        secondary: CGFloat
-    ) -> some View {
-        if let rate = model.usdRate, rate > 0 {
-            let audText = MoneyFormatter.aud(audCents, locale: l10n.locale)
-            let usdText = MoneyFormatter.approxUSD(audCents: audCents, rate: rate, locale: l10n.locale)
-            VStack(alignment: alignment, spacing: 1) {
-                Text(audText)
-                    .appFont(activeUSD ? secondary : primary, activeUSD ? .semibold : .bold)
-                    .foregroundStyle(activeUSD ? Theme.inkTertiary : Theme.ink)
-                Text(usdText)
-                    .appFont(activeUSD ? primary : secondary, activeUSD ? .bold : .semibold)
-                    .foregroundStyle(activeUSD ? Theme.ink : Theme.inkTertiary)
-            }
+    /// A money figure for a sum, sized by the caller.
+    private func amountText(_ cents: Int, size: CGFloat) -> some View {
+        Text(MoneyFormatter.aud(cents, locale: l10n.locale))
+            .appFont(size, .bold)
             .monospacedDigit()
-        } else {
-            Text(MoneyFormatter.aud(audCents, locale: l10n.locale))
-                .appFont(primary, .bold)
-                .monospacedDigit()
-                .foregroundStyle(Theme.ink)
-        }
+            .foregroundStyle(Theme.ink)
     }
 
     var body: some View {
@@ -112,27 +85,12 @@ struct SummaryView: View {
                 StatePill(state: state, label: l10n.t("state.\(state.rawValue)"))
             }
 
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                // Primary = active currency (large); secondary = the other,
-                // shown as a muted chip. USD is exact ("US$ …", no ≈) only
-                // because the AUD anchor sits right beside it.
-                Text(heroPrimaryRemaining)
-                    .amountStyle(52, .bold)
-                    .kerning(-0.03 * 52)
-                    .foregroundStyle(state == .over ? Theme.red : Theme.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                if let secondary = heroSecondaryRemaining {
-                    Text(secondary)
-                        .appFont(13, .semibold)
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.inkSecondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Theme.fill)
-                        .clipShape(Capsule())
-                }
-            }
+            Text(MoneyFormatter.aud(remainingCents, locale: l10n.locale))
+                .amountStyle(52, .bold)
+                .kerning(-0.03 * 52)
+                .foregroundStyle(state == .over ? Theme.red : Theme.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
 
             BudgetBar(
                 state: state,
@@ -165,17 +123,6 @@ struct SummaryView: View {
                 }
             }
 
-            // Muted USD equivalent of spent / budget (AUD-derived ⇒ ≈).
-            if let rate = model.usdRate, rate > 0 {
-                (
-                    Text(MoneyFormatter.approxUSD(audCents: spentCents, rate: rate, locale: l10n.locale))
-                    + Text(" " + l10n.t("summary.of", MoneyFormatter.usd(fromAUDCents: budgetCents, rate: rate, locale: l10n.locale)))
-                )
-                .appFont(12, .semibold)
-                .monospacedDigit()
-                .foregroundStyle(Theme.inkTertiary)
-            }
-
             if let carried = period.rolloverCents, carried != 0 {
                 Text(l10n.t(
                     carried > 0 ? "summary.carriedOver" : "summary.carriedDeficit",
@@ -194,23 +141,6 @@ struct SummaryView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
-    }
-
-    /// Hero remaining in the active currency (large). USD converts the AUD
-    /// remaining with the daily rate; without a rate it stays AUD.
-    private var heroPrimaryRemaining: String {
-        if activeUSD, let rate = model.usdRate, rate > 0 {
-            return MoneyFormatter.usd(fromAUDCents: remainingCents, rate: rate, locale: l10n.locale)
-        }
-        return MoneyFormatter.aud(remainingCents, locale: l10n.locale)
-    }
-
-    /// Hero remaining in the OTHER currency (muted chip); nil without a rate.
-    private var heroSecondaryRemaining: String? {
-        guard let rate = model.usdRate, rate > 0 else { return nil }
-        return activeUSD
-            ? MoneyFormatter.aud(remainingCents, locale: l10n.locale)                       // exact anchor
-            : MoneyFormatter.approxUSD(audCents: remainingCents, rate: rate, locale: l10n.locale)
     }
 
     private var daysLeftPrefix: Text {
@@ -330,20 +260,12 @@ struct SummaryView: View {
                 .foregroundStyle(Theme.inkSecondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
-            Text(primaryAmount(cents))
+            Text(MoneyFormatter.aud(cents, locale: l10n.locale))
                 .amountStyle(26, .bold)
                 .kerning(-0.03 * 26)
                 .foregroundStyle(over ? Theme.red : Theme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-            if let secondary = secondaryAmount(cents) {
-                Text(secondary)
-                    .appFont(11.5, .semibold)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.inkTertiary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
             if let footnote {
                 Text(footnote)
                     .appFont(10.5, .semibold)
@@ -360,21 +282,6 @@ struct SummaryView: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
-    }
-
-    /// Same bi-currency rule as everywhere else: active currency leads.
-    private func primaryAmount(_ cents: Int) -> String {
-        if activeUSD, let rate = model.usdRate, rate > 0 {
-            return MoneyFormatter.usd(fromAUDCents: cents, rate: rate, locale: l10n.locale)
-        }
-        return MoneyFormatter.aud(cents, locale: l10n.locale)
-    }
-
-    private func secondaryAmount(_ cents: Int) -> String? {
-        guard let rate = model.usdRate, rate > 0 else { return nil }
-        return activeUSD
-            ? MoneyFormatter.aud(cents, locale: l10n.locale)
-            : MoneyFormatter.approxUSD(audCents: cents, rate: rate, locale: l10n.locale)
     }
 
     // MARK: Category breakdown
@@ -430,12 +337,7 @@ struct SummaryView: View {
                                                 .clipShape(Capsule())
                                         }
                                         Spacer()
-                                        dualCurrency(
-                                            entry.totalCents,
-                                            alignment: .trailing,
-                                            primary: 13.5,
-                                            secondary: 11
-                                        )
+                                        amountText(entry.totalCents, size: 13.5)
                                     }
                                     MiniBar(
                                         color: Theme.categoryColor(id: entry.id, lightHex: entry.category.color),

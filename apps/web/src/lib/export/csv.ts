@@ -1,12 +1,9 @@
 // CSV export/import helpers shared by the Gastos and Datos pages.
 //
 // The app's canonical CSV shape (also what the importer round-trips):
-//   header:  fecha,categoria,nota,monto_aud,moneda,monto_original,creado_por
-//   monto_aud: canonical AUD, dot-decimal ("12.50").
-//   moneda:    the entry currency ("AUD" | "USD") the amount was typed in.
-//   monto_original: the amount in `moneda`, dot-decimal — equal to monto_aud
-//                   for AUD rows, the original USD figure for USD rows, so an
-//                   export→import round-trip preserves the entered currency.
+//   header:  fecha,categoria,nota,monto_aud,creado_por
+//   monto_aud: the expense amount, dot-decimal ("12.50"). AUD is the only
+//              currency anyone types, so there is nothing else to record here.
 //   amount:  dot-decimal, fields quoted when they contain a comma/quote/
 //            newline, rows joined with CRLF, and a leading UTF-8 BOM so Excel
 //            detects the encoding (accents in notes/names).
@@ -20,10 +17,6 @@ export interface CsvExpenseRow {
   note: string;
   amountCents: number;
   createdBy: string;
-  /** Entry currency the amount was typed in. Absent ⇒ AUD (canonical). */
-  entryCurrency?: "AUD" | "USD";
-  /** Original amount in `entryCurrency` (integer cents). Present iff USD. */
-  entryAmountCents?: number;
 }
 
 export interface CsvBuildContext {
@@ -44,8 +37,6 @@ export const CSV_HEADER = [
   "categoria",
   "nota",
   "monto_aud",
-  "moneda",
-  "monto_original",
   "creado_por",
 ] as const;
 
@@ -64,17 +55,12 @@ export function buildExpensesCsv(
   const catLabel = new Map(ctx.categories.map((c) => [c.id, c.label]));
   const lines = [CSV_HEADER.join(",")];
   for (const e of rows) {
-    const currency = e.entryCurrency ?? "AUD";
-    // monto_original: the entered USD when present, otherwise the AUD itself.
-    const originalCents = e.entryAmountCents ?? e.amountCents;
     lines.push(
       [
         e.date,
         escapeField(catLabel.get(e.categoryId) ?? ctx.deletedLabel),
         escapeField(e.note),
         (e.amountCents / 100).toFixed(2), // dot-decimal, never locale-grouped
-        currency,
-        (originalCents / 100).toFixed(2),
         escapeField(ctx.members[e.createdBy] ?? e.createdBy),
       ].join(","),
     );

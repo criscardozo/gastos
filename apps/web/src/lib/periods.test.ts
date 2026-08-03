@@ -12,13 +12,11 @@ import {
   type PeriodType,
 } from "./periods";
 import {
-  formatApproxAud,
-  formatApproxUsd,
   formatCents,
   formatCentsCompact,
+  formatUsd,
   parseAmountToCents,
 } from "./money";
-import { convertCents, usdToAudCents } from "./fx";
 
 describe("addDays", () => {
   it.each(vectors.addDays)(
@@ -112,21 +110,9 @@ describe("money formatting", () => {
     expect(formatCentsCompact(105050, "AUD", "es")).toBe("$1.050,50");
   });
 
-  it("formats the approximate USD badge", () => {
-    expect(formatApproxUsd(18690, "es")).toBe("≈ US$ 186,90");
-    expect(formatApproxUsd(18690, "en")).toBe("≈ US$ 186.90");
-  });
-
-  it("formats the approximate AUD badge", () => {
-    expect(formatApproxAud(18690, "es")).toBe("≈ $186,90 AUD");
-    expect(formatApproxAud(18690, "en")).toBe("≈ $186.90 AUD");
-  });
-
-  it("converts between AUD and USD cents with rounding", () => {
-    expect(convertCents(90000, 0.65)).toBe(58500);
-    expect(usdToAudCents(58500, 0.65)).toBe(90000);
-    // 100 USD / 0.65 = 153.8461… AUD → rounds to 15385 cents.
-    expect(usdToAudCents(10000, 0.65)).toBe(15385);
+  it("formats the USD charge the bank reported", () => {
+    expect(formatUsd(18690, "es")).toBe("US$ 186,90");
+    expect(formatUsd(18690, "en")).toBe("US$ 186.90");
   });
 
   it("parses comma and dot decimal input to cents", () => {

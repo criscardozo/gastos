@@ -176,7 +176,6 @@ struct ExpenseFormView: View {
     private enum Field: Hashable { case amount, note }
 
     @State private var amount = BudgetEntryAmount()
-    @State private var didInitCurrency = false
     @State private var selectedCategoryId: String?
     @State private var note = ""
     @State private var pickedDate: CalendarDate?
@@ -290,14 +289,6 @@ struct ExpenseFormView: View {
                 focus = .amount
             }
         }
-        .task {
-            // Daily AUD→USD rate for bi-currency entry (cached; nil offline
-            // with an empty cache → the USD option stays hidden, AUD-only).
-            if amount.rate == nil {
-                amount.rate = await model.budgetEntryUSDRate()
-            }
-            applyInitialCurrency()
-        }
     }
 
     // MARK: Pieces
@@ -373,14 +364,8 @@ struct ExpenseFormView: View {
         .padding(.bottom, 4)
     }
 
-    /// Active entry currency drives the primary display currency. Reads the
-    /// persisted preference so toggling the AUD|USD switch flips it live.
-    private var activeUSD: Bool { model.defaultEntryCurrency == "USD" }
-
-    /// "Quedan $287,60" pill colored by budget state, showing BOTH currencies:
-    /// the active one on top, the other muted beneath. Two intentional
-    /// single-line rows (never wraps) sized to content so it sits cleanly
-    /// beside the title. AUD-only without a rate.
+    /// "Quedan $287,60" pill colored by budget state, sized to content so it
+    /// sits cleanly beside the title.
     private var remainingPill: some View {
         let state = model.currentBudgetState
         let remaining = model.currentRemainingCents
@@ -388,32 +373,11 @@ struct ExpenseFormView: View {
             Circle()
                 .fill(Theme.stateBarColor(state))
                 .frame(width: 7, height: 7)
-            if let rate = model.usdRate, rate > 0 {
-                let primary = activeUSD
-                    ? MoneyFormatter.usd(fromAUDCents: remaining, rate: rate, locale: l10n.locale)
-                    : MoneyFormatter.aud(remaining, locale: l10n.locale)
-                let secondary = activeUSD
-                    ? MoneyFormatter.aud(remaining, locale: l10n.locale)
-                    : MoneyFormatter.approxUSD(audCents: remaining, rate: rate, locale: l10n.locale)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(l10n.t("remaining.pill", primary))
-                        .appFont(12.5, .semibold)
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.stateTextColor(state))
-                        .lineLimit(1)
-                    Text(secondary)
-                        .appFont(10.5, .semibold)
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.stateTextColor(state).opacity(0.6))
-                        .lineLimit(1)
-                }
-            } else {
-                Text(l10n.t("remaining.pill", MoneyFormatter.aud(remaining, locale: l10n.locale)))
-                    .appFont(13, .semibold)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.stateTextColor(state))
-                    .lineLimit(1)
-            }
+            Text(l10n.t("remaining.pill", MoneyFormatter.aud(remaining, locale: l10n.locale)))
+                .appFont(13, .semibold)
+                .monospacedDigit()
+                .foregroundStyle(Theme.stateTextColor(state))
+                .lineLimit(1)
         }
         .fixedSize()
         .padding(.horizontal, 12)
@@ -463,36 +427,11 @@ struct ExpenseFormView: View {
 
     private var heroAmount: some View {
         VStack(spacing: 12) {
-            // AUD | USD switch — only when a daily rate is available; without
-            // it entry is AUD-only and this row disappears entirely. Toggling
-            // both re-expresses the typed value AND persists the app-wide
-            // active currency (which drives the bi-currency display).
-            if amount.rate != nil {
-                SegmentedPill(
-                    options: [
-                        (BudgetEntryCurrency.aud, "AUD"),
-                        (BudgetEntryCurrency.usd, "USD"),
-                    ],
-                    selection: Binding(
-                        get: { amount.currency },
-                        set: { newValue in
-                            withAnimation(.snappy(duration: 0.15)) { amount.switchTo(newValue) }
-                            // Only the quick-entry switch owns the app-wide
-                            // active currency; toggling it inside the edit
-                            // sheet must not flip the global preference.
-                            if !isEditing {
-                                model.setDefaultEntryCurrency(newValue == .usd ? "USD" : "AUD")
-                            }
-                        }
-                    )
-                )
-                .fixedSize()
-            }
             // Editable hero amount driven by the native decimal pad. Bound
-            // through the canonical `AmountInput`, so cents/audCents/switchTo
-            // and the recent-amount chips all keep working.
+            // through the canonical `AmountInput`, so cents/audCents and the
+            // recent-amount chips all keep working.
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(amount.currency == .usd ? "US$" : "$")
+                Text("$")
                     .appFont(30, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
                 TextField("0", text: amountText)
@@ -503,12 +442,6 @@ struct ExpenseFormView: View {
                     .kerning(-0.03 * 66)
                     .foregroundStyle(Theme.ink)
                     .focused($focus, equals: .amount)
-            }
-            if let approx = approxText {
-                Text(approx)
-                    .appFont(13, .semibold)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.inkTertiary)
             }
             datePill
         }
@@ -524,17 +457,6 @@ struct ExpenseFormView: View {
             get: { amount.input.display(separator: separator) },
             set: { amount.input.setDisplay($0, separator: separator) }
         )
-    }
-
-    /// "≈ US$ 6,86" while typing AUD; "≈ $10,50 AUD" while typing USD.
-    private var approxText: String? {
-        guard let rate = amount.rate, rate > 0 else { return nil }
-        switch amount.currency {
-        case .aud:
-            return MoneyFormatter.approxUSD(audCents: amount.input.cents, rate: rate, locale: l10n.locale)
-        case .usd:
-            return MoneyFormatter.approxAUD(amount.audCents, locale: l10n.locale)
-        }
     }
 
     private var datePill: some View {
@@ -645,57 +567,25 @@ struct ExpenseFormView: View {
             }
             return
         }
-        // Baseline: edit the canonical AUD amount. A USD original (if any) is
-        // restored in `applyInitialCurrency` once the daily rate is known.
         amount = .fromAUDCents(item.expense.amountCents)
         selectedCategoryId = item.expense.categoryId
         note = item.expense.note
         pickedDate = CalendarDate(item.expense.date)
     }
 
-    /// Runs once after the FX rate resolves: seeds the entry currency from the
-    /// user's default (create) or the expense's original currency (edit). A
-    /// no-op without a rate — the USD option isn't offered then.
-    private func applyInitialCurrency() {
-        guard !didInitCurrency else { return }
-        didInitCurrency = true
-        guard amount.rate != nil else { return }
-        switch mode {
-        case .create:
-            if model.defaultEntryCurrency == "USD" {
-                amount.currency = .usd
-            }
-        case .edit(let item):
-            if let entry = item.expense.displayEntry, entry.currency == "USD" {
-                amount = .fromUSDCents(entry.amountCents, rate: amount.rate)
-            }
-        }
-    }
-
     private func save() {
         guard let categoryId = selectedCategoryId, amount.audCents > 0 else { return }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
-        // `audCents` is the canonical AUD (USD converted with the daily rate);
-        // the stored* fields carry the USD original, or nil for an AUD entry
-        // (both omitted).
         switch mode {
         case .create:
             model.saveExpense(
                 amountCents: amount.audCents,
                 categoryId: categoryId,
                 note: note.trimmingCharacters(in: .whitespacesAndNewlines),
-                date: pickedDate,
-                entryCurrency: amount.storedEntryCurrency,
-                entryAmountCents: amount.storedEntryAmountCents
+                date: pickedDate
             )
-            // Reset for the next quick entry, keeping the cached rate and the
-            // user's default entry currency.
-            var next = BudgetEntryAmount()
-            next.rate = amount.rate
-            if model.defaultEntryCurrency == "USD", amount.rate != nil {
-                next.currency = .usd
-            }
-            amount = next
+            // Reset for the next quick entry.
+            amount = BudgetEntryAmount()
             note = ""
             pickedDate = nil
             // Keep the decimal pad up on the amount field for the next entry.
@@ -707,9 +597,7 @@ struct ExpenseFormView: View {
                     amountCents: amount.audCents,
                     categoryId: categoryId,
                     note: note.trimmingCharacters(in: .whitespacesAndNewlines),
-                    date: date,
-                    entryCurrency: amount.storedEntryCurrency,
-                    entryAmountCents: amount.storedEntryAmountCents
+                    date: date
                 )
             }
             onDone?()

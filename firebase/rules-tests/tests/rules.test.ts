@@ -106,7 +106,10 @@ describe("users/{uid}", () => {
     await assertFails(setDoc(me, userDoc({ defaultEntryCurrency: "EUR" })));
   });
 
-  it("accepts a valid default entry currency", async () => {
+  // defaultEntryCurrency is deprecated (AUD is the only entry currency now) but
+  // still accepted: the existing user docs carry it, and dropping it from
+  // hasOnly() would make every later update of those docs fail.
+  it("still accepts the deprecated default entry currency", async () => {
     await assertSucceeds(
       setDoc(doc(db(env, ALICE), "users", ALICE), userDoc({ defaultEntryCurrency: "USD" })),
     );
@@ -536,32 +539,10 @@ describe("households/{id}/expenses", () => {
     await assertFails(setDoc(ref(), expenseDoc(ALICE, { note: "x".repeat(201) })));
     await assertFails(setDoc(ref(), expenseDoc(ALICE, { categoryId: "" })));
     await assertFails(setDoc(ref(), expenseDoc(ALICE, { injected: true })));
-    // Bi-currency: bad entryCurrency, non-int/absent entryAmountCents.
+    // AUD is the only entry currency: the old bi-currency keys are gone and
+    // must now be rejected like any other unknown field.
     await assertFails(
-      setDoc(ref(), expenseDoc(ALICE, { entryCurrency: "EUR", entryAmountCents: 700 })),
-    );
-    await assertFails(
-      setDoc(ref(), expenseDoc(ALICE, { entryCurrency: "USD", entryAmountCents: 0 })),
-    );
-    await assertFails(
-      setDoc(ref(), expenseDoc(ALICE, { entryCurrency: "USD" })), // amount missing
-    );
-    await assertFails(
-      setDoc(ref(), expenseDoc(ALICE, { entryAmountCents: 700 })), // currency missing
-    );
-  });
-
-  it("accepts a USD-entered expense (amountCents stays AUD canonical)", async () => {
-    // amountCents = AUD (converted); entryCurrency/entryAmountCents = original USD.
-    await assertSucceeds(
-      setDoc(
-        doc(collection(db(env, ALICE), "households", HOUSEHOLD, "expenses")),
-        expenseDoc(ALICE, {
-          amountCents: 1076,
-          entryCurrency: "USD",
-          entryAmountCents: 700,
-        }),
-      ),
+      setDoc(ref(), expenseDoc(ALICE, { entryCurrency: "USD", entryAmountCents: 700 })),
     );
   });
 

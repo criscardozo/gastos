@@ -41,26 +41,17 @@ struct WatchEntryView: View {
 
     // MARK: Pieces
 
-    /// Remaining in the active currency, with the other one muted underneath
-    /// when the phone pushed a daily rate (AUD-only otherwise).
+    /// Remaining in the household currency, pushed from the phone.
     private func budgetLine(_ budget: WatchBudget) -> some View {
         VStack(spacing: 1) {
             HStack(spacing: 6) {
                 Circle()
                     .fill(WatchTheme.stateColor(budget.state))
                     .frame(width: 7, height: 7)
-                Text(String(format: String(localized: "watch.remaining"), budget.formattedRemainingPrimary))
+                Text(String(format: String(localized: "watch.remaining"), budget.formattedRemaining))
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(WatchTheme.stateColor(budget.state))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            }
-            if let secondary = budget.formattedRemainingSecondary {
-                Text(secondary)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(WatchTheme.stateColor(budget.state).opacity(0.65))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }

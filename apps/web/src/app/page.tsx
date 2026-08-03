@@ -10,7 +10,6 @@ import { useTranslations } from "next-intl";
 
 import { useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
-import { AmountPair } from "@/components/ui/amount-pair";
 import { ProgressBar, stateBarColor } from "@/components/ui/progress-bar";
 import { StatePill } from "@/components/ui/state-pill";
 import {
@@ -25,12 +24,7 @@ import type {
   PeriodBudget,
 } from "@/lib/firebase/converters";
 import { budgetState, containsDate, daysBetween } from "@/lib/periods";
-import {
-  formatApproxUsd,
-  formatCents,
-  formatCentsCompact,
-  formatUsd,
-} from "@/lib/money";
+import { formatCents, formatCentsCompact } from "@/lib/money";
 import { formatPeriodRange, formatShortDate } from "@/lib/dates";
 import {
   allCategoriesCount,
@@ -39,12 +33,6 @@ import {
   categoryColor,
   countsToBudget,
 } from "@/lib/categories";
-import { convertCents } from "@/lib/fx";
-import {
-  effectiveCurrency,
-  useActiveCurrency,
-  useUsdRate,
-} from "@/lib/use-currency";
 
 function useCategoryLabel() {
   const t = useTranslations("categories");
@@ -65,12 +53,6 @@ export default function DashboardPage() {
   const { locale } = useLocale();
   const { household, periods, currentPeriod, today } = useHousehold();
   const categoryLabel = useCategoryLabel();
-
-  // Active currency (persisted per user) drives the primary display currency;
-  // the daily rate is display-only and degrades to AUD when unavailable.
-  const active = useActiveCurrency();
-  const usdRate = useUsdRate();
-  const effective = effectiveCurrency(active, usdRate);
 
   // Budget maths only sees categories flagged as counting. `null` means every
   // category counts, which keeps the unfiltered (index-free) aggregation.
@@ -314,17 +296,8 @@ export default function DashboardPage() {
               className="tnum text-[40px] font-bold leading-none tracking-[-0.03em] sm:text-[54px]"
               style={{ color: state === "over" ? "var(--over)" : "var(--ink)" }}
             >
-              {effective === "USD" && usdRate !== null
-                ? formatUsd(convertCents(remaining, usdRate), locale)
-                : formatCents(remaining, household.currency, locale)}
+              {formatCents(remaining, household.currency, locale)}
             </span>
-            {usdRate !== null && (
-              <span className="tnum rounded-full bg-fill px-2.5 py-1 text-[13px] font-semibold text-ink-2">
-                {effective === "USD"
-                  ? formatCents(remaining, household.currency, locale)
-                  : formatApproxUsd(convertCents(remaining, usdRate), locale)}
-              </span>
-            )}
           </div>
           {/* Say where the budget came from when part of it was carried in —
               otherwise "de $1.020" looks like a typo for the usual $900. */}
@@ -415,17 +388,8 @@ export default function DashboardPage() {
               className="tnum text-[34px] font-bold leading-none tracking-[-0.03em]"
               style={{ color: state === "over" ? "var(--over)" : "var(--ink)" }}
             >
-              {effective === "USD" && usdRate !== null
-                ? formatUsd(convertCents(spent, usdRate), locale)
-                : formatCents(spent, household.currency, locale)}
+              {formatCents(spent, household.currency, locale)}
             </span>
-            {usdRate !== null && (
-              <span className="tnum text-[12.5px] font-semibold text-ink-3">
-                {effective === "USD"
-                  ? formatCents(spent, household.currency, locale)
-                  : formatApproxUsd(convertCents(spent, usdRate), locale)}
-              </span>
-            )}
           </div>
 
           {/* Same, for the calendar month. */}
@@ -444,20 +408,8 @@ export default function DashboardPage() {
             ) : (
               <>
                 <span className="tnum text-[34px] font-bold leading-none tracking-[-0.03em] text-ink">
-                  {effective === "USD" && usdRate !== null
-                    ? formatUsd(convertCents(monthTotal, usdRate), locale)
-                    : formatCents(monthTotal, household.currency, locale)}
+                  {formatCents(monthTotal, household.currency, locale)}
                 </span>
-                {usdRate !== null && (
-                  <span className="tnum text-[12.5px] font-semibold text-ink-3">
-                    {effective === "USD"
-                      ? formatCents(monthTotal, household.currency, locale)
-                      : formatApproxUsd(
-                          convertCents(monthTotal, usdRate),
-                          locale,
-                        )}
-                  </span>
-                )}
               </>
             )}
             {monthRange !== null && (
@@ -541,13 +493,9 @@ export default function DashboardPage() {
                       </span>
                     )}
                   </span>
-                  <AmountPair
-                    audCents={b.amount}
-                    usdRate={usdRate}
-                    active={effective}
-                    locale={locale}
-                    currency={household.currency}
-                  />
+                  <span className="tnum text-[13px] font-semibold text-ink">
+                    {formatCents(b.amount, household.currency, locale)}
+                  </span>
                 </div>
                 <div className="h-[5px] overflow-hidden rounded-[3px] bg-soft">
                   <div
