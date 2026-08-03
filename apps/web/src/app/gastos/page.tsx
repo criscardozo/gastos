@@ -18,7 +18,8 @@ import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { Avatar } from "@/components/ui/avatar";
 import { Segmented } from "@/components/ui/segmented";
-import { useExpensesRange } from "@/lib/firebase/hooks";
+import { BankChargesPanel } from "@/components/bank-charges-panel";
+import { useBankCharges, useExpensesRange } from "@/lib/firebase/hooks";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   addExpense,
@@ -233,6 +234,7 @@ export default function ExpensesPage() {
     selected?.startDate ?? null,
     selected?.endDate ?? null,
   );
+  const { charges } = useBankCharges(household?.id ?? null);
 
   const [addForm, setAddForm] = useState<FormState>({
     amount: "",
@@ -790,6 +792,21 @@ export default function ExpensesPage() {
           />
         </div>
       </div>
+
+      {/* Bank charges the email ingestion has imported but nobody has matched
+          to an expense yet. Hidden entirely when there are none. */}
+      <BankChargesPanel
+        household={household}
+        charges={charges}
+        expenses={expenses}
+        expenseLabel={(e) =>
+          e.note !== ""
+            ? e.note
+            : (categories.find((c) => c.id === e.categoryId)?.label ??
+              tCat("deleted"))
+        }
+        locale={locale}
+      />
 
       {/* Quick-entry shortcut — the phone's replacement for the add row below */}
       <Link

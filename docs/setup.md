@@ -175,6 +175,26 @@ Firestore has no free managed export, so `pnpm backup` dumps the whole project
 The service account is a GCP feature — free on the Spark plan. Timestamps are
 serialized to ISO strings so the JSON round-trips cleanly.
 
+## Bank charge ingestion (Gmail → Firestore, free)
+
+The bank bills the card in USD at its own rate and emails a notification per
+purchase; an Apps Script files those into `households/{id}/bankCharges` every 15
+minutes, and the web app matches each charge to the expense it belongs to.
+
+Full walkthrough — service account, Script Properties, trigger, and how to
+re-check the parser when the bank changes its wording — lives in
+[`tools/gmail-bank-ingest/README.md`](../tools/gmail-bank-ingest/README.md).
+
+Two things worth repeating here:
+
+- It uses its **own** service-account key (`gmail-bank-ingest@…`), separate from
+  the backup one, so either can be revoked without breaking the other. The key
+  lives only in the Apps Script project's Script Properties — never in the repo.
+- A service account is an IAM principal, so the security rules do NOT apply to
+  it. That is why the rules make `bankCharges` read-only from the clients (plus
+  deletable): this script is the only writer in the system that rules cannot
+  fence in.
+
 ## iOS
 
 ```sh

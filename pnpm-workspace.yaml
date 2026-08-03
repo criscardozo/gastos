@@ -1,6 +1,7 @@
 packages:
   - apps/web
   - firebase/rules-tests
+  - tools/gmail-bank-ingest
 allowBuilds:
   '@firebase/util': true
   '@parcel/watcher': true

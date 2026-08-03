@@ -74,6 +74,15 @@ export interface Expense {
   pendingWrite: boolean;
 }
 
+/** `households/{id}/bankCharges/{gmailMessageId}` — see shared/schema.md. */
+export interface BankChargeDoc {
+  id: string;
+  usdCents: number;
+  date: string;
+  merchant: string;
+  cardLast4: string | null;
+}
+
 export interface Invite {
   code: string;
   householdId: string;
@@ -144,6 +153,17 @@ export const expenseConverter = readOnly<Expense>((snap) => {
     pendingWrite: snap.metadata.hasPendingWrites,
   };
   return expense;
+});
+
+export const bankChargeConverter = readOnly<BankChargeDoc>((snap) => {
+  const data = snap.data();
+  return {
+    id: snap.id,
+    usdCents: data.usdCents as number,
+    date: data.date as string,
+    merchant: (data.merchant as string | undefined) ?? "",
+    cardLast4: (data.cardLast4 as string | undefined) ?? null,
+  };
 });
 
 export const inviteConverter = readOnly<Invite>((snap) => {

@@ -1,0 +1,13 @@
+{
+  "name": "gmail-bank-ingest",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Apps Script that files the bank's USD charge notifications into Firestore",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
+}

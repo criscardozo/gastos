@@ -237,5 +237,19 @@
   "quickEntry": {
     "saved": "¡Guardado!",
     "offBudget": "no descuenta"
+  },
+  "bank": {
+    "pending": "{count, plural, one {# cargo del banco sin asignar} other {# cargos del banco sin asignar}}",
+    "hint": "Llegan por email y se comparan con los gastos del período que estás viendo.",
+    "hintWithRate": "Tasa del banco aprendida de tus gastos ya verificados: {rate}.",
+    "review": "Revisar",
+    "hide": "Ocultar",
+    "assign": "Asignar",
+    "discard": "Descartar",
+    "discardConfirm": "¿Descartar el cargo de {amount}? Se borra de la lista y no vuelve.",
+    "chooseExpense": "Gasto a verificar",
+    "none": "— elegí un gasto —",
+    "noCandidate": "Sin candidato claro: elegilo a mano",
+    "suggested": "Sugerido · tasa {rate} · {score}%"
   }
 }

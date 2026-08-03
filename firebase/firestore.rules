@@ -51,6 +51,18 @@ rules_version = '2';
 //   - createdAt: timestamp (required, server time, immutable)
 //   - updatedAt: timestamp (required, server time)
 //
+// Subcollection: households/{id}/bankCharges
+// Document ID: the Gmail message id of the bank's notification (so re-reading
+//   the same email can never create a second charge)
+// Fields (written ONLY by the Gmail ingestion service account, which is an IAM
+//   principal and therefore bypasses these rules — clients may read the charges
+//   and delete the ones they have dealt with, and nothing else):
+//   - usdCents: int (required, 1..10_000_000) — what the bank charged
+//   - date: "YYYY-MM-DD" (required) — the charge in the HOUSEHOLD timezone
+//   - merchant: string (required, may be empty, ≤ 120)
+//   - cardLast4: string (optional, 4 digits)
+//   - importedAt: timestamp (required)
+//
 // Subcollection: households/{id}/periodBudgets
 // Document ID: {startDate} ("YYYY-MM-DD") — idempotent materialization
 // Fields:
@@ -295,6 +307,21 @@ service cloud.firestore {
           && request.resource.data.createdAt == resource.data.createdAt
           && isServerTimestamp(request.resource.data.updatedAt);
 
+        allow delete: if isMember(householdId);
+      }
+
+      // ------------------------ bankCharges ------------------------
+
+      // A charge the bank reported by email, waiting to be matched to an
+      // expense. The ingestion writes these with a service account (an IAM
+      // principal, so rules do not apply to it); from a client they are
+      // READ-ONLY except for the delete that retires one, which is how a
+      // matched or discarded charge leaves the list. No client create or
+      // update: nobody should be able to invent a bank charge, and a charge
+      // never changes once imported.
+      match /bankCharges/{messageId} {
+        allow read: if isMember(householdId);
+        allow create, update: if false;
         allow delete: if isMember(householdId);
       }
 

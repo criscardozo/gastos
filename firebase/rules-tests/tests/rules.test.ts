@@ -688,6 +688,68 @@ describe("households/{id}/expenses", () => {
   });
 });
 
+// ============================ bankCharges ============================
+
+describe("households/{id}/bankCharges", () => {
+  beforeEach(async () => {
+    await seedHousehold(true);
+    await seed(env, async (admin) => {
+      await setDoc(doc(admin, "households", HOUSEHOLD, "bankCharges", "gmail-1"), {
+        usdCents: 6390,
+        date: "2026-08-01",
+        merchant: "COLES 0831",
+        cardLast4: "2024",
+        importedAt: serverTimestamp(),
+      });
+    });
+  });
+
+  it("members can read the pending charges", async () => {
+    await assertSucceeds(
+      getDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "gmail-1")),
+    );
+    await assertSucceeds(
+      getDocs(collection(db(env, BOB), "households", HOUSEHOLD, "bankCharges")),
+    );
+    await assertFails(
+      getDoc(doc(db(env, CAROL), "households", HOUSEHOLD, "bankCharges", "gmail-1")),
+    );
+    await assertFails(
+      getDoc(doc(db(env, null), "households", HOUSEHOLD, "bankCharges", "gmail-1")),
+    );
+  });
+
+  it("nobody can invent or rewrite a bank charge from a client", async () => {
+    // Only the ingestion service account writes here, and it bypasses rules as
+    // an IAM principal — from a client this is read-only.
+    await assertFails(
+      setDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "made-up"), {
+        usdCents: 100,
+        date: "2026-08-01",
+        merchant: "INVENTADO",
+        importedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "gmail-1"), {
+        usdCents: 1,
+      }),
+    );
+  });
+
+  it("either member can retire a charge they have dealt with", async () => {
+    await assertSucceeds(
+      deleteDoc(doc(db(env, BOB), "households", HOUSEHOLD, "bankCharges", "gmail-1")),
+    );
+  });
+
+  it("an outsider cannot touch the charges", async () => {
+    await assertFails(
+      deleteDoc(doc(db(env, CAROL), "households", HOUSEHOLD, "bankCharges", "gmail-1")),
+    );
+  });
+});
+
 // ============================ periodBudgets ============================
 
 describe("households/{id}/periodBudgets", () => {

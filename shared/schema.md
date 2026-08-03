@@ -116,6 +116,31 @@ An expense belongs to the period whose `[startDate, endDate]` contains its `date
 Queries are lexicographic string ranges: `date >= start && date <= end`, which is why the
 zero-padded `YYYY-MM-DD` format is mandatory.
 
+### `households/{householdId}/bankCharges/{gmailMessageId}`
+
+A charge the bank reported by email, waiting to be matched to an expense. The
+document id **is** the Gmail message id, so re-reading the same email can never
+create a second charge.
+
+| Field | Type | Notes |
+|---|---|---|
+| `usdCents` | int | > 0. What the bank charged, integer cents of USD |
+| `date` | string `YYYY-MM-DD` | The charge in the HOUSEHOLD timezone. The email carries Argentine wall time (ART, fixed −03); the ingestion converts it, because a 9pm purchase in Argentina is already the next day in Sydney |
+| `merchant` | string | As the bank spells it, e.g. `"COLES 0831"`. May be empty |
+| `cardLast4` | string \| absent | Four digits, when the email states them |
+| `importedAt` | timestamp | When the ingestion filed it |
+
+**Who writes this.** Only the Gmail ingestion (`tools/gmail-bank-ingest`), with
+its own service-account key. A service account is an IAM principal, so the
+security rules do not apply to it — and the rules therefore make this collection
+read-only from the clients, plus deletable. Nobody should be able to invent a
+bank charge, and a charge never changes once imported.
+
+**How a charge leaves.** Deleted, once it has been matched to an expense (in the
+same batch that writes that expense's `usdCents` + `verified`) or dismissed. The
+ingestion's own memory of processed Gmail message ids is what stops the next
+sweep re-importing it.
+
 ### `invites/{code}`
 
 The invite code IS the document ID (capability-as-doc-ID pattern: rules cannot secure

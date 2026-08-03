@@ -237,5 +237,19 @@
   "quickEntry": {
     "saved": "Saved!",
     "offBudget": "off budget"
+  },
+  "bank": {
+    "pending": "{count, plural, one {# unmatched bank charge} other {# unmatched bank charges}}",
+    "hint": "They arrive by email and are compared against the expenses of the period on screen.",
+    "hintWithRate": "Bank rate learned from your already-verified expenses: {rate}.",
+    "review": "Review",
+    "hide": "Hide",
+    "assign": "Assign",
+    "discard": "Discard",
+    "discardConfirm": "Discard the {amount} charge? It leaves the list for good.",
+    "chooseExpense": "Expense to verify",
+    "none": "— pick an expense —",
+    "noCandidate": "No clear candidate: pick it by hand",
+    "suggested": "Suggested · rate {rate} · {score}%"
   }
 }

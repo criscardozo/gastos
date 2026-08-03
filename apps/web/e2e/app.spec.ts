@@ -24,6 +24,8 @@ const EMAIL = `e2e-${Date.now()}@test.dev`;
 
 const AUTH_PORT = process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT ?? "9099";
 const FIRESTORE_PORT = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? "8080";
+/** Admin-side REST, for standing in as the Gmail ingestion (rules bypassed). */
+const REST = `http://localhost:${FIRESTORE_PORT}/v1/projects/${PROJECT}/databases/(default)/documents`;
 
 test.beforeAll(async ({ request }) => {
   // Wipe emulator state so every run starts clean.
@@ -105,9 +107,12 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   const chunks: Buffer[] = [];
   for await (const chunk of stream) chunks.push(chunk as Buffer);
   const csvText = Buffer.concat(chunks).toString("utf-8");
-  expect(csvText).toContain("fecha,categoria,nota,monto_aud,creado_por");
+  expect(csvText).toContain(
+    "fecha,categoria,nota,monto_aud,monto_usd,verificado,creado_por",
+  );
   expect(csvText).toContain("Café de prueba");
-  expect(csvText).toContain("12.50");
+  // The expense we verified above carries the bank's USD and reads as verified.
+  expect(csvText).toContain("12.50,8.15,si,");
 
   // Import a CSV row dated today (Sydney tz, so it lands in the current
   // period). A legacy `moneda`/`monto_original` pair is included on purpose:
@@ -136,4 +141,100 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   await expect(page.getByRole("heading", { name: "Ajustes" })).toBeVisible();
   await page.getByRole("tab", { name: "English" }).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+});
+
+test("a bank charge is matched to the expense it paid for", async ({
+  page,
+  request,
+}) => {
+  // A second household, so this test is independent of the one above.
+  const email = `e2e-bank-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Bank Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  for (const [amount, note] of [
+    ["100,00", "Referencia"],
+    ["63,90", "Coles"],
+    ["12,00", "Otra cosa"],
+  ]) {
+    // The save clears the add row asynchronously; typing before it does would
+    // lose the amount.
+    await expect(page.getByLabel("0,00")).toHaveValue("");
+    await page.getByLabel("0,00").fill(amount);
+    await page.getByLabel("Nota (opcional)").fill(note);
+    await page.getByRole("button", { name: "Guardar" }).click();
+    await expect(page.getByText(note).first()).toBeVisible();
+  }
+
+  // Teach the app the bank's rate: 100,00 AUD was billed as US$ 65,00 → 0.65.
+  await page
+    .locator("div")
+    .filter({ hasText: /^Referencia/ })
+    .first()
+    .getByRole("button", { name: /Sin verificar/ })
+    .click();
+  await page.getByLabel("USD que cobró el banco").fill("65,00");
+  await page.getByRole("button", { name: "Verificar", exact: true }).click();
+  await expect(page.getByText("US$ 65,00").first()).toBeVisible();
+
+  // Now do the ingestion's job by hand: file a charge of US$ 41,54, which at
+  // the learned rate can only be the 63,90 expense.
+  const households = await request.get(`${REST}/households`, {
+    headers: { Authorization: "Bearer owner" },
+  });
+  const owned = ((await households.json()).documents as { name: string }[]).map(
+    (d) => d.name.split("/").pop() as string,
+  );
+  const householdId = owned[owned.length - 1];
+  const created = await request.post(
+    `${REST}/households/${householdId}/bankCharges?documentId=gmail-abc123`,
+    {
+      headers: { Authorization: "Bearer owner" },
+      data: {
+        fields: {
+          usdCents: { integerValue: "4154" },
+          date: {
+            stringValue: new Intl.DateTimeFormat("en-CA", {
+              timeZone: "Australia/Sydney",
+            }).format(new Date()),
+          },
+          merchant: { stringValue: "COLES 0831" },
+          cardLast4: { stringValue: "1234" },
+          importedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+  expect(created.ok()).toBe(true);
+
+  // The panel shows up on its own (live listener) with the learned rate.
+  await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible();
+  await expect(page.getByText(/Tasa del banco aprendida/)).toBeVisible();
+  await page.getByRole("button", { name: "Revisar" }).click();
+  await expect(page.getByText("US$ 41,54")).toBeVisible();
+
+  // It suggested the Coles expense rather than the 12,00 one.
+  const picker = page.getByLabel("Gasto a verificar");
+  const suggested = await picker.inputValue();
+  expect(suggested).not.toBe("");
+  await expect(picker.locator(`option[value="${suggested}"]`)).toHaveText(
+    /Coles/,
+  );
+
+  await page.getByRole("button", { name: "Asignar" }).click();
+
+  // The expense is verified and the charge is gone from Firestore for good.
+  await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
+  await expect(page.getByText("US$ 41,54").first()).toBeVisible();
+  const charges = await request.get(
+    `${REST}/households/${householdId}/bankCharges`,
+    { headers: { Authorization: "Bearer owner" } },
+  );
+  expect(await charges.json()).not.toHaveProperty("documents");
 });

@@ -13,6 +13,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
   type Firestore,
 } from "firebase/firestore";
 
@@ -352,6 +353,44 @@ export async function setExpenseVerification(
     verified: usdCents !== null,
     updatedAt: serverTimestamp(),
   });
+}
+
+/**
+ * Match a bank charge to an expense: the expense gets the bank's USD (and so
+ * becomes verified) and the charge leaves the pending list. One batch, because
+ * a charge that disappeared without verifying its expense — or an expense
+ * verified twice by a charge that stayed — would both be wrong.
+ */
+export async function assignBankCharge(
+  db: Firestore,
+  householdId: string,
+  chargeId: string,
+  expenseId: string,
+  usdCents: number,
+): Promise<void> {
+  const batch = writeBatch(db);
+  batch.update(doc(db, "households", householdId, "expenses", expenseId), {
+    usdCents,
+    verified: true,
+    updatedAt: serverTimestamp(),
+  });
+  batch.delete(doc(db, "households", householdId, "bankCharges", chargeId));
+  await batch.commit();
+}
+
+/**
+ * Retire a bank charge: it has been dismissed as not ours. Deleting is how a
+ * charge leaves the pending list — the Gmail label the ingestion sets is what
+ * stops the same email coming back.
+ */
+export async function deleteBankCharge(
+  db: Firestore,
+  householdId: string,
+  chargeId: string,
+): Promise<void> {
+  await deleteDoc(
+    doc(db, "households", householdId, "bankCharges", chargeId),
+  );
 }
 
 export async function deleteExpense(

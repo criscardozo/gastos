@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   collection,
   getAggregateFromServer,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -17,7 +18,12 @@ import {
 } from "firebase/firestore";
 
 import { getFirebaseClient } from "./client";
-import { expenseConverter, type Expense } from "./converters";
+import {
+  bankChargeConverter,
+  expenseConverter,
+  type BankChargeDoc,
+  type Expense,
+} from "./converters";
 import type { PeriodRange } from "../periods";
 
 export interface ExpensesState {
@@ -66,6 +72,54 @@ export function useExpensesRange(
     );
     return unsubscribe;
   }, [householdId, startDate, endDate]);
+
+  return state;
+}
+
+/* ── Bank charges waiting to be matched ────────────────────────────────── */
+
+/** How many pending charges to listen to. A charge leaves the collection as
+ * soon as it is matched or discarded, so the pending set is small by
+ * construction; the cap is a backstop, not a feature. */
+const MAX_PENDING_CHARGES = 50;
+
+export interface BankChargesState {
+  charges: BankChargeDoc[];
+  loading: boolean;
+}
+
+/**
+ * Live pending bank charges, oldest first (the ones that have been waiting
+ * longest are the ones to deal with). Bounded by `limit`, like every other
+ * listener in the app.
+ */
+export function useBankCharges(householdId: string | null): BankChargesState {
+  const [state, setState] = useState<BankChargesState>({
+    charges: [],
+    loading: true,
+  });
+
+  useEffect(() => {
+    if (householdId === null) {
+      setState({ charges: [], loading: false });
+      return;
+    }
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    const q = query(
+      collection(fb.db, "households", householdId, "bankCharges"),
+      orderBy("date", "asc"),
+      limit(MAX_PENDING_CHARGES),
+    ).withConverter(bankChargeConverter);
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        setState({ charges: snap.docs.map((d) => d.data()), loading: false });
+      },
+      () => setState({ charges: [], loading: false }),
+    );
+    return unsubscribe;
+  }, [householdId]);
 
   return state;
 }
