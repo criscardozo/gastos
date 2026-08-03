@@ -15,6 +15,7 @@ import { StatePill } from "@/components/ui/state-pill";
 import {
   primePeriodTotal,
   useExpensesRange,
+  useMonthTotal,
   usePastPeriodTotals,
 } from "@/lib/firebase/hooks";
 import type {
@@ -124,6 +125,14 @@ export default function DashboardPage() {
   const pastTotals = usePastPeriodTotals(
     household?.id ?? null,
     pastTrendPeriods,
+    budgetCategories,
+  );
+
+  // Calendar-month spend — one server-side sum, independent of where the
+  // weekly/fortnightly boundaries happen to fall.
+  const { total: monthTotal, range: monthRange } = useMonthTotal(
+    household?.id ?? null,
+    today,
     budgetCategories,
   );
 
@@ -298,8 +307,8 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Hero */}
-      <div>
+      {/* Hero + the two spend readouts */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr]">
         <div className="flex flex-col gap-[13px] rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6 lg:py-[22px]">
           <div className="flex items-center justify-between">
             <span className="text-[13px] font-semibold text-ink-2">
@@ -324,6 +333,24 @@ export default function DashboardPage() {
               </span>
             )}
           </div>
+          {/* Say where the budget came from when part of it was carried in —
+              otherwise "de $1.020" looks like a typo for the usual $900. */}
+          {selected.rolloverCents !== 0 && (
+            <span className="text-[11.5px] text-ink-3">
+              {t(
+                selected.rolloverCents > 0
+                  ? "dashboard.carriedOver"
+                  : "dashboard.carriedDeficit",
+                {
+                  amount: formatCents(
+                    Math.abs(selected.rolloverCents),
+                    household.currency,
+                    locale,
+                  ),
+                },
+              )}
+            </span>
+          )}
           <ProgressBar fraction={budget > 0 ? spent / budget : 0} state={state} />
           <div className="tnum flex justify-between text-[13.5px] text-ink-2">
             <span>
@@ -348,6 +375,74 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        <div className="flex flex-col gap-4">
+          {/* How much we've spent this period — the figure asked for at a
+              glance, so it gets its own card and its own big number. */}
+          <div className="flex flex-col gap-1 rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6">
+            <span className="text-[13px] font-semibold text-ink-2">
+              {t(
+                selected.period === "weekly"
+                  ? "dashboard.spentThisWeek"
+                  : "dashboard.spentThisFortnight",
+              )}
+            </span>
+            <span
+              className="tnum text-[34px] font-bold leading-none tracking-[-0.03em]"
+              style={{ color: state === "over" ? "var(--over)" : "var(--ink)" }}
+            >
+              {effective === "USD" && usdRate !== null
+                ? formatUsd(convertCents(spent, usdRate), locale)
+                : formatCents(spent, household.currency, locale)}
+            </span>
+            {usdRate !== null && (
+              <span className="tnum text-[12.5px] font-semibold text-ink-3">
+                {effective === "USD"
+                  ? formatCents(spent, household.currency, locale)
+                  : formatApproxUsd(convertCents(spent, usdRate), locale)}
+              </span>
+            )}
+          </div>
+
+          {/* Same, for the calendar month. */}
+          <div className="flex flex-col gap-1 rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6">
+            <span className="text-[13px] font-semibold text-ink-2">
+              {t("dashboard.spentThisMonth")}
+            </span>
+            {monthTotal === null ? (
+              <span className="text-[15px] font-semibold text-ink-3">
+                {t("dashboard.loading")}
+              </span>
+            ) : (
+              <>
+                <span className="tnum text-[34px] font-bold leading-none tracking-[-0.03em] text-ink">
+                  {effective === "USD" && usdRate !== null
+                    ? formatUsd(convertCents(monthTotal, usdRate), locale)
+                    : formatCents(monthTotal, household.currency, locale)}
+                </span>
+                {usdRate !== null && (
+                  <span className="tnum text-[12.5px] font-semibold text-ink-3">
+                    {effective === "USD"
+                      ? formatCents(monthTotal, household.currency, locale)
+                      : formatApproxUsd(
+                          convertCents(monthTotal, usdRate),
+                          locale,
+                        )}
+                  </span>
+                )}
+              </>
+            )}
+            {monthRange !== null && (
+              <span className="text-[11.5px] text-ink-3">
+                {formatPeriodRange(
+                  monthRange.startDate,
+                  monthRange.endDate,
+                  locale,
+                  "short",
+                )}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Category breakdown + trend */}

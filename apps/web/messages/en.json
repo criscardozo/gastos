@@ -65,7 +65,13 @@
     "trendHint": "The — mark is each period's recorded budget",
     "noPeriod": "No period has started yet.",
     "noPeriodHint": "The first period starts on {date}.",
-    "offBudget": "off budget"
+    "offBudget": "off budget",
+    "spentThisWeek": "Spent this week",
+    "spentThisFortnight": "Spent this fortnight",
+    "spentThisMonth": "Spent this month",
+    "loading": "Loading…",
+    "carriedOver": "Includes {amount} left over from the previous period",
+    "carriedDeficit": "Less {amount} overspent in the previous period"
   },
   "expenses": {
     "title": "Expenses",
@@ -165,7 +171,9 @@
     "copy": "Copy",
     "copied": "Copied!",
     "editAmount": "Edit amount",
-    "renameHousehold": "Rename the household"
+    "renameHousehold": "Rename the household",
+    "rollover": "Carry over the leftover",
+    "rolloverHint": "When a new period starts, whatever was left of the previous one is added to it. An overspend carries across too."
   },
   "budgetEntry": {
     "currencyToggle": "Amount currency"

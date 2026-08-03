@@ -65,7 +65,13 @@
     "trendHint": "La marca — es el presupuesto registrado de cada período",
     "noPeriod": "Todavía no arrancó ningún período.",
     "noPeriodHint": "El primer período comienza el {date}.",
-    "offBudget": "no descuenta"
+    "offBudget": "no descuenta",
+    "spentThisWeek": "Gastado esta semana",
+    "spentThisFortnight": "Gastado esta quincena",
+    "spentThisMonth": "Gastado este mes",
+    "loading": "Cargando…",
+    "carriedOver": "Incluye {amount} que sobró del período anterior",
+    "carriedDeficit": "Descuenta {amount} que se pasaron el período anterior"
   },
   "expenses": {
     "title": "Gastos",
@@ -165,7 +171,9 @@
     "copy": "Copiar",
     "copied": "¡Copiado!",
     "editAmount": "Editar monto",
-    "renameHousehold": "Renombrar el hogar"
+    "renameHousehold": "Renombrar el hogar",
+    "rollover": "Arrastrar lo que sobra",
+    "rolloverHint": "Al arrancar un período nuevo se le suma lo que sobró del anterior. Si se pasaron, la diferencia también se arrastra."
   },
   "budgetEntry": {
     "currencyToggle": "Moneda del monto"

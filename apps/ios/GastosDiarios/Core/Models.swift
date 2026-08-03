@@ -22,6 +22,8 @@ struct DefaultBudget: Codable, Equatable {
     var amountCents: Int
     var period: PeriodType
     var anchorDate: String
+    /// Carry the previous period's leftover into the next one. Absent ⇒ off.
+    var rollover: Bool?
 }
 
 /// One entry of `households/{id}.categories` (map keyed by category id).
@@ -89,8 +91,12 @@ struct PeriodBudget: Codable, Identifiable, Equatable {
     var startDate: String
     var endDate: String
     var period: PeriodType
+    /// The EFFECTIVE budget — any carried-over leftover already included.
     var amountCents: Int
     var source: String  // "default" | "custom"
+    /// How much of `amountCents` was carried in from the previous period.
+    /// Signed; display only (shared/schema.md).
+    var rolloverCents: Int?
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
 

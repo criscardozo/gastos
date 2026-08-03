@@ -100,10 +100,86 @@ export function primePeriodTotal(
   totalCents: number,
   categoryIds: string[] | null = null,
 ): void {
+  // Never prime a zero: a listener that hasn't delivered yet is indistinguishable
+  // from a period with no spending, and caching that zero poisons every later
+  // reader (it once made a period carry over its FULL budget as "leftover").
+  // A genuinely empty period just costs one cheap aggregation instead.
+  if (totalCents <= 0) return;
   periodTotalsCache.set(
     totalCacheKey(householdId, startDate, categoryIds),
     Promise.resolve(totalCents),
   );
+}
+
+/**
+ * Spend for a calendar month (1 server-side read, cached like the period
+ * totals). Separate from the period totals because a month rarely lines up
+ * with a weekly/fortnightly period — it answers "how are we going this month"
+ * regardless of where the period boundaries fall.
+ */
+export function useMonthTotal(
+  householdId: string | null,
+  /** Any date inside the month, "YYYY-MM-DD" in the household timezone. */
+  today: string | null,
+  categoryIds: string[] | null = null,
+): { total: number | null; range: PeriodRange | null } {
+  const [total, setTotal] = useState<number | null>(null);
+  const range = useMemo<PeriodRange | null>(() => {
+    if (today === null) return null;
+    const [year, month] = today.split("-");
+    const last = new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate();
+    return {
+      startDate: `${year}-${month}-01`,
+      endDate: `${year}-${month}-${String(last).padStart(2, "0")}`,
+    };
+  }, [today]);
+  const serializedCategories = useMemo(
+    () => (categoryIds === null ? "" : [...categoryIds].sort().join("+")),
+    [categoryIds],
+  );
+
+  useEffect(() => {
+    if (householdId === null || range === null) {
+      setTotal(null);
+      return;
+    }
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    let cancelled = false;
+    void fetchPeriodTotal(
+      fb.db,
+      householdId,
+      range,
+      serializedCategories === "" ? null : serializedCategories.split("+"),
+    )
+      .then((value) => {
+        if (!cancelled) setTotal(value);
+      })
+      .catch(() => {
+        if (!cancelled) setTotal(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [householdId, range, serializedCategories]);
+
+  return { total, range };
+}
+
+/** Server-side spend total for a range (1 read, cached for the session).
+ * Exported for period materialization, which needs the previous period's
+ * spend to work out what to carry over. */
+export function fetchPeriodSpent(
+  db: Firestore,
+  householdId: string,
+  range: PeriodRange,
+  categoryIds: string[] | null,
+): Promise<number> {
+  // Deliberately bypasses the cache. This figure decides real money — how much
+  // budget the next period starts with — and the cache can legitimately hold a
+  // value primed from a listener that hadn't delivered yet. One extra read,
+  // once per period, is the right price for not carrying over a wrong number.
+  return fetchPeriodTotal(db, householdId, range, categoryIds, true);
 }
 
 function fetchPeriodTotal(
@@ -114,10 +190,12 @@ function fetchPeriodTotal(
    * index either). Otherwise the ids that count, at most 30 — the same cap the
    * rules put on the categories map, which is also Firestore's `in` limit. */
   categoryIds: string[] | null,
+  /** Skip the cached value (still refreshes it) — see fetchPeriodSpent. */
+  bypassCache = false,
 ): Promise<number> {
   const key = totalCacheKey(householdId, range.startDate, categoryIds);
   const cached = periodTotalsCache.get(key);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined && !bypassCache) return cached;
   // Nothing counts towards the budget — no query to run.
   if (categoryIds !== null && categoryIds.length === 0) {
     return Promise.resolve(0);

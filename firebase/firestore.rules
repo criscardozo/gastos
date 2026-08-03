@@ -55,8 +55,11 @@ rules_version = '2';
 //   - startDate: string (required, == doc ID, immutable)
 //   - endDate: string (required, "YYYY-MM-DD", > startDate, immutable)
 //   - period: "weekly"|"fortnightly" (required, immutable)
-//   - amountCents: int (required, 1..100_000_000)
+//   - amountCents: int (required, 1..100_000_000) — the EFFECTIVE budget for
+//     the period, i.e. already including any carried-over leftover
 //   - source: "default"|"custom" (required)
+//   - rolloverCents: int (optional, signed) — how much of amountCents came
+//     from the previous period's leftover; display only
 //   - createdAt: timestamp (required, server time, immutable)
 //   - updatedAt: timestamp (required, server time)
 //   Deletes are DENIED: past periods are an immutable historical record.
@@ -154,12 +157,15 @@ service cloud.firestore {
 
     function isValidBudget(budget) {
       return budget is map
-        && budget.keys().hasOnly(['amountCents', 'period', 'anchorDate'])
+        && budget.keys().hasOnly(['amountCents', 'period', 'anchorDate', 'rollover'])
         && budget.keys().hasAll(['amountCents', 'period', 'anchorDate'])
         && budget.amountCents is int
         && budget.amountCents > 0 && budget.amountCents <= 100000000
         && budget.period in ['weekly', 'fortnightly']
-        && isCalendarDate(budget.anchorDate);
+        && isCalendarDate(budget.anchorDate)
+        // Optional: carry the previous period's leftover into the next one.
+        // Absent ⇒ off.
+        && (!('rollover' in budget) || budget.rollover is bool);
     }
 
     function isValidMemberProfile(profile) {
@@ -289,7 +295,7 @@ service cloud.firestore {
       // ------------------------ periodBudgets ------------------------
 
       function isValidPeriodBudget(data, startDateId) {
-        return data.keys().hasOnly(['startDate', 'endDate', 'period', 'amountCents', 'source', 'createdAt', 'updatedAt'])
+        return data.keys().hasOnly(['startDate', 'endDate', 'period', 'amountCents', 'source', 'rolloverCents', 'createdAt', 'updatedAt'])
           && data.keys().hasAll(['startDate', 'endDate', 'period', 'amountCents', 'source', 'createdAt', 'updatedAt'])
           && isCalendarDate(data.startDate)
           && data.startDate == startDateId
@@ -298,7 +304,14 @@ service cloud.firestore {
           && data.period in ['weekly', 'fortnightly']
           && data.amountCents is int
           && data.amountCents > 0 && data.amountCents <= 100000000
-          && data.source in ['default', 'custom'];
+          && data.source in ['default', 'custom']
+          // How much of amountCents was carried over from the previous period.
+          // Informational: amountCents is ALREADY the effective budget. Signed,
+          // because an overspent period carries its deficit forward.
+          && (!('rolloverCents' in data)
+              || (data.rolloverCents is int
+                  && data.rolloverCents >= -100000000
+                  && data.rolloverCents <= 100000000));
       }
 
       match /periodBudgets/{startDate} {

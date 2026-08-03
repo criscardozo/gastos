@@ -208,6 +208,48 @@ describe("households/{id} — create & member access", () => {
     await assertFails(setDoc(ref, householdDoc(ALICE, { currency: "aud" })));
   });
 
+  it("accepts the optional rollover setting and per-period carryover", async () => {
+    await seedHousehold();
+    await assertSucceeds(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD), {
+        "defaultBudget.rollover": true,
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD), {
+        "defaultBudget.rollover": "yes",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // A period may record the carried amount, including a negative one when
+    // the previous period was overspent.
+    await assertSucceeds(
+      setDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-08-03"), {
+        startDate: "2026-08-03",
+        endDate: "2026-08-09",
+        period: "weekly",
+        amountCents: 102000,
+        rolloverCents: -3000,
+        source: "default",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      setDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-08-10"), {
+        startDate: "2026-08-10",
+        endDate: "2026-08-16",
+        period: "weekly",
+        amountCents: 90000,
+        rolloverCents: "1000",
+        source: "default",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
   it("either member can rename the household", async () => {
     await seedHousehold(true);
     await assertSucceeds(

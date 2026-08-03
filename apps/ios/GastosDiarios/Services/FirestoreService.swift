@@ -210,6 +210,14 @@ final class FirestoreService {
         ])
     }
 
+    /// Toggles the carry-the-leftover policy on the default budget.
+    func updateRollover(householdId: String, enabled: Bool) async throws {
+        try await db.collection("households").document(householdId).updateData([
+            FieldPath(["defaultBudget", "rollover"]): enabled,
+            FieldPath(["updatedAt"]): FieldValue.serverTimestamp(),
+        ])
+    }
+
     func updateDefaultBudget(householdId: String, budget: DefaultBudget) async throws {
         try await db.collection("households").document(householdId).updateData([
             "defaultBudget": [
@@ -226,25 +234,35 @@ final class FirestoreService {
     /// Idempotent materialization: doc ID = startDate. If another client
     /// already created the doc, our create is rejected by rules (createdAt
     /// immutability) with identical content on the server — safe to ignore.
+    /// `rolloverCents` applies to the FIRST period created only — a longer
+    /// cascade means the app went unopened that long, and chaining guesses
+    /// across periods nobody looked at is worse than starting clean.
     func materializePeriods(
         householdId: String,
         periods: [PeriodLogic.PeriodRange],
         periodType: PeriodType,
-        amountCents: Int
+        amountCents: Int,
+        rolloverCents: Int = 0
     ) async {
-        for range in periods {
+        for (index, range) in periods.enumerated() {
+            let carried = index == 0 ? rolloverCents : 0
+            // The rules require a positive budget: a deficit can empty the
+            // envelope, never invert it.
+            let effective = max(1, amountCents + carried)
+            var data: [String: Any] = [
+                "startDate": range.startDate.raw,
+                "endDate": range.endDate.raw,
+                "period": periodType.rawValue,
+                "amountCents": effective,
+                "source": "default",
+                "createdAt": FieldValue.serverTimestamp(),
+                "updatedAt": FieldValue.serverTimestamp(),
+            ]
+            if carried != 0 { data["rolloverCents"] = carried }
             let ref = db.collection("households").document(householdId)
                 .collection("periodBudgets").document(range.startDate.raw)
             do {
-                try await ref.setData([
-                    "startDate": range.startDate.raw,
-                    "endDate": range.endDate.raw,
-                    "period": periodType.rawValue,
-                    "amountCents": amountCents,
-                    "source": "default",
-                    "createdAt": FieldValue.serverTimestamp(),
-                    "updatedAt": FieldValue.serverTimestamp(),
-                ])
+                try await ref.setData(data)
             } catch {
                 // Lost the materialization race — the other client wrote the
                 // same period. Nothing to do.

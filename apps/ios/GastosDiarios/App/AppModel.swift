@@ -335,12 +335,28 @@ final class AppModel {
         materializing = true
         let type = household.defaultBudget.period
         let amount = household.defaultBudget.amountCents
+        let wantsRollover = household.defaultBudget.rollover == true
+        let previous = periods.last
+        let categoryIds = budgetCategoryIds
         Task {
+            // With rollover on, the period that just ended hands over whatever
+            // was left (or the deficit). One server-side sum ⇒ one read.
+            var carried = 0
+            if wantsRollover, let previous {
+                let spent = await firestore.fetchSpentCents(
+                    householdId: householdId,
+                    startDate: previous.startDate,
+                    endDate: previous.endDate,
+                    categoryIds: categoryIds
+                )
+                if let spent { carried = previous.amountCents - spent }
+            }
             await firestore.materializePeriods(
                 householdId: householdId,
                 periods: missing,
                 periodType: type,
-                amountCents: amount
+                amountCents: amount,
+                rolloverCents: carried
             )
             self.materializing = false
         }
@@ -746,6 +762,13 @@ final class AppModel {
         guard !trimmed.isEmpty, trimmed != household?.name else { return }
         household?.name = trimmed
         Task { try? await firestore.updateHouseholdName(householdId: householdId, name: trimmed) }
+    }
+
+    /// Turns the carry-the-leftover policy on or off for future periods.
+    func setRollover(_ enabled: Bool) {
+        guard let householdId = attachedHouseholdId else { return }
+        household?.defaultBudget.rollover = enabled
+        Task { try? await firestore.updateRollover(householdId: householdId, enabled: enabled) }
     }
 
     func setDefaultBudget(amountCents: Int? = nil, period: PeriodType? = nil) {

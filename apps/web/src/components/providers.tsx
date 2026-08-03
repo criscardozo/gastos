@@ -37,6 +37,8 @@ import {
   type UserDoc,
 } from "@/lib/firebase/converters";
 import { ensureUserDoc, materializePeriods } from "@/lib/firebase/mutations";
+import { fetchPeriodSpent } from "@/lib/firebase/hooks";
+import { budgetCategoryIds, allCategoriesCount } from "@/lib/categories";
 import {
   cascadeMaterialization,
   containsDate,
@@ -334,13 +336,40 @@ export function Providers({ children }: { children: ReactNode }) {
 
     const fb = getFirebaseClient();
     if (fb === null) return;
-    void materializePeriods(
-      fb.db,
-      householdId,
-      missing,
-      household.defaultBudget.period,
-      household.defaultBudget.amountCents,
-    )
+    // With rollover on, whatever was left of the period that just ended is
+    // added to the new one (a deficit carries too — the envelope has to add
+    // up). One server-side sum, so this costs a single read.
+    const carryover = async (): Promise<number> => {
+      if (household.defaultBudget.rollover !== true || lastPeriod === null) {
+        return 0;
+      }
+      const categoryIds = allCategoriesCount(household.categories)
+        ? null
+        : budgetCategoryIds(household.categories);
+      try {
+        const spent = await fetchPeriodSpent(
+          fb.db,
+          householdId,
+          { startDate: lastPeriod.startDate, endDate: lastPeriod.endDate },
+          categoryIds,
+        );
+        return lastPeriod.amountCents - spent;
+      } catch {
+        return 0; // offline or denied — start the period on its plain budget
+      }
+    };
+
+    void carryover()
+      .then((rolloverCents) =>
+        materializePeriods(
+          fb.db,
+          householdId,
+          missing,
+          household.defaultBudget.period,
+          household.defaultBudget.amountCents,
+          rolloverCents,
+        ),
+      )
       .then(() => {
         const current = missing.find((p) => containsDate(p, today));
         if (current === undefined) return;

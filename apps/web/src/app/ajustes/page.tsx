@@ -189,6 +189,33 @@ function EditableHouseholdName({
   );
 }
 
+function Toggle({
+  checked,
+  onChange,
+  ariaLabel,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  ariaLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      onClick={() => onChange(!checked)}
+      className="relative h-[26px] w-11 flex-none rounded-full transition-colors"
+      style={{ background: checked ? "var(--good)" : "var(--track)" }}
+    >
+      <span
+        className="absolute top-[2px] h-[22px] w-[22px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-all"
+        style={{ left: checked ? 20 : 2 }}
+      />
+    </button>
+  );
+}
+
 function inviteCodeKey(householdId: string): string {
   return `gd:inviteCode:${householdId}`;
 }
@@ -297,6 +324,25 @@ export default function SettingsPage() {
                 {household.currency}
               </span>
             </div>
+          </div>
+          <div className="flex items-center gap-3 border-t border-soft pt-2.5">
+            <div className="flex flex-1 flex-col gap-0.5">
+              <span className="text-sm font-semibold text-ink">
+                {t("rollover")}
+              </span>
+              <span className="text-xs leading-[1.4] text-ink-3">
+                {t("rolloverHint")}
+              </span>
+            </div>
+            <Toggle
+              checked={household.defaultBudget.rollover === true}
+              ariaLabel={t("rollover")}
+              onChange={(next) =>
+                withDb((db) =>
+                  updateDefaultBudget(db, household.id, { rollover: next }),
+                )
+              }
+            />
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-ink">

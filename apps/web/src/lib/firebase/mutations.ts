@@ -192,22 +192,32 @@ export async function materializePeriods(
   periods: PeriodRange[],
   periodType: PeriodType,
   amountCents: number,
+  /** Leftover carried into the FIRST period being created (signed, 0 when
+   * rollover is off). Only the first: a cascade of several missing periods
+   * means the app went unopened for that long, and chaining guesses across
+   * periods nobody looked at would be worse than starting fresh. */
+  rolloverCents = 0,
 ): Promise<void> {
   await Promise.all(
-    periods.map((p) =>
-      setDoc(
+    periods.map((p, index) => {
+      const carried = index === 0 ? rolloverCents : 0;
+      // The rules require a positive budget, so a deficit can at most empty
+      // the envelope, never invert it.
+      const effective = Math.max(1, amountCents + carried);
+      return setDoc(
         doc(db, "households", householdId, "periodBudgets", p.startDate),
         {
           startDate: p.startDate,
           endDate: p.endDate,
           period: periodType,
-          amountCents,
+          amountCents: effective,
           source: "default",
+          ...(carried !== 0 ? { rolloverCents: carried } : {}),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         },
-      ),
-    ),
+      );
+    }),
   );
 }
 
@@ -241,7 +251,7 @@ export async function updateHouseholdName(
 export async function updateDefaultBudget(
   db: Firestore,
   householdId: string,
-  changes: { amountCents?: number; period?: PeriodType },
+  changes: { amountCents?: number; period?: PeriodType; rollover?: boolean },
 ): Promise<void> {
   const fields: Record<string, unknown> = { updatedAt: serverTimestamp() };
   if (changes.amountCents !== undefined) {
@@ -249,6 +259,9 @@ export async function updateDefaultBudget(
   }
   if (changes.period !== undefined) {
     fields["defaultBudget.period"] = changes.period;
+  }
+  if (changes.rollover !== undefined) {
+    fields["defaultBudget.rollover"] = changes.rollover;
   }
   await updateDoc(doc(db, "households", householdId), fields);
 }

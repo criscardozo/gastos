@@ -30,6 +30,8 @@ export interface DefaultBudget {
   amountCents: number;
   period: PeriodType;
   anchorDate: string;
+  /** Carry the previous period's leftover into the next one. Absent ⇒ off. */
+  rollover?: boolean;
 }
 
 export interface Household {
@@ -47,8 +49,12 @@ export interface PeriodBudget {
   startDate: string;
   endDate: string;
   period: PeriodType;
+  /** The EFFECTIVE budget — carried-over leftover already included. */
   amountCents: number;
   source: "default" | "custom";
+  /** How much of `amountCents` came from the previous period. Signed: an
+   * overspent period carries its deficit forward. Display only. */
+  rolloverCents: number;
 }
 
 export interface Expense {
@@ -121,6 +127,7 @@ export const periodBudgetConverter = readOnly<PeriodBudget>((snap) => {
     period: data.period as PeriodType,
     amountCents: data.amountCents as number,
     source: data.source as "default" | "custom",
+    rolloverCents: (data.rolloverCents as number | undefined) ?? 0,
   };
 });
 
