@@ -108,6 +108,10 @@ export default function DataPage() {
     rows: Expense[];
     loading: boolean;
   }>({ rows: [], loading: false });
+  /** Category ids to include in the export; null = all of them. */
+  const [exportCategories, setExportCategories] = useState<string[] | null>(
+    null,
+  );
 
   // Import state.
   const [preview, setPreview] = useState<PreviewRow[] | null>(null);
@@ -204,6 +208,7 @@ export default function DataPage() {
       .catch(() => {
         if (!cancelled) setLoadState({ rows: [], loading: false });
       });
+    setExportCategories(null);
     return () => {
       cancelled = true;
     };
@@ -211,9 +216,26 @@ export default function DataPage() {
 
   if (household === null || user === null) return null;
 
-  const rows = loadState.rows;
+  // Everything the range returned, before the category picker narrows it.
+  const rangeRows = loadState.rows;
+  // `null` = every category (the default, and what a fresh range resets to).
+  const rows =
+    exportCategories === null
+      ? rangeRows
+      : rangeRows.filter((e) => exportCategories.includes(e.categoryId));
   const total = rows.reduce((sum, e) => sum + e.amountCents, 0);
   const canExport = !loadState.loading && rows.length > 0 && range !== null;
+
+  /** Categories actually present in the loaded range — no point offering to
+   * filter by one with nothing in it. */
+  const rangeCategoryIds = [...new Set(rangeRows.map((e) => e.categoryId))];
+  const toggleExportCategory = (id: string) => {
+    const current = exportCategories ?? rangeCategoryIds;
+    const next = current.includes(id)
+      ? current.filter((c) => c !== id)
+      : [...current, id];
+    setExportCategories(next);
+  };
   const fileBase =
     range !== null ? `gastos-${range.startDate}_${range.endDate}` : "gastos";
 
@@ -528,6 +550,46 @@ export default function DataPage() {
             </div>
           )}
         </div>
+
+        {/* Which categories go into the export */}
+        {rangeCategoryIds.length > 0 && (
+          <div className="flex flex-col gap-2 border-t border-soft pt-3.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-[13px] font-semibold text-ink-2">
+                {t("categoriesLabel")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setExportCategories(null)}
+                disabled={exportCategories === null}
+                className="text-[12px] font-semibold text-accent-strong disabled:text-ink-3"
+              >
+                {t("categoriesAll")}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {rangeCategoryIds.map((id) => {
+                const on =
+                  exportCategories === null || exportCategories.includes(id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => toggleExportCategory(id)}
+                    className={`rounded-full border px-3 py-1 text-[12.5px] font-semibold ${
+                      on
+                        ? "border-transparent bg-accent-soft text-accent-strong"
+                        : "border-pill bg-surface text-ink-3"
+                    }`}
+                  >
+                    {catLabelOf(id)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Summary + actions */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-soft pt-3.5">

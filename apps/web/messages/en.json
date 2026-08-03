@@ -60,13 +60,12 @@
     "spentOf": "Spent <strong>{spent}</strong> of {budget}",
     "daysLeft": "{count, plural, one {<strong>1 day</strong> left} other {<strong># days</strong> left}}",
     "periodEnded": "Period ended",
-    "betweenTwo": "Between the two",
-    "splitNote": "{a}% / {b}% of the period total",
     "byCategory": "By category",
     "trend": "Trend · recent periods",
     "trendHint": "The — mark is each period's recorded budget",
     "noPeriod": "No period has started yet.",
-    "noPeriodHint": "The first period starts on {date}."
+    "noPeriodHint": "The first period starts on {date}.",
+    "offBudget": "off budget"
   },
   "expenses": {
     "title": "Expenses",
@@ -141,7 +140,9 @@
     "importError": "We couldn't import the expenses. Try again.",
     "byCategory": "By category",
     "total": "Total",
-    "expensesCount": "{count, plural, one {# expense} other {# expenses}}"
+    "expensesCount": "{count, plural, one {# expense} other {# expenses}}",
+    "categoriesLabel": "Categories to export",
+    "categoriesAll": "All"
   },
   "settings": {
     "title": "Settings",
@@ -207,10 +208,13 @@
     "moveDown": "Move {name} down",
     "delete": "Delete {name}",
     "deleteConfirm": "Delete the \"{name}\" category? Existing expenses will show it as \"Deleted category\".",
-    "maxReached": "You've reached the maximum of 30 categories."
+    "maxReached": "You've reached the maximum of 30 categories.",
+    "countsToBudget": "Does {name} count against the budget?",
+    "countsToBudgetHint": "The switch sets whether a category eats into the period budget. Off, the spending is still recorded."
   },
   "quickEntry": {
     "currency": "Amount currency",
-    "saved": "Saved!"
+    "saved": "Saved!",
+    "offBudget": "off budget"
   }
 }

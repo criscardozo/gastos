@@ -60,13 +60,12 @@
     "spentOf": "Gastado <strong>{spent}</strong> de {budget}",
     "daysLeft": "{count, plural, one {Queda <strong>1 día</strong>} other {Quedan <strong># días</strong>}}",
     "periodEnded": "Período terminado",
-    "betweenTwo": "Entre los dos",
-    "splitNote": "{a}% / {b}% del total del período",
     "byCategory": "Por categoría",
     "trend": "Tendencia · últimos períodos",
     "trendHint": "La marca — es el presupuesto registrado de cada período",
     "noPeriod": "Todavía no arrancó ningún período.",
-    "noPeriodHint": "El primer período comienza el {date}."
+    "noPeriodHint": "El primer período comienza el {date}.",
+    "offBudget": "no descuenta"
   },
   "expenses": {
     "title": "Gastos",
@@ -141,7 +140,9 @@
     "importError": "No se pudieron importar los gastos. Probá de nuevo.",
     "byCategory": "Por categoría",
     "total": "Total",
-    "expensesCount": "{count, plural, one {# gasto} other {# gastos}}"
+    "expensesCount": "{count, plural, one {# gasto} other {# gastos}}",
+    "categoriesLabel": "Categorías a exportar",
+    "categoriesAll": "Todas"
   },
   "settings": {
     "title": "Ajustes",
@@ -207,10 +208,13 @@
     "moveDown": "Bajar {name}",
     "delete": "Eliminar {name}",
     "deleteConfirm": "¿Eliminar la categoría \"{name}\"? Los gastos ya cargados van a mostrarla como \"Categoría eliminada\".",
-    "maxReached": "Llegaron al máximo de 30 categorías."
+    "maxReached": "Llegaron al máximo de 30 categorías.",
+    "countsToBudget": "¿{name} descuenta del presupuesto?",
+    "countsToBudgetHint": "El interruptor define si la categoría descuenta del presupuesto del período. Apagada, el gasto igual queda registrado."
   },
   "quickEntry": {
     "currency": "Moneda del monto",
-    "saved": "¡Guardado!"
+    "saved": "¡Guardado!",
+    "offBudget": "no descuenta"
   }
 }

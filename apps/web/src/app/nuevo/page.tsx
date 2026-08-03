@@ -30,7 +30,11 @@ import {
   updateUserDefaultEntryCurrency,
 } from "@/lib/firebase/mutations";
 import { useExpensesRange } from "@/lib/firebase/hooks";
-import { categoryCircleBg, categoryColor } from "@/lib/categories";
+import {
+  categoryCircleBg,
+  categoryColor,
+  countsToBudget,
+} from "@/lib/categories";
 import { convertCents, usdToAudCents } from "@/lib/fx";
 import {
   formatApproxAud,
@@ -108,7 +112,13 @@ export default function QuickEntryPage() {
 
   /* Remaining in the current period, shown in both currencies. */
   const spent = expenses
-    .filter((e) => currentPeriod !== null && containsDate(currentPeriod, e.date))
+    .filter(
+      (e) =>
+        currentPeriod !== null &&
+        containsDate(currentPeriod, e.date) &&
+        // Categories opted out of the budget don't move the remaining figure.
+        countsToBudget(household.categories[e.categoryId]),
+    )
     .reduce((acc, e) => acc + e.amountCents, 0);
   const budget = currentPeriod?.amountCents ?? 0;
   const remaining = budget - spent;
@@ -315,6 +325,11 @@ export default function QuickEntryPage() {
               >
                 {c.label}
               </span>
+              {!countsToBudget(c.def) && (
+                <span className="-mt-1 text-[9.5px] font-semibold text-ink-3">
+                  {tEntry("offBudget")}
+                </span>
+              )}
             </button>
           );
         })}

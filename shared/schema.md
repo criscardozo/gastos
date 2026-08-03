@@ -39,10 +39,19 @@ authorization, not this doc.
 | `categories` | map<id, Category> | Map keyed by id, NOT an array (see below) |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
-`Category`: `{ key?: string, name?: string, icon: string, color: string, sortOrder: int }`
+`Category`: `{ key?: string, name?: string, icon: string, color: string, sortOrder: int,
+countsToBudget?: bool }`
 — seed categories carry `key` (translated client-side from `shared/categories.json` ids);
 user-created/renamed ones carry a literal `name`. Display rule:
 `category.key ? t(category.key) : category.name`.
+
+`countsToBudget` is written **only when false**; absent ⇒ true, so every category
+that predates the field keeps counting and no migration is needed. Expenses in an
+excluded category are still stored and listed normally — they are left out of the
+budget maths (remaining, progress, state, the trend bars) so that things like
+health or nights out don't eat the weekly allowance. The rules do not validate
+category entries (a map's entries cannot be iterated in rules), so this field
+needs no rules change.
 
 ### `households/{householdId}/periodBudgets/{startDate}`
 

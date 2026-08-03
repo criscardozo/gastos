@@ -344,14 +344,27 @@ final class FirestoreService {
     /// aggregation (1 billed read) instead of fetching every expense doc.
     /// Bounded range as always. nil on failure (e.g. offline) so callers
     /// keep their cached value.
-    func fetchSpentCents(householdId: String, startDate: String, endDate: String) async -> Int? {
+    /// Server-side SUM for a past period (1 read). `categoryIds` restricts it
+    /// to the categories that count towards the budget; nil means all of them,
+    /// which keeps the query index-free. At most 30 ids — the rules' cap on the
+    /// categories map, which is also Firestore's `in` limit.
+    func fetchSpentCents(
+        householdId: String,
+        startDate: String,
+        endDate: String,
+        categoryIds: [String]? = nil
+    ) async -> Int? {
+        if let categoryIds, categoryIds.isEmpty { return 0 }
         let sum = AggregateField.sum("amountCents")
-        let query = db.collection("households").document(householdId)
+        var query: Query = db.collection("households").document(householdId)
             .collection("expenses")
             .whereField("date", isGreaterThanOrEqualTo: startDate)
             .whereField("date", isLessThanOrEqualTo: endDate)
-            .aggregate([sum])
-        guard let snapshot = try? await query.getAggregation(source: .server) else { return nil }
+        if let categoryIds {
+            query = query.whereField("categoryId", in: categoryIds)
+        }
+        guard let snapshot = try? await query.aggregate([sum]).getAggregation(source: .server)
+        else { return nil }
         return (snapshot.get(sum) as? NSNumber)?.intValue
     }
 

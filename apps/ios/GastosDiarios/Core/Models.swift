@@ -31,13 +31,21 @@ struct Category: Codable, Equatable {
     var icon: String   // Material Symbols name (web); mapped to SF Symbols client-side.
     var color: String  // Light-mode hex; dark variant resolved from seed data.
     var sortOrder: Int
+    /// Whether spending here counts against the period budget. Absent ⇒ true,
+    /// so categories that predate the field keep counting (shared/schema.md).
+    var countsToBudget: Bool?
+
+    /// Only an explicit `false` opts a category out.
+    var isBudgeted: Bool { countsToBudget != false }
 }
 
 extension Category {
     /// Display fallback for expenses whose category was deleted: gray "tag"
     /// circle labeled with the localized "Other" (`category.other`); the
     /// raw categoryId is never shown.
-    static let missing = Category(key: "other", name: nil, icon: "tag", color: "#8A8577", sortOrder: .max)
+    static let missing = Category(
+        key: "other", name: nil, icon: "tag", color: "#8A8577", sortOrder: .max
+    )
 }
 
 /// One entry of `households/{id}.memberProfiles` (map keyed by uid).

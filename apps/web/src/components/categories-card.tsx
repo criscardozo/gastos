@@ -12,6 +12,7 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@/components/ui/icon";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { updateHouseholdCategories } from "@/lib/firebase/mutations";
+import { countsToBudget } from "@/lib/categories";
 import type { Household } from "@/lib/firebase/converters";
 import {
   categoryCircleBg,
@@ -150,6 +151,7 @@ export function CategoriesCard({ household }: { household: Household }) {
     <div className="flex flex-col rounded-[18px] border border-line bg-surface px-[18px] py-4">
       <div className="mb-1 flex items-baseline justify-between">
         <span className="section-label">{t("title")}</span>
+        <span className="text-[11px] text-ink-3">{t("countsToBudgetHint")}</span>
         <span className="tnum text-[11px] font-semibold text-ink-3">
           {rows.length}/{MAX_CATEGORIES}
         </span>
@@ -188,6 +190,35 @@ export function CategoriesCard({ household }: { household: Household }) {
                 {row.label}
               </span>
             )}
+            {/* Whether this category eats into the period budget. Off means
+                the spending is still recorded, just not counted. */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={countsToBudget(row.def)}
+              aria-label={t("countsToBudget", { name: row.label })}
+              title={t("countsToBudget", { name: row.label })}
+              disabled={saving}
+              onClick={() =>
+                void write({
+                  [row.id]: {
+                    ...row.def,
+                    countsToBudget: !countsToBudget(row.def),
+                  },
+                })
+              }
+              className="relative h-[22px] w-9 flex-none rounded-full transition-colors disabled:opacity-50"
+              style={{
+                background: countsToBudget(row.def)
+                  ? "var(--good)"
+                  : "var(--track)",
+              }}
+            >
+              <span
+                className="absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-all"
+                style={{ left: countsToBudget(row.def) ? 18 : 2 }}
+              />
+            </button>
             <div className="flex flex-none items-center gap-0.5">
               <IconButton
                 name="keyboard_arrow_up"

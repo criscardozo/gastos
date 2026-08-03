@@ -9,7 +9,10 @@ struct SummaryView: View {
     private var l10n: L10n { model.l10n }
 
     private var period: PeriodBudget? { model.viewedPeriod }
+    /// Spending that consumes the budget (excluded categories left out).
     private var spentCents: Int { model.viewedSpentCents }
+    /// Everything spent, for the breakdown's relative bars.
+    private var totalSpentCents: Int { model.viewedTotalSpentCents }
     private var budgetCents: Int { period?.amountCents ?? 0 }
     private var remainingCents: Int { budgetCents - spentCents }
 
@@ -59,7 +62,6 @@ struct SummaryView: View {
                 if let period {
                     heroCard(period)
                     categoryBreakdown
-                    memberSplit
                     pastPeriods
                 } else {
                     emptyState
@@ -298,6 +300,15 @@ struct SummaryView: View {
                                         Text(l10n.categoryName(entry.category))
                                             .appFont(13.5, .semibold)
                                             .foregroundStyle(Theme.ink)
+                                        if !entry.category.isBudgeted {
+                                            Text(l10n.t("category.offBudget"))
+                                                .appFont(10, .semibold)
+                                                .foregroundStyle(Theme.inkTertiary)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 1)
+                                                .background(Theme.fill)
+                                                .clipShape(Capsule())
+                                        }
                                         Spacer()
                                         dualCurrency(
                                             entry.totalCents,
@@ -308,7 +319,7 @@ struct SummaryView: View {
                                     }
                                     MiniBar(
                                         color: Theme.categoryColor(id: entry.id, lightHex: entry.category.color),
-                                        fraction: spentCents > 0 ? Double(entry.totalCents) / Double(spentCents) : 0
+                                        fraction: totalSpentCents > 0 ? Double(entry.totalCents) / Double(totalSpentCents) : 0
                                     )
                                 }
                             }
@@ -318,49 +329,6 @@ struct SummaryView: View {
                 }
             }
         }
-    }
-
-    // MARK: Member split
-
-    @ViewBuilder
-    private var memberSplit: some View {
-        let members = model.members
-        if !members.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionLabel(text: l10n.t("summary.betweenUs"))
-                HStack(spacing: 10) {
-                    ForEach(members, id: \.uid) { member in
-                        memberCard(uid: member.uid, profile: member.profile)
-                    }
-                }
-            }
-        }
-    }
-
-    private func memberCard(uid: String, profile: MemberProfile) -> some View {
-        let total = model.viewedExpenses
-            .filter { $0.expense.createdBy == uid }
-            .reduce(0) { $0 + $1.expense.amountCents }
-        let fraction = spentCents > 0 ? Double(total) / Double(spentCents) : 0
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                MemberAvatar(profile: profile, size: 26)
-                Text(profile.displayName.split(separator: " ").first.map(String.init) ?? profile.displayName)
-                    .appFont(13, .semibold)
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
-            }
-            dualCurrency(total, alignment: .leading, primary: 19, secondary: 12)
-            MiniBar(color: Theme.avatarColor(hex: profile.color), fraction: fraction)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(Theme.border, lineWidth: 1)
-        )
     }
 
     // MARK: Past periods

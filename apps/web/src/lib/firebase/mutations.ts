@@ -272,20 +272,18 @@ export async function updateHouseholdCategories(
     } else {
       // Build the stored entry explicitly — Firestore rejects `undefined`
       // values, and key/name are mutually exclusive.
+      const base = {
+        icon: def.icon,
+        color: def.color,
+        sortOrder: def.sortOrder,
+        // Written only when opted out, so the stored shape stays unchanged
+        // for the default (counting) case.
+        ...(def.countsToBudget === false ? { countsToBudget: false } : {}),
+      };
       fields[`categories.${id}`] =
         def.key !== undefined
-          ? {
-              key: def.key,
-              icon: def.icon,
-              color: def.color,
-              sortOrder: def.sortOrder,
-            }
-          : {
-              name: def.name ?? "",
-              icon: def.icon,
-              color: def.color,
-              sortOrder: def.sortOrder,
-            };
+          ? { key: def.key, ...base }
+          : { name: def.name ?? "", ...base };
     }
   }
   await updateDoc(doc(db, "households", householdId), fields);

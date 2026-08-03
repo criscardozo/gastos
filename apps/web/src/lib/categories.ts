@@ -21,6 +21,32 @@ export interface CategoryDef {
   icon: string;
   color: string;
   sortOrder: number;
+  /** Whether spending here counts against the period budget. Absent ⇒ true,
+   * so categories created before this existed keep counting. */
+  countsToBudget?: boolean;
+}
+
+/** Absent means "counts" — only an explicit false opts a category out. */
+export function countsToBudget(def: CategoryDef | undefined): boolean {
+  return def?.countsToBudget !== false;
+}
+
+/** Ids of the categories that count against the budget. Used both to filter
+ * loaded expenses and to bound the server-side total for past periods. */
+export function budgetCategoryIds(
+  categories: Record<string, CategoryDef>,
+): string[] {
+  return Object.entries(categories)
+    .filter(([, def]) => countsToBudget(def))
+    .map(([id]) => id);
+}
+
+/** True when every category counts — the common case, where totals need no
+ * category filtering at all. */
+export function allCategoriesCount(
+  categories: Record<string, CategoryDef>,
+): boolean {
+  return Object.values(categories).every((def) => countsToBudget(def));
 }
 
 /** The categories map to store on a new household document. */

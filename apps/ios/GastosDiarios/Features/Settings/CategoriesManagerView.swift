@@ -20,7 +20,9 @@ struct CategoriesManagerView: View {
     private var footerText: String {
         let count: String = l10n.t("categories.count", entries.count)
         let cap: String = l10n.t("categories.max.foot")
-        return count + " · " + cap
+        // Explain the switch column here rather than crowding every row.
+        let budget: String = l10n.t("categories.countsToBudget.foot")
+        return count + " · " + cap + "\n" + budget
     }
 
     var body: some View {
@@ -116,23 +118,43 @@ struct CategoriesManagerView: View {
     }
 
     private func row(_ entry: (id: String, category: Category)) -> some View {
-        Button {
-            renameText = l10n.categoryName(entry.category)
-            renamingId = entry.id
-        } label: {
-            HStack(spacing: 11) {
-                CategoryCircle(categoryId: entry.id, category: entry.category, size: 34)
-                Text(l10n.categoryName(entry.category))
-                    .appFont(14.5, .semibold)
-                    .foregroundStyle(Theme.ink)
-                Spacer()
-                Image(systemName: "pencil")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.inkTertiary.opacity(0.6))
+        HStack(spacing: 11) {
+            Button {
+                renameText = l10n.categoryName(entry.category)
+                renamingId = entry.id
+            } label: {
+                HStack(spacing: 11) {
+                    CategoryCircle(categoryId: entry.id, category: entry.category, size: 34)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(l10n.categoryName(entry.category))
+                            .appFont(14.5, .semibold)
+                            .foregroundStyle(Theme.ink)
+                            .lineLimit(1)
+                        if !entry.category.isBudgeted {
+                            Text(l10n.t("category.offBudget"))
+                                .appFont(11)
+                                .foregroundStyle(Theme.inkTertiary)
+                        }
+                    }
+                    Image(systemName: "pencil")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.inkTertiary.opacity(0.6))
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+
+            // Does spending here eat into the period budget? Off still records
+            // the expense — it just doesn't move the remaining figure.
+            Toggle("", isOn: Binding(
+                get: { entry.category.isBudgeted },
+                set: { model.setCategoryCountsToBudget(id: entry.id, counts: $0) }
+            ))
+            .labelsHidden()
+            .tint(Theme.green)
+            .accessibilityLabel(l10n.t("categories.countsToBudget"))
         }
-        .buttonStyle(.plain)
     }
 }
 

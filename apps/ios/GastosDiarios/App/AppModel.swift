@@ -123,8 +123,26 @@ final class AppModel {
         viewedPeriod?.startDate == currentPeriod?.startDate
     }
 
+    /// Ids of the categories that count towards the budget, or nil when they
+    /// all do (the common case — no filter, no composite index needed).
+    var budgetCategoryIds: [String]? {
+        guard let categories = household?.categories else { return nil }
+        guard categories.values.contains(where: { !$0.isBudgeted }) else { return nil }
+        return categories.filter { $0.value.isBudgeted }.map(\.key)
+    }
+
+    /// True when the expense's category counts against the budget. A deleted
+    /// category (no entry left) still counts — its spending really happened.
+    func countsToBudget(_ expense: Expense) -> Bool {
+        household?.categories[expense.categoryId]?.isBudgeted ?? true
+    }
+
+    /// Spending that actually consumes the current period's budget. Excluded
+    /// categories stay in the lists and totals below, just not in this figure.
     var currentSpentCents: Int {
-        currentExpenses.reduce(0) { $0 + $1.expense.amountCents }
+        currentExpenses
+            .filter { countsToBudget($0.expense) }
+            .reduce(0) { $0 + $1.expense.amountCents }
     }
 
     var currentRemainingCents: Int {
@@ -132,6 +150,14 @@ final class AppModel {
     }
 
     var viewedSpentCents: Int {
+        viewedExpenses
+            .filter { countsToBudget($0.expense) }
+            .reduce(0) { $0 + $1.expense.amountCents }
+    }
+
+    /// Everything spent in the viewed period, including excluded categories —
+    /// used for the breakdown's proportions, not for the budget.
+    var viewedTotalSpentCents: Int {
         viewedExpenses.reduce(0) { $0 + $1.expense.amountCents }
     }
 
@@ -452,7 +478,8 @@ final class AppModel {
                 if let total = await firestore.fetchSpentCents(
                     householdId: householdId,
                     startDate: period.startDate,
-                    endDate: period.endDate
+                    endDate: period.endDate,
+                    categoryIds: self.budgetCategoryIds
                 ) {
                     self.pastTotals[period.startDate] = total
                 }
@@ -772,6 +799,18 @@ final class AppModel {
         Task { try? await firestore.setCategory(householdId: householdId, id: id, data: data) }
     }
 
+    /// Flips whether a category eats into the period budget.
+    func setCategoryCountsToBudget(id: String, counts: Bool) {
+        guard let householdId = attachedHouseholdId,
+              var category = household?.categories[id]
+        else { return }
+        category.countsToBudget = counts ? nil : false
+        household?.categories[id] = category  // optimistic; listener confirms
+        let data = Self.categoryData(category)
+        Task { try? await firestore.setCategory(householdId: householdId, id: id, data: data) }
+        publishWidgetSnapshot()  // the remaining figure just changed
+    }
+
     /// Existing expenses keep their categoryId; display falls back to the
     /// gray "Otros" placeholder (Category.missing).
     func deleteCategory(id: String) {
@@ -804,6 +843,8 @@ final class AppModel {
         ]
         if let key = category.key { data["key"] = key }
         if let name = category.name { data["name"] = name }
+        // Written only when opted out, keeping the default shape untouched.
+        if category.countsToBudget == false { data["countsToBudget"] = false }
         return data
     }
 

@@ -187,6 +187,40 @@
         }
       }
     },
+    "categories.countsToBudget" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Counts against the budget"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descuenta del presupuesto"
+          }
+        }
+      }
+    },
+    "categories.countsToBudget.foot" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The switch sets whether a category eats into the period budget. Off, the spending is still recorded."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El interruptor define si la categoría descuenta del presupuesto del período. Apagada, el gasto igual queda registrado."
+          }
+        }
+      }
+    },
     "categories.delete.confirm" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -421,6 +455,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hogar"
+          }
+        }
+      }
+    },
+    "category.offBudget" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "off budget"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no descuenta"
           }
         }
       }

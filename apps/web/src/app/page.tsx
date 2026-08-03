@@ -3,13 +3,12 @@
 // Resumen (design 4a): hero budget state, per-person split, category
 // breakdown and the per-period trend chart (plain divs, no chart library).
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
-import { Avatar } from "@/components/ui/avatar";
 import { AmountPair } from "@/components/ui/amount-pair";
 import { ProgressBar, stateBarColor } from "@/components/ui/progress-bar";
 import { StatePill } from "@/components/ui/state-pill";
@@ -31,7 +30,13 @@ import {
   formatUsd,
 } from "@/lib/money";
 import { formatPeriodRange, formatShortDate } from "@/lib/dates";
-import { categoryCircleBg, categoryColor, memberColor } from "@/lib/categories";
+import {
+  allCategoriesCount,
+  budgetCategoryIds,
+  categoryCircleBg,
+  categoryColor,
+  countsToBudget,
+} from "@/lib/categories";
 import { convertCents } from "@/lib/fx";
 import {
   effectiveCurrency,
@@ -64,6 +69,18 @@ export default function DashboardPage() {
   const active = useActiveCurrency();
   const usdRate = useUsdRate();
   const effective = effectiveCurrency(active, usdRate);
+
+  // Budget maths only sees categories flagged as counting. `null` means every
+  // category counts, which keeps the unfiltered (index-free) aggregation.
+  const budgetCategories = useMemo(
+    () =>
+      household === null || allCategoriesCount(household.categories)
+        ? null
+        : budgetCategoryIds(household.categories),
+    [household],
+  );
+  const inBudget = (e: Expense): boolean =>
+    budgetCategories === null || budgetCategories.includes(e.categoryId);
 
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
 
@@ -107,6 +124,7 @@ export default function DashboardPage() {
   const pastTotals = usePastPeriodTotals(
     household?.id ?? null,
     pastTrendPeriods,
+    budgetCategories,
   );
 
   // While a past period is open its docs are live on the client — seed the
@@ -118,9 +136,13 @@ export default function DashboardPage() {
     primePeriodTotal(
       household.id,
       selected.startDate,
-      sumCents(expenses.filter((e) => containsDate(selected, e.date))),
+      sumCents(
+        expenses.filter((e) => containsDate(selected, e.date) && inBudget(e)),
+      ),
+      budgetCategories,
     );
-  }, [household, selected, isCurrent, expensesLoading, expenses]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [household, selected, isCurrent, expensesLoading, expenses, budgetCategories]);
 
   if (household === null) return null;
 
@@ -158,7 +180,9 @@ export default function DashboardPage() {
     : periods.length - 1;
 
   const periodExpenses = expenses.filter((e) => containsDate(selected, e.date));
-  const spent = sumCents(periodExpenses);
+  // Excluded categories are still listed below; they just don't consume the
+  // period's budget.
+  const spent = sumCents(periodExpenses.filter(inBudget));
   const budget = selected.amountCents;
   const remaining = budget - spent;
   const state = budgetState(spent, budget);
@@ -166,16 +190,6 @@ export default function DashboardPage() {
     today !== null && isCurrent
       ? Math.max(daysBetween(today, selected.endDate) + 1, 0)
       : null;
-
-  /* Split between members */
-  const members = household.memberIds
-    .map((id) => ({ id, profile: household.memberProfiles[id] }))
-    .filter((m) => m.profile !== undefined);
-  const spentByMember = members.map((m) => ({
-    ...m,
-    amount: sumCents(periodExpenses.filter((e) => e.createdBy === m.id)),
-  }));
-  const splitTotal = spent;
 
   /* Category breakdown */
   const byCategory = new Map<string, number>();
@@ -191,10 +205,14 @@ export default function DashboardPage() {
      live listeners; every other (past) period from the aggregation cache. */
   const spentForTrend = (p: PeriodBudget): number => {
     if (p.startDate === selected.startDate) {
-      return sumCents(expenses.filter((e) => containsDate(p, e.date)));
+      return sumCents(
+        expenses.filter((e) => containsDate(p, e.date) && inBudget(e)),
+      );
     }
     if (currentPeriod !== null && p.startDate === currentPeriod.startDate) {
-      return sumCents(currentExpenses.filter((e) => containsDate(p, e.date)));
+      return sumCents(
+        currentExpenses.filter((e) => containsDate(p, e.date) && inBudget(e)),
+      );
     }
     return pastTotals[p.startDate] ?? 0;
   };
@@ -280,8 +298,8 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Hero + split */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr]">
+      {/* Hero */}
+      <div>
         <div className="flex flex-col gap-[13px] rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6 lg:py-[22px]">
           <div className="flex items-center justify-between">
             <span className="text-[13px] font-semibold text-ink-2">
@@ -330,50 +348,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3.5 rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6">
-          <span className="text-[13px] font-semibold text-ink-2">
-            {t("dashboard.betweenTwo")}
-          </span>
-          {spentByMember.map((m) => (
-            <div key={m.id} className="flex flex-col gap-[7px]">
-              <div className="flex items-center gap-2.5">
-                <Avatar
-                  name={m.profile.displayName}
-                  color={m.profile.color}
-                  size={26}
-                />
-                <span className="flex-1 truncate text-[13.5px] font-semibold text-ink">
-                  {m.profile.displayName.split(" ")[0]}
-                </span>
-                <AmountPair
-                  audCents={m.amount}
-                  usdRate={usdRate}
-                  active={effective}
-                  locale={locale}
-                  currency={household.currency}
-                  size="lg"
-                />
-              </div>
-              <div className="h-[7px] rounded bg-soft">
-                <div
-                  className="h-full rounded"
-                  style={{
-                    width: `${splitTotal > 0 ? (m.amount / splitTotal) * 100 : 0}%`,
-                    background: memberColor(m.profile.color),
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-          {splitTotal > 0 && spentByMember.length === 2 && (
-            <span className="text-xs text-ink-3">
-              {t("dashboard.splitNote", {
-                a: Math.round((spentByMember[0].amount / splitTotal) * 100),
-                b: Math.round((spentByMember[1].amount / splitTotal) * 100),
-              })}
-            </span>
-          )}
-        </div>
       </div>
 
       {/* Category breakdown + trend */}
@@ -415,8 +389,17 @@ export default function DashboardPage() {
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-[13px] font-semibold text-ink">
-                    {categoryLabel(household, b.id)}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-[13px] font-semibold text-ink">
+                      {categoryLabel(household, b.id)}
+                    </span>
+                    {/* Spent, but outside the budget — say so, otherwise the
+                        numbers here look like they don't add up. */}
+                    {!countsToBudget(b.def) && (
+                      <span className="flex-none rounded-full bg-fill px-1.5 py-px text-[10px] font-semibold text-ink-3">
+                        {t("dashboard.offBudget")}
+                      </span>
+                    )}
                   </span>
                   <AmountPair
                     audCents={b.amount}
