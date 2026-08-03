@@ -32,6 +32,9 @@ final class AppModel {
     /// Spent totals for past periods, keyed by startDate.
     private(set) var pastTotals: [String: Int] = [:]
     private(set) var usdRate: Double?
+    /// Calendar-month spend (budgeted categories only), from one server-side
+    /// sum. nil while loading or when the query failed.
+    private(set) var monthSpentCents: Int?
     /// Invite code for this household (created lazily), nil until generated.
     private(set) var inviteCode: String?
 
@@ -195,6 +198,30 @@ final class AppModel {
         }
     }
 
+    /// First and last day of the month containing `today`, in the household
+    /// timezone — a month rarely lines up with a weekly/fortnightly period.
+    var currentMonthRange: (start: CalendarDate, end: CalendarDate)? {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = householdTimeZone
+        let parts = today.raw.split(separator: "-")
+        guard parts.count == 3, let year = Int(parts[0]), let month = Int(parts[1]),
+              let first = calendar.date(from: DateComponents(year: year, month: month, day: 1)),
+              let lastDay = calendar.range(of: .day, in: .month, for: first)?.count,
+              let start = CalendarDate(String(format: "%04d-%02d-01", year, month)),
+              let end = CalendarDate(String(format: "%04d-%02d-%02d", year, month, lastDay))
+        else { return nil }
+        return (start, end)
+    }
+
+    /// True when the running period began before this month started, so part
+    /// of its spending sits outside the month figure.
+    var currentPeriodCrossesMonth: Bool {
+        guard let monthStart = currentMonthRange?.start,
+              let periodStart = currentPeriod?.start
+        else { return false }
+        return periodStart < monthStart
+    }
+
     /// Past periods (before the current one), most recent first.
     var pastPeriods: [PeriodBudget] {
         guard let currentStart = currentPeriod?.startDate else {
@@ -307,6 +334,7 @@ final class AppModel {
             self.refreshExpenseListeners()
             self.checkNewPeriodPrompt()
             self.loadPastTotals()
+            self.loadMonthTotal()
             self.publishWidgetSnapshot()
         }
         Task { await self.refreshFXIfNeeded() }
@@ -511,6 +539,23 @@ final class AppModel {
         guard phase == .ready else { return }
         guard Date().timeIntervalSince(lastPastTotalsRefresh) > 60 else { return }
         loadPastTotals(refreshAll: true)
+        loadMonthTotal()
+    }
+
+    /// One server-side sum for the current calendar month (1 read).
+    func loadMonthTotal() {
+        guard let householdId = attachedHouseholdId,
+              let range = currentMonthRange
+        else { return }
+        let categoryIds = budgetCategoryIds
+        Task {
+            self.monthSpentCents = await firestore.fetchSpentCents(
+                householdId: householdId,
+                startDate: range.start.raw,
+                endDate: range.end.raw,
+                categoryIds: categoryIds
+            )
+        }
     }
 
     // MARK: FX

@@ -138,6 +138,26 @@ struct SettingsView: View {
                         .fixedSize()
                     }
                     .padding(.vertical, 13)
+                    Divider().overlay(Theme.separator)
+                    HStack(spacing: 11) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(l10n.t("settings.rollover"))
+                                .appFont(14.5, .semibold)
+                                .foregroundStyle(Theme.ink)
+                            Text(l10n.t("settings.rollover.foot"))
+                                .appFont(11.5)
+                                .foregroundStyle(Theme.inkTertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer()
+                        Toggle("", isOn: Binding(
+                            get: { model.household?.defaultBudget.rollover == true },
+                            set: { model.setRollover($0) }
+                        ))
+                        .labelsHidden()
+                        .tint(Theme.green)
+                    }
+                    .padding(.vertical, 13)
                 }
             }
             Text(l10n.t("settings.default.foot"))

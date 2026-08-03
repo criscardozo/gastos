@@ -1802,6 +1802,40 @@
         }
       }
     },
+    "settings.rollover" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carry over the leftover"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrastrar lo que sobra"
+          }
+        }
+      }
+    },
+    "settings.rollover.foot" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When a new period starts, whatever was left of the previous one is added to it. An overspend carries across too."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al arrancar un período nuevo se le suma lo que sobró del anterior. Si se pasaron, la diferencia también se arrastra."
+          }
+        }
+      }
+    },
     "settings.signout" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2261,6 +2295,57 @@
         }
       }
     },
+    "summary.carriedDeficit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Less %@ overspent in the previous period"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descuenta %@ que se pasaron el período anterior"
+          }
+        }
+      }
+    },
+    "summary.carriedOver" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Includes %@ left over from the previous period"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incluye %@ que sobró del período anterior"
+          }
+        }
+      }
+    },
+    "summary.monthUnavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not available"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No disponible"
+          }
+        }
+      }
+    },
     "summary.of" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2329,6 +2414,23 @@
         }
       }
     },
+    "summary.periodCrossesMonth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heads-up: the period started last month."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ojo: el período arrancó el mes pasado."
+          }
+        }
+      }
+    },
     "summary.remaining" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2359,6 +2461,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gastado"
+          }
+        }
+      }
+    },
+    "summary.spentThisFortnight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spent this fortnight"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gastado esta quincena"
+          }
+        }
+      }
+    },
+    "summary.spentThisMonth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spent this month"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gastado este mes"
+          }
+        }
+      }
+    },
+    "summary.spentThisWeek" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spent this week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gastado esta semana"
           }
         }
       }
@@ -2415,18 +2568,18 @@
       }
     },
     "tab.summary" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Summary"
+            "value" : "Home"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Resumen"
+            "value" : "Inicio"
           }
         }
       }

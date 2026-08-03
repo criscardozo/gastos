@@ -61,6 +61,7 @@ struct SummaryView: View {
                 header
                 if let period {
                     heroCard(period)
+                    spendCards
                     categoryBreakdown
                     pastPeriods
                 } else {
@@ -175,6 +176,15 @@ struct SummaryView: View {
                 .foregroundStyle(Theme.inkTertiary)
             }
 
+            if let carried = period.rolloverCents, carried != 0 {
+                Text(l10n.t(
+                    carried > 0 ? "summary.carriedOver" : "summary.carriedDeficit",
+                    MoneyFormatter.aud(abs(carried), locale: l10n.locale)
+                ))
+                .appFont(11.5)
+                .foregroundStyle(Theme.inkTertiary)
+            }
+
             budgetInsetRow(period)
         }
         .padding(EdgeInsets(top: 22, leading: 20, bottom: 22, trailing: 20))
@@ -255,6 +265,116 @@ struct SummaryView: View {
         .padding(.vertical, 11)
         .background(Theme.bg)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: Spend readouts (this period · this month)
+
+    /// Two cards, matching the web: what this period has consumed of its
+    /// budget, and the calendar month regardless of period boundaries.
+    private var spendCards: some View {
+        HStack(alignment: .top, spacing: 10) {
+            spendCard(
+                title: l10n.t(period?.period == .weekly
+                              ? "summary.spentThisWeek"
+                              : "summary.spentThisFortnight"),
+                cents: spentCents,
+                over: state == .over,
+                footnote: nil
+            )
+            monthCard
+        }
+    }
+
+    @ViewBuilder
+    private var monthCard: some View {
+        if let cents = model.monthSpentCents {
+            spendCard(
+                title: l10n.t("summary.spentThisMonth"),
+                cents: cents,
+                over: false,
+                // A period that began last month splits its spending across
+                // two months, so this figure isn't the whole story.
+                footnote: model.currentPeriodCrossesMonth
+                    ? l10n.t("summary.periodCrossesMonth")
+                    : nil
+            )
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(l10n.t("summary.spentThisMonth"))
+                    .appFont(12.5, .semibold)
+                    .foregroundStyle(Theme.inkSecondary)
+                Text(l10n.t("summary.monthUnavailable"))
+                    .appFont(13, .semibold)
+                    .foregroundStyle(Theme.inkTertiary)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(Theme.border, lineWidth: 1)
+            )
+        }
+    }
+
+    private func spendCard(
+        title: String,
+        cents: Int,
+        over: Bool,
+        footnote: String?
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .appFont(12.5, .semibold)
+                .foregroundStyle(Theme.inkSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            Text(primaryAmount(cents))
+                .amountStyle(26, .bold)
+                .kerning(-0.03 * 26)
+                .foregroundStyle(over ? Theme.red : Theme.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+            if let secondary = secondaryAmount(cents) {
+                Text(secondary)
+                    .appFont(11.5, .semibold)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.inkTertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            if let footnote {
+                Text(footnote)
+                    .appFont(10.5, .semibold)
+                    .foregroundStyle(Theme.accentStrong)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Theme.border, lineWidth: 1)
+        )
+    }
+
+    /// Same bi-currency rule as everywhere else: active currency leads.
+    private func primaryAmount(_ cents: Int) -> String {
+        if activeUSD, let rate = model.usdRate, rate > 0 {
+            return MoneyFormatter.usd(fromAUDCents: cents, rate: rate, locale: l10n.locale)
+        }
+        return MoneyFormatter.aud(cents, locale: l10n.locale)
+    }
+
+    private func secondaryAmount(_ cents: Int) -> String? {
+        guard let rate = model.usdRate, rate > 0 else { return nil }
+        return activeUSD
+            ? MoneyFormatter.aud(cents, locale: l10n.locale)
+            : MoneyFormatter.approxUSD(audCents: cents, rate: rate, locale: l10n.locale)
     }
 
     // MARK: Category breakdown
