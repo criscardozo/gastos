@@ -13,12 +13,17 @@
 #     doesn't appear automatically).
 #   • Free-team signing expires after ~7 days — re-run this to refresh. The app
 #     itself now warns you two days before (Settings → "Firma válida hasta").
+#   • Re-running is only a real refresh because of retire_stale_profiles below:
+#     Xcode REUSES a cached provisioning profile while it is still valid, so
+#     re-signing on day 6 would otherwise leave you with one day, not seven.
 set -uo pipefail
 cd "$(dirname "$0")"
 
 SCHEME="GastosDiarios"
 PROJECT="GastosDiarios.xcodeproj"
 DD="build-device"
+BUNDLE_PREFIX="dev.cardozo.gastosdiarios"
+PROFILE_DIR="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
 
 die() { echo "✗ $*" >&2; exit 1; }
 
@@ -73,6 +78,60 @@ echo "→ Dispositivo: ${NAME} — ${UDID}"
 # Keep the generated project in sync (new files land in it automatically).
 if command -v xcodegen >/dev/null 2>&1; then xcodegen >/dev/null || true; fi
 
+# Free-team profiles live 7 days, and Xcode hands back a cached one as long as
+# it has any life left — so a reinstall on day 6 gives you a build that dies
+# tomorrow. Move ours out of the way when they weren't issued in the last few
+# hours, which makes -allowProvisioningUpdates fetch fresh 7-day ones. They are
+# moved, not deleted, so a failed re-issue is recoverable.
+retire_stale_profiles() {
+  [ -d "$PROFILE_DIR" ] || return 0
+  command -v python3 >/dev/null 2>&1 || return 0
+
+  local stale
+  stale="$(python3 - "$PROFILE_DIR" "$BUNDLE_PREFIX" <<'PYTHON'
+import datetime, pathlib, plistlib, subprocess, sys
+
+directory, prefix = pathlib.Path(sys.argv[1]), sys.argv[2]
+# Anything with less life than this was issued before today, so re-signing
+# against it would inherit its old expiry.
+KEEP_ABOVE_DAYS = 6.5
+now = datetime.datetime.now(datetime.timezone.utc)
+
+for path in sorted(directory.glob("*.mobileprovision")):
+    decoded = subprocess.run(
+        ["security", "cms", "-D", "-i", str(path)],
+        capture_output=True,
+    )
+    if decoded.returncode != 0:
+        continue
+    try:
+        profile = plistlib.loads(decoded.stdout)
+    except Exception:
+        continue
+    name = str(profile.get("Name", ""))
+    expiry = profile.get("ExpirationDate")
+    if prefix not in name or expiry is None:
+        continue
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=datetime.timezone.utc)
+    days_left = (expiry - now).total_seconds() / 86400
+    if days_left < KEEP_ABOVE_DAYS:
+        print(f"{path}\t{name}\t{days_left:.1f}")
+PYTHON
+)"
+
+  [ -n "$stale" ] || return 0
+  mkdir -p "$DD/retired-profiles"
+  while IFS=$'\t' read -r path name days; do
+    [ -n "$path" ] || continue
+    echo "  · renuevo el perfil de ${name} (le quedaban ${days} días)"
+    mv "$path" "$DD/retired-profiles/" 2>/dev/null || true
+  done <<< "$stale"
+}
+
+echo "→ Revisando la vigencia de los perfiles de firma…"
+retire_stale_profiles
+
 echo "→ Compilando y firmando (puede tardar un minuto)…"
 set -o pipefail
 if ! xcodebuild \
@@ -89,6 +148,26 @@ fi
 
 APP="$DD/Build/Products/Debug-iphoneos/$SCHEME.app"
 [ -d "$APP" ] || die "No encontré el .app compilado en $APP"
+
+# Say plainly how long THIS build lives — the whole point of the retirement
+# step above is that this should read ~7 days after every run.
+if command -v python3 >/dev/null 2>&1; then
+  python3 - "$APP/embedded.mobileprovision" <<'PYTHON' || true
+import datetime, plistlib, subprocess, sys
+
+decoded = subprocess.run(
+    ["security", "cms", "-D", "-i", sys.argv[1]], capture_output=True
+)
+if decoded.returncode == 0:
+    profile = plistlib.loads(decoded.stdout)
+    expiry = profile["ExpirationDate"]
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=datetime.timezone.utc)
+    local = expiry.astimezone()
+    days = (expiry - datetime.datetime.now(datetime.timezone.utc)).total_seconds() / 86400
+    print(f"→ Firma válida hasta {local:%d/%m/%Y %H:%M} ({days:.1f} días)")
+PYTHON
+fi
 
 echo "→ Instalando en el dispositivo…"
 # devicectl indexes devices by its own identifier, but also accepts the
