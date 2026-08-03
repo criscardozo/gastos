@@ -16,6 +16,7 @@ project's $0 infrastructure rule leaves no room for Cloud Functions or a server.
 |---|---|
 | `parse.js` | Pure parsing of one email. Shared verbatim between Apps Script and the vitest suite here — this is the risky part, so it is the tested part. |
 | `Code.gs` | The sweep: Gmail search → parse → Firestore create, plus the processed-message memory. |
+| `appsscript.json` | The project manifest, pinning the OAuth scopes to **read-only** Gmail plus outbound HTTPS. Without it Apps Script asks for full mailbox access; with it the script cannot modify or delete a single email even by accident. |
 | `fixtures/consumo-autorizado.html` | A real notification, with the cardholder name and card digits scrubbed. |
 
 `pnpm test:ingest` runs the parser tests (12 of them, including the real email
@@ -67,7 +68,12 @@ without breaking the other. The key file never goes near the repo — paste its
 2. Create two files matching this folder: `parse.js` (as a `.gs` file — paste
    the contents; Apps Script concatenates files, so its functions become
    available to `Code.gs`) and `Code.gs`.
-3. **Project Settings → Script Properties**, add:
+3. **Project Settings → check "Show appsscript.json manifest file"**, then
+   replace that file with the `appsscript.json` here. This is what keeps the
+   Gmail authorisation READ-ONLY: do it before the first run, because the scopes
+   are granted on first authorisation and widening them later means
+   re-authorising anyway.
+4. **Project Settings → Script Properties**, add:
 
    | Property | Value |
    |---|---|
@@ -79,11 +85,11 @@ without breaking the other. The key file never goes near the repo — paste its
    | `GMAIL_QUERY` | *(optional)* overrides the sender/subject search |
    | `LOOKBACK_DAYS` | *(optional)* defaults to 7 |
 
-4. Run `debugLatest` once. It asks for Gmail + external-request authorisation
+5. Run `debugLatest` once. It asks for Gmail + external-request authorisation
    (accept), then logs the parsed charge for the newest matching email — the
    quickest way to confirm the parser still fits the bank's format.
-5. Run `run` once and check `bankCharges` in the Firestore console.
-6. **Triggers → Add trigger**: function `run`, event source *Time-driven*,
+6. Run `run` once and check `bankCharges` in the Firestore console.
+7. **Triggers → Add trigger**: function `run`, event source *Time-driven*,
    *Minutes timer*, **every 15 minutes**.
 
 Apps Script quotas on a free account are generous for this: a 15-minute trigger
