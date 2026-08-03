@@ -196,7 +196,7 @@ button {
   padding-right: env(safe-area-inset-right);
 }
 
-.safe-y {
-  padding-top: calc(env(safe-area-inset-top));
-  padding-bottom: calc(env(safe-area-inset-bottom));
-}
+/* NOTE: there is deliberately no .safe-y helper. A class that sets padding-top
+   collides with Tailwind's pt-* at equal specificity and silently wins by
+   source order, zeroing the page padding on desktop where the inset is 0.
+   Vertical insets are folded into the padding value itself (app-shell.tsx). */
