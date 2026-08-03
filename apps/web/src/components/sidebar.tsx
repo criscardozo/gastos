@@ -9,8 +9,10 @@ import { AvatarPair } from "@/components/ui/avatar";
 import { PiggyMark } from "@/components/brand";
 import { useHousehold } from "@/components/providers";
 
+// No "Nuevo" entry here on purpose: on desktop /gastos carries the inline add
+// row, so a nav item for quick entry is redundant. The phone still has it, in
+// the tab bar and as the FAB on Inicio.
 const NAV = [
-  { href: "/nuevo", icon: "add_circle", key: "new" },
   { href: "/", icon: "donut_small", key: "summary" },
   { href: "/gastos", icon: "receipt_long", key: "expenses" },
   { href: "/datos", icon: "database", key: "data" },
