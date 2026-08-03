@@ -457,6 +457,15 @@ export default function ExpensesPage() {
   /* CSV export of the CURRENTLY FILTERED list (client-side download).
      Shares the builder with the Datos page so the format stays in sync. */
   const exportCsv = () => {
+    // Same promise the Datos page makes with its checkbox: unverified rows
+    // leave a blank USD column, so say so before the file is written.
+    const unverified = sorted.filter((e) => !e.verified).length;
+    if (
+      unverified > 0 &&
+      !window.confirm(t("exportUnverifiedConfirm", { count: unverified }))
+    ) {
+      return;
+    }
     const memberNames = Object.fromEntries(
       Object.entries(household.memberProfiles).map(([uid, p]) => [
         uid,

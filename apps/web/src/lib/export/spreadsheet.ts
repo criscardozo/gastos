@@ -24,12 +24,9 @@ const LINE = "FFDCD6CC";
 const SOFT = "FFFDEDE9"; // accent-soft, for the totals block
 const WHITE = "FFFFFFFF";
 
-/** es-AR style money format; en-AU falls back to the plain locale grouping. */
-function numberFormat(currency: string, locale: string): string {
-  const symbol = currency === "USD" ? "US$" : "$";
-  return locale === "es"
-    ? `"${symbol}"#,##0.00`
-    : `"${symbol}"#,##0.00`;
+/** Money format for a currency symbol; the grouping is the reader's locale. */
+function numberFormat(symbol: string): string {
+  return `"${symbol}"#,##0.00`;
 }
 
 /**
@@ -45,7 +42,8 @@ export async function buildExpensesWorkbook(
   wb.creator = opts.title;
   wb.created = new Date();
 
-  const money = numberFormat(opts.currency, opts.locale);
+  const money = numberFormat(opts.currency === "USD" ? "US$" : "$");
+  const usdMoney = numberFormat("US$ ");
   const ws = wb.addWorksheet(opts.labels.byCategory ? opts.title : "Gastos", {
     views: [{ state: "frozen", ySplit: 6 }], // keep the table head in view
     pageSetup: { paperSize: 9, orientation: "portrait", fitToPage: true },
@@ -54,13 +52,16 @@ export async function buildExpensesWorkbook(
   ws.columns = [
     { key: "date", width: 14 },
     { key: "category", width: 20 },
-    { key: "note", width: 42 },
-    { key: "person", width: 18 },
-    { key: "amount", width: 16 },
+    { key: "note", width: 38 },
+    { key: "person", width: 16 },
+    { key: "amount", width: 15 },
+    // The bank's USD charge. Left EMPTY for an unverified expense — a blank
+    // reads as "not known yet" and stays filterable, which a 0 would not.
+    { key: "usd", width: 15 },
   ];
 
   /* ── Header band (rows 1–2), the PDF's coral strip ────────────────────── */
-  ws.mergeCells("A1:E2");
+  ws.mergeCells("A1:F2");
   const band = ws.getCell("A1");
   band.value = opts.title;
   band.font = { name: "Helvetica", size: 20, bold: true, color: { argb: WHITE } };
@@ -82,7 +83,7 @@ export async function buildExpensesWorkbook(
   range.font = { name: "Helvetica", size: 10, color: { argb: MUTED } };
   range.alignment = { indent: 1 };
 
-  ws.mergeCells("D4:E4");
+  ws.mergeCells("D4:F4");
   const count = ws.getCell("D4");
   count.value = opts.labels.countLine;
   count.font = { name: "Helvetica", size: 10, color: { argb: MUTED } };
@@ -98,11 +99,12 @@ export async function buildExpensesWorkbook(
     opts.labels.note.toUpperCase(),
     opts.labels.person.toUpperCase(),
     opts.labels.amount.toUpperCase(),
+    opts.labels.amountUsd.toUpperCase(),
   ];
   head.eachCell((cell, col) => {
     cell.font = { name: "Helvetica", size: 8.5, bold: true, color: { argb: MUTED } };
     cell.border = { bottom: { style: "thin", color: { argb: LINE } } };
-    cell.alignment = { horizontal: col === 5 ? "right" : "left", indent: col === 1 ? 1 : 0 };
+    cell.alignment = { horizontal: col >= 5 ? "right" : "left", indent: col === 1 ? 1 : 0 };
   });
 
   /* ── Expense rows ─────────────────────────────────────────────────────── */
@@ -113,6 +115,7 @@ export async function buildExpensesWorkbook(
       r.note,
       r.memberLabel,
       r.amountCents / 100,
+      r.usdCents === null ? null : r.usdCents / 100,
     ]);
     row.getCell(1).font = { name: "Helvetica", size: 9, color: { argb: INK } };
     row.getCell(1).alignment = { indent: 1 };
@@ -123,11 +126,15 @@ export async function buildExpensesWorkbook(
     amount.font = { name: "Helvetica", size: 9, bold: true, color: { argb: INK } };
     amount.numFmt = money;
     amount.alignment = { horizontal: "right" };
+    const usd = row.getCell(6);
+    usd.font = { name: "Helvetica", size: 9, color: { argb: INK } };
+    usd.numFmt = usdMoney;
+    usd.alignment = { horizontal: "right" };
   }
 
   // Filters over the table make the sheet genuinely useful, which a PDF can't be.
   if (opts.rows.length > 0) {
-    ws.autoFilter = { from: { row: 6, column: 1 }, to: { row: 6 + opts.rows.length, column: 5 } };
+    ws.autoFilter = { from: { row: 6, column: 1 }, to: { row: 6 + opts.rows.length, column: 6 } };
   }
 
   /* ── Per-category totals ──────────────────────────────────────────────── */
@@ -139,13 +146,24 @@ export async function buildExpensesWorkbook(
   byCategory.getCell(1).alignment = { indent: 1 };
 
   for (const c of opts.categoryTotals) {
-    const row = ws.addRow([c.label, null, null, null, c.amountCents / 100]);
+    const row = ws.addRow([
+      c.label,
+      null,
+      null,
+      null,
+      c.amountCents / 100,
+      c.usdCents > 0 ? c.usdCents / 100 : null,
+    ]);
     row.getCell(1).font = { name: "Helvetica", size: 9.5, color: { argb: INK } };
     row.getCell(1).alignment = { indent: 1 };
     const amount = row.getCell(5);
     amount.font = { name: "Helvetica", size: 9.5, bold: true, color: { argb: INK } };
     amount.numFmt = money;
     amount.alignment = { horizontal: "right" };
+    const usd = row.getCell(6);
+    usd.font = { name: "Helvetica", size: 9.5, color: { argb: INK } };
+    usd.numFmt = usdMoney;
+    usd.alignment = { horizontal: "right" };
   }
 
   /* ── Grand total, under the PDF's coral rule ──────────────────────────── */
@@ -155,6 +173,7 @@ export async function buildExpensesWorkbook(
     null,
     null,
     opts.grandTotalCents / 100,
+    opts.grandTotalUsdCents > 0 ? opts.grandTotalUsdCents / 100 : null,
   ]);
   total.height = 22;
   total.eachCell({ includeEmpty: true }, (cell) => {
@@ -170,6 +189,21 @@ export async function buildExpensesWorkbook(
   totalCell.font = { name: "Helvetica", size: 13, bold: true, color: { argb: CORAL } };
   totalCell.numFmt = money;
   totalCell.alignment = { horizontal: "right", vertical: "middle" };
+  const totalUsd = total.getCell(6);
+  totalUsd.font = { name: "Helvetica", size: 12, bold: true, color: { argb: CORAL } };
+  totalUsd.numFmt = usdMoney;
+  totalUsd.alignment = { horizontal: "right", vertical: "middle" };
+
+  // Same caveat the PDF prints: the AUD total covers the range, the USD one
+  // only what the bank has reported so far.
+  if (opts.unverifiedCount > 0) {
+    const notice = ws.addRow([opts.labels.unverifiedNotice]);
+    ws.mergeCells(`A${notice.number}:F${notice.number}`);
+    notice.getCell(1).font = {
+      name: "Helvetica", size: 8.5, color: { argb: MUTED },
+    };
+    notice.getCell(1).alignment = { indent: 1 };
+  }
 
   const buffer = await wb.xlsx.writeBuffer();
   return new Blob([buffer], {

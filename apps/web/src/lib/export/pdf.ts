@@ -8,7 +8,7 @@
 // The document uses jsPDF's built-in Helvetica (WinAnsi / Latin-1), which
 // covers Spanish accents, "ñ" and "$", so no font embedding is needed.
 
-import { formatCents } from "../money";
+import { formatCents, formatUsd } from "../money";
 
 export interface PdfExpenseRow {
   date: string;
@@ -16,11 +16,15 @@ export interface PdfExpenseRow {
   note: string;
   memberLabel: string;
   amountCents: number;
+  /** What the bank charged in USD; null while the expense is unverified. */
+  usdCents: number | null;
 }
 
 export interface PdfCategoryTotal {
   label: string;
   amountCents: number;
+  /** USD sum of this category's VERIFIED expenses only. */
+  usdCents: number;
 }
 
 export interface PdfExportOptions {
@@ -33,6 +37,10 @@ export interface PdfExportOptions {
   rows: PdfExpenseRow[];
   categoryTotals: PdfCategoryTotal[];
   grandTotalCents: number;
+  /** USD sum of the VERIFIED expenses in the range. */
+  grandTotalUsdCents: number;
+  /** How many exported expenses have no bank USD charge yet. */
+  unverifiedCount: number;
   currency: string;
   locale: string;
   /** Localized column headers + section headings. */
@@ -42,9 +50,12 @@ export interface PdfExportOptions {
     note: string;
     person: string;
     amount: string;
+    amountUsd: string;
     byCategory: string;
     total: string;
     countLine: string; // e.g. "24 gastos"
+    /** Printed under the total when `unverifiedCount > 0`. */
+    unverifiedNotice: string;
   };
 }
 
@@ -61,12 +72,15 @@ const INK: [number, number, number] = [36, 26, 16];
 const MUTED: [number, number, number] = [143, 130, 114];
 
 // Column x-offsets (from the left margin) and widths.
+// Two money columns now: AUD, then the bank's USD at the content edge.
+const USD_W = 74;
 const COLS = {
   date: { x: 0, w: 66 },
-  category: { x: 72, w: 92 },
-  note: { x: 170, w: 205 },
-  person: { x: 380, w: 70 },
-  amount: { x: CONTENT_W, w: 0 }, // right-aligned at the content edge
+  category: { x: 72, w: 82 },
+  note: { x: 160, w: 152 },
+  person: { x: 318, w: 58 },
+  amount: { x: CONTENT_W - USD_W, w: 0 }, // right-aligned
+  usd: { x: CONTENT_W, w: 0 }, // right-aligned at the content edge
 };
 
 export async function exportExpensesPdf(opts: PdfExportOptions): Promise<void> {
@@ -74,6 +88,7 @@ export async function exportExpensesPdf(opts: PdfExportOptions): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
   const money = (cents: number) => formatCents(cents, opts.currency, opts.locale);
+  const usd = (cents: number) => formatUsd(cents, opts.locale);
 
   const drawHeader = () => {
     doc.setFillColor(...CORAL);
@@ -93,6 +108,9 @@ export async function exportExpensesPdf(opts: PdfExportOptions): Promise<void> {
     doc.text(opts.labels.note.toUpperCase(), MARGIN + COLS.note.x, y);
     doc.text(opts.labels.person.toUpperCase(), MARGIN + COLS.person.x, y);
     doc.text(opts.labels.amount.toUpperCase(), MARGIN + COLS.amount.x, y, {
+      align: "right",
+    });
+    doc.text(opts.labels.amountUsd.toUpperCase(), MARGIN + COLS.usd.x, y, {
       align: "right",
     });
     doc.setDrawColor(220, 214, 204);
@@ -138,6 +156,15 @@ export async function exportExpensesPdf(opts: PdfExportOptions): Promise<void> {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...INK);
     doc.text(money(r.amountCents), MARGIN + COLS.amount.x, y, { align: "right" });
+    // An unverified expense prints a muted dash, never a converted figure —
+    // the app has no rate and the bank's is the only one that counts.
+    if (r.usdCents === null) {
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...MUTED);
+      doc.text("—", MARGIN + COLS.usd.x, y, { align: "right" });
+    } else {
+      doc.text(usd(r.usdCents), MARGIN + COLS.usd.x, y, { align: "right" });
+    }
     y += 16;
   }
 
@@ -162,9 +189,12 @@ export async function exportExpensesPdf(opts: PdfExportOptions): Promise<void> {
     }
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...INK);
-    doc.text(fit(doc, c.label, 300), MARGIN, y);
+    doc.text(fit(doc, c.label, 260), MARGIN, y);
     doc.setFont("helvetica", "bold");
-    doc.text(money(c.amountCents), PAGE_W - MARGIN, y, { align: "right" });
+    doc.text(money(c.amountCents), MARGIN + COLS.amount.x, y, { align: "right" });
+    if (c.usdCents > 0) {
+      doc.text(usd(c.usdCents), PAGE_W - MARGIN, y, { align: "right" });
+    }
     y += 15;
   }
 
@@ -179,7 +209,26 @@ export async function exportExpensesPdf(opts: PdfExportOptions): Promise<void> {
   doc.setTextColor(...INK);
   doc.text(opts.labels.total, MARGIN, y);
   doc.setTextColor(...CORAL);
-  doc.text(money(opts.grandTotalCents), PAGE_W - MARGIN, y, { align: "right" });
+  doc.text(money(opts.grandTotalCents), MARGIN + COLS.amount.x, y, {
+    align: "right",
+  });
+  if (opts.grandTotalUsdCents > 0) {
+    doc.text(usd(opts.grandTotalUsdCents), PAGE_W - MARGIN, y, {
+      align: "right",
+    });
+  }
+
+  // Say it plainly when the USD column is incomplete: the AUD total is the
+  // whole range, the USD one only covers what the bank has reported.
+  if (opts.unverifiedCount > 0) {
+    y += 16;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...MUTED);
+    doc.text(opts.labels.unverifiedNotice, PAGE_W - MARGIN, y, {
+      align: "right",
+    });
+  }
 
   doc.save(opts.filename);
 }

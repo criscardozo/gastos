@@ -107,7 +107,8 @@
     "addBankUsd": "Cargar el USD del banco",
     "editBankUsd": "Editar el USD del banco",
     "markVerified": "Verificar",
-    "clearVerification": "Quitar verificación"
+    "clearVerification": "Quitar verificación",
+    "exportUnverifiedConfirm": "{count, plural, one {Hay # gasto sin el USD del banco: su columna USD va a quedar vacía. ¿Exportar igual?} other {Hay # gastos sin el USD del banco: sus columnas USD van a quedar vacías. ¿Exportar igual?}}"
   },
   "empty": {
     "noExpensesTitle": "Sin gastos todavía",
@@ -131,7 +132,7 @@
     "exportCsv": "Exportar CSV",
     "exportPdf": "Exportar PDF",
     "importTitle": "Importar",
-    "importHint": "Subí un CSV con el formato de exportación (fecha, categoria, nota, monto_aud).",
+    "importHint": "Subí un CSV con el formato de exportación (fecha, categoria, nota, monto_aud, y monto_usd si el banco ya lo cobró).",
     "chooseFile": "Elegir archivo CSV",
     "fileError": "No pudimos leer el archivo. Revisá que sea un CSV válido.",
     "preview": "Vista previa",
@@ -162,7 +163,11 @@
     "exportDrive": "Google Drive",
     "exporting": "Generando…",
     "exportingDrive": "Subiendo…",
-    "exportError": "No pudimos generar la exportación. Probá de nuevo."
+    "exportError": "No pudimos generar la exportación. Probá de nuevo.",
+    "colAmountUsd": "USD (banco)",
+    "acceptUnverified": "Acepto que la exportación tiene datos no verificados",
+    "unverifiedNotice": "{count, plural, one {# gasto sin el USD del banco: su columna USD queda vacía y el total en USD es parcial} other {# gastos sin el USD del banco: su columna USD queda vacía y el total en USD es parcial}}",
+    "reasonBadUsd": "USD inválido"
   },
   "settings": {
     "title": "Ajustes",

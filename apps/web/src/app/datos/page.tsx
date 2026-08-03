@@ -31,7 +31,7 @@ import { Icon } from "@/components/ui/icon";
 import { Segmented } from "@/components/ui/segmented";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { expenseConverter, type Expense } from "@/lib/firebase/converters";
-import { formatCents, parseAmountToCents } from "@/lib/money";
+import { formatCents, formatUsd, parseAmountToCents } from "@/lib/money";
 import { formatPeriodRange } from "@/lib/dates";
 import { addDays, type PeriodRange } from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv, parseCsv } from "@/lib/export/csv";
@@ -84,8 +84,10 @@ interface PreviewRow {
   date: string;
   categoryId: string;
   amountCents: number | null;
+  /** The bank's USD charge from the optional `monto_usd` column. */
+  usdCents: number | null;
   status: "ok" | "mapped" | "error";
-  reasonKey?: "reasonBadDate" | "reasonBadAmount";
+  reasonKey?: "reasonBadDate" | "reasonBadAmount" | "reasonBadUsd";
 }
 
 // Amount cap mirrors the security rule (1..10_000_000 cents).
@@ -116,6 +118,8 @@ export default function DataPage() {
   const [exportPhase, setExportPhase] = useState<
     "idle" | "excel" | "drive" | "error"
   >("idle");
+  /** Ticked consent to export a range that still has unverified expenses. */
+  const [acceptUnverified, setAcceptUnverified] = useState(false);
 
   // Import state.
   const [preview, setPreview] = useState<PreviewRow[] | null>(null);
@@ -213,6 +217,8 @@ export default function DataPage() {
         if (!cancelled) setLoadState({ rows: [], loading: false });
       });
     setExportCategories(null);
+    // A new range is a new decision — never carry the consent across.
+    setAcceptUnverified(false);
     return () => {
       cancelled = true;
     };
@@ -228,7 +234,14 @@ export default function DataPage() {
       ? rangeRows
       : rangeRows.filter((e) => exportCategories.includes(e.categoryId));
   const total = rows.reduce((sum, e) => sum + e.amountCents, 0);
-  const canExport = !loadState.loading && rows.length > 0 && range !== null;
+  // USD only ever sums what the bank has actually reported.
+  const totalUsd = rows.reduce((sum, e) => sum + (e.usdCents ?? 0), 0);
+  const unverifiedCount = rows.filter((e) => !e.verified).length;
+  // Exporting a range with expenses the bank has not confirmed yet is allowed,
+  // but only deliberately: the checkbox has to be ticked first.
+  const exportBlocked = unverifiedCount > 0 && !acceptUnverified;
+  const canExport =
+    !loadState.loading && rows.length > 0 && range !== null && !exportBlocked;
 
   /** Categories actually present in the loaded range — no point offering to
    * filter by one with nothing in it. */
@@ -269,12 +282,20 @@ export default function DataPage() {
   /** The one payload every branded export renders — PDF, Excel and Sheets. */
   const buildExportPayload = (extension: string): PdfExportOptions | null => {
     if (range === null) return null;
-    const totalsMap = new Map<string, number>();
+    const totalsMap = new Map<string, { aud: number; usd: number }>();
     for (const e of rows) {
-      totalsMap.set(e.categoryId, (totalsMap.get(e.categoryId) ?? 0) + e.amountCents);
+      const prev = totalsMap.get(e.categoryId) ?? { aud: 0, usd: 0 };
+      totalsMap.set(e.categoryId, {
+        aud: prev.aud + e.amountCents,
+        usd: prev.usd + (e.usdCents ?? 0),
+      });
     }
     const categoryTotals = [...totalsMap.entries()]
-      .map(([id, amountCents]) => ({ label: catLabelOf(id), amountCents }))
+      .map(([id, sums]) => ({
+        label: catLabelOf(id),
+        amountCents: sums.aud,
+        usdCents: sums.usd,
+      }))
       .sort((a, b) => b.amountCents - a.amountCents);
     return {
       filename: `${fileBase}.${extension}`,
@@ -287,9 +308,12 @@ export default function DataPage() {
         note: e.note,
         memberLabel: memberNames[e.createdBy] ?? e.createdBy,
         amountCents: e.amountCents,
+        usdCents: e.usdCents,
       })),
       categoryTotals,
       grandTotalCents: total,
+      grandTotalUsdCents: totalUsd,
+      unverifiedCount,
       currency: household.currency,
       locale,
       labels: {
@@ -298,9 +322,11 @@ export default function DataPage() {
         note: t("colNote"),
         person: t("colPerson"),
         amount: t("colAmount"),
+        amountUsd: t("colAmountUsd"),
         byCategory: t("byCategory"),
         total: t("total"),
         countLine: t("expensesCount", { count: rows.length }),
+        unverifiedNotice: t("unverifiedNotice", { count: unverifiedCount }),
       },
     };
   };
@@ -354,13 +380,15 @@ export default function DataPage() {
     const header = nonEmpty[0];
     // Unknown columns are ignored, so files exported by older versions (which
     // carried `moneda`/`monto_original`) still import from their monto_aud.
-    const idx = { date: -1, category: -1, note: -1, amount: -1 };
+    // `monto_usd` is optional: filled ⇒ the row imports already verified.
+    const idx = { date: -1, category: -1, note: -1, amount: -1, usd: -1 };
     header.forEach((cell, i) => {
       const f = fold(cell);
       if (f === "fecha") idx.date = i;
       else if (f === "categoria") idx.category = i;
       else if (f === "nota") idx.note = i;
       else if (f === "monto_aud") idx.amount = i;
+      else if (f === "monto_usd") idx.usd = i;
     });
     if (idx.date < 0 || idx.category < 0 || idx.amount < 0) return null;
 
@@ -369,6 +397,7 @@ export default function DataPage() {
       const rawDate = (cells[idx.date] ?? "").trim();
       const rawCategory = (cells[idx.category] ?? "").trim();
       const rawAmount = (cells[idx.amount] ?? "").trim();
+      const rawUsd = (idx.usd >= 0 ? (cells[idx.usd] ?? "") : "").trim();
       const note = (idx.note >= 0 ? (cells[idx.note] ?? "") : "")
         .trim()
         .slice(0, MAX_NOTE_LEN);
@@ -376,6 +405,13 @@ export default function DataPage() {
       const dateOk = isRealDate(rawDate);
       const parsed = parseAmountToCents(rawAmount);
       const amountOk = parsed !== null && parsed <= MAX_AMOUNT_CENTS;
+
+      // An empty monto_usd is normal (unverified); a filled one must be a real
+      // positive amount, since it is what makes the row verified.
+      const parsedUsd = rawUsd === "" ? null : parseAmountToCents(rawUsd);
+      const usdOk =
+        rawUsd === "" ||
+        (parsedUsd !== null && parsedUsd <= MAX_AMOUNT_CENTS);
 
       const matched = matchCategory(rawCategory);
       const categoryId = matched ?? "other";
@@ -388,6 +424,9 @@ export default function DataPage() {
       } else if (!amountOk) {
         status = "error";
         reasonKey = "reasonBadAmount";
+      } else if (!usdOk) {
+        status = "error";
+        reasonKey = "reasonBadUsd";
       } else if (matched === null) {
         status = "mapped";
       } else {
@@ -402,6 +441,7 @@ export default function DataPage() {
         date: rawDate,
         categoryId,
         amountCents: amountOk ? parsed : null,
+        usdCents: usdOk ? parsedUsd : null,
         status,
         reasonKey,
       });
@@ -451,9 +491,11 @@ export default function DataPage() {
             note: r.note,
             date: r.date,
             createdBy: user.uid,
-            // Imported rows carry no bank USD charge either — same as a
-            // freshly typed expense, they start unverified.
-            verified: false,
+            // A row that carries the bank's USD imports already verified; the
+            // rules need the pair to move together, so both keys or neither.
+            ...(r.usdCents !== null
+              ? { usdCents: r.usdCents, verified: true }
+              : { verified: false }),
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           });
@@ -598,6 +640,28 @@ export default function DataPage() {
           </div>
         )}
 
+        {/* Unverified gate: the range still has expenses the bank has not
+            confirmed, so their USD column will be blank. Exporting anyway is a
+            deliberate act, not a default. */}
+        {unverifiedCount > 0 && !loadState.loading && rows.length > 0 && (
+          <label className="flex items-start gap-2.5 rounded-[14px] border border-warn-bg bg-warn-bg px-3.5 py-3">
+            <input
+              type="checkbox"
+              checked={acceptUnverified}
+              onChange={(e) => setAcceptUnverified(e.target.checked)}
+              className="mt-px h-4 w-4 flex-none accent-[var(--warn-text)]"
+            />
+            <span className="flex flex-col gap-px">
+              <span className="text-[13px] font-bold text-warn-text">
+                {t("acceptUnverified")}
+              </span>
+              <span className="text-[11.5px] font-semibold text-warn-text opacity-80">
+                {t("unverifiedNotice", { count: unverifiedCount })}
+              </span>
+            </span>
+          </label>
+        )}
+
         {/* Summary + actions */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-soft pt-3.5">
           <span className="tnum text-[13px] font-semibold text-ink-2">
@@ -609,6 +673,12 @@ export default function DataPage() {
                     count: rows.length,
                     total: formatCents(total, household.currency, locale),
                   })}
+            {totalUsd > 0 && (
+              <span className="font-semibold text-ink-3">
+                {" · "}
+                {formatUsd(totalUsd, locale)}
+              </span>
+            )}
           </span>
           <div className="flex items-center gap-2.5">
             <button
@@ -724,6 +794,9 @@ export default function DataPage() {
                     <th className="px-3 py-2 text-right font-semibold">
                       {t("colAmount")}
                     </th>
+                    <th className="px-3 py-2 text-right font-semibold">
+                      {t("colAmountUsd")}
+                    </th>
                     <th className="px-3 py-2 font-semibold">{t("colStatus")}</th>
                   </tr>
                 </thead>
@@ -747,6 +820,9 @@ export default function DataPage() {
                               locale,
                             )
                           : r.rawAmount || "—"}
+                      </td>
+                      <td className="tnum px-3 py-2 text-right text-ink-3">
+                        {r.usdCents !== null ? formatUsd(r.usdCents, locale) : "—"}
                       </td>
                       <td className="px-3 py-2">{statusBadge(r)}</td>
                     </tr>

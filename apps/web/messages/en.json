@@ -107,7 +107,8 @@
     "addBankUsd": "Add the bank's USD",
     "editBankUsd": "Edit the bank's USD",
     "markVerified": "Verify",
-    "clearVerification": "Clear verification"
+    "clearVerification": "Clear verification",
+    "exportUnverifiedConfirm": "{count, plural, one {# expense has no bank USD yet: its USD column will be blank. Export anyway?} other {# expenses have no bank USD yet: their USD columns will be blank. Export anyway?}}"
   },
   "empty": {
     "noExpensesTitle": "No expenses yet",
@@ -131,7 +132,7 @@
     "exportCsv": "Export CSV",
     "exportPdf": "Export PDF",
     "importTitle": "Import",
-    "importHint": "Upload a CSV in the export format (fecha, categoria, nota, monto_aud).",
+    "importHint": "Upload a CSV in the export format (fecha, categoria, nota, monto_aud, plus monto_usd once the bank has charged it).",
     "chooseFile": "Choose CSV file",
     "fileError": "We couldn't read the file. Check that it's a valid CSV.",
     "preview": "Preview",
@@ -162,7 +163,11 @@
     "exportDrive": "Google Drive",
     "exporting": "Building…",
     "exportingDrive": "Uploading…",
-    "exportError": "We couldn't build the export. Try again."
+    "exportError": "We couldn't build the export. Try again.",
+    "colAmountUsd": "USD (bank)",
+    "acceptUnverified": "I accept that this export contains unverified data",
+    "unverifiedNotice": "{count, plural, one {# expense without the bank's USD: its USD cell is blank and the USD total is partial} other {# expenses without the bank's USD: their USD cells are blank and the USD total is partial}}",
+    "reasonBadUsd": "Invalid USD"
   },
   "settings": {
     "title": "Settings",

@@ -1,9 +1,13 @@
 // CSV export/import helpers shared by the Gastos and Datos pages.
 //
 // The app's canonical CSV shape (also what the importer round-trips):
-//   header:  fecha,categoria,nota,monto_aud,creado_por
-//   monto_aud: the expense amount, dot-decimal ("12.50"). AUD is the only
-//              currency anyone types, so there is nothing else to record here.
+//   header:  fecha,categoria,nota,monto_aud,monto_usd,verificado,creado_por
+//   monto_aud: the expense amount, dot-decimal ("12.50") — AUD, the only
+//              currency anyone types.
+//   monto_usd: what the BANK charged in USD, dot-decimal. EMPTY when unknown.
+//   verificado: "si" iff monto_usd is filled. Derived, written for the reader's
+//              benefit (and so a spreadsheet can filter on it); the importer
+//              ignores it and trusts monto_usd.
 //   amount:  dot-decimal, fields quoted when they contain a comma/quote/
 //            newline, rows joined with CRLF, and a leading UTF-8 BOM so Excel
 //            detects the encoding (accents in notes/names).
@@ -17,6 +21,9 @@ export interface CsvExpenseRow {
   note: string;
   amountCents: number;
   createdBy: string;
+  /** What the bank charged in USD (integer cents), null when still unknown. */
+  usdCents: number | null;
+  verified: boolean;
 }
 
 export interface CsvBuildContext {
@@ -37,6 +44,8 @@ export const CSV_HEADER = [
   "categoria",
   "nota",
   "monto_aud",
+  "monto_usd",
+  "verificado",
   "creado_por",
 ] as const;
 
@@ -61,6 +70,8 @@ export function buildExpensesCsv(
         escapeField(catLabel.get(e.categoryId) ?? ctx.deletedLabel),
         escapeField(e.note),
         (e.amountCents / 100).toFixed(2), // dot-decimal, never locale-grouped
+        e.usdCents === null ? "" : (e.usdCents / 100).toFixed(2),
+        e.verified && e.usdCents !== null ? "si" : "no",
         escapeField(ctx.members[e.createdBy] ?? e.createdBy),
       ].join(","),
     );
