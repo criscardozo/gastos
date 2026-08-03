@@ -327,12 +327,22 @@ export async function updateExpense(
   householdId: string,
   expenseId: string,
   input: ExpenseInput,
+  /**
+   * Drop an existing verification along with this edit. The caller passes true
+   * when the AUD amount itself changed: the bank charged for the old figure, so
+   * keeping its USD would leave a pair that never existed — and those pairs are
+   * what the matcher learns the bank's rate from.
+   */
+  clearVerification = false,
 ): Promise<void> {
   await updateDoc(doc(db, "households", householdId, "expenses", expenseId), {
     amountCents: input.amountCents,
     categoryId: input.categoryId,
     note: input.note,
     date: input.date,
+    ...(clearVerification
+      ? { usdCents: deleteField(), verified: false }
+      : {}),
     updatedAt: serverTimestamp(),
   });
 }

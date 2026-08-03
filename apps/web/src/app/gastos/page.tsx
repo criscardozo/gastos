@@ -408,9 +408,20 @@ export default function ExpensesPage() {
       note: editForm.note.trim(),
       date: editForm.date,
     };
+    // Changing the amount invalidates a verification: the bank's USD was for
+    // the old figure.
+    const previous = expenses.find((e) => e.id === editingId);
+    const amountChanged =
+      previous !== undefined && previous.amountCents !== input.amountCents;
     setSaving(true);
     try {
-      await updateExpense(fb.db, household.id, editingId, input);
+      await updateExpense(
+        fb.db,
+        household.id,
+        editingId,
+        input,
+        amountChanged && previous.verified,
+      );
       setEditingId(null);
       setEditForm(null);
     } finally {

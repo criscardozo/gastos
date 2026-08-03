@@ -34,6 +34,9 @@ final class AppModel {
     /// Calendar-month spend (budgeted categories only), from one server-side
     /// sum. nil while loading or when the query failed.
     private(set) var monthSpentCents: Int?
+    /// Bank charges the Gmail ingestion imported and nobody has matched yet.
+    /// Awareness only — the matching itself lives in the web app.
+    private(set) var pendingBankCharges = 0
     /// Invite code for this household (created lazily), nil until generated.
     private(set) var inviteCode: String?
 
@@ -86,6 +89,7 @@ final class AppModel {
     private var householdListener: ListenerRegistration?
     private var periodsListener: ListenerRegistration?
     private var currentExpensesListener: ListenerRegistration?
+    private var bankChargesListener: ListenerRegistration?
     private var viewedExpensesListener: ListenerRegistration?
     private var currentListenerRange: (String, String)?
     private var viewedListenerRange: (String, String)?
@@ -270,6 +274,8 @@ final class AppModel {
         periodsListener?.remove(); periodsListener = nil
         currentExpensesListener?.remove(); currentExpensesListener = nil
         viewedExpensesListener?.remove(); viewedExpensesListener = nil
+        bankChargesListener?.remove(); bankChargesListener = nil
+        pendingBankCharges = 0
         currentListenerRange = nil
         viewedListenerRange = nil
     }
@@ -305,6 +311,12 @@ final class AppModel {
         attachedHouseholdId = id
         householdListener?.remove()
         periodsListener?.remove()
+        bankChargesListener?.remove()
+
+        bankChargesListener = firestore.listenBankCharges(householdId: id) {
+            [weak self] count in
+            self?.pendingBankCharges = count
+        }
 
         householdListener = firestore.listenHousehold(id: id) { [weak self] household in
             guard let self else { return }
@@ -718,7 +730,8 @@ final class AppModel {
         amountCents: Int,
         categoryId: String,
         note: String,
-        date: CalendarDate
+        date: CalendarDate,
+        clearVerification: Bool = false
     ) {
         guard let householdId = attachedHouseholdId else { return }
         firestore.updateExpense(
@@ -727,9 +740,22 @@ final class AppModel {
             amountCents: amountCents,
             categoryId: categoryId,
             note: note,
-            date: date.raw
+            date: date.raw,
+            clearVerification: clearVerification
         )
         loadPastTotals(refreshAll: true)  // date edits can move expenses across periods
+    }
+
+    /// Record what the bank charged for an expense in USD — or clear it, which
+    /// drops the expense back to unverified. Nothing about the budget changes:
+    /// `amountCents` is still the only figure any total reads.
+    func setExpenseVerification(id: String, usdCents: Int?) {
+        guard let householdId = attachedHouseholdId else { return }
+        firestore.setExpenseVerification(
+            householdId: householdId,
+            expenseId: id,
+            usdCents: usdCents
+        )
     }
 
     func deleteExpense(id: String) {

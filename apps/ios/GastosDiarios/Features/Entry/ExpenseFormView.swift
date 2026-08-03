@@ -597,7 +597,10 @@ struct ExpenseFormView: View {
                     amountCents: amount.audCents,
                     categoryId: categoryId,
                     note: note.trimmingCharacters(in: .whitespacesAndNewlines),
-                    date: date
+                    date: date,
+                    // A new amount invalidates the bank's USD for the old one.
+                    clearVerification: item.expense.isVerified
+                        && item.expense.amountCents != amount.audCents
                 )
             }
             onDone?()

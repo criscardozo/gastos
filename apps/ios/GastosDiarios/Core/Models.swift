@@ -125,8 +125,17 @@ struct Expense: Codable, Identifiable, Equatable {
     var note: String
     var date: String
     var createdBy: String
+    /// What the BANK charged for this expense in USD, integer cents. Absent
+    /// until the bank reports it — never a conversion, never summed.
+    var usdCents: Int?
+    /// Whether `usdCents` is known. Absent ⇒ false (expenses that predate the
+    /// field, and ones an older build created). See shared/schema.md.
+    var verified: Bool?
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
+
+    /// Only an explicit `true` with a figure behind it counts as verified.
+    var isVerified: Bool { verified == true && usdCents != nil }
 }
 
 /// An expense plus local snapshot metadata (offline "pendiente" chip).

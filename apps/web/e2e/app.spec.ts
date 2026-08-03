@@ -188,10 +188,17 @@ test("a bank charge is matched to the expense it paid for", async ({
   const households = await request.get(`${REST}/households`, {
     headers: { Authorization: "Bearer owner" },
   });
-  const owned = ((await households.json()).documents as { name: string }[]).map(
-    (d) => d.name.split("/").pop() as string,
+  // Pick THIS test's household by name — the other test in this file has one
+  // too, and the REST listing's order is not ours to rely on.
+  const docs = (await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[];
+  const mine = docs.find(
+    (d) => d.fields.name.stringValue === "Hogar de Bank",
   );
-  const householdId = owned[owned.length - 1];
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
   const created = await request.post(
     `${REST}/households/${householdId}/bankCharges?documentId=gmail-abc123`,
     {

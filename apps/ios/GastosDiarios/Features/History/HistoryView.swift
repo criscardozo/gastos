@@ -6,6 +6,9 @@ struct HistoryView: View {
     @Environment(AppModel.self) private var model
     @State private var editingItem: ExpenseItem?
     @State private var deletingItem: ExpenseItem?
+    @State private var verifyingItem: ExpenseItem?
+    /// Narrows the list to the expenses the bank has not confirmed yet.
+    @State private var onlyUnverified = false
 
     private var l10n: L10n { model.l10n }
 
@@ -16,8 +19,19 @@ struct HistoryView: View {
         var totalCents: Int { items.reduce(0) { $0 + $1.expense.amountCents } }
     }
 
+    /// Expenses of the viewed period the bank has not confirmed yet.
+    private var unverifiedCount: Int {
+        model.viewedExpenses.filter { !$0.expense.isVerified }.count
+    }
+
+    private var visibleItems: [ExpenseItem] {
+        onlyUnverified
+            ? model.viewedExpenses.filter { !$0.expense.isVerified }
+            : model.viewedExpenses
+    }
+
     private var dayGroups: [DayGroup] {
-        let grouped = Dictionary(grouping: model.viewedExpenses) { $0.expense.date }
+        let grouped = Dictionary(grouping: visibleItems) { $0.expense.date }
         return grouped.keys.sorted(by: >).compactMap { raw in
             guard let date = CalendarDate(raw) else { return nil }
             return DayGroup(date: date, items: grouped[raw] ?? [])
@@ -29,7 +43,9 @@ struct HistoryView: View {
             header
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
-                .padding(.bottom, 12)
+                .padding(.bottom, unverifiedCount > 0 || model.pendingBankCharges > 0 ? 8 : 12)
+            verificationBar
+                .padding(.horizontal, 20)
             if dayGroups.isEmpty {
                 emptyState
             } else {
@@ -40,6 +56,17 @@ struct HistoryView: View {
                                 row(item)
                                     .listRowBackground(Theme.surface)
                                     .listRowSeparatorTint(Theme.separator)
+                                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                        Button {
+                                            verifyingItem = item
+                                        } label: {
+                                            Label(
+                                                l10n.t("verify.action"),
+                                                systemImage: "dollarsign.circle.fill"
+                                            )
+                                        }
+                                        .tint(Theme.greenText)
+                                    }
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button(role: .destructive) {
                                             deletingItem = item
@@ -69,6 +96,11 @@ struct HistoryView: View {
         .sheet(item: $editingItem) { item in
             ExpenseFormView(mode: .edit(item)) {
                 editingItem = nil
+            }
+        }
+        .sheet(item: $verifyingItem) { item in
+            VerifyExpenseSheet(item: item) {
+                verifyingItem = nil
             }
         }
         .confirmationDialog(
@@ -177,18 +209,77 @@ struct HistoryView: View {
                 }
             }
             Spacer()
-            amountLabel(item.expense)
+            amountLabel(item)
             MemberAvatar(profile: member, size: 22)
         }
         .padding(.vertical, 2)
     }
 
-    /// The expense amount, right-aligned.
-    private func amountLabel(_ expense: Expense) -> some View {
-        Text(MoneyFormatter.aud(expense.amountCents, locale: l10n.locale))
-            .appFont(14.5, .bold)
-            .monospacedDigit()
-            .foregroundStyle(Theme.ink)
+    /// The amount, with the bank's USD charge (or its absence) underneath.
+    /// The second line is the control: tapping it opens the verify sheet, so a
+    /// charge can be typed in without hunting for a swipe.
+    private func amountLabel(_ item: ExpenseItem) -> some View {
+        let expense = item.expense
+        return VStack(alignment: .trailing, spacing: 1) {
+            Text(MoneyFormatter.aud(expense.amountCents, locale: l10n.locale))
+                .appFont(14.5, .bold)
+                .monospacedDigit()
+                .foregroundStyle(Theme.ink)
+            Button {
+                verifyingItem = item
+            } label: {
+                HStack(spacing: 3) {
+                    Image(systemName: expense.isVerified
+                          ? "checkmark.circle.fill"
+                          : "exclamationmark.circle.fill")
+                        .font(.system(size: 10.5, weight: .semibold))
+                    Text(expense.isVerified
+                         ? MoneyFormatter.usd(expense.usdCents ?? 0, locale: l10n.locale)
+                         : l10n.t("history.unverified"))
+                        .appFont(11.5, .semibold)
+                        .monospacedDigit()
+                }
+                .foregroundStyle(expense.isVerified ? Theme.greenText : Theme.amberText)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// Unverified count (tap to filter) and, when the ingestion has imported
+    /// charges nobody has matched yet, a nudge towards the web app — the
+    /// matching lives there and is not duplicated here.
+    @ViewBuilder
+    private var verificationBar: some View {
+        if unverifiedCount > 0 || model.pendingBankCharges > 0 {
+            HStack(spacing: 8) {
+                if unverifiedCount > 0 {
+                    Button {
+                        onlyUnverified.toggle()
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text(l10n.t("history.unverifiedCount", unverifiedCount))
+                                .appFont(12, .semibold)
+                        }
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 5)
+                        .background(onlyUnverified ? Theme.accentSoft : Theme.fill)
+                        .foregroundStyle(onlyUnverified ? Theme.accentStrong : Theme.inkSecondary)
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+                if model.pendingBankCharges > 0 {
+                    Text(l10n.t("history.bankCharges", model.pendingBankCharges))
+                        .appFont(11.5, .semibold)
+                        .foregroundStyle(Theme.inkTertiary)
+                        .lineLimit(2)
+                }
+                Spacer()
+            }
+            .padding(.bottom, 10)
+        }
     }
 
     private var emptyState: some View {

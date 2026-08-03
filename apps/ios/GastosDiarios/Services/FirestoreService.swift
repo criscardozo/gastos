@@ -92,6 +92,23 @@ final class FirestoreService {
             }
     }
 
+    // MARK: - Bank charges
+
+    /// Pending bank charges (bounded, like every listener here). They are
+    /// matched to expenses in the web app; on the phone we only ever need to
+    /// know that some are waiting.
+    func listenBankCharges(
+        householdId: String,
+        onChange: @escaping (Int) -> Void
+    ) -> ListenerRegistration {
+        db.collection("households").document(householdId)
+            .collection("bankCharges")
+            .limit(to: 50)
+            .addSnapshotListener { snapshot, _ in
+                onChange(snapshot?.documents.count ?? 0)
+            }
+    }
+
     // MARK: - Users
 
     /// Create users/{uid}. Exact field set per rules (createdAt+updatedAt server).
@@ -305,6 +322,10 @@ final class FirestoreService {
             "note": note,
             "date": date,
             "createdBy": uid,
+            // The bank's USD charge is unknown at entry time; it arrives by
+            // email later. Written explicitly so a fresh expense reads as
+            // unverified without anyone inferring it from a missing field.
+            "verified": false,
             "createdAt": FieldValue.serverTimestamp(),
             "updatedAt": FieldValue.serverTimestamp(),
         ]
@@ -317,13 +338,40 @@ final class FirestoreService {
         amountCents: Int,
         categoryId: String,
         note: String,
-        date: String
+        date: String,
+        // Drop an existing verification along with this edit. True when the AUD
+        // amount itself changed: the bank charged for the old figure, so keeping
+        // its USD would leave a pair that never existed — and those pairs are
+        // what the matcher learns the bank's rate from.
+        clearVerification: Bool = false
     ) {
         var data: [String: Any] = [
             "amountCents": amountCents,
             "categoryId": categoryId,
             "note": note,
             "date": date,
+            "updatedAt": FieldValue.serverTimestamp(),
+        ]
+        if clearVerification {
+            data["usdCents"] = FieldValue.delete()
+            data["verified"] = false
+        }
+        db.collection("households").document(householdId)
+            .collection("expenses").document(expenseId)
+            .updateData(data)
+    }
+
+    /// Record (or clear) what the bank charged for an expense in USD. The pair
+    /// is co-dependent in the rules, so both keys always move together: nil
+    /// deletes the charge and drops the expense back to unverified.
+    func setExpenseVerification(
+        householdId: String,
+        expenseId: String,
+        usdCents: Int?
+    ) {
+        let data: [String: Any] = [
+            "usdCents": usdCents ?? FieldValue.delete(),
+            "verified": usdCents != nil,
             "updatedAt": FieldValue.serverTimestamp(),
         ]
         db.collection("households").document(householdId)
