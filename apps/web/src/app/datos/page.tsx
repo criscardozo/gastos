@@ -451,6 +451,9 @@ export default function DataPage() {
             note: r.note,
             date: r.date,
             createdBy: user.uid,
+            // Imported rows carry no bank USD charge either — same as a
+            // freshly typed expense, they start unverified.
+            verified: false,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           });

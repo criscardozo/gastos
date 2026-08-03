@@ -312,6 +312,10 @@ export async function addExpense(
     note: input.note,
     date: input.date,
     createdBy: uid,
+    // The bank's USD charge is unknown at entry time — it arrives by email
+    // afterwards. Written explicitly so a fresh expense reads as unverified
+    // without anyone inferring it from a missing field.
+    verified: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -328,6 +332,24 @@ export async function updateExpense(
     categoryId: input.categoryId,
     note: input.note,
     date: input.date,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Record (or clear) what the bank charged for an expense in USD. `usdCents` and
+ * `verified` are co-dependent in the rules, so they always move together:
+ * passing null deletes the charge and drops the expense back to unverified.
+ */
+export async function setExpenseVerification(
+  db: Firestore,
+  householdId: string,
+  expenseId: string,
+  usdCents: number | null,
+): Promise<void> {
+  await updateDoc(doc(db, "households", householdId, "expenses", expenseId), {
+    usdCents: usdCents === null ? deleteField() : usdCents,
+    verified: usdCents !== null,
     updatedAt: serverTimestamp(),
   });
 }

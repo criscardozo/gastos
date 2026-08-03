@@ -7,6 +7,7 @@ import {
   arrayUnion,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -543,6 +544,97 @@ describe("households/{id}/expenses", () => {
     // must now be rejected like any other unknown field.
     await assertFails(
       setDoc(ref(), expenseDoc(ALICE, { entryCurrency: "USD", entryAmountCents: 700 })),
+    );
+  });
+
+  it("accepts an unverified expense (both verification fields absent, or false)", async () => {
+    const ref = () =>
+      doc(collection(db(env, ALICE), "households", HOUSEHOLD, "expenses"));
+    // What the clients write on create, and what the docs predating the
+    // verification fields look like.
+    await assertSucceeds(setDoc(ref(), expenseDoc(ALICE, { verified: false })));
+    await assertSucceeds(setDoc(ref(), expenseDoc(ALICE)));
+  });
+
+  it("accepts a verified expense (bank USD charge + verified true)", async () => {
+    await assertSucceeds(
+      setDoc(
+        doc(collection(db(env, ALICE), "households", HOUSEHOLD, "expenses")),
+        expenseDoc(ALICE, { usdCents: 6390, verified: true }),
+      ),
+    );
+  });
+
+  it("rejects a verification that claims more than it knows", async () => {
+    const ref = () =>
+      doc(collection(db(env, ALICE), "households", HOUSEHOLD, "expenses"));
+    // verified without the figure that verifies it.
+    await assertFails(setDoc(ref(), expenseDoc(ALICE, { verified: true })));
+    // The figure without the flag (and with the flag saying otherwise).
+    await assertFails(setDoc(ref(), expenseDoc(ALICE, { usdCents: 6390 })));
+    await assertFails(
+      setDoc(ref(), expenseDoc(ALICE, { usdCents: 6390, verified: false })),
+    );
+    // A USD charge is money: same integer-cents bounds as amountCents.
+    await assertFails(
+      setDoc(ref(), expenseDoc(ALICE, { usdCents: 0, verified: true })),
+    );
+    await assertFails(
+      setDoc(ref(), expenseDoc(ALICE, { usdCents: -100, verified: true })),
+    );
+    await assertFails(
+      setDoc(ref(), expenseDoc(ALICE, { usdCents: 63.9, verified: true })),
+    );
+    await assertFails(
+      setDoc(ref(), expenseDoc(ALICE, { usdCents: 10000001, verified: true })),
+    );
+    await assertFails(
+      setDoc(ref(), expenseDoc(ALICE, { usdCents: "63,90", verified: true })),
+    );
+    await assertFails(
+      setDoc(ref(), expenseDoc(ALICE, { usdCents: 6390, verified: "yes" })),
+    );
+  });
+
+  it("verifying and un-verifying an existing expense", async () => {
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "expenses", "e1"),
+        expenseDoc(ALICE, { verified: false }),
+      );
+    });
+    const ref = doc(db(env, BOB), "households", HOUSEHOLD, "expenses", "e1");
+    // Either member can verify — the validator runs on the merged document, so
+    // the pair must move together.
+    await assertFails(
+      updateDoc(ref, { usdCents: 6390, updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(
+      updateDoc(ref, {
+        usdCents: 6390,
+        verified: true,
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // Correcting the figure keeps it verified.
+    await assertSucceeds(
+      updateDoc(ref, {
+        usdCents: 6500,
+        verified: true,
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // Flipping the flag alone would leave a stored charge nobody trusts.
+    await assertFails(
+      updateDoc(ref, { verified: false, updatedAt: serverTimestamp() }),
+    );
+    // Clearing a verification deletes the charge and the flag together.
+    await assertSucceeds(
+      updateDoc(ref, {
+        usdCents: deleteField(),
+        verified: false,
+        updatedAt: serverTimestamp(),
+      }),
     );
   });
 

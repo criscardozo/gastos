@@ -250,7 +250,7 @@ service cloud.firestore {
       // ------------------------ expenses ------------------------
 
       function isValidExpense(data) {
-        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt'])
+        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt', 'usdCents', 'verified'])
           && data.keys().hasAll(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt'])
           && data.amountCents is int
           && data.amountCents > 0 && data.amountCents <= 10000000
@@ -260,7 +260,22 @@ service cloud.firestore {
           && isCalendarDate(data.date)
           // amountCents is the household currency (AUD) — the only currency
           // anyone types.
-          && data.createdBy is string;
+          && data.createdBy is string
+          && isValidVerification(data);
+      }
+
+      // usdCents is what the BANK charged in USD (never a conversion, never
+      // summed). It and `verified: true` are co-dependent: an expense may carry
+      // both or neither, so nothing can claim to be verified without the figure
+      // that verifies it. `verified: false` alone is fine — that is what the
+      // clients write on create — and both absent reads as unverified, which is
+      // how the docs that predate the fields keep working.
+      function isValidVerification(data) {
+        return ('usdCents' in data)
+          ? (data.usdCents is int
+              && data.usdCents > 0 && data.usdCents <= 10000000
+              && ('verified' in data) && data.verified == true)
+          : (!('verified' in data) || data.verified == false);
       }
 
       match /expenses/{expenseId} {

@@ -23,6 +23,7 @@ import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   addExpense,
   deleteExpense,
+  setExpenseVerification,
   updateExpense,
   type ExpenseInput,
 } from "@/lib/firebase/mutations";
@@ -31,6 +32,7 @@ import { categoryCircleBg, categoryColor, type CategoryDef } from "@/lib/categor
 import {
   formatCents,
   formatCentsCompact,
+  formatUsd,
   parseAmountToCents,
 } from "@/lib/money";
 import { formatDayHeading, formatPeriodRange, formatShortDate } from "@/lib/dates";
@@ -182,6 +184,9 @@ function ExpenseFormFields({
   );
 }
 
+/** Which verification state the list is narrowed to. */
+type VerificationFilter = "all" | "unverified" | "verified";
+
 /** Typed amount → the expense's AUD cents, or null when unparsable. */
 function buildAmountFields(
   amount: string,
@@ -206,8 +211,13 @@ export default function ExpensesPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [personFilter, setPersonFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [verificationFilter, setVerificationFilter] =
+    useState<VerificationFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState | null>(null);
+  /** Expense whose bank USD charge is being typed in, and the typed value. */
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [verifyAmount, setVerifyAmount] = useState("");
   const [saving, setSaving] = useState(false);
   const amountRef = useRef<HTMLInputElement | null>(null);
 
@@ -256,6 +266,11 @@ export default function ExpensesPage() {
   const filtered = expenses
     .filter((e) => categoryFilter === "all" || e.categoryId === categoryFilter)
     .filter((e) => personFilter === "all" || e.createdBy === personFilter)
+    .filter(
+      (e) =>
+        verificationFilter === "all" ||
+        (verificationFilter === "verified" ? e.verified : !e.verified),
+    )
     .filter((e) => query === "" || e.note.toLowerCase().includes(query));
 
   const byCreated = (a: Expense, b: Expense): number => {
@@ -401,6 +416,32 @@ export default function ExpensesPage() {
     }
   };
 
+  /* Verification: the USD figure the bank charged, typed in after the fact. */
+  const startVerify = (e: Expense) => {
+    setVerifyingId(e.id);
+    setVerifyAmount(
+      e.usdCents === null
+        ? ""
+        : (e.usdCents / 100).toLocaleString(
+            locale === "es" ? "es-AR" : "en-AU",
+            { minimumFractionDigits: 2, useGrouping: false },
+          ),
+    );
+  };
+
+  const submitVerify = async (usdCents: number | null) => {
+    const fb = getFirebaseClient();
+    if (fb === null || verifyingId === null) return;
+    setSaving(true);
+    try {
+      await setExpenseVerification(fb.db, household.id, verifyingId, usdCents);
+      setVerifyingId(null);
+      setVerifyAmount("");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const removeExpense = async (e: Expense) => {
     const fb = getFirebaseClient();
     if (fb === null) return;
@@ -432,6 +473,72 @@ export default function ExpensesPage() {
 
   /* Row rendering */
   const renderRow = (e: Expense, flat: boolean) => {
+    const def = household.categories[e.categoryId];
+    // Deleted category: neutral icon (below) + a readable label, never the
+    // raw doc id.
+    const catLabel =
+      categories.find((c) => c.id === e.categoryId)?.label ?? tCat("deleted");
+
+    if (verifyingId === e.id) {
+      const typed = parseAmountToCents(verifyAmount);
+      return (
+        <div
+          key={e.id}
+          className="flex flex-wrap items-center gap-x-3 gap-y-2 py-[9px]"
+        >
+          {/* On a phone the note takes its own line so the controls below it
+              keep their full width instead of truncating to two letters. */}
+          <span className="w-full truncate text-sm font-semibold text-ink sm:w-auto sm:min-w-0 sm:flex-1">
+            {e.note !== "" ? e.note : catLabel}
+          </span>
+          <span className="tnum text-sm font-bold text-ink">
+            {formatCents(e.amountCents, household.currency, locale)}
+          </span>
+          <label className="flex items-center gap-2">
+            <span className="text-[13px] font-semibold text-ink-3">US$</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              autoFocus
+              value={verifyAmount}
+              onChange={(event) => setVerifyAmount(event.target.value)}
+              placeholder={t("amountPlaceholder")}
+              aria-label={t("bankUsd")}
+              className="tnum w-24 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] font-semibold text-ink outline-none"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => void submitVerify(typed)}
+            disabled={saving || typed === null}
+            className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
+          >
+            {t("markVerified")}
+          </button>
+          {e.verified && (
+            <button
+              type="button"
+              onClick={() => void submitVerify(null)}
+              disabled={saving}
+              className="text-[13px] font-semibold text-ink-2"
+            >
+              {t("clearVerification")}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setVerifyingId(null);
+              setVerifyAmount("");
+            }}
+            className="text-[13px] font-semibold text-ink-2"
+          >
+            {t("cancel")}
+          </button>
+        </div>
+      );
+    }
+
     if (editingId === e.id && editForm !== null) {
       return (
         <div key={e.id} className="flex flex-wrap items-center gap-3 py-[9px]">
@@ -463,11 +570,6 @@ export default function ExpensesPage() {
       );
     }
 
-    const def = household.categories[e.categoryId];
-    // Deleted category: neutral icon (below) + a readable label, never the
-    // raw doc id.
-    const catLabel =
-      categories.find((c) => c.id === e.categoryId)?.label ?? tCat("deleted");
     const profile = household.memberProfiles[e.createdBy];
     return (
       <div
@@ -526,9 +628,35 @@ export default function ExpensesPage() {
             />
           )}
         </div>
-        <span className="tnum text-right text-sm font-bold text-ink">
-          {formatCents(e.amountCents, household.currency, locale)}
-        </span>
+        {/* The amount, plus the bank's USD charge underneath. That second line
+            IS the verify control: tapping it types the figure in (or corrects
+            one already recorded). */}
+        <div className="flex flex-col items-end gap-px">
+          <span className="tnum text-sm font-bold text-ink">
+            {formatCents(e.amountCents, household.currency, locale)}
+          </span>
+          <button
+            type="button"
+            onClick={() => startVerify(e)}
+            title={e.verified ? t("editBankUsd") : t("addBankUsd")}
+            aria-label={`${e.verified ? t("verified") : t("unverified")} — ${
+              e.verified ? t("editBankUsd") : t("addBankUsd")
+            }`}
+            className="flex items-center gap-1"
+            style={{ color: e.verified ? "var(--good-text)" : "var(--warn-text)" }}
+          >
+            <Icon
+              name={e.verified ? "check_circle" : "error"}
+              size={13}
+              style={{ color: "inherit" }}
+            />
+            <span className="tnum text-[11.5px] font-semibold">
+              {e.verified && e.usdCents !== null
+                ? formatUsd(e.usdCents, locale)
+                : t("unverified")}
+            </span>
+          </button>
+        </div>
         <div className="flex justify-end gap-1.5">
           <button
             type="button"
@@ -615,6 +743,16 @@ export default function ExpensesPage() {
               value: c.id,
               label: t("categoryFilter", { name: c.label }),
             })),
+          ]}
+        />
+        <PillSelect
+          ariaLabel="verification"
+          value={verificationFilter}
+          onChange={(value) => setVerificationFilter(value as VerificationFilter)}
+          options={[
+            { value: "all", label: t("verificationAll") },
+            { value: "unverified", label: t("unverified") },
+            { value: "verified", label: t("verified") },
           ]}
         />
         <PillSelect

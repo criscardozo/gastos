@@ -62,6 +62,12 @@ export interface Expense {
   note: string;
   date: string;
   createdBy: string;
+  /** What the BANK charged in USD (integer cents), null until it is known.
+   * Never a conversion of `amountCents` and never summed. */
+  usdCents: number | null;
+  /** Whether `usdCents` is known. Stored, but absent on expenses created
+   * before the field ⇒ false. */
+  verified: boolean;
   createdAt: Timestamp | null;
   /** Written locally but not yet acknowledged by the server — the expense is
    * queued offline. Local state, never a stored field. */
@@ -132,6 +138,8 @@ export const expenseConverter = readOnly<Expense>((snap) => {
     note: data.note as string,
     date: data.date as string,
     createdBy: data.createdBy as string,
+    usdCents: (data.usdCents as number | undefined) ?? null,
+    verified: (data.verified as boolean | undefined) === true,
     createdAt: (data.createdAt as Timestamp | null) ?? null,
     pendingWrite: snap.metadata.hasPendingWrites,
   };

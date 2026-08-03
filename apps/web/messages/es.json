@@ -99,7 +99,15 @@
     "noResultsHint": "Ningún gasto coincide con esos filtros.",
     "recentAmounts": "Montos recientes:",
     "useAmount": "Usar {amount}",
-    "pending": "Pendiente de sincronizar"
+    "pending": "Pendiente de sincronizar",
+    "verified": "Verificado",
+    "unverified": "Sin verificar",
+    "verificationAll": "Verificación: todas",
+    "bankUsd": "USD que cobró el banco",
+    "addBankUsd": "Cargar el USD del banco",
+    "editBankUsd": "Editar el USD del banco",
+    "markVerified": "Verificar",
+    "clearVerification": "Quitar verificación"
   },
   "empty": {
     "noExpensesTitle": "Sin gastos todavía",

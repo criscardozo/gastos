@@ -99,7 +99,15 @@
     "noResultsHint": "No expense matches those filters.",
     "recentAmounts": "Recent amounts:",
     "useAmount": "Use {amount}",
-    "pending": "Waiting to sync"
+    "pending": "Waiting to sync",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "verificationAll": "Verification: all",
+    "bankUsd": "USD the bank charged",
+    "addBankUsd": "Add the bank's USD",
+    "editBankUsd": "Edit the bank's USD",
+    "markVerified": "Verify",
+    "clearVerification": "Clear verification"
   },
   "empty": {
     "noExpensesTitle": "No expenses yet",

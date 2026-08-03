@@ -88,14 +88,29 @@ Rules of the chain:
 | `note` | string | May be empty |
 | `date` | string `YYYY-MM-DD` | Local calendar date in the HOUSEHOLD timezone |
 | `createdBy` | uid | Attribution only, not ownership — either member can edit/delete |
+| `usdCents` | int \| absent | Optional. What the BANK charged for this expense in USD, integer cents. Never typed at entry time and never summed against the budget |
+| `verified` | bool \| absent | Whether `usdCents` is known. Absent ⇒ **false** (expenses created before this field, and by older clients) |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
 **Single currency.** `amountCents` is the household currency (AUD) — the only
 currency anyone types, and the only one any total reads. The app converts
 nothing and calls no FX API: the previous bi-currency entry switch, the
 `entryCurrency`/`entryAmountCents` pair and the daily frankfurter snapshot are
-all gone. A USD figure only ever reaches an expense from the bank (the amount it
-actually charged); that lives in its own field, added by the verification work.
+all gone.
+
+**Verification.** The card is paid in AUD but the bank bills it in USD at its
+own rate, and reports that figure by email. So `usdCents` is not a conversion:
+it is the bank's own number, copied in after the fact. An expense is
+**verified** once it is known and **unverified** until then, which is what
+`verified` records — a boolean rather than `usdCents != null` because it is what
+the list filters on and what an export gate checks, and reading a flag keeps
+those call sites from re-deriving the rule.
+
+`usdCents` and `verified == true` are **co-dependent**: the rules accept them
+only together (`usdCents` present ⇒ `verified` true, and vice versa). Clearing a
+verification deletes `usdCents` and sets `verified` false. Both fields are
+optional so the docs that predate them need no migration, and so an expense
+created by an older client (which writes neither) still reads as unverified.
 
 An expense belongs to the period whose `[startDate, endDate]` contains its `date`.
 Queries are lexicographic string ranges: `date >= start && date <= end`, which is why the

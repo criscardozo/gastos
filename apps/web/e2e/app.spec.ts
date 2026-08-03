@@ -65,6 +65,28 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   await expect(page.getByText("Café de prueba").first()).toBeVisible();
   await expect(page.getByText("$12,50").first()).toBeVisible();
 
+  // A fresh expense is unverified: the bank's USD charge only arrives later.
+  // (Scoped to the row control by role — "Sin verificar" is also a filter
+  // option, and an <option> never counts as visible.)
+  const unverifiedRow = page.getByRole("button", { name: /Sin verificar/ });
+  await expect(unverifiedRow.first()).toBeVisible();
+
+  // Verify it by typing what the bank charged, which flips the row to
+  // "Verificado" showing the exact USD figure.
+  await unverifiedRow.first().click();
+  await page.getByLabel("USD que cobró el banco").fill("8,15");
+  await page.getByRole("button", { name: "Verificar", exact: true }).click();
+  await expect(page.getByText("US$ 8,15").first()).toBeVisible();
+  await expect(unverifiedRow).toHaveCount(0);
+
+  // The "Sin verificar" filter now hides it (and the "Verificados" one keeps
+  // it), which is what the export gate will lean on.
+  await page.getByLabel("verification").selectOption("unverified");
+  await expect(page.getByText("Nada por acá")).toBeVisible();
+  await page.getByLabel("verification").selectOption("verified");
+  await expect(page.getByText("Café de prueba").first()).toBeVisible();
+  await page.getByLabel("verification").selectOption("all");
+
   // Dashboard "Te queda" reflects it: 900,00 − 12,50 = 887,50.
   await page.getByRole("link", { name: "Inicio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible();
