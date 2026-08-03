@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1 overflow-y-auto overscroll-y-contain">
         {/* pb leaves room for the fixed tab bar (its own safe-area inset is
             handled inside MobileNav); from lg up the sidebar takes over. */}
-        <div className="mx-auto max-w-[1176px] px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(92px+env(safe-area-inset-bottom))] lg:px-8 lg:pt-[calc(4rem+env(safe-area-inset-top))] lg:pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+        <div className="mx-auto max-w-[1176px] px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(92px+env(safe-area-inset-bottom))] lg:px-8 lg:pt-[calc(2rem+env(safe-area-inset-top))] lg:pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
           {children}
         </div>
       </main>

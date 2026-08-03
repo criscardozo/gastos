@@ -130,7 +130,11 @@ export default function DashboardPage() {
 
   // Calendar-month spend — one server-side sum, independent of where the
   // weekly/fortnightly boundaries happen to fall.
-  const { total: monthTotal, range: monthRange } = useMonthTotal(
+  const {
+    total: monthTotal,
+    status: monthStatus,
+    range: monthRange,
+  } = useMonthTotal(
     household?.id ?? null,
     today,
     budgetCategories,
@@ -283,18 +287,6 @@ export default function DashboardPage() {
               />
             </button>
           </div>
-          <span className="whitespace-nowrap rounded-full bg-fill px-3 py-[5px] text-[12.5px] font-semibold text-ink-2">
-            {t(chipKey, {
-              amount: formatCentsCompact(budget, household.currency, locale),
-            })}{" "}
-            {selected.source === "default" ? (
-              <span className="text-ink-3">({t("period.byDefault")})</span>
-            ) : (
-              <span className="text-accent-strong">
-                ({t("period.adjusted").toLowerCase()})
-              </span>
-            )}
-          </span>
         </div>
         <Link
           href="/gastos"
@@ -373,6 +365,38 @@ export default function DashboardPage() {
                 : t("dashboard.periodEnded")}
             </span>
           </div>
+
+          {/* Which budget this period is running on. Lives here rather than up
+              in the header: it explains the figures right above it. */}
+          <div
+            className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2"
+            style={{
+              background:
+                selected.source === "custom"
+                  ? "var(--accent-soft)"
+                  : "var(--fill)",
+            }}
+          >
+            <Icon
+              name="savings"
+              size={16}
+              className={
+                selected.source === "custom" ? "text-accent-strong" : "text-ink-3"
+              }
+            />
+            <span className="tnum text-[12.5px] font-semibold text-ink-2">
+              {t(chipKey, {
+                amount: formatCentsCompact(budget, household.currency, locale),
+              })}{" "}
+              {selected.source === "default" ? (
+                <span className="text-ink-3">({t("period.byDefault")})</span>
+              ) : (
+                <span className="font-bold text-accent-strong">
+                  ({t("period.adjusted").toLowerCase()})
+                </span>
+              )}
+            </span>
+          </div>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -408,7 +432,11 @@ export default function DashboardPage() {
             <span className="text-[13px] font-semibold text-ink-2">
               {t("dashboard.spentThisMonth")}
             </span>
-            {monthTotal === null ? (
+            {monthStatus === "error" ? (
+              <span className="text-[15px] font-semibold text-ink-3">
+                {t("dashboard.monthUnavailable")}
+              </span>
+            ) : monthTotal === null ? (
               <span className="text-[15px] font-semibold text-ink-3">
                 {t("dashboard.loading")}
               </span>
@@ -441,6 +469,22 @@ export default function DashboardPage() {
                 )}
               </span>
             )}
+            {/* A period that began in the previous month has its spending split
+                across two months, so this figure is not the whole story. */}
+            {monthRange !== null &&
+              currentPeriod !== null &&
+              currentPeriod.startDate < monthRange.startDate && (
+                <span className="mt-1 flex items-start gap-1.5 rounded-xl bg-accent-soft px-2.5 py-1.5 text-[11px] font-semibold leading-[1.35] text-accent-strong">
+                  <Icon
+                    name="info"
+                    size={13}
+                    className="mt-px flex-none text-accent-strong"
+                  />
+                  {t("dashboard.periodCrossesMonth", {
+                    date: formatShortDate(currentPeriod.startDate, locale),
+                  })}
+                </span>
+              )}
           </div>
         </div>
       </div>
