@@ -16,9 +16,9 @@ import { useTranslations } from "next-intl";
 
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
-import { Avatar } from "@/components/ui/avatar";
 import { Segmented } from "@/components/ui/segmented";
 import { BankChargesPanel } from "@/components/bank-charges-panel";
+import { ExpenseDetailDialog } from "@/components/expense-detail-dialog";
 import { useBankCharges, useExpensesRange } from "@/lib/firebase/hooks";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
@@ -219,6 +219,8 @@ export default function ExpensesPage() {
   /** Expense whose bank USD charge is being typed in, and the typed value. */
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [verifyAmount, setVerifyAmount] = useState("");
+  /** Expense whose detail dialog is open. */
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const amountRef = useRef<HTMLInputElement | null>(null);
 
@@ -337,6 +339,10 @@ export default function ExpensesPage() {
     setAddForm({ ...addForm, amount: str });
     amountRef.current?.focus();
   };
+
+  // Resolved from the live list, so the dialog updates when the expense does
+  // (verifying from inside it, a change landing from the other phone).
+  const detailExpense = expenses.find((e) => e.id === detailId);
 
   const days: { date: string; rows: Expense[]; total: number }[] = [];
   for (const e of sorted) {
@@ -592,16 +598,20 @@ export default function ExpensesPage() {
       );
     }
 
-    const profile = household.memberProfiles[e.createdBy];
     return (
       <div
         key={e.id}
-        className={`grid items-center gap-2 py-[9px] lg:gap-3 ${
+        // Clicking anywhere on the row opens its detail. The row itself is NOT
+        // a button: it holds three of them, and a button inside a button is
+        // invalid ARIA. The note below is the real, focusable control, so the
+        // keyboard and screen readers get a proper target.
+        onClick={() => setDetailId(e.id)}
+        className={`grid cursor-pointer items-center gap-2 py-[9px] lg:gap-3 ${
           // Below lg (iPad portrait) the category/date columns are hidden and
           // the note takes the remaining space — the full grid needs ~900px.
           flat
-            ? "grid-cols-[38px_minmax(0,1fr)_26px_auto_68px] lg:grid-cols-[44px_1.6fr_1fr_90px_120px_110px_76px]"
-            : "grid-cols-[38px_minmax(0,1fr)_26px_auto_68px] lg:grid-cols-[44px_1.6fr_1fr_120px_110px_76px]"
+            ? "grid-cols-[38px_minmax(0,1fr)_auto_68px] lg:grid-cols-[44px_1.6fr_1fr_90px_120px_76px]"
+            : "grid-cols-[38px_minmax(0,1fr)_auto_68px] lg:grid-cols-[44px_1.6fr_1fr_120px_76px]"
         }`}
       >
         <div
@@ -621,9 +631,16 @@ export default function ExpensesPage() {
           />
         </div>
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate text-sm font-semibold text-ink">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setDetailId(e.id);
+            }}
+            className="truncate text-left text-sm font-semibold text-ink"
+          >
             {e.note !== "" ? e.note : catLabel}
-          </span>
+          </button>
           {e.pendingWrite && (
             <span
               className="flex flex-none items-center gap-1 text-[11px] font-semibold text-ink-3"
@@ -641,15 +658,6 @@ export default function ExpensesPage() {
             {formatShortDate(e.date, locale)}
           </span>
         )}
-        <div className="flex items-center gap-[7px]">
-          {profile !== undefined && (
-            <Avatar
-              name={profile.displayName}
-              color={profile.color}
-              size={22}
-            />
-          )}
-        </div>
         {/* The amount, plus the bank's USD charge underneath. That second line
             IS the verify control: tapping it types the figure in (or corrects
             one already recorded). */}
@@ -659,7 +667,10 @@ export default function ExpensesPage() {
           </span>
           <button
             type="button"
-            onClick={() => startVerify(e)}
+            onClick={(event) => {
+              event.stopPropagation();
+              startVerify(e);
+            }}
             title={e.verified ? t("editBankUsd") : t("addBankUsd")}
             aria-label={`${e.verified ? t("verified") : t("unverified")} — ${
               e.verified ? t("editBankUsd") : t("addBankUsd")
@@ -683,7 +694,10 @@ export default function ExpensesPage() {
           <button
             type="button"
             aria-label={t("edit")}
-            onClick={() => startEdit(e)}
+            onClick={(event) => {
+              event.stopPropagation();
+              startEdit(e);
+            }}
             className="flex h-[30px] w-[30px] items-center justify-center rounded-[10px]"
             style={{ background: "rgba(42,111,219,.1)" }}
           >
@@ -692,7 +706,10 @@ export default function ExpensesPage() {
           <button
             type="button"
             aria-label={t("delete")}
-            onClick={() => void removeExpense(e)}
+            onClick={(event) => {
+              event.stopPropagation();
+              void removeExpense(e);
+            }}
             className="flex h-[30px] w-[30px] items-center justify-center rounded-[10px]"
             style={{ background: "var(--over-bg)" }}
           >
@@ -873,6 +890,33 @@ export default function ExpensesPage() {
           </div>
         )}
       </div>
+
+      {/* Detail of a tapped expense */}
+      {detailExpense !== undefined && (
+        <ExpenseDetailDialog
+          expense={detailExpense}
+          household={household}
+          periods={periods}
+          categoryLabel={
+            categories.find((c) => c.id === detailExpense.categoryId)?.label ??
+            tCat("deleted")
+          }
+          locale={locale}
+          onClose={() => setDetailId(null)}
+          onEdit={() => {
+            setDetailId(null);
+            startEdit(detailExpense);
+          }}
+          onVerify={() => {
+            setDetailId(null);
+            startVerify(detailExpense);
+          }}
+          onDelete={() => {
+            setDetailId(null);
+            void removeExpense(detailExpense);
+          }}
+        />
+      )}
 
       {/* Rows */}
       {sorted.length === 0 ? (

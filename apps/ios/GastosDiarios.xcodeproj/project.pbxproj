@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		06CE1F0D1CB52AFD497DCEE6 /* WatchSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1B3142A37042E43AF35EC1 /* WatchSupport.swift */; };
 		1F4703215A63555016DC9CC6 /* GastosDiariosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F2E45F4FFC8505622F84485F /* GastosDiariosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1F9BA58700725716F9D218B6 /* ExpenseDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770FE80DDDE76F46C9859BB8 /* ExpenseDetailSheet.swift */; };
 		274C430DD6B23B4F19C0A5E5 /* WatchConnectivityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA2FE7D38ADF32A88459CF /* WatchConnectivityModel.swift */; };
 		2CC4BB92F1CB68711C723A14 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 7BDAA615B344F7D33E02779C /* GoogleSignInSwift */; };
 		358B81D7BBDE72EE00BB04A4 /* SuggestionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */; };
@@ -134,6 +135,7 @@
 		73D2B1C84483CD1A063D9EDF /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
 		7484D19116522C218B8D7881 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		75E33FD8DDEB4A07F1B2A435 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		770FE80DDDE76F46C9859BB8 /* ExpenseDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseDetailSheet.swift; sourceTree = "<group>"; };
 		7DBD83BF0FBE89C5BB0805F6 /* VerifyExpenseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyExpenseSheet.swift; sourceTree = "<group>"; };
 		83F2CD9DC403E30E0D49F3C5 /* SigningExpiryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningExpiryService.swift; sourceTree = "<group>"; };
 		86228DE8CD158F7CBF6F706A /* GastosDiariosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosDiariosApp.swift; sourceTree = "<group>"; };
@@ -298,6 +300,7 @@
 		73CAD261DF4859186CE751F8 /* History */ = {
 			isa = PBXGroup;
 			children = (
+				770FE80DDDE76F46C9859BB8 /* ExpenseDetailSheet.swift */,
 				D1033958EAF0770812248EF2 /* HistoryView.swift */,
 				7DBD83BF0FBE89C5BB0805F6 /* VerifyExpenseSheet.swift */,
 			);
@@ -606,6 +609,7 @@
 				8352CF5D8B36C1504025D291 /* BudgetAmountEditor.swift in Sources */,
 				5294EA0188CE3A372AA24069 /* CategoriesManagerView.swift in Sources */,
 				C003724BF4470744B6B53B53 /* Components.swift in Sources */,
+				1F9BA58700725716F9D218B6 /* ExpenseDetailSheet.swift in Sources */,
 				C85234FD7E915451EBD5B306 /* ExpenseFormView.swift in Sources */,
 				A7E3EB7757720198B6CAB1C7 /* FirestoreService.swift in Sources */,
 				4A6170B92E597704ED1A35D9 /* GastosDiariosApp.swift in Sources */,

@@ -69,6 +69,9 @@ export interface Expense {
    * before the field ⇒ false. */
   verified: boolean;
   createdAt: Timestamp | null;
+  /** Last write to the doc — shown in the detail when it differs from the
+   * creation, so an edited expense says so. */
+  updatedAt: Timestamp | null;
   /** Written locally but not yet acknowledged by the server — the expense is
    * queued offline. Local state, never a stored field. */
   pendingWrite: boolean;
@@ -150,6 +153,7 @@ export const expenseConverter = readOnly<Expense>((snap) => {
     usdCents: (data.usdCents as number | undefined) ?? null,
     verified: (data.verified as boolean | undefined) === true,
     createdAt: (data.createdAt as Timestamp | null) ?? null,
+    updatedAt: (data.updatedAt as Timestamp | null) ?? null,
     pendingWrite: snap.metadata.hasPendingWrites,
   };
   return expense;

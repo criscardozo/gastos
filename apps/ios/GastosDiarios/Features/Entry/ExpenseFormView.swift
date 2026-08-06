@@ -28,10 +28,18 @@ struct AmountInput: Equatable {
         return cents
     }
 
-    /// "12,50" / "12.50" depending on locale; "0" when empty.
+    /// "12,50" / "12.50" depending on locale; "0" when empty. For READ-ONLY
+    /// displays — a field being typed into wants `editingText` instead.
     func display(separator: String) -> String {
         let value = text.isEmpty ? "0" : text
         return value.replacingOccurrences(of: ",", with: separator)
+    }
+
+    /// What a `TextField` should hold: empty when nothing has been typed, so
+    /// the field shows its placeholder instead of a literal "0" the caret then
+    /// lands beside and the user has to type around.
+    func editingText(separator: String) -> String {
+        text.isEmpty ? "" : display(separator: separator)
     }
 
     /// Normalizes free-typed text from a native decimal-pad `TextField` into
@@ -236,6 +244,9 @@ struct ExpenseFormView: View {
                     amountChips
                 }
                 noteField
+                if !noteSuggestions.isEmpty {
+                    noteSuggestionBar
+                }
                 // Bottom CTA for when the keyboard is dismissed; while a field
                 // is focused the keyboard toolbar carries the "Guardar" action.
                 PrimaryCTA(
@@ -266,16 +277,6 @@ struct ExpenseFormView: View {
             // keyboard and brings it back. (No-op in the edit sheet, which has
             // no tab bar.)
             .toolbar(focus == nil ? .visible : .hidden, for: .tabBar)
-            .toolbar {
-                // Note autocomplete only. There is deliberately NO accessory
-                // bar for the amount field: saving is covered by the always
-                // visible bottom CTA and dismissing by the background tap.
-                if focus == .note, !noteSuggestions.isEmpty {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        noteSuggestionBar
-                    }
-                }
-            }
         }
         .sheet(isPresented: $showDatePicker) {
             datePickerSheet
@@ -322,8 +323,12 @@ struct ExpenseFormView: View {
         .padding(.bottom, 12)
     }
 
-    /// Note autocomplete pills, hosted in the keyboard toolbar so they sit just
-    /// above the system keyboard while the note field is focused.
+    /// Note autocomplete pills, sitting under the field itself.
+    ///
+    /// They used to live in the keyboard accessory toolbar, which only renders
+    /// while the note field holds focus — conditional `.keyboard` toolbar
+    /// content is unreliable, and the suggestions were invisible until you
+    /// happened to tap the field. Inline they are simply there.
     private var noteSuggestionBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -344,7 +349,10 @@ struct ExpenseFormView: View {
                     .buttonStyle(.plain)
                 }
             }
+            .padding(.horizontal, 20)
         }
+        .padding(.horizontal, -20)
+        .padding(.bottom, 12)
     }
 
     private var header: some View {
@@ -454,7 +462,7 @@ struct ExpenseFormView: View {
     /// digits/decimals), so `cents`, `audCents` and the chips stay in sync.
     private var amountText: Binding<String> {
         Binding(
-            get: { amount.input.display(separator: separator) },
+            get: { amount.input.editingText(separator: separator) },
             set: { amount.input.setDisplay($0, separator: separator) }
         )
     }
@@ -543,7 +551,7 @@ struct ExpenseFormView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
-        .padding(.bottom, 14)
+        .padding(.bottom, 10)
     }
 
     private var datePickerSheet: some View {
@@ -588,8 +596,9 @@ struct ExpenseFormView: View {
             amount = BudgetEntryAmount()
             note = ""
             pickedDate = nil
-            // Keep the decimal pad up on the amount field for the next entry.
-            focus = .amount
+            // Let the keyboard go: the entry is done, and leaving the pad up
+            // over a blank form reads as "it didn't save".
+            focus = nil
         case .edit(let item):
             if let id = item.expense.id, let date = pickedDate ?? CalendarDate(item.expense.date) {
                 model.updateExpense(

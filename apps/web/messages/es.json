@@ -251,5 +251,17 @@
     "none": "— elegí un gasto —",
     "noCandidate": "Sin candidato claro: elegilo a mano",
     "suggested": "Sugerido · tasa {rate} · {score}%"
+  },
+  "detail": {
+    "title": "Detalle del gasto",
+    "date": "Fecha",
+    "period": "Período",
+    "createdBy": "Cargado por",
+    "created": "Creado",
+    "updated": "Última edición",
+    "offBudget": "No descuenta",
+    "rate": "tasa {rate}",
+    "unverifiedHint": "Falta el importe en USD del banco",
+    "unknownMember": "Alguien que ya no está en el hogar"
   }
 }

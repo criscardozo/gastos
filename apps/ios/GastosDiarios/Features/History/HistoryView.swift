@@ -7,6 +7,7 @@ struct HistoryView: View {
     @State private var editingItem: ExpenseItem?
     @State private var deletingItem: ExpenseItem?
     @State private var verifyingItem: ExpenseItem?
+    @State private var detailItem: ExpenseItem?
     /// Narrows the list to the expenses the bank has not confirmed yet.
     @State private var onlyUnverified = false
 
@@ -54,6 +55,8 @@ struct HistoryView: View {
                         Section {
                             ForEach(group.items) { item in
                                 row(item)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { detailItem = item }
                                     .listRowBackground(Theme.surface)
                                     .listRowSeparatorTint(Theme.separator)
                                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -102,6 +105,26 @@ struct HistoryView: View {
             VerifyExpenseSheet(item: item) {
                 verifyingItem = nil
             }
+        }
+        .sheet(item: $detailItem) { item in
+            ExpenseDetailSheet(
+                item: item,
+                // Hand over to the other sheets rather than stacking on top of
+                // this one: dismiss first, then present.
+                onEdit: {
+                    detailItem = nil
+                    editingItem = item
+                },
+                onVerify: {
+                    detailItem = nil
+                    verifyingItem = item
+                },
+                onDelete: {
+                    detailItem = nil
+                    deletingItem = item
+                },
+                onDismiss: { detailItem = nil }
+            )
         }
         .confirmationDialog(
             l10n.t("history.delete.confirm"),
@@ -181,7 +204,6 @@ struct HistoryView: View {
     private func row(_ item: ExpenseItem) -> some View {
         // Deleted categories fall back to the gray "Otros" placeholder.
         let category = model.household?.categories[item.expense.categoryId] ?? .missing
-        let member = model.household?.memberProfiles[item.expense.createdBy]
         return HStack(spacing: 11) {
             CategoryCircle(categoryId: item.expense.categoryId, category: category, size: 38)
             VStack(alignment: .leading, spacing: 1) {
@@ -209,8 +231,9 @@ struct HistoryView: View {
                 }
             }
             Spacer()
+            // Who added it lives in the detail sheet — on a two-person ledger
+            // the avatar was repeated down the whole list saying very little.
             amountLabel(item)
-            MemberAvatar(profile: member, size: 22)
         }
         .padding(.vertical, 2)
     }

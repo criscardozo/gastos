@@ -35,3 +35,36 @@ final class BudgetEntryAmountTests: XCTestCase {
         XCTAssertEqual(value.audCents, BudgetEntryAmount.fromAUDCents(1200).audCents)
     }
 }
+
+/// The text a `TextField` is bound to. An editable field must NOT carry a
+/// literal "0": the caret lands beside it and every amount comes out with a
+/// leading zero the user has to delete.
+final class AmountInputEditingTests: XCTestCase {
+
+    func testEmptyInputGivesAnEmptyFieldSoThePlaceholderShows() {
+        XCTAssertEqual(AmountInput().editingText(separator: ","), "")
+        // The read-only rendering still wants its "0".
+        XCTAssertEqual(AmountInput().display(separator: ","), "0")
+    }
+
+    func testTypedValueUsesTheLocaleSeparator() {
+        var input = AmountInput()
+        input.setDisplay("12,50", separator: ",")
+        XCTAssertEqual(input.editingText(separator: ","), "12,50")
+        XCTAssertEqual(input.editingText(separator: "."), "12.50")
+        XCTAssertEqual(input.cents, 1250)
+    }
+
+    func testALeadingZeroTypedByHandIsDropped() {
+        var input = AmountInput()
+        input.setDisplay("012", separator: ",")
+        XCTAssertEqual(input.editingText(separator: ","), "12")
+    }
+
+    func testAZeroOnItsOwnSurvives() {
+        // "0," is a real intermediate state while typing "0,50".
+        var input = AmountInput()
+        input.setDisplay("0,", separator: ",")
+        XCTAssertEqual(input.editingText(separator: ","), "0,")
+    }
+}

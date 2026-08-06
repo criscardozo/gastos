@@ -251,5 +251,17 @@
     "none": "— pick an expense —",
     "noCandidate": "No clear candidate: pick it by hand",
     "suggested": "Suggested · rate {rate} · {score}%"
+  },
+  "detail": {
+    "title": "Expense detail",
+    "date": "Date",
+    "period": "Period",
+    "createdBy": "Added by",
+    "created": "Created",
+    "updated": "Last edited",
+    "offBudget": "Off budget",
+    "rate": "rate {rate}",
+    "unverifiedHint": "Waiting for the bank's USD charge",
+    "unknownMember": "Someone who left the household"
   }
 }

@@ -120,7 +120,7 @@ struct VerifyExpenseSheet: View {
     /// the quick-entry hero amount does.
     private var amountText: Binding<String> {
         Binding(
-            get: { input.display(separator: separator) },
+            get: { input.editingText(separator: separator) },
             set: { input.setDisplay($0, separator: separator) }
         )
     }

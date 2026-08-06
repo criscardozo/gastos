@@ -81,6 +81,16 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   await expect(page.getByText("US$ 8,15").first()).toBeVisible();
   await expect(unverifiedRow).toHaveCount(0);
 
+  // Tapping the row opens its detail, with the facts the list leaves out.
+  await page.getByText("Café de prueba").first().click();
+  const detail = page.getByRole("dialog");
+  await expect(detail.getByText("Verificado")).toBeVisible();
+  await expect(detail.getByText("US$ 8,15")).toBeVisible();
+  await expect(detail.getByText("Cargado por")).toBeVisible();
+  await expect(detail.getByText("E2E Tester")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(detail).toHaveCount(0);
+
   // The "Sin verificar" filter now hides it (and the "Verificados" one keeps
   // it), which is what the export gate will lean on.
   await page.getByLabel("verification").selectOption("unverified");
@@ -239,9 +249,15 @@ test("a bank charge is matched to the expense it paid for", async ({
   // The expense is verified and the charge is gone from Firestore for good.
   await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
   await expect(page.getByText("US$ 41,54").first()).toBeVisible();
-  const charges = await request.get(
-    `${REST}/households/${householdId}/bankCharges`,
-    { headers: { Authorization: "Bearer owner" } },
-  );
-  expect(await charges.json()).not.toHaveProperty("documents");
+  // Poll rather than read once: the UI reflects the local write immediately,
+  // so a single read here can beat the batch's server ack.
+  await expect
+    .poll(async () => {
+      const charges = await request.get(
+        `${REST}/households/${householdId}/bankCharges`,
+        { headers: { Authorization: "Bearer owner" } },
+      );
+      return "documents" in (await charges.json());
+    })
+    .toBe(false);
 });
