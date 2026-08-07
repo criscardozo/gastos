@@ -43,7 +43,6 @@ export default function QuickEntryPage() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [date, setDate] = useState("");
-  const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const amountRef = useRef<HTMLInputElement | null>(null);
 
@@ -114,26 +113,25 @@ export default function QuickEntryPage() {
       useGrouping: false,
     });
 
-  const save = async () => {
+  // Not awaited on purpose: Firestore only resolves a write once the server
+  // acknowledges it, so awaiting would leave this form frozen — amount still
+  // typed in, button disabled — for as long as the phone is offline, even
+  // though the expense is already saved locally and showing in the list. The
+  // second tap that would follow is how you end up with two of them.
+  const save = () => {
     const fb = getFirebaseClient();
     if (fb === null || !canSave || audCents === null) return;
-    setSaving(true);
-    try {
-      await addExpense(fb.db, household.id, user.uid, {
-        amountCents: audCents,
-        categoryId: effectiveCategoryId,
-        note: note.trim(),
-        date: effectiveDate,
-      });
-      // Reset for the next entry, keeping category and currency.
-      setAmount("");
-      setNote("");
-      setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 1600);
-      amountRef.current?.focus();
-    } finally {
-      setSaving(false);
-    }
+    void addExpense(fb.db, household.id, user.uid, {
+      amountCents: audCents,
+      categoryId: effectiveCategoryId,
+      note: note.trim(),
+      date: effectiveDate,
+    });
+    setAmount("");
+    setNote("");
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 1600);
+    amountRef.current?.focus();
   };
 
   return (
@@ -280,7 +278,7 @@ export default function QuickEntryPage() {
       <button
         type="button"
         onClick={() => void save()}
-        disabled={!canSave || saving}
+        disabled={!canSave}
         className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-[15.5px] font-bold text-white shadow-[0_6px_16px_rgba(255,92,57,.3)] disabled:opacity-50 disabled:shadow-none"
       >
         <Icon name={justSaved ? "check" : "add"} size={20} className="text-white" />

@@ -131,7 +131,7 @@ export default function DashboardPage() {
     }
     primePeriodTotal(
       household.id,
-      selected.startDate,
+      selected,
       sumCents(
         expenses.filter((e) => containsDate(selected, e.date) && inBudget(e)),
       ),

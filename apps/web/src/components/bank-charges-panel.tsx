@@ -51,7 +51,6 @@ export function BankChargesPanel({
   const [open, setOpen] = useState(false);
   /** Manual overrides, charge id → expense id ("" = none chosen). */
   const [choice, setChoice] = useState<Record<string, string>>({});
-  const [busyId, setBusyId] = useState<string | null>(null);
 
   const rate = useMemo(() => learnRate(expenses), [expenses]);
   const suggestions = useMemo(
@@ -68,36 +67,29 @@ export function BankChargesPanel({
   const chosenFor = (chargeId: string, suggested: string | null): string =>
     choice[chargeId] ?? suggested ?? "";
 
-  const assign = async (charge: BankChargeDoc, expenseId: string) => {
+  // Not awaited: see the entry forms. The batch lands in the local cache
+  // immediately — the charge leaves this list and the expense shows its USD —
+  // and Firestore syncs it when there is a network again.
+  const assign = (charge: BankChargeDoc, expenseId: string) => {
     const fb = getFirebaseClient();
     if (fb === null || expenseId === "") return;
-    setBusyId(charge.id);
-    try {
-      await assignBankCharge(
-        fb.db,
-        household.id,
-        charge.id,
-        expenseId,
-        charge.usdCents,
-      );
-    } finally {
-      setBusyId(null);
-    }
+    void assignBankCharge(
+      fb.db,
+      household.id,
+      charge.id,
+      expenseId,
+      charge.usdCents,
+    );
   };
 
-  const discard = async (charge: BankChargeDoc) => {
+  const discard = (charge: BankChargeDoc) => {
     const fb = getFirebaseClient();
     if (fb === null) return;
     const ok = window.confirm(
       t("discardConfirm", { amount: formatUsd(charge.usdCents, locale) }),
     );
     if (!ok) return;
-    setBusyId(charge.id);
-    try {
-      await deleteBankCharge(fb.db, household.id, charge.id);
-    } finally {
-      setBusyId(null);
-    }
+    void deleteBankCharge(fb.db, household.id, charge.id);
   };
 
   return (
@@ -129,7 +121,6 @@ export function BankChargesPanel({
         <div className="flex flex-col divide-y divide-soft border-t border-soft">
           {suggestions.map(({ charge, expenseId, score, impliedRate }) => {
             const chosen = chosenFor(charge.id, expenseId);
-            const busy = busyId === charge.id;
             return (
               <div
                 key={charge.id}
@@ -181,16 +172,15 @@ export function BankChargesPanel({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => void assign(charge, chosen)}
-                    disabled={busy || chosen === ""}
+                    onClick={() => assign(charge, chosen)}
+                    disabled={chosen === ""}
                     className="rounded-full bg-accent px-3.5 py-[7px] text-[12.5px] font-bold text-white disabled:opacity-40"
                   >
                     {t("assign")}
                   </button>
                   <button
                     type="button"
-                    onClick={() => void discard(charge)}
-                    disabled={busy}
+                    onClick={() => discard(charge)}
                     className="text-[12.5px] font-semibold text-ink-2 disabled:opacity-40"
                   >
                     {t("discard")}

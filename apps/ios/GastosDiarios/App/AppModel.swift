@@ -259,6 +259,7 @@ final class AppModel {
             currentExpenses = []
             viewedExpenses = []
             pastTotals = [:]
+            monthSpentCents = nil
             inviteCode = nil
             viewedPeriodIndex = nil
             phase = .signedOut

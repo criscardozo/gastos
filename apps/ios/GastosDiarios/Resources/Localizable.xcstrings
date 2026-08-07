@@ -1394,40 +1394,6 @@
         }
       }
     },
-    "newPeriod.foot.fortnightly" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The amount and type are recorded for this fortnight.\nYou can adjust it from Settings while it's running."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El monto y el tipo quedan registrados para esta quincena.\nPodés ajustarlo desde Ajustes mientras esté en curso."
-          }
-        }
-      }
-    },
-    "newPeriod.foot.weekly" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The amount and type are recorded for this week.\nYou can adjust it from Settings while it's running."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El monto y el tipo quedan registrados para esta semana.\nPodés ajustarlo desde Ajustes mientras esté en curso."
-          }
-        }
-      }
-    },
     "newPeriod.question" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1441,40 +1407,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "¿con cuánto arrancan?"
-          }
-        }
-      }
-    },
-    "newPeriod.start.fortnightly" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start the fortnight"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Empezar la quincena"
-          }
-        }
-      }
-    },
-    "newPeriod.start.weekly" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start the week"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Empezar la semana"
           }
         }
       }

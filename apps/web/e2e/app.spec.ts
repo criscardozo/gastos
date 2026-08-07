@@ -421,3 +421,41 @@ test("starting a period asks, and carries the leftover", async ({
   await page.getByText("Ahora no").click();
   await expect(page.getByText(/Repetir presupuesto/)).toHaveCount(0);
 });
+
+
+test("an expense saved offline does not freeze the form", async ({
+  page,
+  context,
+}) => {
+  const email = `e2e-offline-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Offline Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(page.getByLabel("0,00")).toHaveValue("");
+
+  // Cut the network the way a phone does. Firestore queues the write and
+  // serves it straight back from the local cache — but its promise stays
+  // pending until a server acknowledges, so anything awaiting it is stuck.
+  await context.setOffline(true);
+  await page.getByLabel("0,00").fill("12,50");
+  await page.getByLabel("Nota (opcional)").fill("Sin señal");
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  // The expense is on screen, and the form is ready for the next one rather
+  // than holding the amount hostage until the network comes back (which is how
+  // a second tap turns into a duplicate expense).
+  await expect(page.getByText("Sin señal").first()).toBeVisible({
+    timeout: 10_000,
+  });
+  await expect(page.getByLabel("0,00")).toHaveValue("");
+
+  // And it really does reach the server once there is one.
+  await context.setOffline(false);
+  await expect(page.getByText("Sin señal").first()).toBeVisible();
+});

@@ -211,7 +211,8 @@
     "includeLeftover": "Incluir lo que sobró",
     "includeDeficit": "Descontar lo que se pasaron",
     "breakdown": "{base} de siempre + {carried} del período anterior",
-    "later": "Ahora no"
+    "later": "Ahora no",
+    "back": "Volver"
   },
   "categories": {
     "groceries": "Súper",

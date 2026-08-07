@@ -211,7 +211,8 @@
     "includeLeftover": "Include what was left over",
     "includeDeficit": "Carry what was overspent",
     "breakdown": "{base} usual + {carried} carried over",
-    "later": "Not now"
+    "later": "Not now",
+    "back": "Back"
   },
   "categories": {
     "groceries": "Groceries",

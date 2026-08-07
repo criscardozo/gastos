@@ -135,13 +135,17 @@ const periodTotalsCache = new Map<string, Promise<number>>();
 
 function totalCacheKey(
   householdId: string,
-  startDate: string,
+  range: PeriodRange,
   categoryIds: string[] | null = null,
 ): string {
-  // The filter is part of the identity: excluding a category must not read a
-  // total that was computed while it still counted.
+  // BOTH ends of the range belong in the key. Keying on the start alone made a
+  // fortnight beginning on the 1st share an entry with that whole month, so
+  // whichever asked first answered for the other — the month card showing a
+  // fortnight's spending, or the trend bar showing a month's.
+  // The filter is part of the identity too: excluding a category must not read
+  // a total that was computed while it still counted.
   const scope = categoryIds === null ? "all" : [...categoryIds].sort().join("+");
-  return `${householdId}/${startDate}/${scope}`;
+  return `${householdId}/${range.startDate}_${range.endDate}/${scope}`;
 }
 
 /** Seed the cache from live listener data (e.g. while a past period is
@@ -150,7 +154,7 @@ function totalCacheKey(
  * `categoryIds` must match what the reader will ask for. */
 export function primePeriodTotal(
   householdId: string,
-  startDate: string,
+  range: PeriodRange,
   totalCents: number,
   categoryIds: string[] | null = null,
 ): void {
@@ -160,7 +164,7 @@ export function primePeriodTotal(
   // A genuinely empty period just costs one cheap aggregation instead.
   if (totalCents <= 0) return;
   periodTotalsCache.set(
-    totalCacheKey(householdId, startDate, categoryIds),
+    totalCacheKey(householdId, range, categoryIds),
     Promise.resolve(totalCents),
   );
 }
@@ -260,7 +264,7 @@ function fetchPeriodTotal(
   /** Skip the cached value (still refreshes it) — see fetchPeriodSpent. */
   bypassCache = false,
 ): Promise<number> {
-  const key = totalCacheKey(householdId, range.startDate, categoryIds);
+  const key = totalCacheKey(householdId, range, categoryIds);
   const cached = periodTotalsCache.get(key);
   if (cached !== undefined && !bypassCache) return cached;
   // Nothing counts towards the budget — no query to run.

@@ -49,7 +49,6 @@ export function StartPeriodScreen({
   const [leftover, setLeftover] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
   const [amount, setAmount] = useState("");
-  const [saving, setSaving] = useState(false);
 
   const defaultAmount = household?.defaultBudget.amountCents ?? 0;
   const weekly = period.period === "weekly";
@@ -105,29 +104,26 @@ export function StartPeriodScreen({
 
   const typed = parseBudgetAmount(amount);
 
-  const confirm = async (amountCents: number, rolloverCents: number) => {
+  // Not awaited on purpose. Firestore resolves a write only once the server
+  // acknowledges it, and this screen cannot be dismissed — awaiting would trap
+  // whoever answers it offline, on the one screen with no way out, while the
+  // write sits queued and applied locally.
+  const confirm = (amountCents: number, rolloverCents: number) => {
     const fb = getFirebaseClient();
-    if (fb === null || amountCents <= 0) {
-      acknowledgeNewPeriod();
-      return;
-    }
-    // Materialization may already have written exactly this; a write that
-    // changes nothing would only flip `source` to "custom" for no reason.
-    if (
-      amountCents !== period.amountCents ||
-      rolloverCents !== period.rolloverCents
-    ) {
-      setSaving(true);
-      try {
-        await updatePeriodAmount(
+    if (fb !== null && amountCents > 0) {
+      // Materialization may already have written exactly this; a write that
+      // changes nothing would only flip `source` to "custom" for no reason.
+      if (
+        amountCents !== period.amountCents ||
+        rolloverCents !== period.rolloverCents
+      ) {
+        void updatePeriodAmount(
           fb.db,
           household.id,
           period.startDate,
           amountCents,
           rolloverCents,
         );
-      } catch {
-        // Keep going — the period exists with the budget it was created with.
       }
     }
     acknowledgeNewPeriod();
@@ -216,8 +212,8 @@ export function StartPeriodScreen({
             <>
               <button
                 type="button"
-                onClick={() => void confirm(typed ?? 0, 0)}
-                disabled={saving || typed === null}
+                onClick={() => confirm(typed ?? 0, 0)}
+                disabled={typed === null}
                 className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-base font-bold text-white shadow-[0_8px_20px_rgba(255,92,57,.35)] disabled:opacity-60"
               >
                 <Icon name="check" size={20} className="text-white" />
@@ -236,12 +232,9 @@ export function StartPeriodScreen({
               <button
                 type="button"
                 onClick={() =>
-                  void confirm(
-                    repeatAmount,
-                    includeRollover ? (leftover ?? 0) : 0,
-                  )
+                  confirm(repeatAmount, includeRollover ? (leftover ?? 0) : 0)
                 }
-                disabled={saving || repeatAmount <= 0}
+                disabled={repeatAmount <= 0}
                 className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-base font-bold text-white shadow-[0_8px_20px_rgba(255,92,57,.35)] disabled:opacity-60"
               >
                 <Icon name="check" size={20} className="text-white" />

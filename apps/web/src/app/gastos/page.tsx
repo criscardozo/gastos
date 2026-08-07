@@ -221,7 +221,6 @@ export default function ExpensesPage() {
   const [verifyAmount, setVerifyAmount] = useState("");
   /** Expense whose detail dialog is open. */
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const amountRef = useRef<HTMLInputElement | null>(null);
 
   const fallbackPeriod: PeriodBudget | null =
@@ -371,23 +370,24 @@ export default function ExpensesPage() {
   };
 
   /* Mutations */
-  const submitAdd = async () => {
+  // Firestore resolves a write only once the SERVER acknowledges it, so
+  // awaiting one freezes the form for as long as the phone is offline — while
+  // the expense is already in the local cache and on screen. Fire the write and
+  // move on: the row appears either way, and a real rejection (rules) rolls it
+  // back off the list, which is the honest signal. Same reasoning as iOS, which
+  // has always written fire-and-forget.
+  const submitAdd = () => {
     const fb = getFirebaseClient();
     const money = buildAmountFields(effectiveAddForm.amount);
     if (fb === null || money === null || effectiveAddForm.date === "") return;
-    setSaving(true);
-    try {
-      await addExpense(fb.db, household.id, user.uid, {
-        ...money,
-        categoryId: effectiveAddForm.categoryId,
-        note: effectiveAddForm.note.trim(),
-        date: effectiveAddForm.date,
-      });
-      setAddForm({ amount: "", categoryId: effectiveAddForm.categoryId, note: "", date: addForm.date });
-      amountRef.current?.focus();
-    } finally {
-      setSaving(false);
-    }
+    void addExpense(fb.db, household.id, user.uid, {
+      ...money,
+      categoryId: effectiveAddForm.categoryId,
+      note: effectiveAddForm.note.trim(),
+      date: effectiveAddForm.date,
+    });
+    setAddForm({ amount: "", categoryId: effectiveAddForm.categoryId, note: "", date: addForm.date });
+    amountRef.current?.focus();
   };
 
   const startEdit = (e: Expense) => {
@@ -403,7 +403,7 @@ export default function ExpensesPage() {
     });
   };
 
-  const submitEdit = async () => {
+  const submitEdit = () => {
     const fb = getFirebaseClient();
     if (fb === null || editingId === null || editForm === null) return;
     const money = buildAmountFields(editForm.amount);
@@ -419,20 +419,15 @@ export default function ExpensesPage() {
     const previous = expenses.find((e) => e.id === editingId);
     const amountChanged =
       previous !== undefined && previous.amountCents !== input.amountCents;
-    setSaving(true);
-    try {
-      await updateExpense(
-        fb.db,
-        household.id,
-        editingId,
-        input,
-        amountChanged && previous.verified,
-      );
-      setEditingId(null);
-      setEditForm(null);
-    } finally {
-      setSaving(false);
-    }
+    void updateExpense(
+      fb.db,
+      household.id,
+      editingId,
+      input,
+      amountChanged && previous.verified,
+    );
+    setEditingId(null);
+    setEditForm(null);
   };
 
   /* Verification: the USD figure the bank charged, typed in after the fact. */
@@ -448,17 +443,12 @@ export default function ExpensesPage() {
     );
   };
 
-  const submitVerify = async (usdCents: number | null) => {
+  const submitVerify = (usdCents: number | null) => {
     const fb = getFirebaseClient();
     if (fb === null || verifyingId === null) return;
-    setSaving(true);
-    try {
-      await setExpenseVerification(fb.db, household.id, verifyingId, usdCents);
-      setVerifyingId(null);
-      setVerifyAmount("");
-    } finally {
-      setSaving(false);
-    }
+    void setExpenseVerification(fb.db, household.id, verifyingId, usdCents);
+    setVerifyingId(null);
+    setVerifyAmount("");
   };
 
   const removeExpense = async (e: Expense) => {
@@ -537,8 +527,8 @@ export default function ExpensesPage() {
           </label>
           <button
             type="button"
-            onClick={() => void submitVerify(typed)}
-            disabled={saving || typed === null}
+            onClick={() => submitVerify(typed)}
+            disabled={typed === null}
             className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
           >
             {t("markVerified")}
@@ -546,8 +536,7 @@ export default function ExpensesPage() {
           {e.verified && (
             <button
               type="button"
-              onClick={() => void submitVerify(null)}
-              disabled={saving}
+              onClick={() => submitVerify(null)}
               className="text-[13px] font-semibold text-ink-2"
             >
               {t("clearVerification")}
@@ -578,8 +567,7 @@ export default function ExpensesPage() {
           />
           <button
             type="button"
-            onClick={() => void submitEdit()}
-            disabled={saving}
+            onClick={submitEdit}
             className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
           >
             {t("save")}
@@ -861,8 +849,8 @@ export default function ExpensesPage() {
           />
           <button
             type="button"
-            onClick={() => void submitAdd()}
-            disabled={saving || parseAmountToCents(effectiveAddForm.amount) === null}
+            onClick={submitAdd}
+            disabled={parseAmountToCents(effectiveAddForm.amount) === null}
             className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
           >
             {t("save")}
