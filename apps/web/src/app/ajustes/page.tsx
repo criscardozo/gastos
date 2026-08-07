@@ -192,7 +192,7 @@ export default function SettingsPage() {
   const tAuth = useTranslations("auth");
   const { locale, setLocale } = useLocale();
   const { user } = useAuth();
-  const { household, currentPeriod } = useHousehold();
+  const { household, currentPeriod, openStartPeriod } = useHousehold();
 
   const [copied, setCopied] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -374,6 +374,20 @@ export default function SettingsPage() {
             <span className="text-xs leading-[1.4] text-ink-3">
               {t("thisPeriodNote")}
             </span>
+            {/* Re-opens the start-period screen for the period under way — the
+                way back in when it was answered by accident. */}
+            <button
+              type="button"
+              onClick={openStartPeriod}
+              className="flex items-center gap-2 self-start rounded-full bg-accent-soft px-3.5 py-2 text-[13px] font-bold text-accent-strong"
+            >
+              <Icon name="flag" size={15} style={{ color: "var(--accent-strong)" }} />
+              {t(
+                currentPeriod.period === "weekly"
+                  ? "startPeriodWeekly"
+                  : "startPeriodFortnightly",
+              )}
+            </button>
           </div>
         )}
       </div>

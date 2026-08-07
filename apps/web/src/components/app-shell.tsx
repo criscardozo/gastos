@@ -10,7 +10,7 @@ import { useAuth, useHousehold, useUserDoc } from "@/components/providers";
 import { Onboarding } from "@/components/onboarding/onboarding";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
-import { NewPeriodSheet } from "@/components/new-period-sheet";
+import { StartPeriodScreen } from "@/components/start-period-screen";
 import { PiggyMark } from "@/components/brand";
 
 function LoadingScreen() {
@@ -29,8 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const {
     household,
     loading: householdLoading,
-    currentPeriod,
-    newPeriodStart,
+    startPeriodPrompt,
   } = useHousehold();
 
   if (initializing || (user !== null && userLoading)) {
@@ -49,10 +48,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     return householdLoading ? <LoadingScreen /> : <Onboarding stage="household" />;
   }
 
-  const showNewPeriodSheet =
-    newPeriodStart !== null &&
-    currentPeriod !== null &&
-    currentPeriod.startDate === newPeriodStart;
 
   return (
     <div className="safe-x flex h-[100dvh] bg-bg">
@@ -65,7 +60,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </main>
       <MobileNav />
-      {showNewPeriodSheet && <NewPeriodSheet period={currentPeriod} />}
+      {startPeriodPrompt !== null && (
+        <StartPeriodScreen
+          period={startPeriodPrompt.period}
+          manual={startPeriodPrompt.manual}
+        />
+      )}
     </div>
   );
 }

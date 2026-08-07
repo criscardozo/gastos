@@ -190,7 +190,9 @@
     "editAmount": "Editar monto",
     "renameHousehold": "Renombrar el hogar",
     "rollover": "Arrastrar lo que sobra",
-    "rolloverHint": "Al arrancar un período nuevo se le suma lo que sobró del anterior. Si se pasaron, la diferencia también se arrastra."
+    "rolloverHint": "Al arrancar un período nuevo se le suma lo que sobró del anterior. Si se pasaron, la diferencia también se arrastra.",
+    "startPeriodWeekly": "Iniciar la semana",
+    "startPeriodFortnightly": "Iniciar la quincena"
   },
   "newPeriod": {
     "titleWeekly": "Nueva semana",
@@ -201,7 +203,15 @@
     "noteWeekly": "El monto y el tipo quedan registrados para esta semana.<br></br>Podés ajustarlo desde Ajustes mientras esté en curso.",
     "noteFortnightly": "El monto y el tipo quedan registrados para esta quincena.<br></br>Podés ajustarlo desde Ajustes mientras esté en curso.",
     "startWeekly": "Empezar la semana",
-    "startFortnightly": "Empezar la quincena"
+    "startFortnightly": "Empezar la quincena",
+    "question": "¿Con cuánto arrancan?",
+    "repeat": "Repetir presupuesto · {amount}",
+    "custom": "Nuevo presupuesto",
+    "customSave": "Arrancar con este monto",
+    "includeLeftover": "Incluir lo que sobró",
+    "includeDeficit": "Descontar lo que se pasaron",
+    "breakdown": "{base} de siempre + {carried} del período anterior",
+    "later": "Ahora no"
   },
   "categories": {
     "groceries": "Súper",

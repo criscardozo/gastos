@@ -190,7 +190,9 @@
     "editAmount": "Edit amount",
     "renameHousehold": "Rename the household",
     "rollover": "Carry over the leftover",
-    "rolloverHint": "When a new period starts, whatever was left of the previous one is added to it. An overspend carries across too."
+    "rolloverHint": "When a new period starts, whatever was left of the previous one is added to it. An overspend carries across too.",
+    "startPeriodWeekly": "Start the week",
+    "startPeriodFortnightly": "Start the fortnight"
   },
   "newPeriod": {
     "titleWeekly": "New week",
@@ -201,7 +203,15 @@
     "noteWeekly": "The amount and type stay recorded for this week.<br></br>You can adjust it from Settings while it's in progress.",
     "noteFortnightly": "The amount and type stay recorded for this fortnight.<br></br>You can adjust it from Settings while it's in progress.",
     "startWeekly": "Start the week",
-    "startFortnightly": "Start the fortnight"
+    "startFortnightly": "Start the fortnight",
+    "question": "How much are you starting with?",
+    "repeat": "Repeat budget · {amount}",
+    "custom": "Different budget",
+    "customSave": "Start with this amount",
+    "includeLeftover": "Include what was left over",
+    "includeDeficit": "Carry what was overspent",
+    "breakdown": "{base} usual + {carried} carried over",
+    "later": "Not now"
   },
   "categories": {
     "groceries": "Groceries",

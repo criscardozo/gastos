@@ -261,3 +261,163 @@ test("a bank charge is matched to the expense it paid for", async ({
     })
     .toBe(false);
 });
+
+/** Household-timezone today, shifted by `days`. */
+function sydneyDate(days = 0): string {
+  const now = new Date();
+  now.setUTCDate(now.getUTCDate() + days);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Australia/Sydney",
+  }).format(now);
+}
+
+const admin = { Authorization: "Bearer owner" };
+
+test("starting a period asks, and carries the leftover", async ({
+  page,
+  request,
+}) => {
+  // Its own household, independent of the other tests in this file.
+  const email = `e2e-period-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Period Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  // Find the household onboarding just created — by name, since the other
+  // tests in this file have theirs too.
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const mine = ((await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[]).find((d) => d.fields.name.stringValue === "Hogar de Period");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+
+  // Rewrite history so a period ENDED yesterday, leaving 200,00 of its 900,00
+  // unspent, and today opens a fresh one nobody has confirmed.
+  const yesterday = sydneyDate(-1);
+  const previousStart = sydneyDate(-14);
+  const today = sydneyDate(0);
+  const periods = await request.get(
+    `${REST}/households/${householdId}/periodBudgets`,
+    { headers: admin },
+  );
+  const existing = ((await periods.json()).documents ?? []) as { name: string }[];
+  for (const doc of existing) {
+    const id = doc.name.split("/").pop() as string;
+    await request.delete(
+      `${REST}/households/${householdId}/periodBudgets/${id}`,
+      { headers: admin },
+    );
+  }
+  const write = async (id: string, fields: Record<string, unknown>) => {
+    const res = await request.post(
+      `${REST}/households/${householdId}/periodBudgets?documentId=${id}`,
+      { headers: admin, data: { fields } },
+    );
+    expect(res.ok()).toBe(true);
+  };
+  await write(previousStart, {
+    startDate: { stringValue: previousStart },
+    endDate: { stringValue: yesterday },
+    period: { stringValue: "fortnightly" },
+    amountCents: { integerValue: "90000" },
+    source: { stringValue: "custom" },
+    createdAt: { timestampValue: new Date().toISOString() },
+    updatedAt: { timestampValue: new Date().toISOString() },
+  });
+  await write(today, {
+    startDate: { stringValue: today },
+    endDate: { stringValue: sydneyDate(13) },
+    period: { stringValue: "fortnightly" },
+    amountCents: { integerValue: "90000" },
+    source: { stringValue: "default" },
+    createdAt: { timestampValue: new Date().toISOString() },
+    updatedAt: { timestampValue: new Date().toISOString() },
+  });
+  // 700,00 spent in the period that ended → 200,00 left over.
+  const expense = await request.post(
+    `${REST}/households/${householdId}/expenses`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          amountCents: { integerValue: "70000" },
+          categoryId: { stringValue: "groceries" },
+          note: { stringValue: "Del período anterior" },
+          date: { stringValue: yesterday },
+          createdBy: { stringValue: "seed" },
+          verified: { booleanValue: false },
+          createdAt: { timestampValue: new Date().toISOString() },
+          updatedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+  expect(expense.ok()).toBe(true);
+
+  // Stand in the shoes of someone who answered LAST period and is opening the
+  // app on the first day of this one. (Clearing storage instead would look
+  // like a brand-new device, which by design is marked as seen rather than
+  // asked about a period that started before it ever ran.)
+  await page.evaluate(
+    ([id, start]) => localStorage.setItem(`gd:newPeriodAck:${id}`, start),
+    [householdId, previousStart],
+  );
+  await page.reload();
+
+  // The screen shows up by itself and cannot be clicked away.
+  await expect(page.getByText("Repetir presupuesto · $900")).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.mouse.click(5, 5);
+  await expect(page.getByText("Repetir presupuesto · $900")).toBeVisible();
+  await expect(page.getByText("Ahora no")).toHaveCount(0);
+
+  // Ticking the leftover moves the figure and the button.
+  await page.getByText("Incluir lo que sobró").click();
+  await expect(page.getByText("$1.100,00")).toBeVisible();
+  await expect(page.getByText("Repetir presupuesto · $1.100")).toBeVisible();
+  await expect(page.getByText("$900 de siempre + $200 del período anterior")).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBe(0);
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  await page.getByRole("button", { name: /Repetir presupuesto/ }).click();
+  await expect(page.getByText("Te queda")).toBeVisible();
+  await expect(page.getByText("$1.100,00").first()).toBeVisible();
+
+  // It wrote both figures — the amount and what of it was carried in.
+  await expect
+    .poll(async () => {
+      const res = await request.get(
+        `${REST}/households/${householdId}/periodBudgets/${today}`,
+        { headers: admin },
+      );
+      const fields = (await res.json()).fields as Record<
+        string,
+        { integerValue?: string; stringValue?: string }
+      >;
+      return [
+        fields.amountCents?.integerValue,
+        fields.rolloverCents?.integerValue,
+        fields.source?.stringValue,
+      ].join("/");
+    })
+    .toBe("110000/20000/custom");
+
+  // Ajustes can bring the screen back, and that one CAN be dismissed.
+  await page.getByRole("link", { name: "Ajustes" }).click();
+  await page.getByRole("button", { name: /Iniciar la quincena/ }).click();
+  await expect(page.getByText("Ahora no")).toBeVisible();
+  await page.getByText("Ahora no").click();
+  await expect(page.getByText(/Repetir presupuesto/)).toHaveCount(0);
+});

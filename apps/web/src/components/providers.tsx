@@ -123,10 +123,13 @@ interface HouseholdContextValue {
   /** Today's calendar date in the household timezone. */
   today: string | null;
   currentPeriod: PeriodBudget | null;
-  /** Start date of a period this client just materialized covering today —
-   * drives the "new period" confirmation sheet. */
-  newPeriodStart: string | null;
+  /** The period whose start-of-period screen is showing, and whether it was
+   * opened by hand (which is the only case it may be closed unanswered). */
+  startPeriodPrompt: { period: PeriodBudget; manual: boolean } | null;
   acknowledgeNewPeriod: () => void;
+  /** Re-open the screen for the period under way — Ajustes' "Iniciar la
+   * semana", for when it was answered by accident. */
+  openStartPeriod: () => void;
 }
 
 const HouseholdContext = createContext<HouseholdContextValue>({
@@ -136,8 +139,9 @@ const HouseholdContext = createContext<HouseholdContextValue>({
   periodsLoading: true,
   today: null,
   currentPeriod: null,
-  newPeriodStart: null,
+  startPeriodPrompt: null,
   acknowledgeNewPeriod: () => undefined,
+  openStartPeriod: () => undefined,
 });
 
 export function useHousehold(): HouseholdContextValue {
@@ -305,9 +309,25 @@ export function Providers({ children }: { children: ReactNode }) {
   }, [timezone]);
 
   /* Lazy cascade materialization of missing periods. */
-  const [newPeriodStart, setNewPeriodStart] = useState<string | null>(null);
+  /** The period the user has already answered for, hydrated from storage.
+   * `undefined` means "not read yet" — distinct from "nothing stored". */
+  const [ackedStart, setAckedStart] = useState<string | null | undefined>(
+    undefined,
+  );
+  const [manualStartPeriod, setManualStartPeriod] = useState(false);
   const materializing = useRef<string | null>(null);
   const household = householdState.household;
+  useEffect(() => {
+    if (householdId === null) {
+      setAckedStart(undefined);
+      return;
+    }
+    try {
+      setAckedStart(localStorage.getItem(newPeriodAckKey(householdId)));
+    } catch {
+      setAckedStart(null);
+    }
+  }, [householdId]);
   const lastPeriod =
     periodState.periods.length > 0
       ? periodState.periods[periodState.periods.length - 1]
@@ -370,35 +390,49 @@ export function Providers({ children }: { children: ReactNode }) {
           rolloverCents,
         ),
       )
-      .then(() => {
-        const current = missing.find((p) => containsDate(p, today));
-        if (current === undefined) return;
-        let acked: string | null = null;
-        try {
-          acked = localStorage.getItem(newPeriodAckKey(householdId));
-        } catch {
-          acked = null;
-        }
-        if (acked !== current.startDate) {
-          setNewPeriodStart(current.startDate);
-        }
-      })
       .catch(() => {
         materializing.current = null;
       });
   }, [household, householdId, today, periodState.loading, lastPeriod]);
 
-  const acknowledgeNewPeriod = useCallback(() => {
-    if (householdId !== null && newPeriodStart !== null) {
-      ackNewPeriod(householdId, newPeriodStart);
-    }
-    setNewPeriodStart(null);
-  }, [householdId, newPeriodStart]);
-
   const currentPeriod = useMemo(() => {
     if (today === null) return null;
     return periodState.periods.find((p) => containsDate(p, today)) ?? null;
   }, [periodState.periods, today]);
+
+  /* First run with this household (a fresh browser, the other member joining):
+   * mark the period under way as answered rather than asking about a period
+   * that started before this device ever saw it. */
+  useEffect(() => {
+    if (householdId === null || currentPeriod === null) return;
+    if (ackedStart !== null) return; // undefined = not read yet; a value = set
+    ackNewPeriod(householdId, currentPeriod.startDate);
+    setAckedStart(currentPeriod.startDate);
+  }, [householdId, currentPeriod, ackedStart]);
+
+  const acknowledgeNewPeriod = useCallback(() => {
+    if (householdId !== null && currentPeriod !== null) {
+      ackNewPeriod(householdId, currentPeriod.startDate);
+      setAckedStart(currentPeriod.startDate);
+    }
+    setManualStartPeriod(false);
+  }, [householdId, currentPeriod]);
+
+  const openStartPeriod = useCallback(() => {
+    if (currentPeriod !== null) setManualStartPeriod(true);
+  }, [currentPeriod]);
+
+  /* Ask on a period whose budget nobody has confirmed — the same rule iOS
+   * uses, so it no longer matters WHICH client materialized it. */
+  const startPeriodPrompt = useMemo(() => {
+    if (currentPeriod === null || ackedStart === undefined) return null;
+    if (manualStartPeriod) return { period: currentPeriod, manual: true };
+    if (ackedStart === null || ackedStart === currentPeriod.startDate) {
+      return null;
+    }
+    if (currentPeriod.source !== "default") return null;
+    return { period: currentPeriod, manual: false };
+  }, [currentPeriod, ackedStart, manualStartPeriod]);
 
   const householdValue = useMemo<HouseholdContextValue>(
     () => ({
@@ -408,8 +442,9 @@ export function Providers({ children }: { children: ReactNode }) {
       periodsLoading: periodState.loading,
       today,
       currentPeriod,
-      newPeriodStart,
+      startPeriodPrompt,
       acknowledgeNewPeriod,
+      openStartPeriod,
     }),
     [
       household,
@@ -418,8 +453,9 @@ export function Providers({ children }: { children: ReactNode }) {
       periodState.loading,
       today,
       currentPeriod,
-      newPeriodStart,
+      startPeriodPrompt,
       acknowledgeNewPeriod,
+      openStartPeriod,
     ],
   );
 

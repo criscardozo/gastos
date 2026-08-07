@@ -217,10 +217,22 @@ export async function updatePeriodAmount(
   householdId: string,
   startDate: string,
   amountCents: number,
+  /**
+   * How much of `amountCents` was carried in from the period before. Passed
+   * when answering the start-period screen, where ticking or clearing the
+   * leftover changes both figures: the second explains the first, so a period
+   * whose amount moved without it would claim a carry-over it no longer has.
+   */
+  rolloverCents?: number,
 ): Promise<void> {
   await updateDoc(
     doc(db, "households", householdId, "periodBudgets", startDate),
-    { amountCents, source: "custom", updatedAt: serverTimestamp() },
+    {
+      amountCents,
+      source: "custom",
+      ...(rolloverCents === undefined ? {} : { rolloverCents }),
+      updatedAt: serverTimestamp(),
+    },
   );
 }
 
