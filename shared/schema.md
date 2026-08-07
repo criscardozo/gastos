@@ -65,7 +65,8 @@ of what the budget was (amount + weekly/fortnightly).
 | `startDate` | string `YYYY-MM-DD` | Equals the doc ID |
 | `endDate` | string `YYYY-MM-DD` | Inclusive. `startDate + (7 or 14) − 1` days |
 | `period` | `"weekly"` \| `"fortnightly"` | Type this period was created with |
-| `amountCents` | int | This period's budget |
+| `amountCents` | int | This period's **effective** budget — anything carried over from the previous period is already inside it |
+| `rolloverCents` | int \| absent | How much of `amountCents` was carried in. Signed: an overspent period carries its deficit forward. Absent ⇒ 0. Explanation only; nothing sums it |
 | `source` | `"default"` \| `"custom"` | Whether it came from the default or was set by hand |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
@@ -75,8 +76,11 @@ Rules of the chain:
   `defaultBudget.period`; `amountCents` from the **current** `defaultBudget.amountCents`.
 - Lazy materialization: the first client to open the app inside an unmaterialized range
   creates the doc(s), cascading if several periods elapsed unopened.
-- Editing the current period's budget updates `amountCents` (and `source: "custom"`) but
-  NEVER moves `startDate`/`endDate`.
+- Editing the current period's budget updates `amountCents` and `rolloverCents` (and
+  `source: "custom"`) but NEVER moves `startDate`/`endDate`. The two money fields move
+  together on purpose: the second is the first's explanation, so letting only one change
+  would leave the record contradicting itself. That is what answering the start-period
+  screen does when the leftover is included or dropped.
 - Changing `defaultBudget` affects only future, not-yet-materialized periods.
 
 ### `households/{householdId}/expenses/{expenseId}`

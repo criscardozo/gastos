@@ -42,6 +42,9 @@ final class AppModel {
 
     var viewedPeriodIndex: Int?
     var showNewPeriodSheet = false
+    /// True when the start-period screen was opened by hand from Settings
+    /// rather than by a period starting — only then may it be closed.
+    private(set) var newPeriodPromptIsManual = false
     var authError: String?
     var isSigningIn = false
 
@@ -408,32 +411,70 @@ final class AppModel {
             return
         }
         if current.source == "default" {
+            // A period actually starting: no way out but answering it.
+            newPeriodPromptIsManual = false
             showNewPeriodSheet = true
         } else {
             UserDefaults.standard.set(current.startDate, forKey: key)
         }
     }
 
-    /// Swipe-dismiss of the sheet also counts as "seen".
+    /// Re-open the start-period screen for the period already under way, for
+    /// when it was answered by accident (or nobody was around when it opened).
+    func openNewPeriodPrompt() {
+        guard currentPeriod != nil else { return }
+        newPeriodPromptIsManual = true
+        showNewPeriodSheet = true
+    }
+
+    /// Closing the manually-opened screen also counts as "seen".
     func markNewPeriodSeen() {
         guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }
         UserDefaults.standard.set(current.startDate, forKey: "seenPeriodStart.\(householdId)")
         showNewPeriodSheet = false
+        newPeriodPromptIsManual = false
     }
 
-    func confirmNewPeriod(amountCents: Int) {
-        guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }
+    /// Answer the start-period screen. `rolloverCents` is how much of
+    /// `amountCents` was carried in from the period before — recorded next to
+    /// the figure so the dashboard can explain a budget that looks unusual.
+    func confirmNewPeriod(amountCents: Int, rolloverCents: Int) {
+        guard let current = currentPeriod, let householdId = attachedHouseholdId,
+              amountCents > 0
+        else { return }
         UserDefaults.standard.set(current.startDate, forKey: "seenPeriodStart.\(householdId)")
         showNewPeriodSheet = false
-        if amountCents != current.amountCents, amountCents > 0 {
-            Task {
-                try? await firestore.updatePeriodBudget(
-                    householdId: householdId,
-                    startDate: current.startDate,
-                    amountCents: amountCents
-                )
-            }
+        newPeriodPromptIsManual = false
+        // Materialization may already have written exactly this; a write that
+        // changes nothing would only flip `source` to "custom" for no reason.
+        guard amountCents != current.amountCents
+                || rolloverCents != (current.rolloverCents ?? 0)
+        else { return }
+        Task {
+            try? await firestore.updatePeriodBudget(
+                householdId: householdId,
+                startDate: current.startDate,
+                amountCents: amountCents,
+                rolloverCents: rolloverCents
+            )
         }
+    }
+
+    /// What the period before the current one left over — negative when it was
+    /// overspent. nil when there is no previous period, or the read failed.
+    func previousLeftoverCents() async -> Int? {
+        guard let householdId = attachedHouseholdId,
+              let index = currentPeriodIndex, index > 0
+        else { return nil }
+        let previous = periods[index - 1]
+        let spent = await firestore.fetchSpentCents(
+            householdId: householdId,
+            startDate: previous.startDate,
+            endDate: previous.endDate,
+            categoryIds: budgetCategoryIds
+        )
+        guard let spent else { return nil }
+        return previous.amountCents - spent
     }
 
     // MARK: Expense listeners (ALWAYS bounded by date range)

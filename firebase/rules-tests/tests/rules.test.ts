@@ -793,7 +793,7 @@ describe("households/{id}/periodBudgets", () => {
     await assertFails(setDoc(ref, periodBudgetDoc({ amountCents: 0 })));
   });
 
-  it("only the amount (and source) can change after materialization", async () => {
+  it("only the amount, its carried-in part and source can change after materialization", async () => {
     await seed(env, async (admin) => {
       await setDoc(
         doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
@@ -814,6 +814,30 @@ describe("households/{id}/periodBudgets", () => {
         source: "custom",
         updatedAt: serverTimestamp(),
       }),
+    );
+    // Answering the start-period screen moves the amount and the part of it
+    // that was carried in together — the second explains the first, so the
+    // record would be a lie if only one could move.
+    await assertSucceeds(
+      updateDoc(ref, {
+        amountCents: 102000,
+        rolloverCents: 12000,
+        source: "custom",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // ...and dropping the carry-over back to nothing is just as valid.
+    await assertSucceeds(
+      updateDoc(ref, {
+        amountCents: 90000,
+        rolloverCents: 0,
+        source: "custom",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // A carried-in figure still has to be a sane integer.
+    await assertFails(
+      updateDoc(ref, { rolloverCents: "1000", updatedAt: serverTimestamp() }),
     );
     // moving the boundaries or the type → never
     await assertFails(

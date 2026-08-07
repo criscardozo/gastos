@@ -355,11 +355,12 @@ service cloud.firestore {
           && isServerTimestamp(request.resource.data.createdAt)
           && isServerTimestamp(request.resource.data.updatedAt);
 
-        // Only the budget amount (and its source flag) may change after
-        // materialization — period boundaries and type never move.
+        // Only the budget amount — and what of it was carried in, which is
+        // that amount's explanation — may change after materialization. Period
+        // boundaries and type never move.
         allow update: if isMember(householdId)
           && isValidPeriodBudget(request.resource.data, startDate)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amountCents', 'source', 'updatedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amountCents', 'source', 'rolloverCents', 'updatedAt'])
           && isServerTimestamp(request.resource.data.updatedAt);
 
         // Past periods are an immutable historical record.

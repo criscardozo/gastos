@@ -221,6 +221,28 @@ struct SettingsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                // Re-opens the start-period screen for the period under way —
+                // the way back in when it was answered by accident.
+                Button {
+                    model.openNewPeriodPrompt()
+                } label: {
+                    HStack(spacing: 9) {
+                        Image(systemName: "flag.checkered")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text(l10n.t(period.period == .weekly
+                                    ? "settings.startPeriod.weekly"
+                                    : "settings.startPeriod.fortnightly"))
+                            .appFont(14, .bold)
+                        Spacer()
+                    }
+                    .foregroundStyle(Theme.accentStrong)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 13)
+                    .background(Theme.accentSoft)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
                 Text(l10n.t("settings.thisPeriod.foot"))
                     .appFont(12)
                     .foregroundStyle(Theme.inkTertiary)

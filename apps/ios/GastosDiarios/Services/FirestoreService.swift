@@ -287,16 +287,23 @@ final class FirestoreService {
         }
     }
 
-    /// Edit the current period's budget: only amountCents/source/updatedAt may
-    /// change (boundaries never move).
-    func updatePeriodBudget(householdId: String, startDate: String, amountCents: Int) async throws {
+    /// Edit the current period's budget: only the amount, what of it was
+    /// carried in, and source/updatedAt may change (boundaries never move).
+    func updatePeriodBudget(
+        householdId: String,
+        startDate: String,
+        amountCents: Int,
+        rolloverCents: Int? = nil
+    ) async throws {
+        var data: [String: Any] = [
+            "amountCents": amountCents,
+            "source": "custom",
+            "updatedAt": FieldValue.serverTimestamp(),
+        ]
+        if let rolloverCents { data["rolloverCents"] = rolloverCents }
         try await db.collection("households").document(householdId)
             .collection("periodBudgets").document(startDate)
-            .updateData([
-                "amountCents": amountCents,
-                "source": "custom",
-                "updatedAt": FieldValue.serverTimestamp(),
-            ])
+            .updateData(data)
     }
 
     // MARK: - Expenses

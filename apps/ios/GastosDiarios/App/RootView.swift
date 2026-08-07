@@ -18,10 +18,11 @@ struct RootView: View {
                 OnboardingView()
             case .ready:
                 MainTabView()
-                    .sheet(isPresented: $model.showNewPeriodSheet, onDismiss: {
-                        model.markNewPeriodSeen()
-                    }) {
-                        NewPeriodSheet()
+                    // Full screen, and deliberately not dismissable: a period
+                    // starting is a question, and swiping it away used to
+                    // answer it silently with the default budget.
+                    .fullScreenCover(isPresented: $model.showNewPeriodSheet) {
+                        NewPeriodScreen(manual: model.newPeriodPromptIsManual)
                     }
             }
         }

@@ -32,7 +32,6 @@
 		6C5BE67620D8309FBFC6AA29 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */; };
 		6F988A6795BF9227AEDA3A80 /* SigningExpiryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F875CB9A4249023372B6A501 /* SigningExpiryTests.swift */; };
 		789F6152666388E18CA30122 /* ExpenseVerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */; };
-		7C7BB44D55BFA7138E41FA4A /* NewPeriodSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC5C06310A005683DBEFB6B4 /* NewPeriodSheet.swift */; };
 		822EFD43241545538E9E07A9 /* SigningExpiryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F2CD9DC403E30E0D49F3C5 /* SigningExpiryService.swift */; };
 		8268094E7E032831B3671199 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C8F75E05B2CB5526FAED626 /* AppModel.swift */; };
 		8352CF5D8B36C1504025D291 /* BudgetAmountEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21D8B26F267E4D4FF49927C /* BudgetAmountEditor.swift */; };
@@ -61,6 +60,7 @@
 		E2B11B14C6758B571316975F /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = B2DE59304825CBC116B66700 /* categories.json */; };
 		E3369B40B60E8E9F1C03A0CF /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = B2DE59304825CBC116B66700 /* categories.json */; };
 		E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */; };
+		E9A36DFB46064CBB78CB3148 /* NewPeriodScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7176FBEFF6274765EDCC3CCD /* NewPeriodScreen.swift */; };
 		EC2434DE5909830DA8DB749F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D3934372BE7A86D42D837236 /* GoogleSignIn */; };
 		F66E126B602E61FCCC04EA5B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A3DE79D792BD15A233F74D /* SettingsView.swift */; };
 		F6C3A5A2215B37A39404FBF6 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1033958EAF0770812248EF2 /* HistoryView.swift */; };
@@ -132,6 +132,7 @@
 		68782F8F6E6DBE2B3A582B62 /* GastosDiarios.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GastosDiarios.entitlements; sourceTree = "<group>"; };
 		6B98CA105FB223E5AFAF9A68 /* GastosDiariosTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GastosDiariosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6ED43CCFFBE449FFB095396B /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		7176FBEFF6274765EDCC3CCD /* NewPeriodScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewPeriodScreen.swift; sourceTree = "<group>"; };
 		73D2B1C84483CD1A063D9EDF /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
 		7484D19116522C218B8D7881 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		75E33FD8DDEB4A07F1B2A435 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
@@ -173,7 +174,6 @@
 		F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogicTests.swift; sourceTree = "<group>"; };
 		F9E2A69A862D11BA003582B8 /* WatchEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchEntryView.swift; sourceTree = "<group>"; };
 		FB86DA59B8D86AC1BE949A16 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		FC5C06310A005683DBEFB6B4 /* NewPeriodSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewPeriodSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -402,7 +402,7 @@
 		FC6393D243A4D33471F44C47 /* Summary */ = {
 			isa = PBXGroup;
 			children = (
-				FC5C06310A005683DBEFB6B4 /* NewPeriodSheet.swift */,
+				7176FBEFF6274765EDCC3CCD /* NewPeriodScreen.swift */,
 				5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */,
 			);
 			path = Summary;
@@ -617,7 +617,7 @@
 				64A277BCB7F020EF239963C3 /* L10n.swift in Sources */,
 				B088F40899D33FEB92EE2A8A /* Models.swift in Sources */,
 				98CF0F503439808C29ADD186 /* MoneyFormatter.swift in Sources */,
-				7C7BB44D55BFA7138E41FA4A /* NewPeriodSheet.swift in Sources */,
+				E9A36DFB46064CBB78CB3148 /* NewPeriodScreen.swift in Sources */,
 				5E46E4B94AD5C7F23B172691 /* OnboardingView.swift in Sources */,
 				E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */,
 				9ED3E316CDD7541FFB9D1270 /* QuickEntryIntent.swift in Sources */,
