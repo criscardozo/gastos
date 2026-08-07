@@ -314,9 +314,13 @@ test("starting a period asks, and carries the leftover", async ({
       { headers: admin },
     );
   }
+  // PATCH, not POST-with-documentId: deleting the periods above leaves the app
+  // free to re-materialize today's before this runs, and a create would then
+  // collide with it (ALREADY_EXISTS). A patch just overwrites whatever is
+  // there, which is the state this test wants either way.
   const write = async (id: string, fields: Record<string, unknown>) => {
-    const res = await request.post(
-      `${REST}/households/${householdId}/periodBudgets?documentId=${id}`,
+    const res = await request.patch(
+      `${REST}/households/${householdId}/periodBudgets/${id}`,
       { headers: admin, data: { fields } },
     );
     expect(res.ok()).toBe(true);
