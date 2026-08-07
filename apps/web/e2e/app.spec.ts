@@ -459,3 +459,61 @@ test("an expense saved offline does not freeze the form", async ({
   await context.setOffline(false);
   await expect(page.getByText("Sin señal").first()).toBeVisible();
 });
+
+test("renaming a category keeps it out of the budget", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  const email = `e2e-rename-${Date.now()}@test.dev`;
+  await page.evaluate((e) => window.__devSignIn!("Rename Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Ajustes" }).click();
+
+  // Take "Salud" out of the budget.
+  const toggle = page.getByRole("switch", { name: /Salud/ });
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+
+  // Then rename it. This is what used to quietly put it back in.
+  await page.getByRole("button", { name: /Renombrar Salud/ }).click();
+  const field = page.getByLabel("Nombre de la categoría");
+  await field.fill("Farmacia");
+  await field.press("Enter");
+  await expect(page.getByText("Farmacia")).toBeVisible();
+
+  // The stored category must still carry countsToBudget: false.
+  await expect
+    .poll(async () => {
+      const households = await request.get(`${REST}/households`, {
+        headers: admin,
+      });
+      const doc = ((await households.json()).documents as {
+        fields: {
+          name: { stringValue: string };
+          categories: { mapValue: { fields: Record<string, {
+            mapValue: { fields: Record<string, {
+              stringValue?: string; booleanValue?: boolean }> } }> } };
+        };
+      }[]).find((d) => d.fields.name.stringValue === "Hogar de Rename");
+      if (doc === undefined) return "household not found";
+      const health = doc.fields.categories.mapValue.fields.health.mapValue.fields;
+      return JSON.stringify({
+        name: health.name?.stringValue,
+        key: health.key?.stringValue ?? null,
+        counts: health.countsToBudget?.booleanValue ?? "absent",
+      });
+    })
+    .toBe(JSON.stringify({ name: "Farmacia", key: null, counts: false }));
+
+  // And the switch still reads as off after the rename.
+  await expect(
+    page.getByRole("switch", { name: /Farmacia/ }),
+  ).toHaveAttribute("aria-checked", "false");
+});
