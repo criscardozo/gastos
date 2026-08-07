@@ -1,0 +1,72 @@
+name: Backup
+
+# Weekly Firestore backup. Firestore's managed export needs the Blaze plan, so
+# the $0 path is the Admin SDK dump this repo already has (scripts/backup.mjs)
+# run somewhere that is always on — which a laptop is not. GitHub Actions is
+# that somewhere: a scheduled run costs a couple of the 2,000 free minutes a
+# month, and the dump is kept as a build artifact.
+
+on:
+  schedule:
+    # Thursday morning in Sydney, year-round: 20:00 UTC Wednesday is 06:00
+    # Thursday at +10 (AEST) and 07:00 at +11 (AEDT). GitHub cron is UTC and
+    # has no timezone, so the offset is baked in here rather than drifting.
+    - cron: "0 20 * * 3"
+  # Also runnable on demand: Actions tab → Backup → Run workflow, or
+  # `gh workflow run Backup`.
+  workflow_dispatch:
+
+# One backup at a time. A run queued behind another has nothing new to say.
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    name: Dump Firestore
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Write the service-account key
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT is not set. Add the backup service-account JSON as a repository secret (see docs/setup.md)."
+            exit 1
+          fi
+          # Outside the workspace on purpose, so no step can commit or upload
+          # it by accident. The runner is thrown away either way.
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/service-account.json"
+
+      - name: Back up
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
+        run: pnpm backup
+
+      - name: Stamp the artifact
+        id: stamp
+        run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firestore-backup-${{ steps.stamp.outputs.date }}
+          path: backups/*.json
+          # The ceiling on a free private repo. Roughly the last three months
+          # of Thursdays are downloadable at any time.
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Shred the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/service-account.json"

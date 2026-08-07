@@ -51,4 +51,5 @@ All JS commands run from the repo root (pnpm workspace):
 - iOS: `cd apps/ios && xcodegen && open GastosDiarios.xcodeproj`. CLI tests:
   `xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiarios -destination 'platform=iOS Simulator,name=<iPhone>' -only-testing:GastosDiariosTests`.
 - Deploy rules: `firebase deploy --only firestore:rules,firestore:indexes --config firebase/firebase.json --project qcris-gastos-diarios`.
+- `pnpm backup` dumps the whole project to `backups/` (gitignored). The same script runs weekly on GitHub Actions (`.github/workflows/backup.yml`, Thursdays), keeping the dump as a 90-day artifact — Firestore's managed export needs Blaze.
 - One-time console setup (Firestore db creation, Google provider, Vercel): `docs/setup.md`. Distribution is free-account sideload (7-day signing expiry) until the Apple Developer decision (PLAN Phase 5).

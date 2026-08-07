@@ -175,6 +175,37 @@ Firestore has no free managed export, so `pnpm backup` dumps the whole project
 The service account is a GCP feature — free on the Spark plan. Timestamps are
 serialized to ISO strings so the JSON round-trips cleanly.
 
+### Weekly, without a machine of your own (GitHub Actions)
+
+`.github/workflows/backup.yml` runs the same script every **Thursday morning in
+Sydney** (20:00 UTC Wednesday — the offset is baked in so it stays Thursday
+across DST) and keeps the dump as a build artifact for 90 days. A run costs a
+couple of the 2,000 free Actions minutes a month.
+
+One-time: add the backup key as a repository secret.
+
+```sh
+gh secret set FIREBASE_SERVICE_ACCOUNT --repo criscardozo/gastos-diarios \
+  < firebase/service-account.json
+```
+
+(Or paste the JSON at *Settings → Secrets and variables → Actions → New
+repository secret*.) The workflow writes it to a temp file outside the
+workspace, points `GOOGLE_APPLICATION_CREDENTIALS` at it, and deletes it after —
+though the runner is discarded regardless. Without the secret the job fails
+immediately with a message saying so, rather than half-running.
+
+Then check it: `gh workflow run Backup` → *Actions → Backup* → download the
+artifact.
+
+Two things to know:
+
+- **Artifacts expire after 90 days** (the free-plan ceiling), so this keeps
+  roughly the last three months of Thursdays. Download one if you want to keep it
+  forever.
+- GitHub disables scheduled workflows in repositories with **60 days of no
+  activity**, and emails you before doing it.
+
 ## Bank charge ingestion (Gmail → Firestore, free)
 
 The bank bills the card in USD at its own rate and emails a notification per
