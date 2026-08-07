@@ -6,9 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Ubuntu only, by design: macOS runners bill at a 10x multiplier, so the iOS
-# build lives in its own manual-only workflow (ios.yml) where dispatching this
-# one cannot drag it along.
+# Ubuntu only, by design. macOS runners bill at a 10x minute multiplier, so
+# there is no iOS job here and no iOS workflow anywhere: that app is built and
+# tested locally on a simulator before each change lands (see docs/setup.md).
+# Keep it that way — the whole project runs on $0 of infrastructure.
 
 jobs:
   web:
