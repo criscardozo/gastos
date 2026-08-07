@@ -30,7 +30,8 @@
  *   HOUSEHOLD_ID    the households/{id} document id
  *   TIMEZONE        IANA household timezone, e.g. Australia/Sydney
  *   SA_EMAIL        gmail-bank-ingest@<project>.iam.gserviceaccount.com
- *   SA_PRIVATE_KEY  the key's private_key value, newlines and all
+ *   SA_PRIVATE_KEY  the key's private_key value. Paste it however it comes —
+ *                   config.js repairs the shapes the properties box mangles
  * Optional:
  *   GMAIL_QUERY     defaults to the sender + subject below
  *   LOOKBACK_DAYS   defaults to 7
@@ -88,6 +89,37 @@ function run() {
     "bank-ingest: " + imported + " imported, " + skipped + " ignored, " +
       seen.length + " remembered",
   );
+}
+
+/**
+ * One-off helper: check the Script Properties without touching Gmail or
+ * Firestore. Logs the shape of the key, never the key itself. Run this first
+ * when `run` fails with a credentials error.
+ */
+function checkConfig() {
+  var props = PropertiesService.getScriptProperties();
+  var required = ["PROJECT_ID", "HOUSEHOLD_ID", "SA_EMAIL", "SA_PRIVATE_KEY"];
+  for (var i = 0; i < required.length; i++) {
+    var name = required[i];
+    var value = props.getProperty(name);
+    if (!value) {
+      console.log(name + ": MISSING");
+    } else if (name === "SA_PRIVATE_KEY") {
+      console.log(name + ": " + describePrivateKey(value));
+    } else {
+      console.log(name + ": " + value);
+    }
+  }
+  console.log("TIMEZONE: " + (props.getProperty("TIMEZONE") || "Australia/Sydney (default)"));
+  console.log("GMAIL_QUERY: " + (props.getProperty("GMAIL_QUERY") || DEFAULT_QUERY + " (default)"));
+
+  // Prove the credentials end to end without writing anything.
+  try {
+    getAccessToken(readConfig());
+    console.log("Google token exchange: OK");
+  } catch (error) {
+    console.log("Google token exchange: FAILED — " + error.message);
+  }
 }
 
 /** One-off helper: log what the newest matching email parses to. */
@@ -200,9 +232,12 @@ function getAccessToken(config) {
     base64UrlEncode(JSON.stringify(header)) +
     "." +
     base64UrlEncode(JSON.stringify(claims));
+  // normalizePrivateKey (config.js) repairs the shapes a PEM arrives in from
+  // the Script Properties box; anything it cannot repair throws with a message
+  // that says what to paste, instead of Apps Script's "Invalid argument: key".
   var signature = Utilities.computeRsaSha256Signature(
     unsigned,
-    config.saKey.replace(/\\n/g, "\n"),
+    normalizePrivateKey(config.saKey),
   );
   var jwt = unsigned + "." + base64UrlEncodeBytes(signature);
 

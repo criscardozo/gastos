@@ -16,11 +16,13 @@ project's $0 infrastructure rule leaves no room for Cloud Functions or a server.
 |---|---|
 | `parse.js` | Pure parsing of one email. Shared verbatim between Apps Script and the vitest suite here — this is the risky part, so it is the tested part. |
 | `Code.gs` | The sweep: Gmail search → parse → Firestore create, plus the processed-message memory. |
+| `config.js` | Repairs the service-account key on its way out of the Script Properties box, which is where this setup most often breaks. Tested, for the same reason. |
 | `appsscript.json` | The project manifest, pinning the OAuth scopes to **read-only** Gmail plus outbound HTTPS. Without it Apps Script asks for full mailbox access; with it the script cannot modify or delete a single email even by accident. |
 | `fixtures/consumo-autorizado.html` | A real notification, with the cardholder name and card digits scrubbed. |
 
-`pnpm test:ingest` runs the parser tests (12 of them, including the real email
-and the Argentina→Sydney date conversion).
+`pnpm test:ingest` runs the parser and key tests (22 of them, including the real
+email, the Argentina→Sydney date conversion, and every mangled shape a pasted
+PEM arrives in).
 
 ## What the email gives us
 
@@ -65,9 +67,9 @@ without breaking the other. The key file never goes near the repo — paste its
 
 1. In the Gmail account that receives the notifications, open
    <https://script.google.com> → **New project**.
-2. Create two files matching this folder: `parse.js` (as a `.gs` file — paste
-   the contents; Apps Script concatenates files, so its functions become
-   available to `Code.gs`) and `Code.gs`.
+2. Create three files matching this folder: `parse.js` and `config.js` (as
+   `.gs` files — paste the contents; Apps Script concatenates files, so their
+   functions become available to `Code.gs`) and `Code.gs`.
 3. **Project Settings → check "Show appsscript.json manifest file"**, then
    replace that file with the `appsscript.json` here. This is what keeps the
    Gmail authorisation READ-ONLY: do it before the first run, because the scopes
@@ -85,11 +87,15 @@ without breaking the other. The key file never goes near the repo — paste its
    | `GMAIL_QUERY` | *(optional)* overrides the sender/subject search |
    | `LOOKBACK_DAYS` | *(optional)* defaults to 7 |
 
-5. Run `debugLatest` once. It asks for Gmail + external-request authorisation
+5. Run **`checkConfig`** once. It touches neither Gmail nor Firestore: it lists
+   the properties, describes the key's shape (never the key itself) and does a
+   real token exchange with Google, so a credentials problem is named here
+   rather than surfacing later as `Invalid argument: key`.
+6. Run `debugLatest` once. It asks for Gmail + external-request authorisation
    (accept), then logs the parsed charge for the newest matching email — the
    quickest way to confirm the parser still fits the bank's format.
-6. Run `run` once and check `bankCharges` in the Firestore console.
-7. **Triggers → Add trigger**: function `run`, event source *Time-driven*,
+7. Run `run` once and check `bankCharges` in the Firestore console.
+8. **Triggers → Add trigger**: function `run`, event source *Time-driven*,
    *Minutes timer*, **every 15 minutes**.
 
 Apps Script quotas on a free account are generous for this: a 15-minute trigger
@@ -112,6 +118,22 @@ subject (so a thread label would hide every later charge):
 A charge that has been matched or discarded is **deleted** from Firestore. Layer 1
 is what stops the next sweep re-creating it, which is why the memory is not
 optional.
+
+## `Invalid argument: key`
+
+Apps Script says this whenever the PEM it was handed is not a PEM, and the
+properties box is good at producing exactly that — most often by swallowing the
+line breaks and leaving the key on a single line. `config.js` now rebuilds the
+key from whatever survived: one line, `\n` escapes, surrounding quotes, or the
+whole service-account JSON pasted by mistake. Run `checkConfig` to see which
+shape yours is in; it prints `OK · N base64 lines` or names what is wrong.
+
+If you would rather paste a key that needs no repair, this puts the real
+multi-line value on the clipboard:
+
+```sh
+python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['private_key'])" ~/Downloads/<key>.json | pbcopy
+```
 
 ## When the bank changes the wording
 
