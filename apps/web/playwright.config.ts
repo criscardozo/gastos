@@ -19,6 +19,12 @@ const BASE_URL = `http://localhost:${PORT}`;
 export default defineConfig({
   testDir: "./e2e",
   timeout: 90_000,
+  // The suite runs against `next dev`, which compiles each route the first time
+  // it is opened. On a warm machine that is instant; on a cold CI runner the
+  // first navigation to a route can take longer than the 5s default, which is
+  // a slow toolchain rather than a broken app — so assertions wait longer
+  // instead of the suite reporting a failure that never reproduces locally.
+  expect: { timeout: 20_000 },
   retries: 0,
   workers: 1,
   reporter: "list",
