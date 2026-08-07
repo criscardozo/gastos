@@ -87,7 +87,7 @@ const cached = await page.evaluate(async () => {
 const staticCount = cached.filter((u) => u.startsWith("/_next/static/")).length;
 check(
   "app shell + assets are precached",
-  ["/", "/nuevo", "/gastos", "/ajustes", "/datos"].every((p) =>
+  ["/", "/nuevo", "/gastos", "/estadisticas", "/ajustes", "/datos"].every((p) =>
     cached.includes(p),
   ) &&
     staticCount >= 10,

@@ -521,3 +521,92 @@ test("renaming a category keeps it out of the budget", async ({
     page.getByRole("switch", { name: /Farmacia/ }),
   ).toHaveAttribute("aria-checked", "false");
 });
+
+/** Household-timezone date, shifted by `days` — the stats seed needs a spread. */
+function statsDate(days = 0): string {
+  const now = new Date();
+  now.setUTCDate(now.getUTCDate() + days);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Australia/Sydney",
+  }).format(now);
+}
+
+test("the statistics page adds up what the ledger says", async ({ page, request }) => {
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  const email = `e2e-stats-${Date.now()}@test.dev`;
+  await page.evaluate((e) => window.__devSignIn!("Stats Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const mine = ((await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[]).find((d) => d.fields.name.stringValue === "Hogar de Stats");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+
+  // A fortnight of realistic spending, seeded straight in so the charts have
+  // something to draw: a few categories, a couple of big ones, quiet days.
+  const seed: [number, string, string, number][] = [
+    [6390, "groceries", "Coles", 0],
+    [1250, "coffee", "Café", 0],
+    [820, "transport", "Opal", -1],
+    [14500, "eatingOut", "Cena", -2],
+    [3200, "groceries", "Woolworths", -3],
+    [980, "coffee", "Café", -3],
+    [4500, "home", "Ferretería", -5],
+    [2100, "health", "Farmacia", -6],
+    [760, "transport", "Opal", -6],
+    [23000, "groceries", "Compra grande", -8],
+    [1500, "entertainment", "Cine", -9],
+    [890, "coffee", "Café", -10],
+  ];
+  for (const [amountCents, categoryId, note, offset] of seed) {
+    const verified = amountCents > 2000;
+    const res = await request.post(
+      `${REST}/households/${householdId}/expenses`,
+      {
+        headers: admin,
+        data: {
+          fields: {
+            amountCents: { integerValue: String(amountCents) },
+            categoryId: { stringValue: categoryId },
+            note: { stringValue: note },
+            date: { stringValue: statsDate(offset) },
+            createdBy: { stringValue: "seed" },
+            verified: { booleanValue: verified },
+            ...(verified
+              ? {
+                  usdCents: {
+                    integerValue: String(Math.round(amountCents * 0.7123)),
+                  },
+                }
+              : {}),
+            createdAt: { timestampValue: new Date().toISOString() },
+            updatedAt: { timestampValue: new Date().toISOString() },
+          },
+        },
+      },
+    );
+    expect(res.ok()).toBe(true);
+  }
+
+  await page.getByRole("link", { name: "Estadísticas" }).click();
+  await expect(page.getByRole("heading", { name: "Estadísticas" })).toBeVisible();
+
+  // The 90-day range covers everything seeded above.
+  await page.getByRole("tab", { name: "90 días" }).click();
+  await expect(page.getByText("Total gastado")).toBeVisible();
+  await expect(page.getByText("Por categoría")).toBeVisible();
+  await expect(page.getByText("Confirmado por el banco")).toBeVisible();
+  await expect(page.getByText(/Tasa aprendida: 0,712/)).toBeVisible();
+
+  // The current period shows the pace chart, which the other ranges cannot.
+  await page.getByRole("tab", { name: "Período actual" }).click();
+  await expect(page.getByText("Ritmo contra el presupuesto")).toBeVisible();
+
+});

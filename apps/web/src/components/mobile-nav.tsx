@@ -14,6 +14,7 @@ const TABS = [
   { href: "/nuevo", icon: "add_circle", key: "new" },
   { href: "/", icon: "donut_small", key: "summary" },
   { href: "/gastos", icon: "receipt_long", key: "expenses" },
+  { href: "/estadisticas", icon: "bar_chart", key: "stats" },
   { href: "/datos", icon: "database", key: "data" },
   { href: "/ajustes", icon: "settings", key: "settings" },
 ] as const;
