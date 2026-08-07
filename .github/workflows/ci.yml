@@ -4,10 +4,11 @@ on:
   push:
     branches: [main, master]
   pull_request:
-  # The iOS job runs on macOS runners (10x minute multiplier), so it is
-  # manual-only to stay well within the free tier. Trigger it from the
-  # Actions tab ("Run workflow") or: gh workflow run CI
   workflow_dispatch:
+
+# Ubuntu only, by design: macOS runners bill at a 10x multiplier, so the iOS
+# build lives in its own manual-only workflow (ios.yml) where dispatching this
+# one cannot drag it along.
 
 jobs:
   web:
@@ -67,34 +68,3 @@ jobs:
           java-version: 21
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter rules-tests test
-
-  ios:
-    name: iOS — build & period-logic tests
-    # macOS runners bill at a 10x minute multiplier, so this job is manual
-    # only (workflow_dispatch) to stay within the free tier — the web/rules
-    # jobs below run on Ubuntu (1x). iOS is also verified locally on each
-    # change. Run it on demand from the Actions tab or: gh workflow run CI
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install XcodeGen
-        run: brew install xcodegen
-      - name: Generate project
-        working-directory: apps/ios
-        run: xcodegen
-      - name: Build & test
-        working-directory: apps/ios
-        run: |
-          # Pick any available iPhone simulator by UDID via simctl —
-          # xcodebuild -showdestinations output is not stable across images.
-          UDID=$(xcrun simctl list devices available | grep -m1 'iPhone' \
-            | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}')
-          if [ -z "$UDID" ]; then
-            echo "No iPhone simulator available:" >&2
-            xcrun simctl list devices >&2
-            exit 1
-          fi
-          xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiarios \
-            -destination "platform=iOS Simulator,id=$UDID" \
-            -only-testing:GastosDiariosTests

@@ -1,0 +1,46 @@
+name: iOS
+
+# SPENDS MONEY-SHAPED MINUTES: macOS runners bill at a 10x multiplier, so this
+# is the one workflow that can eat the free allowance quickly (a July run cost
+# 205 macOS minutes — covered by the free tier, but that is most of a month's
+# worth). It therefore has NO push, pull_request or schedule trigger: it runs
+# only when someone deliberately starts it, and dispatching CI cannot drag it
+# along, which it used to.
+#
+# Not running it costs little: every change to the iOS app is built and tested
+# locally against a simulator before it lands. Reach for this when you want a
+# clean-machine check — a fresh XcodeGen, no local caches.
+#
+#   gh workflow run iOS
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    name: iOS — build & period-logic tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        working-directory: apps/ios
+        run: xcodegen
+      - name: Build & test
+        working-directory: apps/ios
+        run: |
+          # Pick any available iPhone simulator by UDID via simctl —
+          # xcodebuild -showdestinations output is not stable across images.
+          UDID=$(xcrun simctl list devices available | grep -m1 'iPhone' \
+            | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}')
+          if [ -z "$UDID" ]; then
+            echo "No iPhone simulator available:" >&2
+            xcrun simctl list devices >&2
+            exit 1
+          fi
+          xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiarios \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -only-testing:GastosDiariosTests

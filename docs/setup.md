@@ -234,6 +234,9 @@ open GastosDiarios.xcodeproj
 ```
 
 - Requires Xcode 16+. Dependencies (Firebase, GoogleSignIn) resolve via SPM on first open.
+- CI never builds iOS automatically: macOS runners bill at a 10x minute
+  multiplier, so it lives in its own manual workflow (`gh workflow run iOS`).
+  Everything else (`CI`) is Ubuntu, and the weekly backup is a minute a week.
 - Signing: personal (free) team → 7-day certificate; re-run from Xcode weekly on each phone.
   This is the documented $0 path until the Apple Developer Program decision (PLAN Phase 5).
 - To point the app at the local emulator suite, set the `USE_FIREBASE_EMULATORS`
