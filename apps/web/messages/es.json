@@ -167,7 +167,8 @@
     "colAmountUsd": "USD (banco)",
     "acceptUnverified": "Acepto que la exportación tiene datos no verificados",
     "unverifiedNotice": "{count, plural, one {# gasto sin el USD del banco: su columna USD queda vacía y el total en USD es parcial} other {# gastos sin el USD del banco: su columna USD queda vacía y el total en USD es parcial}}",
-    "reasonBadUsd": "USD inválido"
+    "reasonBadUsd": "USD inválido",
+    "exportDriveStandalone": "Google no puede devolver la sesión a la app instalada. Abrí gastos.cardozo.dev en el navegador para exportar a Drive (el Excel sí funciona acá)."
   },
   "settings": {
     "title": "Ajustes",

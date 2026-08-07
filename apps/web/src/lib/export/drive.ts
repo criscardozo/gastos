@@ -22,11 +22,27 @@ const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const UPLOAD_URL =
   "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id";
 
+/**
+ * True when running as the installed app rather than in a browser tab. Google's
+ * sign-in popup cannot hand its result back to a standalone window reliably —
+ * the very reason the app itself signs in by redirect when installed — so a
+ * Drive export started from the home-screen app is expected to fail here, and
+ * the UI should say to open it in the browser rather than shrug.
+ */
+export function isStandalone(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as { standalone?: boolean }).standalone === true
+  );
+}
+
 export class DriveExportError extends Error {
   constructor(
     /** Distinguishes "the user closed the dialog" from a real failure, so the
-     * UI can stay quiet in the first case. */
-    readonly kind: "cancelled" | "auth" | "upload",
+     * UI can stay quiet in the first case, and the installed-app case from
+     * both. */
+    readonly kind: "cancelled" | "auth" | "upload" | "standalone",
     message: string,
   ) {
     super(message);
@@ -57,6 +73,12 @@ async function requestDriveToken(auth: Auth): Promise<string> {
       code === "auth/cancelled-popup-request"
     ) {
       throw new DriveExportError("cancelled", "Sign-in dialog closed");
+    }
+    if (isStandalone()) {
+      throw new DriveExportError(
+        "standalone",
+        "Google's popup cannot return to an installed PWA",
+      );
     }
     throw new DriveExportError("auth", String(code ?? error));
   }

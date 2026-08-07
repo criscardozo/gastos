@@ -87,7 +87,9 @@ const cached = await page.evaluate(async () => {
 const staticCount = cached.filter((u) => u.startsWith("/_next/static/")).length;
 check(
   "app shell + assets are precached",
-  ["/", "/gastos", "/ajustes", "/datos"].every((p) => cached.includes(p)) &&
+  ["/", "/nuevo", "/gastos", "/ajustes", "/datos"].every((p) =>
+    cached.includes(p),
+  ) &&
     staticCount >= 10,
   `${cached.filter((u) => !u.startsWith("/_next")).join(" ")} + ${staticCount} assets`,
 );
@@ -104,15 +106,21 @@ try {
 }
 check("app boots with the network offline", offline);
 
-// 4) Including a route this session never visited.
+// 4) Including routes this session never visited — /nuevo above all, since
+// adding an expense is what you open the app for when there is no signal.
 let deepRoute = false;
 try {
   await page.goto(`${BASE}/ajustes`, { waitUntil: "domcontentloaded" });
   deepRoute = (await page.title()).length > 0;
+  // Nobody is signed in here, so what these routes render offline is the
+  // sign-in screen — which is exactly the proof wanted: the SPA booted from
+  // the cache rather than showing the browser's offline error page.
+  await page.goto(`${BASE}/nuevo`, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector("text=Continuar con Google", { timeout: 10_000 });
 } catch {
   deepRoute = false;
 }
-check("an unvisited route opens offline", deepRoute);
+check("unvisited routes open offline (incl. quick entry)", deepRoute);
 
 // 5) The auth handler must never be served from the cache.
 await context.setOffline(false);

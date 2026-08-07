@@ -103,13 +103,17 @@ export function CategoriesCard({ household }: { household: Household }) {
     setRenamingId(null);
     const name = renameValue.trim();
     if (name === "" || name === row.label) return;
-    // Dropping `key` (if any) and storing the literal name.
+    // Dropping `key` (if any) and storing the literal name — but keeping
+    // everything else the category had. Rebuilding the entry from scratch used
+    // to drop countsToBudget, so renaming a category that had been opted out of
+    // the budget silently put it back in and moved every figure on the
+    // dashboard. (iOS mutates the whole category, which is why it never had
+    // this.)
     void write({
       [row.id]: {
+        ...row.def,
+        key: undefined,
         name,
-        icon: row.def.icon,
-        color: row.def.color,
-        sortOrder: row.def.sortOrder,
       },
     });
   };

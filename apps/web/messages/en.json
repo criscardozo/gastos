@@ -167,7 +167,8 @@
     "colAmountUsd": "USD (bank)",
     "acceptUnverified": "I accept that this export contains unverified data",
     "unverifiedNotice": "{count, plural, one {# expense without the bank's USD: its USD cell is blank and the USD total is partial} other {# expenses without the bank's USD: their USD cells are blank and the USD total is partial}}",
-    "reasonBadUsd": "Invalid USD"
+    "reasonBadUsd": "Invalid USD",
+    "exportDriveStandalone": "Google can't hand the session back to the installed app. Open gastos.cardozo.dev in the browser to export to Drive (Excel works fine here)."
   },
   "settings": {
     "title": "Settings",

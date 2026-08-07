@@ -116,7 +116,7 @@ export default function DataPage() {
     null,
   );
   const [exportPhase, setExportPhase] = useState<
-    "idle" | "excel" | "drive" | "error"
+    "idle" | "excel" | "drive" | "error" | "driveStandalone"
   >("idle");
   /** Ticked consent to export a range that still has unverified expenses. */
   const [acceptUnverified, setAcceptUnverified] = useState(false);
@@ -362,11 +362,17 @@ export default function DataPage() {
       setExportPhase("idle");
       window.open(url, "_blank", "noopener");
     } catch (error) {
-      // Closing Google's dialog is a choice, not a failure worth shouting about.
+      // Closing Google's dialog is a choice, not a failure worth shouting
+      // about; the installed app hitting Google's popup limit is neither, and
+      // deserves the one instruction that actually helps.
+      const kind =
+        error instanceof DriveExportError ? error.kind : "upload";
       setExportPhase(
-        error instanceof DriveExportError && error.kind === "cancelled"
+        kind === "cancelled"
           ? "idle"
-          : "error",
+          : kind === "standalone"
+            ? "driveStandalone"
+            : "error",
       );
     }
   };
@@ -597,6 +603,11 @@ export default function DataPage() {
         {exportPhase === "error" && (
           <span className="text-[12.5px] font-semibold text-over">
             {t("exportError")}
+          </span>
+        )}
+        {exportPhase === "driveStandalone" && (
+          <span className="text-[12.5px] font-semibold text-warn-text">
+            {t("exportDriveStandalone")}
           </span>
         )}
 

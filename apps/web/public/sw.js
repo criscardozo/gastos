@@ -14,11 +14,20 @@
  * Bump VERSION to retire every old cache on the next activation.
  */
 
-const VERSION = "v2";
+const VERSION = "v3";
 const CACHE = `gd-${VERSION}`;
 
-/** Routes worth having available on a cold offline start. */
-const SHELL = ["/", "/gastos", "/datos", "/ajustes", "/manifest.webmanifest"];
+/** Routes worth having available on a cold offline start. `/nuevo` matters
+ * most of all: it is the phone's quick entry, the one screen you actually
+ * reach for with no signal, and it was the only route missing here. */
+const SHELL = [
+  "/",
+  "/nuevo",
+  "/gastos",
+  "/datos",
+  "/ajustes",
+  "/manifest.webmanifest",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
