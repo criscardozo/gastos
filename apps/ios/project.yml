@@ -158,8 +158,10 @@ targets:
     platform: iOS
     sources:
       - path: GastosDiariosTests
-      # Shared cross-platform period-logic test vectors (Swift + TS must both pass).
+      # Shared cross-platform test vectors (Swift + TS must both pass).
       - path: ../../shared/period-test-vectors.json
+        buildPhase: resources
+      - path: ../../shared/bank-match-vectors.json
         buildPhase: resources
     settings:
       base:

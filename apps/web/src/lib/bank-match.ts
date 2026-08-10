@@ -1,5 +1,10 @@
 // Matching the bank's USD charges to the expenses they belong to.
 //
+// This exists TWICE — here and in apps/ios/GastosDiarios/Core/BankMatch.swift —
+// and both are validated against shared/bank-match-vectors.json. Change the
+// behaviour in the vectors first, then in both files, exactly as the period
+// arithmetic works.
+//
 // The bank bills the card in USD at its own rate and reports each charge by
 // email; the ingestion drops those into `households/{id}/bankCharges`. This
 // module decides which unverified expense each charge is for. It is pure: no

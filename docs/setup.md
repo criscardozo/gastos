@@ -243,4 +243,13 @@ open GastosDiarios.xcodeproj
 - Signing: personal (free) team → 7-day certificate; re-run from Xcode weekly on each phone.
   This is the documented $0 path until the Apple Developer Program decision (PLAN Phase 5).
 - To point the app at the local emulator suite, set the `USE_FIREBASE_EMULATORS`
-  environment variable to `1` in the scheme (it targets `localhost` from the simulator).
+  environment variable to `1` in the scheme (it targets `localhost` from the
+  simulator), or pass `-useEmulators` as a launch argument.
+- **Driving the app in a Simulator.** The real sign-in is Google's, which needs a
+  browser and real credentials, so screens used to be verified by reading the
+  code. Launch with `-useEmulators -devSignIn` and the app signs in against the
+  Auth emulator with a fabricated credential — refused outright unless this
+  launch is pointed at the emulators, so there is no path into it on a device.
+  Then seed a household over the emulator's REST API and deep-link around the
+  app: `xcrun simctl openurl booted gastosdiarios://cargos` (also `://nuevo`,
+  `://historial`).

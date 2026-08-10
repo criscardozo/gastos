@@ -141,7 +141,9 @@ read-only from the clients, plus deletable. Nobody should be able to invent a
 bank charge, and a charge never changes once imported.
 
 **How a charge leaves.** Deleted, once it has been matched to an expense (in the
-same batch that writes that expense's `usdCents` + `verified`) or dismissed. The
+same batch that writes that expense's `usdCents` + `verified`) or dismissed —
+from either client; both carry the matcher, validated against
+`bank-match-vectors.json`. The
 ingestion's own memory of processed Gmail message ids is what stops the next
 sweep re-importing it.
 

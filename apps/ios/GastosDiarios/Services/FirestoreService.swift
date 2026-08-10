@@ -15,11 +15,20 @@ final class FirestoreService {
         self.db = Firestore.firestore()
     }
 
-    /// Call once at startup, BEFORE any Firestore usage, when
-    /// USE_FIREBASE_EMULATORS is set in the environment.
-    static func configureEmulatorsIfRequested() {
+    /// True when this launch is pointed at the local emulator suite: the
+    /// scheme's env var, or `-useEmulators` on the command line so a tool that
+    /// can only pass launch arguments (XcodeBuildMCP) can do it too.
+    static var emulatorsRequested: Bool {
         let env = ProcessInfo.processInfo.environment["USE_FIREBASE_EMULATORS"]
-        guard let env, !env.isEmpty, env != "0", env.lowercased() != "false" else { return }
+        if let env, !env.isEmpty, env != "0", env.lowercased() != "false" {
+            return true
+        }
+        return CommandLine.arguments.contains("-useEmulators")
+    }
+
+    /// Call once at startup, BEFORE any Firestore usage.
+    static func configureEmulatorsIfRequested() {
+        guard emulatorsRequested else { return }
         Auth.auth().useEmulator(withHost: "localhost", port: 9099)
         let settings = Firestore.firestore().settings
         settings.host = "localhost:8080"
@@ -94,19 +103,57 @@ final class FirestoreService {
 
     // MARK: - Bank charges
 
-    /// Pending bank charges (bounded, like every listener here). They are
-    /// matched to expenses in the web app; on the phone we only ever need to
-    /// know that some are waiting.
+    /// Pending bank charges, oldest first and bounded like every listener here.
+    /// A charge leaves the collection as soon as it is matched or discarded, so
+    /// the pending set is small by construction; the cap is a backstop.
     func listenBankCharges(
         householdId: String,
-        onChange: @escaping (Int) -> Void
+        onChange: @escaping ([BankCharge]) -> Void
     ) -> ListenerRegistration {
         db.collection("households").document(householdId)
             .collection("bankCharges")
+            .order(by: "date")
             .limit(to: 50)
             .addSnapshotListener { snapshot, _ in
-                onChange(snapshot?.documents.count ?? 0)
+                guard let snapshot else {
+                    onChange([])
+                    return
+                }
+                onChange(snapshot.documents.compactMap { try? $0.data(as: BankCharge.self) })
             }
+    }
+
+    /// Match a charge to an expense: the expense takes the bank's USD (and so
+    /// becomes verified) and the charge leaves the pending list. ONE batch,
+    /// because a charge that vanished without verifying its expense — or an
+    /// expense verified twice by a charge that stayed — would both be wrong.
+    func assignBankCharge(
+        householdId: String,
+        chargeId: String,
+        expenseId: String,
+        usdCents: Int
+    ) async throws {
+        let household = db.collection("households").document(householdId)
+        let batch = db.batch()
+        batch.updateData(
+            [
+                "usdCents": usdCents,
+                "verified": true,
+                "updatedAt": FieldValue.serverTimestamp(),
+            ],
+            forDocument: household.collection("expenses").document(expenseId)
+        )
+        batch.deleteDocument(household.collection("bankCharges").document(chargeId))
+        try await batch.commit()
+    }
+
+    /// Retire a charge that has been dismissed as not ours. Deleting is how a
+    /// charge leaves the list; the ingestion's own memory of processed Gmail
+    /// message ids is what stops the next sweep re-importing it.
+    func deleteBankCharge(householdId: String, chargeId: String) async throws {
+        try await db.collection("households").document(householdId)
+            .collection("bankCharges").document(chargeId)
+            .delete()
     }
 
     // MARK: - Users

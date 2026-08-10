@@ -20,8 +20,13 @@ struct GastosDiariosApp: App {
                 .environment(model)
                 .onOpenURL { url in
                     if url.scheme == "gastosdiarios" {
-                        // gastosdiarios://nuevo — deep link to quick entry.
-                        AppModel.requestQuickEntry()
+                        // gastosdiarios://nuevo | ://historial | ://cargos —
+                        // deep links usable from a plain "Open URL" Shortcut.
+                        switch url.host {
+                        case "cargos": AppModel.requestBankCharges()
+                        case "historial": AppModel.requestHistory()
+                        default: AppModel.requestQuickEntry()
+                        }
                         return
                     }
                     _ = AuthService.handle(url: url)

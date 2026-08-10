@@ -8,6 +8,7 @@ struct HistoryView: View {
     @State private var deletingItem: ExpenseItem?
     @State private var verifyingItem: ExpenseItem?
     @State private var detailItem: ExpenseItem?
+    @State private var showBankCharges = false
     /// Narrows the list to the expenses the bank has not confirmed yet.
     @State private var onlyUnverified = false
 
@@ -44,7 +45,7 @@ struct HistoryView: View {
             header
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
-                .padding(.bottom, unverifiedCount > 0 || model.pendingBankCharges > 0 ? 8 : 12)
+                .padding(.bottom, unverifiedCount > 0 || !model.bankCharges.isEmpty ? 8 : 12)
             verificationBar
                 .padding(.horizontal, 20)
             if dayGroups.isEmpty {
@@ -105,6 +106,15 @@ struct HistoryView: View {
             VerifyExpenseSheet(item: item) {
                 verifyingItem = nil
             }
+        }
+        .sheet(isPresented: $showBankCharges) {
+            BankChargesSheet { showBankCharges = false }
+        }
+        // gastosdiarios://cargos lands here.
+        .onChange(of: model.openBankChargesRequest) { _, requested in
+            guard requested else { return }
+            showBankCharges = true
+            model.openBankChargesRequest = false
         }
         .sheet(item: $detailItem) { item in
             ExpenseDetailSheet(
@@ -269,11 +279,10 @@ struct HistoryView: View {
     }
 
     /// Unverified count (tap to filter) and, when the ingestion has imported
-    /// charges nobody has matched yet, a nudge towards the web app — the
-    /// matching lives there and is not duplicated here.
+    /// charges nobody has matched yet, a chip that opens them for matching.
     @ViewBuilder
     private var verificationBar: some View {
-        if unverifiedCount > 0 || model.pendingBankCharges > 0 {
+        if unverifiedCount > 0 || !model.bankCharges.isEmpty {
             HStack(spacing: 8) {
                 if unverifiedCount > 0 {
                     Button {
@@ -293,11 +302,23 @@ struct HistoryView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                if model.pendingBankCharges > 0 {
-                    Text(l10n.t("history.bankCharges", model.pendingBankCharges))
-                        .appFont(11.5, .semibold)
-                        .foregroundStyle(Theme.inkTertiary)
-                        .lineLimit(2)
+                if !model.bankCharges.isEmpty {
+                    Button {
+                        showBankCharges = true
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "creditcard.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text(l10n.t("history.bankCharges", model.bankCharges.count))
+                                .appFont(12, .semibold)
+                        }
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 5)
+                        .background(Theme.amberBg)
+                        .foregroundStyle(Theme.amberText)
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
                 }
                 Spacer()
             }

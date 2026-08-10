@@ -146,6 +146,25 @@ struct ExpenseItem: Identifiable, Equatable {
     var id: String { expense.id ?? UUID().uuidString }
 }
 
+/// `households/{id}/bankCharges/{gmailMessageId}` — a charge the bank reported
+/// by email, waiting to be matched to an expense. Written only by the Gmail
+/// ingestion (see tools/gmail-bank-ingest); from here it is read and deleted.
+struct BankCharge: Codable, Identifiable, Equatable {
+    @DocumentID var docId: String?
+    /// What the bank charged, integer cents of USD.
+    var usdCents: Int
+    /// The charge as a HOUSEHOLD-timezone calendar date.
+    var date: String
+    /// Establishment as the bank spells it, e.g. "COLES 0831". May be empty.
+    var merchant: String
+    var cardLast4: String?
+    @ServerTimestamp var importedAt: Date?
+
+    /// The Gmail message id: the document id, and what makes imports
+    /// idempotent. Non-optional for the matcher's sake.
+    var id: String { docId ?? "" }
+}
+
 /// `invites/{code}` — the code IS the document ID.
 struct Invite: Codable {
     var householdId: String

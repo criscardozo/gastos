@@ -35,8 +35,7 @@ final class AppModel {
     /// sum. nil while loading or when the query failed.
     private(set) var monthSpentCents: Int?
     /// Bank charges the Gmail ingestion imported and nobody has matched yet.
-    /// Awareness only — the matching itself lives in the web app.
-    private(set) var pendingBankCharges = 0
+    private(set) var bankCharges: [BankCharge] = []
     /// Invite code for this household (created lazily), nil until generated.
     private(set) var inviteCode: String?
 
@@ -78,6 +77,21 @@ final class AppModel {
     /// Jump to the quick-entry tab (Back Tap / Shortcuts / gastosdiarios://nuevo).
     static func requestQuickEntry() {
         shared?.selectedTab = .entry
+    }
+
+    /// Set by `gastosdiarios://cargos`; Historial opens the sheet and clears it.
+    var openBankChargesRequest = false
+
+    /// Jump straight to the bank charges waiting to be matched
+    /// (gastosdiarios://cargos — handy as a Shortcut when the email arrives).
+    static func requestBankCharges() {
+        shared?.selectedTab = .history
+        shared?.openBankChargesRequest = true
+    }
+
+    /// Jump to the history tab (gastosdiarios://historial).
+    static func requestHistory() {
+        shared?.selectedTab = .history
     }
 
     let googleSignInConfigured = AuthService.isGoogleSignInConfigured
@@ -241,6 +255,7 @@ final class AppModel {
         // sends over WatchConnectivity. Safe to call before sign-in.
         WatchSyncService.shared.start()
         guard authHandle == nil else { return }
+        signInForEmulatorIfRequested()
         authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor in
                 self?.authStateChanged(user)
@@ -279,7 +294,7 @@ final class AppModel {
         currentExpensesListener?.remove(); currentExpensesListener = nil
         viewedExpensesListener?.remove(); viewedExpensesListener = nil
         bankChargesListener?.remove(); bankChargesListener = nil
-        pendingBankCharges = 0
+        bankCharges = []
         currentListenerRange = nil
         viewedListenerRange = nil
     }
@@ -318,8 +333,8 @@ final class AppModel {
         bankChargesListener?.remove()
 
         bankChargesListener = firestore.listenBankCharges(householdId: id) {
-            [weak self] count in
-            self?.pendingBankCharges = count
+            [weak self] charges in
+            self?.bankCharges = charges
         }
 
         householdListener = firestore.listenHousehold(id: id) { [weak self] household in
@@ -457,6 +472,57 @@ final class AppModel {
                 startDate: current.startDate,
                 amountCents: amountCents,
                 rolloverCents: rolloverCents
+            )
+        }
+    }
+
+    // MARK: Bank charges
+
+    /// The bank's rate as the household's own verified expenses reveal it. Read
+    /// from what is already in memory (current + viewed period), so it costs
+    /// nothing — and it is what every suggestion is judged against.
+    var learnedBankRate: Double? {
+        BankMatch.learnRate(suggestionExpenses)
+    }
+
+    /// One suggestion per pending charge, matched against the expenses already
+    /// loaded — which is where a charge from the last day or two lands.
+    var bankChargeSuggestions: [BankMatch.Suggestion] {
+        BankMatch.suggestMatches(
+            charges: bankCharges,
+            expenses: suggestionExpenses,
+            referenceRate: learnedBankRate
+        )
+    }
+
+    /// The unverified expenses a charge may be assigned to, most recent first.
+    var unverifiedExpenses: [Expense] {
+        suggestionExpenses
+            .filter { !$0.isVerified }
+            .sorted { ($0.date, $0.createdAt ?? .distantPast) > ($1.date, $1.createdAt ?? .distantPast) }
+    }
+
+    /// Confirm a suggestion: the expense takes the charge's USD and the charge
+    /// leaves the list, in one batch.
+    func assignBankCharge(_ charge: BankCharge, to expenseId: String) {
+        guard let householdId = attachedHouseholdId, !charge.id.isEmpty else { return }
+        Task {
+            try? await firestore.assignBankCharge(
+                householdId: householdId,
+                chargeId: charge.id,
+                expenseId: expenseId,
+                usdCents: charge.usdCents
+            )
+        }
+    }
+
+    /// Drop a charge that is not ours to match.
+    func discardBankCharge(_ charge: BankCharge) {
+        guard let householdId = attachedHouseholdId, !charge.id.isEmpty else { return }
+        Task {
+            try? await firestore.deleteBankCharge(
+                householdId: householdId,
+                chargeId: charge.id
             )
         }
     }
@@ -605,6 +671,22 @@ final class AppModel {
     }
 
     // MARK: Auth actions
+
+    /// Emulator-only: sign in without Google so the app can be driven in a
+    /// Simulator (`-useEmulators -devSignIn` as launch arguments). A no-op
+    /// anywhere else — see AuthService.signInForEmulator.
+    func signInForEmulatorIfRequested() {
+        guard FirestoreService.emulatorsRequested,
+              CommandLine.arguments.contains("-devSignIn"),
+              Auth.auth().currentUser == nil
+        else { return }
+        Task {
+            try? await auth.signInForEmulator(
+                name: "Cristian Simulador",
+                email: "simulador@test.dev"
+            )
+        }
+    }
 
     func signInWithGoogle() {
         guard !isSigningIn else { return }

@@ -84,3 +84,36 @@ final class AuthService {
         return top
     }
 }
+
+// MARK: - Emulator-only sign-in
+
+extension AuthService {
+
+    /// Signs in without Google, against the Auth emulator only.
+    ///
+    /// The real flow needs a browser and real credentials, which is why every
+    /// iOS screen here used to be verified by reading the code rather than by
+    /// looking at it. The Auth emulator accepts a fabricated Google credential
+    /// (its ID token is plain JSON), so this signs in as a made-up account
+    /// against it — and refuses to do anything unless this launch is pointed at
+    /// the emulators, so on a real device (including the sideloaded Debug
+    /// build) there is no path into it.
+    func signInForEmulator(name: String, email: String) async throws {
+        guard FirestoreService.emulatorsRequested else {
+            throw AuthError.configurationNeeded
+        }
+        let payload: [String: Any] = [
+            "sub": email,
+            "email": email,
+            "email_verified": true,
+            "name": name,
+        ]
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        let idToken = String(decoding: data, as: UTF8.self)
+        let credential = GoogleAuthProvider.credential(
+            withIDToken: idToken,
+            accessToken: "emulator"
+        )
+        try await Auth.auth().signIn(with: credential)
+    }
+}
