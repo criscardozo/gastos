@@ -10,11 +10,17 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 
+// Eight entries share 390px on the smallest phone this app targets, i.e. ~48px
+// each. Every label fits in that except "Estadísticas" (57px), which is why it
+// carries a short form used HERE ONLY — the sidebar, which has room, keeps the
+// full word. Measured, not guessed: at 10.5px the labels were touching.
 const TABS = [
   { href: "/nuevo", icon: "add_circle", key: "new" },
   { href: "/", icon: "donut_small", key: "summary" },
   { href: "/gastos", icon: "receipt_long", key: "expenses" },
-  { href: "/estadisticas", icon: "bar_chart", key: "stats" },
+  { href: "/estadisticas", icon: "bar_chart", key: "statsShort" },
+  { href: "/servicios", icon: "calendar_today", key: "services" },
+  { href: "/tarjetas", icon: "credit_card", key: "cards" },
   { href: "/datos", icon: "database", key: "data" },
   { href: "/ajustes", icon: "settings", key: "settings" },
 ] as const;
@@ -35,15 +41,17 @@ export function MobileNav() {
             key={tab.href}
             href={tab.href}
             aria-current={active ? "page" : undefined}
-            className="flex flex-1 flex-col items-center gap-0.5 py-2"
+            className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 py-2"
           >
             <Icon
               name={tab.icon}
               size={22}
               className={active ? "text-accent-strong" : "text-ink-3"}
             />
+            {/* min-w-0 + truncate: a label can never bleed into its neighbour,
+                whatever a future translation does to its length. */}
             <span
-              className={`text-[10.5px] ${
+              className={`max-w-full truncate text-[10.5px] ${
                 active ? "font-bold text-accent-strong" : "font-semibold text-ink-3"
               }`}
             >

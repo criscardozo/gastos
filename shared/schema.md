@@ -147,6 +147,86 @@ from either client; both carry the matcher, validated against
 ingestion's own memory of processed Gmail message ids is what stops the next
 sweep re-importing it.
 
+### `households/{householdId}/services/{serviceId}`
+
+A recurring bill — Netflix, the phone, the insurance. A **standalone register**:
+nothing here is summed against the weekly budget, appears in the period totals,
+the statistics or the exports. It answers "what do we pay, how much, and when is
+it due", and that is all.
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | string | 1..80, e.g. `"Netflix"` |
+| `amountAudCents` | int \| absent | > 0. What it costs in AUD |
+| `amountUsdCents` | int \| absent | > 0. What it costs in USD |
+| `interval` | `"monthly"` \| `"bimonthly"` \| `"quarterly"` \| `"biannual"` \| `"yearly"` | How often it falls due |
+| `dueDay` | int | 1..31. Day of the month it is due |
+| `anchorMonth` | int \| absent | 1..12. Which month the cycle lands on. **Required unless `interval == "monthly"`**, absent when monthly (every month is a due month, so there is nothing to anchor) |
+| `paidWith` | `"debit"` \| `"credit"` | Which card it is charged to |
+| `createdBy` | uid | Attribution only; either member may edit or delete |
+| `createdAt`, `updatedAt` | timestamp | Server timestamps |
+
+**Both currencies, both typed.** This is the one place a USD figure is entered by
+hand rather than coming from the bank, because a service is quoted in whichever
+currency its provider bills in and the household wants both on screen. It is
+still **not a conversion**: the app computes neither from the other and calls no
+FX API — at least one of the two must be present, and each is whatever the bill
+says. Nothing sums them together.
+
+**The due date is derived, never stored.** Storing a concrete date would go stale
+the moment the month turned. `dueDay` + `interval` (+ `anchorMonth`) is a rule,
+and the next occurrence is computed from today in the household timezone, so it
+is right forever without anyone maintaining it. A `dueDay` past the end of a
+short month clamps to that month's last day (31 → 28, 29 or 30).
+
+### `households/{householdId}/cardStatements/{closingDate}`
+
+One credit-card statement — the window in which charges accumulate. **Doc ID =
+`closingDate`**, so creating the same statement twice is idempotent, exactly as
+`periodBudgets` uses its `startDate`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `startDate` | string `YYYY-MM-DD` | First day whose charges belong here — the day after the previous statement's `closingDate` |
+| `closingDate` | string `YYYY-MM-DD` | Equals the doc ID. Last day whose charges enter this statement |
+| `dueDate` | string `YYYY-MM-DD` | After `closingDate`. The last day it can be paid |
+| `createdAt`, `updatedAt` | timestamp | Server timestamps |
+
+**There is no `status` field.** The open statement is simply the one with the
+greatest `closingDate`; everything before it is closed by the existence of its
+successor. "Close this statement and open the next" is therefore a single
+create — the closed one is never rewritten — which is why two clients pressing
+the button cannot disagree about which statement is current. Statements chain
+like periods: `startDate = previous.closingDate + 1 day`.
+
+Deletes are allowed (unlike `periodBudgets`) so a statement opened with the wrong
+dates can be undone; its charges are untouched, because charges do not point at
+it.
+
+### `households/{householdId}/cardCharges/{chargeId}`
+
+One purchase made with a credit card. **Always USD** — this is the card's own
+billing currency and nobody types AUD here.
+
+| Field | Type | Notes |
+|---|---|---|
+| `date` | string `YYYY-MM-DD` | Household-timezone calendar date |
+| `detail` | string | ≤ 200, may be empty |
+| `card` | `"visa"` \| `"mastercard"` | Which card it went on |
+| `usdCents` | int | > 0. Integer cents of USD |
+| `createdBy` | uid | Attribution only |
+| `createdAt`, `updatedAt` | timestamp | Server timestamps |
+
+**A charge carries no statement id.** It belongs to the statement whose
+`[startDate, closingDate]` range contains its `date` — the same bucketing rule
+expenses use for periods, and for the same reason: re-dating a charge moves it to
+the right statement by itself, and a statement created or deleted later cannot
+leave a charge pointing at nothing. Queries are the same lexicographic string
+range, which is why the zero-padded format is mandatory here too.
+
+Unrelated to `bankCharges`: that collection is the bank's own emails, imported to
+verify AUD expenses. These are typed by hand and never matched against anything.
+
 ### `invites/{code}`
 
 The invite code IS the document ID (capability-as-doc-ID pattern: rules cannot secure

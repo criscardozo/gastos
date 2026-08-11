@@ -78,3 +78,39 @@ export function formatLongDate(date: string, locale: string): string {
 export function formatShortDate(date: string, locale: string): string {
   return `${parts(date).day} ${monthName(date, locale, "short")}`;
 }
+
+/**
+ * The year, appended only when it is not the current one.
+ *
+ * Expenses are always within days of today, so their dates say no year and
+ * nobody misses it. A yearly service is different: "3 ago" for something due in
+ * 2027 reads as the day after tomorrow. This keeps the short form for the
+ * common case and disambiguates the one that needs it.
+ */
+function withYearIfNotThis(
+  formatted: string,
+  date: string,
+  today: string,
+): string {
+  return date.slice(0, 4) === today.slice(0, 4)
+    ? formatted
+    : `${formatted} ${date.slice(0, 4)}`;
+}
+
+/** "3 ago" this year, "3 ago 2027" beyond it. */
+export function formatShortDateInYear(
+  date: string,
+  today: string,
+  locale: string,
+): string {
+  return withYearIfNotThis(formatShortDate(date, locale), date, today);
+}
+
+/** "martes 3 de agosto" this year, "martes 3 de agosto 2027" beyond it. */
+export function formatLongDateInYear(
+  date: string,
+  today: string,
+  locale: string,
+): string {
+  return withYearIfNotThis(formatLongDate(date, locale), date, today);
+}

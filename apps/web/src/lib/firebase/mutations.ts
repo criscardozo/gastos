@@ -24,6 +24,8 @@ import {
   type CategoryDef,
 } from "../categories";
 import type { PeriodRange, PeriodType } from "../periods";
+import type { PaidWith, ServiceInterval } from "../services";
+import type { CardBrand, StatementRange } from "../statements";
 import { inviteConverter } from "./converters";
 
 export const DEFAULT_CURRENCY = "AUD";
@@ -421,4 +423,182 @@ export async function deleteExpense(
   expenseId: string,
 ): Promise<void> {
   await deleteDoc(doc(db, "households", householdId, "expenses", expenseId));
+}
+
+/* ── Services ──────────────────────────────────────────────────────────── */
+
+export interface ServiceInput {
+  name: string;
+  /** Integer cents. Null when the bill is not quoted in this currency. */
+  amountAudCents: number | null;
+  amountUsdCents: number | null;
+  interval: ServiceInterval;
+  dueDay: number;
+  paidWith: PaidWith;
+  /** Ignored when the interval is monthly — see below. */
+  anchorMonth: number | null;
+}
+
+/**
+ * The exact field set the rules validate: an absent amount must be ABSENT, not
+ * null (the rules type-check every key that is present), and `anchorMonth` is
+ * forbidden on a monthly service and required on every other interval.
+ */
+function serviceFields(input: ServiceInput): Record<string, unknown> {
+  return {
+    name: input.name,
+    ...(input.amountAudCents !== null
+      ? { amountAudCents: input.amountAudCents }
+      : {}),
+    ...(input.amountUsdCents !== null
+      ? { amountUsdCents: input.amountUsdCents }
+      : {}),
+    interval: input.interval,
+    dueDay: input.dueDay,
+    ...(input.interval !== "monthly"
+      ? { anchorMonth: input.anchorMonth ?? 1 }
+      : {}),
+    paidWith: input.paidWith,
+  };
+}
+
+export async function addService(
+  db: Firestore,
+  householdId: string,
+  uid: string,
+  input: ServiceInput,
+): Promise<void> {
+  const ref = doc(collection(db, "households", householdId, "services"));
+  await setDoc(ref, {
+    ...serviceFields(input),
+    createdBy: uid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * An edit rewrites the whole field set, so a price or an anchor that was
+ * dropped has to be DELETED rather than merely omitted — an update leaves an
+ * untouched field in place, and a stale anchorMonth on a service turned monthly
+ * is exactly what the rules refuse.
+ */
+export async function updateService(
+  db: Firestore,
+  householdId: string,
+  serviceId: string,
+  input: ServiceInput,
+): Promise<void> {
+  const fields = serviceFields(input);
+  await updateDoc(doc(db, "households", householdId, "services", serviceId), {
+    ...fields,
+    ...("amountAudCents" in fields ? {} : { amountAudCents: deleteField() }),
+    ...("amountUsdCents" in fields ? {} : { amountUsdCents: deleteField() }),
+    ...("anchorMonth" in fields ? {} : { anchorMonth: deleteField() }),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteService(
+  db: Firestore,
+  householdId: string,
+  serviceId: string,
+): Promise<void> {
+  await deleteDoc(doc(db, "households", householdId, "services", serviceId));
+}
+
+/* ── Credit-card statements and charges ────────────────────────────────── */
+
+/**
+ * Open a statement. The doc id IS the closing date, so pressing "close and
+ * open the next" twice — on two phones, or on a flaky connection — writes the
+ * same document instead of two competing ones.
+ */
+export async function openCardStatement(
+  db: Firestore,
+  householdId: string,
+  range: StatementRange,
+): Promise<void> {
+  await setDoc(
+    doc(db, "households", householdId, "cardStatements", range.closingDate),
+    {
+      startDate: range.startDate,
+      closingDate: range.closingDate,
+      dueDate: range.dueDate,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+  );
+}
+
+/** Only the due date can be corrected: the window is what buckets the charges. */
+export async function updateStatementDueDate(
+  db: Firestore,
+  householdId: string,
+  closingDate: string,
+  dueDate: string,
+): Promise<void> {
+  await updateDoc(
+    doc(db, "households", householdId, "cardStatements", closingDate),
+    { dueDate, updatedAt: serverTimestamp() },
+  );
+}
+
+export async function deleteCardStatement(
+  db: Firestore,
+  householdId: string,
+  closingDate: string,
+): Promise<void> {
+  await deleteDoc(
+    doc(db, "households", householdId, "cardStatements", closingDate),
+  );
+}
+
+export interface CardChargeInput {
+  date: string;
+  detail: string;
+  card: CardBrand;
+  /** Integer cents of USD — the card's own billing currency. */
+  usdCents: number;
+}
+
+export async function addCardCharge(
+  db: Firestore,
+  householdId: string,
+  uid: string,
+  input: CardChargeInput,
+): Promise<void> {
+  const ref = doc(collection(db, "households", householdId, "cardCharges"));
+  await setDoc(ref, {
+    date: input.date,
+    detail: input.detail,
+    card: input.card,
+    usdCents: input.usdCents,
+    createdBy: uid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function updateCardCharge(
+  db: Firestore,
+  householdId: string,
+  chargeId: string,
+  input: CardChargeInput,
+): Promise<void> {
+  await updateDoc(doc(db, "households", householdId, "cardCharges", chargeId), {
+    date: input.date,
+    detail: input.detail,
+    card: input.card,
+    usdCents: input.usdCents,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteCardCharge(
+  db: Firestore,
+  householdId: string,
+  chargeId: string,
+): Promise<void> {
+  await deleteDoc(doc(db, "households", householdId, "cardCharges", chargeId));
 }

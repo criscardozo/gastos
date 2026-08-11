@@ -11,7 +11,10 @@
     "data": "Data",
     "settings": "Settings",
     "sharedHousehold": "Shared household",
-    "stats": "Statistics"
+    "stats": "Statistics",
+    "services": "Services",
+    "cards": "Cards",
+    "statsShort": "Stats"
   },
   "auth": {
     "continueWithGoogle": "Continue with Google",
@@ -111,6 +114,69 @@
     "clearVerification": "Clear verification",
     "exportUnverifiedConfirm": "{count, plural, one {# expense has no bank USD yet: its USD column will be blank. Export anyway?} other {# expenses have no bank USD yet: their USD columns will be blank. Export anyway?}}"
   },
+  "services": {
+    "title": "Services",
+    "add": "Add",
+    "edit": "Edit service",
+    "name": "Name",
+    "namePlaceholder": "Netflix, electricity, insurance…",
+    "interval": "Frequency",
+    "intervals": {
+      "monthly": "Monthly",
+      "bimonthly": "Every two months",
+      "quarterly": "Quarterly",
+      "biannual": "Every six months",
+      "yearly": "Yearly"
+    },
+    "dueDay": "Due day",
+    "anchorMonth": "Month",
+    "paidWith": "Charged to",
+    "debit": "Debit",
+    "credit": "Credit",
+    "nextDue": "Next due: {date}",
+    "dueToday": "due today",
+    "dueTomorrow": "due tomorrow",
+    "dueInDays": "in {days} days",
+    "perMonth": "Per month",
+    "perMonthHint": "The register brought to a monthly figure. It does not touch the budget.",
+    "emptyTitle": "No services yet",
+    "emptyBody": "Add what you pay every month to keep it at hand.",
+    "loading": "Loading…",
+    "confirmDelete": "Sure?"
+  },
+  "cards": {
+    "title": "Credit Cards",
+    "addCharge": "Add charge",
+    "editCharge": "Edit charge",
+    "amountUsd": "Amount (USD)",
+    "detail": "Detail",
+    "detailPlaceholder": "Where the charge was",
+    "date": "Date",
+    "card": "Card",
+    "currentStatement": "Current statement",
+    "pastStatement": "Closed statement",
+    "closingDate": "Closing",
+    "dueDate": "Due",
+    "closingDateHelp": "Charges up to this date go in",
+    "dueDateHelp": "The last day it can be paid",
+    "fromDate": "From {date}",
+    "chargeCount": "{count, plural, =0 {no charges} one {# charge} other {# charges}}",
+    "closeAndOpen": "Close and open the next",
+    "newStatement": "New statement",
+    "openStatement": "Open statement",
+    "openFirstStatement": "Open the first statement",
+    "closingHint": "The statement you are closing runs to {date}. The new one starts the next day.",
+    "firstStatementHint": "Choose when charges stop entering it, and by when it has to be paid.",
+    "dueAfterClosing": "The due date has to be after the closing date.",
+    "deleteStatement": "Delete",
+    "confirmDeleteStatement": "Sure?",
+    "noCharges": "No charges in this statement.",
+    "emptyTitle": "No statements yet",
+    "emptyBody": "Open the first one with its closing and due dates: the charges you add group themselves.",
+    "older": "Previous statement",
+    "newer": "Next statement",
+    "loading": "Loading…"
+  },
   "empty": {
     "noExpensesTitle": "No expenses yet",
     "noExpensesHint": "Log the first one — it takes less than 5 seconds."
@@ -194,7 +260,10 @@
     "rollover": "Carry over the leftover",
     "rolloverHint": "When a new period starts, whatever was left of the previous one is added to it. An overspend carries across too.",
     "startPeriodWeekly": "Start the week",
-    "startPeriodFortnightly": "Start the fortnight"
+    "startPeriodFortnightly": "Start the fortnight",
+    "version": "Version",
+    "versionUpdated": "Updated",
+    "versionUnknown": "unknown"
   },
   "newPeriod": {
     "titleWeekly": "New week",

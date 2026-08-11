@@ -14,7 +14,7 @@
  * Bump VERSION to retire every old cache on the next activation.
  */
 
-const VERSION = "v4";
+const VERSION = "v5";
 const CACHE = `gd-${VERSION}`;
 
 /** Routes worth having available on a cold offline start. `/nuevo` matters
@@ -25,6 +25,8 @@ const SHELL = [
   "/nuevo",
   "/gastos",
   "/estadisticas",
+  "/servicios",
+  "/tarjetas",
   "/datos",
   "/ajustes",
   "/manifest.webmanifest",

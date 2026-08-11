@@ -610,3 +610,98 @@ test("the statistics page adds up what the ledger says", async ({ page, request 
   await expect(page.getByText("Ritmo contra el presupuesto")).toBeVisible();
 
 });
+
+/**
+ * Servicios + Tarjetas: two registers that keep their own books.
+ *
+ * The thing worth pinning down is the BUCKETING. A card charge stores no
+ * statement id — it belongs to whichever statement's window contains its date —
+ * so closing a statement must leave the old charges exactly where they were,
+ * and the new one must start empty. That is the property a stored id would
+ * quietly break, and it is what this test walks through.
+ */
+test("services and card statements keep their own books", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  const email = `e2e-cards-${Date.now()}@test.dev`;
+  await page.evaluate((e) => window.__devSignIn!("Cards Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  /* ── Servicios ───────────────────────────────────────────────────────── */
+
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await expect(page.getByText("Todavía no hay servicios")).toBeVisible();
+
+  await page.getByRole("button", { name: "Agregar", exact: true }).click();
+  await page.getByLabel("Nombre").fill("Netflix");
+  // Both currencies are typed by hand: the app converts neither into the other.
+  await page.getByLabel("AUD").fill("22,99");
+  await page.getByLabel("USD").fill("14,99");
+  await page.getByLabel("Día de vencimiento").fill("7");
+  await page.getByRole("tab", { name: "Crédito" }).click();
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  await expect(page.getByText("Netflix")).toBeVisible();
+  // Twice on screen on purpose: once in the row, once in the monthly summary
+  // (a monthly service costs exactly its own amount per month).
+  await expect(page.getByText("$22,99").first()).toBeVisible();
+  await expect(page.getByText("US$ 14,99").first()).toBeVisible();
+  // A monthly service costs its own amount per month — the summary is the
+  // register's, and says so rather than pretending to be budget money.
+  await expect(page.getByText("Por mes")).toBeVisible();
+
+  // A yearly service needs a month to anchor its cycle; a monthly one must not
+  // have the field at all, because the rules reject an anchor on it.
+  await page.getByText("Netflix").click();
+  await expect(page.getByLabel("Mes")).toBeHidden();
+  await page.getByLabel("Frecuencia").selectOption("yearly");
+  await expect(page.getByLabel("Mes")).toBeVisible();
+  await page.getByLabel("Frecuencia").selectOption("monthly");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText(/Mensual/).first()).toBeVisible();
+
+  /* ── Tarjetas ────────────────────────────────────────────────────────── */
+
+  await page.getByRole("link", { name: "Tarjetas", exact: true }).click();
+  await expect(page.getByText("Todavía no hay resúmenes")).toBeVisible();
+
+  // Cristian's real cycle: closes on the 27th, payable by the 7th.
+  await page.getByRole("button", { name: "Abrir el primer resumen" }).click();
+  await page.getByLabel("Cierre").fill("2026-08-27");
+  await page.getByLabel("Vencimiento").fill("2026-09-07");
+  await page.getByRole("button", { name: "Abrir resumen" }).click();
+  await expect(page.getByText("Resumen actual")).toBeVisible();
+
+  // A charge lands in the statement whose window holds its date.
+  await page.getByRole("button", { name: "Agregar gasto" }).click();
+  await page.getByLabel("Monto (USD)").fill("19,99");
+  await page.getByLabel("Detalle").fill("Steam");
+  await page.getByLabel("Fecha").fill("2026-08-11");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Steam")).toBeVisible();
+  await expect(page.getByText("US$ 19,99").first()).toBeVisible();
+
+  // Close it and open the next: both dates are proposed a month on, keeping
+  // their day of the month, and the window starts the day after — so no charge
+  // can fall between two statements.
+  await page.getByRole("button", { name: "Cerrar y abrir el próximo" }).click();
+  await expect(page.getByLabel("Cierre")).toHaveValue("2026-09-27");
+  await expect(page.getByLabel("Vencimiento")).toHaveValue("2026-10-07");
+  await page.getByRole("button", { name: "Abrir resumen" }).click();
+
+  // The new statement is empty; the charge did not follow it.
+  await expect(page.getByText("Sin gastos en este resumen.")).toBeVisible();
+  await expect(page.getByText("Steam")).toBeHidden();
+
+  // ...and stepping back to the closed one finds it exactly where it was.
+  await page.getByRole("button", { name: "Resumen anterior" }).click();
+  await expect(page.getByText("Resumen cerrado")).toBeVisible();
+  await expect(page.getByText("Steam")).toBeVisible();
+
+  /* Neither register touched the budget: the dashboard still reads $900. */
+  await page.getByRole("link", { name: "Inicio", exact: true }).click();
+  await expect(page.getByText("$900,00").first()).toBeVisible();
+});

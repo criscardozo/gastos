@@ -43,6 +43,11 @@
   --cat-other: #8a8577;
   --cat-circle-alpha: 14%;
 
+  /* Card brand marks (components/ui/marks.tsx). Only Visa needs a token: its
+     mark is a wordmark, so it has to stay legible against both surfaces —
+     Mastercard's circles carry their own colour on any background. */
+  --visa: #1434cb;
+
   --key-shadow: 0 1px 3px rgba(36, 26, 16, 0.12);
 }
 
@@ -82,6 +87,8 @@
     --cat-other: #a79f8d;
     --cat-circle-alpha: 16%;
 
+    --visa: #7d9dff;
+
     --key-shadow: none;
   }
 }
@@ -115,6 +122,8 @@
   --cat-entertainment: #db6fc7;
   --cat-other: #a79f8d;
   --cat-circle-alpha: 16%;
+
+  --visa: #7d9dff;
 
   --key-shadow: none;
 }
@@ -171,12 +180,39 @@ body {
   color: var(--ink-tertiary);
 }
 
-input,
-select,
-button,
-textarea {
-  font: inherit;
-  color: inherit;
+/* Form controls inherit the app font instead of the UA's.
+ *
+ * This MUST live in @layer base. Unlayered rules beat layered ones no matter
+ * the specificity, so declaring it at the top level made a bare element
+ * selector outrank every Tailwind utility — which put `font: inherit` and
+ * `color: inherit` ahead of any `text-*` class written directly on a <button>
+ * or <input>. Every such button silently rendered at the inherited colour and
+ * 16px: "Guardar" was ink-on-accent rather than white, and a `bg-ink` button
+ * asking for `text-bg` came out invisible, ink on ink. Inside the layer the
+ * utilities win again, which is what Tailwind's own preflight does. */
+@layer base {
+  input,
+  select,
+  button,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+/* Touch devices only: never let a field render below 16px.
+ *
+ * Unlayered ON PURPOSE — this one has to outrank the `text-*` utilities, which
+ * is the opposite of the rule above and for a concrete reason: iOS Safari zooms
+ * the whole viewport when you focus a field smaller than 16px, and this app
+ * lives on a phone as an installed PWA. Scoped to fields (never buttons) and to
+ * coarse pointers, so the designed 13.5/14px sizes still apply on desktop. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 input::placeholder {

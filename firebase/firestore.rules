@@ -78,6 +78,53 @@ rules_version = '2';
 //   - updatedAt: timestamp (required, server time)
 //   Deletes are DENIED: past periods are an immutable historical record.
 //
+// Subcollection: households/{id}/services
+// Document ID: random
+// A recurring bill. Standalone: nothing sums these against the budget.
+// Fields:
+//   - name: string (required, 1..80)
+//   - amountAudCents: int (optional, 1..10_000_000)
+//   - amountUsdCents: int (optional, 1..10_000_000)
+//     — at least ONE of the two is required; the USD figure is typed here (the
+//       provider bills in it), it is not a conversion of the AUD one
+//   - interval: "monthly"|"bimonthly"|"quarterly"|"biannual"|"yearly" (required)
+//   - dueDay: int (required, 1..31) — day of the month it falls due
+//   - anchorMonth: int (1..12) — which month the cycle lands on; REQUIRED unless
+//     interval is "monthly", and forbidden when it is (every month is a due
+//     month, so there is nothing left to anchor)
+//   - paidWith: "debit"|"credit" (required)
+//   - createdBy: uid string (required, = author on create, immutable)
+//   - createdAt: timestamp (required, server time, immutable)
+//   - updatedAt: timestamp (required, server time)
+//
+// Subcollection: households/{id}/cardStatements
+// Document ID: {closingDate} ("YYYY-MM-DD") — idempotent, like periodBudgets.
+// The OPEN statement is just the one with the greatest closingDate; there is no
+// status field, so "close this one and open the next" is a single create and two
+// clients cannot disagree about which is current.
+// Fields:
+//   - startDate: string (required, "YYYY-MM-DD", ≤ closingDate, immutable)
+//   - closingDate: string (required, == doc ID, immutable by construction)
+//   - dueDate: string (required, "YYYY-MM-DD", > closingDate)
+//   - createdAt: timestamp (required, server time, immutable)
+//   - updatedAt: timestamp (required, server time)
+//   Deletes ARE allowed: a statement opened with the wrong dates has to be
+//   undoable, and no charge points at it to be orphaned.
+//
+// Subcollection: households/{id}/cardCharges
+// Document ID: random
+// A purchase on a credit card, ALWAYS in USD (the card's billing currency).
+// Belongs to the statement whose [startDate, closingDate] contains its date —
+// it stores no statement id, exactly as an expense stores no period id.
+// Fields:
+//   - date: "YYYY-MM-DD" string (required; household-timezone calendar date)
+//   - detail: string (required, may be empty, ≤ 200)
+//   - card: "visa"|"mastercard" (required)
+//   - usdCents: int (required, 1..10_000_000)
+//   - createdBy: uid string (required, = author on create, immutable)
+//   - createdAt: timestamp (required, server time, immutable)
+//   - updatedAt: timestamp (required, server time)
+//
 // Collection: invites
 // Document ID: {code} — the code IS the capability (≥ 10 chars, crypto-random,
 //   `list` denied so codes cannot be enumerated)
@@ -365,6 +412,125 @@ service cloud.firestore {
 
         // Past periods are an immutable historical record.
         allow delete: if false;
+      }
+
+      // ------------------------ services ------------------------
+
+      // At least one price, each a positive integer-cent amount. A service
+      // carrying neither would be a row that says nothing; allowing only one
+      // is deliberate, since plenty of bills are quoted in a single currency.
+      function isValidServiceAmounts(data) {
+        return (('amountAudCents' in data) || ('amountUsdCents' in data))
+          && (!('amountAudCents' in data)
+              || (data.amountAudCents is int
+                  && data.amountAudCents > 0 && data.amountAudCents <= 10000000))
+          && (!('amountUsdCents' in data)
+              || (data.amountUsdCents is int
+                  && data.amountUsdCents > 0 && data.amountUsdCents <= 10000000));
+      }
+
+      function isValidService(data) {
+        return data.keys().hasOnly(['name', 'amountAudCents', 'amountUsdCents', 'interval', 'dueDay', 'anchorMonth', 'paidWith', 'createdBy', 'createdAt', 'updatedAt'])
+          && data.keys().hasAll(['name', 'interval', 'dueDay', 'paidWith', 'createdBy', 'createdAt', 'updatedAt'])
+          && data.name is string
+          && data.name.size() >= 1 && data.name.size() <= 80
+          && isValidServiceAmounts(data)
+          && data.interval in ['monthly', 'bimonthly', 'quarterly', 'biannual', 'yearly']
+          && data.dueDay is int && data.dueDay >= 1 && data.dueDay <= 31
+          // Monthly needs no anchor and must not carry a stale one; every other
+          // interval is meaningless without knowing which month it lands on.
+          && (data.interval == 'monthly'
+              ? !('anchorMonth' in data)
+              : (data.anchorMonth is int
+                 && data.anchorMonth >= 1 && data.anchorMonth <= 12))
+          && data.paidWith in ['debit', 'credit']
+          && data.createdBy is string;
+      }
+
+      match /services/{serviceId} {
+        allow read: if isMember(householdId);
+
+        allow create: if isMember(householdId)
+          && isValidService(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid
+          && isServerTimestamp(request.resource.data.createdAt)
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        allow update: if isMember(householdId)
+          && isValidService(request.resource.data)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        allow delete: if isMember(householdId);
+      }
+
+      // ------------------------ cardStatements ------------------------
+
+      function isValidStatement(data, closingDateId) {
+        return data.keys().hasOnly(['startDate', 'closingDate', 'dueDate', 'createdAt', 'updatedAt'])
+          && data.keys().hasAll(['startDate', 'closingDate', 'dueDate', 'createdAt', 'updatedAt'])
+          && isCalendarDate(data.startDate)
+          && isCalendarDate(data.closingDate)
+          && data.closingDate == closingDateId
+          && data.startDate <= data.closingDate
+          && isCalendarDate(data.dueDate)
+          // The bill is always payable after it closes.
+          && data.dueDate > data.closingDate;
+      }
+
+      match /cardStatements/{closingDate} {
+        allow read: if isMember(householdId);
+
+        allow create: if isMember(householdId)
+          && isValidStatement(request.resource.data, closingDate)
+          && isServerTimestamp(request.resource.data.createdAt)
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        // Only the due date can be corrected after the fact. The window a
+        // statement covers is what its charges are bucketed by, so moving it
+        // would silently re-file charges nobody touched.
+        allow update: if isMember(householdId)
+          && isValidStatement(request.resource.data, closingDate)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dueDate', 'updatedAt'])
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        // Unlike a period, a statement opened with the wrong dates has to be
+        // undoable — and no charge points at it, so nothing is orphaned.
+        allow delete: if isMember(householdId);
+      }
+
+      // ------------------------ cardCharges ------------------------
+
+      function isValidCardCharge(data) {
+        return data.keys().hasOnly(['date', 'detail', 'card', 'usdCents', 'createdBy', 'createdAt', 'updatedAt'])
+          && data.keys().hasAll(['date', 'detail', 'card', 'usdCents', 'createdBy', 'createdAt', 'updatedAt'])
+          && isCalendarDate(data.date)
+          && data.detail is string && data.detail.size() <= 200
+          && data.card in ['visa', 'mastercard']
+          // USD, always: this is the card's own billing currency, and unlike an
+          // expense's usdCents it is what the user typed, not the bank's number.
+          && data.usdCents is int
+          && data.usdCents > 0 && data.usdCents <= 10000000
+          && data.createdBy is string;
+      }
+
+      match /cardCharges/{chargeId} {
+        allow read: if isMember(householdId);
+
+        allow create: if isMember(householdId)
+          && isValidCardCharge(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid
+          && isServerTimestamp(request.resource.data.createdAt)
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        allow update: if isMember(householdId)
+          && isValidCardCharge(request.resource.data)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        allow delete: if isMember(householdId);
       }
     }
 

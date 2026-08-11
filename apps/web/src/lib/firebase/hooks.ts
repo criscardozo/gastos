@@ -20,9 +20,15 @@ import {
 import { getFirebaseClient } from "./client";
 import {
   bankChargeConverter,
+  cardChargeConverter,
+  cardStatementConverter,
   expenseConverter,
+  serviceConverter,
   type BankChargeDoc,
+  type CardCharge,
+  type CardStatement,
   type Expense,
+  type ServiceDoc,
 } from "./converters";
 import type { PeriodRange } from "../periods";
 
@@ -120,6 +126,138 @@ export function useBankCharges(householdId: string | null): BankChargesState {
     );
     return unsubscribe;
   }, [householdId]);
+
+  return state;
+}
+
+/* ── Services ──────────────────────────────────────────────────────────── */
+
+/** A household pays for a handful of things, not hundreds. A cap, not a page. */
+const MAX_SERVICES = 60;
+
+export interface ServicesState {
+  services: ServiceDoc[];
+  loading: boolean;
+}
+
+/**
+ * Live services. There is no date to bound this listener by, so the cap plays
+ * that role: the collection cannot grow without someone adding rows by hand.
+ */
+export function useServices(householdId: string | null): ServicesState {
+  const [state, setState] = useState<ServicesState>({
+    services: [],
+    loading: true,
+  });
+
+  useEffect(() => {
+    if (householdId === null) {
+      setState({ services: [], loading: false });
+      return;
+    }
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    const q = query(
+      collection(fb.db, "households", householdId, "services"),
+      orderBy("name", "asc"),
+      limit(MAX_SERVICES),
+    ).withConverter(serviceConverter);
+    return onSnapshot(
+      q,
+      { includeMetadataChanges: true },
+      (snap) => {
+        setState({ services: snap.docs.map((d) => d.data()), loading: false });
+      },
+      () => setState({ services: [], loading: false }),
+    );
+  }, [householdId]);
+
+  return state;
+}
+
+/* ── Credit-card statements and charges ────────────────────────────────── */
+
+/** Roughly a year of statements — enough to page back through, bounded. */
+const MAX_STATEMENTS = 13;
+
+export interface StatementsState {
+  statements: CardStatement[];
+  loading: boolean;
+}
+
+/** Statements, newest closing date first. */
+export function useCardStatements(householdId: string | null): StatementsState {
+  const [state, setState] = useState<StatementsState>({
+    statements: [],
+    loading: true,
+  });
+
+  useEffect(() => {
+    if (householdId === null) {
+      setState({ statements: [], loading: false });
+      return;
+    }
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    const q = query(
+      collection(fb.db, "households", householdId, "cardStatements"),
+      orderBy("closingDate", "desc"),
+      limit(MAX_STATEMENTS),
+    ).withConverter(cardStatementConverter);
+    return onSnapshot(
+      q,
+      (snap) => {
+        setState({ statements: snap.docs.map((d) => d.data()), loading: false });
+      },
+      () => setState({ statements: [], loading: false }),
+    );
+  }, [householdId]);
+
+  return state;
+}
+
+export interface CardChargesState {
+  charges: CardCharge[];
+  loading: boolean;
+}
+
+/**
+ * Live card charges within a statement's [startDate, closingDate] — the same
+ * bounded, lexicographic date range every expense listener uses.
+ */
+export function useCardCharges(
+  householdId: string | null,
+  startDate: string | null,
+  closingDate: string | null,
+): CardChargesState {
+  const [state, setState] = useState<CardChargesState>({
+    charges: [],
+    loading: true,
+  });
+
+  useEffect(() => {
+    if (householdId === null || startDate === null || closingDate === null) {
+      setState({ charges: [], loading: false });
+      return;
+    }
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    setState((prev) => ({ ...prev, loading: true }));
+    const q = query(
+      collection(fb.db, "households", householdId, "cardCharges"),
+      where("date", ">=", startDate),
+      where("date", "<=", closingDate),
+      orderBy("date", "desc"),
+    ).withConverter(cardChargeConverter);
+    return onSnapshot(
+      q,
+      { includeMetadataChanges: true },
+      (snap) => {
+        setState({ charges: snap.docs.map((d) => d.data()), loading: false });
+      },
+      () => setState({ charges: [], loading: false }),
+    );
+  }, [householdId, startDate, closingDate]);
 
   return state;
 }

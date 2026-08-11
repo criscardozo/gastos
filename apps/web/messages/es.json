@@ -11,7 +11,10 @@
     "data": "Datos",
     "settings": "Ajustes",
     "sharedHousehold": "Hogar compartido",
-    "stats": "Estadísticas"
+    "stats": "Estadísticas",
+    "services": "Servicios",
+    "cards": "Tarjetas",
+    "statsShort": "Stats"
   },
   "auth": {
     "continueWithGoogle": "Continuar con Google",
@@ -111,6 +114,69 @@
     "clearVerification": "Quitar verificación",
     "exportUnverifiedConfirm": "{count, plural, one {Hay # gasto sin el USD del banco: su columna USD va a quedar vacía. ¿Exportar igual?} other {Hay # gastos sin el USD del banco: sus columnas USD van a quedar vacías. ¿Exportar igual?}}"
   },
+  "services": {
+    "title": "Servicios",
+    "add": "Agregar",
+    "edit": "Editar servicio",
+    "name": "Nombre",
+    "namePlaceholder": "Netflix, luz, seguro…",
+    "interval": "Frecuencia",
+    "intervals": {
+      "monthly": "Mensual",
+      "bimonthly": "Bimestral",
+      "quarterly": "Trimestral",
+      "biannual": "Semestral",
+      "yearly": "Anual"
+    },
+    "dueDay": "Día de vencimiento",
+    "anchorMonth": "Mes",
+    "paidWith": "Se cobra de",
+    "debit": "Débito",
+    "credit": "Crédito",
+    "nextDue": "Próximo vencimiento: {date}",
+    "dueToday": "vence hoy",
+    "dueTomorrow": "vence mañana",
+    "dueInDays": "en {days} días",
+    "perMonth": "Por mes",
+    "perMonthHint": "Los servicios llevados a un mes. No entra en el presupuesto.",
+    "emptyTitle": "Todavía no hay servicios",
+    "emptyBody": "Agregá lo que pagás todos los meses para tenerlo a mano.",
+    "loading": "Cargando…",
+    "confirmDelete": "¿Seguro?"
+  },
+  "cards": {
+    "title": "Tarjetas de Crédito",
+    "addCharge": "Agregar gasto",
+    "editCharge": "Editar gasto",
+    "amountUsd": "Monto (USD)",
+    "detail": "Detalle",
+    "detailPlaceholder": "Dónde fue el gasto",
+    "date": "Fecha",
+    "card": "Tarjeta",
+    "currentStatement": "Resumen actual",
+    "pastStatement": "Resumen cerrado",
+    "closingDate": "Cierre",
+    "dueDate": "Vencimiento",
+    "closingDateHelp": "Hasta esta fecha entran los gastos",
+    "dueDateHelp": "Última fecha para pagarlo",
+    "fromDate": "Desde el {date}",
+    "chargeCount": "{count, plural, =0 {sin gastos} one {# gasto} other {# gastos}}",
+    "closeAndOpen": "Cerrar y abrir el próximo",
+    "newStatement": "Nuevo resumen",
+    "openStatement": "Abrir resumen",
+    "openFirstStatement": "Abrir el primer resumen",
+    "closingHint": "El resumen que cerrás llega hasta el {date}. El nuevo arranca al día siguiente.",
+    "firstStatementHint": "Elegí hasta cuándo entran los gastos y hasta cuándo tenés para pagarlo.",
+    "dueAfterClosing": "El vencimiento tiene que ser posterior al cierre.",
+    "deleteStatement": "Borrar",
+    "confirmDeleteStatement": "¿Seguro?",
+    "noCharges": "Sin gastos en este resumen.",
+    "emptyTitle": "Todavía no hay resúmenes",
+    "emptyBody": "Abrí el primero con su fecha de cierre y la de vencimiento: los gastos que cargues se agrupan solos.",
+    "older": "Resumen anterior",
+    "newer": "Resumen siguiente",
+    "loading": "Cargando…"
+  },
   "empty": {
     "noExpensesTitle": "Sin gastos todavía",
     "noExpensesHint": "Cargá el primero — tarda menos de 5 segundos."
@@ -194,7 +260,10 @@
     "rollover": "Arrastrar lo que sobra",
     "rolloverHint": "Al arrancar un período nuevo se le suma lo que sobró del anterior. Si se pasaron, la diferencia también se arrastra.",
     "startPeriodWeekly": "Iniciar la semana",
-    "startPeriodFortnightly": "Iniciar la quincena"
+    "startPeriodFortnightly": "Iniciar la quincena",
+    "version": "Versión",
+    "versionUpdated": "Actualizado",
+    "versionUnknown": "desconocida"
   },
   "newPeriod": {
     "titleWeekly": "Nueva semana",

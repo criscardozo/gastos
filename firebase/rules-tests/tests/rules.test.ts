@@ -22,13 +22,17 @@ import {
   CAROL,
   HOUSEHOLD,
   INVITE_CODE,
+  cardChargeDoc,
   createTestEnv,
   db,
   expenseDoc,
   householdDoc,
   periodBudgetDoc,
   seed,
+  serviceDoc,
+  statementDoc,
   userDoc,
+  without,
 } from "./helpers";
 
 let env: RulesTestEnvironment;
@@ -859,6 +863,239 @@ describe("households/{id}/periodBudgets", () => {
       deleteDoc(
         doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
       ),
+    );
+  });
+});
+
+// ============================ services ============================
+
+describe("households/{id}/services", () => {
+  beforeEach(async () => {
+    await seedHousehold(true);
+  });
+
+  const ref = (uid: string, id = "svc-1") =>
+    doc(db(env, uid), "households", HOUSEHOLD, "services", id);
+
+  it("either member can add, edit and delete a service", async () => {
+    await assertSucceeds(setDoc(ref(ALICE), serviceDoc(ALICE)));
+    // createdBy is attribution, not ownership — Natalia edits Cristian's row.
+    await assertSucceeds(
+      updateDoc(ref(BOB), { amountAudCents: 2599, updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(deleteDoc(ref(BOB)));
+  });
+
+  it("an outsider cannot read or write them", async () => {
+    await seed(env, async (admin) => {
+      await setDoc(doc(admin, "households", HOUSEHOLD, "services", "svc-1"), {
+        ...serviceDoc(ALICE),
+      });
+    });
+    await assertFails(getDoc(ref(CAROL)));
+    await assertFails(getDocs(collection(db(env, CAROL), "households", HOUSEHOLD, "services")));
+    await assertFails(setDoc(ref(CAROL, "svc-2"), serviceDoc(CAROL)));
+    await assertFails(deleteDoc(ref(CAROL)));
+  });
+
+  it("a service must carry at least one price, and both must be positive ints", async () => {
+    await assertFails(
+      setDoc(
+        ref(ALICE, "no-price"),
+        without(serviceDoc(ALICE), "amountAudCents", "amountUsdCents"),
+      ),
+    );
+    // One of the two is enough: plenty of bills are quoted in a single currency.
+    await assertSucceeds(
+      setDoc(ref(ALICE, "aud-only"), without(serviceDoc(ALICE), "amountUsdCents")),
+    );
+    await assertSucceeds(
+      setDoc(ref(ALICE, "usd-only"), without(serviceDoc(ALICE), "amountAudCents")),
+    );
+    // Money is integer cents, never a float or a string.
+    await assertFails(
+      setDoc(ref(ALICE, "float"), serviceDoc(ALICE, { amountAudCents: 22.99 })),
+    );
+    await assertFails(
+      setDoc(ref(ALICE, "string"), serviceDoc(ALICE, { amountUsdCents: "14.99" })),
+    );
+    await assertFails(
+      setDoc(ref(ALICE, "zero"), serviceDoc(ALICE, { amountAudCents: 0 })),
+    );
+  });
+
+  it("anchorMonth is required off-monthly and forbidden on it", async () => {
+    // Monthly: every month is a due month, so an anchor would be dead weight
+    // that could silently contradict the interval.
+    await assertFails(
+      setDoc(ref(ALICE, "monthly-anchored"), serviceDoc(ALICE, { anchorMonth: 3 })),
+    );
+    // Yearly without one is unanswerable: which month does it fall in?
+    await assertFails(
+      setDoc(ref(ALICE, "yearly-bare"), serviceDoc(ALICE, { interval: "yearly" })),
+    );
+    await assertSucceeds(
+      setDoc(
+        ref(ALICE, "yearly-ok"),
+        serviceDoc(ALICE, { interval: "yearly", anchorMonth: 3 }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        ref(ALICE, "month-13"),
+        serviceDoc(ALICE, { interval: "quarterly", anchorMonth: 13 }),
+      ),
+    );
+  });
+
+  it("rejects an unknown interval, a bad dueDay or an unknown payment method", async () => {
+    await assertFails(
+      setDoc(ref(ALICE, "i"), serviceDoc(ALICE, { interval: "weekly" })),
+    );
+    await assertFails(setDoc(ref(ALICE, "d0"), serviceDoc(ALICE, { dueDay: 0 })));
+    await assertFails(setDoc(ref(ALICE, "d32"), serviceDoc(ALICE, { dueDay: 32 })));
+    await assertFails(
+      setDoc(ref(ALICE, "p"), serviceDoc(ALICE, { paidWith: "cash" })),
+    );
+  });
+
+  it("createdBy must be the author, and never changes afterwards", async () => {
+    await assertFails(setDoc(ref(ALICE, "spoof"), serviceDoc(BOB)));
+    await assertSucceeds(setDoc(ref(ALICE), serviceDoc(ALICE)));
+    await assertFails(
+      updateDoc(ref(BOB), { createdBy: BOB, updatedAt: serverTimestamp() }),
+    );
+  });
+});
+
+// ============================ cardStatements ============================
+
+describe("households/{id}/cardStatements", () => {
+  beforeEach(async () => {
+    await seedHousehold(true);
+  });
+
+  const ref = (uid: string, closing = "2026-08-27") =>
+    doc(db(env, uid), "households", HOUSEHOLD, "cardStatements", closing);
+
+  it("members can open a statement; the doc ID must equal closingDate", async () => {
+    await assertSucceeds(setDoc(ref(ALICE), statementDoc()));
+    await assertFails(
+      setDoc(ref(ALICE, "2026-09-27"), statementDoc()), // id ≠ closingDate
+    );
+    await assertFails(setDoc(ref(CAROL, "2026-10-27"), statementDoc({ closingDate: "2026-10-27" })));
+  });
+
+  it("the bill must be payable after it closes, and the window must be ordered", async () => {
+    await assertFails(
+      setDoc(ref(ALICE), statementDoc({ dueDate: "2026-08-27" })), // same day
+    );
+    await assertFails(
+      setDoc(ref(ALICE), statementDoc({ dueDate: "2026-08-01" })), // before closing
+    );
+    await assertFails(
+      setDoc(ref(ALICE), statementDoc({ startDate: "2026-09-01" })), // starts after it closes
+    );
+    await assertFails(
+      setDoc(ref(ALICE), statementDoc({ closingDate: "2026-8-27" })), // not zero-padded
+    );
+  });
+
+  it("only the due date can be corrected — the charge window cannot move", async () => {
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "cardStatements", "2026-08-27"),
+        statementDoc(),
+      );
+    });
+    await assertSucceeds(
+      updateDoc(ref(BOB), { dueDate: "2026-09-10", updatedAt: serverTimestamp() }),
+    );
+    // Moving startDate would silently re-file charges nobody touched.
+    await assertFails(
+      updateDoc(ref(ALICE), { startDate: "2026-07-01", updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it("a statement opened with the wrong dates can be deleted", async () => {
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "cardStatements", "2026-08-27"),
+        statementDoc(),
+      );
+    });
+    await assertFails(deleteDoc(ref(CAROL)));
+    await assertSucceeds(deleteDoc(ref(BOB)));
+  });
+});
+
+// ============================ cardCharges ============================
+
+describe("households/{id}/cardCharges", () => {
+  beforeEach(async () => {
+    await seedHousehold(true);
+  });
+
+  const ref = (uid: string, id = "chg-1") =>
+    doc(db(env, uid), "households", HOUSEHOLD, "cardCharges", id);
+
+  it("either member can add, edit and delete a charge", async () => {
+    await assertSucceeds(setDoc(ref(ALICE), cardChargeDoc(ALICE)));
+    await assertSucceeds(
+      updateDoc(ref(BOB), { usdCents: 2499, updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(deleteDoc(ref(BOB)));
+  });
+
+  it("an outsider cannot read or write them", async () => {
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "cardCharges", "chg-1"),
+        cardChargeDoc(ALICE),
+      );
+    });
+    await assertFails(getDoc(ref(CAROL)));
+    await assertFails(
+      getDocs(collection(db(env, CAROL), "households", HOUSEHOLD, "cardCharges")),
+    );
+    await assertFails(setDoc(ref(CAROL, "chg-2"), cardChargeDoc(CAROL)));
+    await assertFails(deleteDoc(ref(CAROL)));
+  });
+
+  it("only visa or mastercard, and the amount is positive integer USD cents", async () => {
+    await assertFails(setDoc(ref(ALICE, "amex"), cardChargeDoc(ALICE, { card: "amex" })));
+    await assertSucceeds(
+      setDoc(ref(ALICE, "mc"), cardChargeDoc(ALICE, { card: "mastercard" })),
+    );
+    await assertFails(
+      setDoc(ref(ALICE, "float"), cardChargeDoc(ALICE, { usdCents: 19.99 })),
+    );
+    await assertFails(setDoc(ref(ALICE, "zero"), cardChargeDoc(ALICE, { usdCents: 0 })));
+  });
+
+  it("the date is a household calendar date and the detail may be empty", async () => {
+    await assertSucceeds(setDoc(ref(ALICE, "blank"), cardChargeDoc(ALICE, { detail: "" })));
+    await assertFails(
+      setDoc(ref(ALICE, "bad-date"), cardChargeDoc(ALICE, { date: "2026-8-3" })),
+    );
+    await assertFails(
+      setDoc(ref(ALICE, "long"), cardChargeDoc(ALICE, { detail: "x".repeat(201) })),
+    );
+  });
+
+  it("a charge carries no statement id — nothing to spoof", async () => {
+    // Bucketing is by date, so an extra field is not just unused: accepting it
+    // would let two clients disagree about which statement a charge is in.
+    await assertFails(
+      setDoc(ref(ALICE, "extra"), cardChargeDoc(ALICE, { statementId: "2026-08-27" })),
+    );
+  });
+
+  it("createdBy must be the author, and never changes afterwards", async () => {
+    await assertFails(setDoc(ref(ALICE, "spoof"), cardChargeDoc(BOB)));
+    await assertSucceeds(setDoc(ref(ALICE), cardChargeDoc(ALICE)));
+    await assertFails(
+      updateDoc(ref(BOB), { createdBy: BOB, updatedAt: serverTimestamp() }),
     );
   });
 });

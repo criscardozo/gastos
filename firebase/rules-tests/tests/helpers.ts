@@ -105,6 +105,68 @@ export function periodBudgetDoc(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/** Valid `services/{id}` payload — monthly, so it carries no anchorMonth. */
+export function serviceDoc(
+  createdBy: string,
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    name: "Netflix",
+    amountAudCents: 2299,
+    amountUsdCents: 1499,
+    interval: "monthly",
+    dueDay: 7,
+    paidWith: "credit",
+    createdBy,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  };
+}
+
+/** Valid `cardStatements/{closingDate}` payload. */
+export function statementDoc(overrides: Record<string, unknown> = {}) {
+  return {
+    startDate: "2026-07-28",
+    closingDate: "2026-08-27",
+    dueDate: "2026-09-07",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  };
+}
+
+/** Valid `cardCharges/{id}` payload. */
+export function cardChargeDoc(
+  createdBy: string,
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    date: "2026-08-03",
+    detail: "Steam",
+    card: "visa",
+    usdCents: 1999,
+    createdBy,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  };
+}
+
+/**
+ * The same payload minus some keys — for asserting that an OPTIONAL field is
+ * genuinely optional. `deleteField()` is not an option here: setDoc() rejects
+ * it outside a merge, and a merge would not exercise a create.
+ */
+export function without(
+  payload: Record<string, unknown>,
+  ...keys: string[]
+): Record<string, unknown> {
+  const copy = { ...payload };
+  for (const key of keys) delete copy[key];
+  return copy;
+}
+
 /** Seed data bypassing rules. */
 export async function seed(
   env: RulesTestEnvironment,

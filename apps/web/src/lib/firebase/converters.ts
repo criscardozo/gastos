@@ -11,6 +11,8 @@ import {
 
 import type { CategoryDef } from "../categories";
 import type { PeriodType } from "../periods";
+import type { PaidWith, ServiceInterval } from "../services";
+import type { CardBrand } from "../statements";
 
 export interface UserDoc {
   uid: string;
@@ -84,6 +86,42 @@ export interface BankChargeDoc {
   date: string;
   merchant: string;
   cardLast4: string | null;
+}
+
+/** `households/{id}/services/{id}` — a recurring bill. See shared/schema.md. */
+export interface ServiceDoc {
+  id: string;
+  name: string;
+  /** Integer cents. Null when the bill is only quoted in the other currency. */
+  amountAudCents: number | null;
+  /** Integer cents of USD — typed by the user, NOT converted from the AUD one. */
+  amountUsdCents: number | null;
+  interval: ServiceInterval;
+  dueDay: number;
+  /** Which month the cycle lands on; null when monthly (nothing to anchor). */
+  anchorMonth: number | null;
+  paidWith: PaidWith;
+  createdBy: string;
+  pendingWrite: boolean;
+}
+
+/** `households/{id}/cardStatements/{closingDate}`. */
+export interface CardStatement {
+  startDate: string;
+  /** Also the doc id. */
+  closingDate: string;
+  dueDate: string;
+}
+
+/** `households/{id}/cardCharges/{id}` — always USD. */
+export interface CardCharge {
+  id: string;
+  date: string;
+  detail: string;
+  card: CardBrand;
+  usdCents: number;
+  createdBy: string;
+  pendingWrite: boolean;
 }
 
 export interface Invite {
@@ -167,6 +205,48 @@ export const bankChargeConverter = readOnly<BankChargeDoc>((snap) => {
     date: data.date as string,
     merchant: (data.merchant as string | undefined) ?? "",
     cardLast4: (data.cardLast4 as string | undefined) ?? null,
+  };
+});
+
+export const serviceConverter = readOnly<ServiceDoc>((snap) => {
+  const data = snap.data();
+  return {
+    id: snap.id,
+    name: (data.name as string) ?? "",
+    // Absent means "not quoted in this currency" — distinct from zero, which
+    // the rules reject outright.
+    amountAudCents: (data.amountAudCents as number | undefined) ?? null,
+    amountUsdCents: (data.amountUsdCents as number | undefined) ?? null,
+    interval: (data.interval as ServiceInterval) ?? "monthly",
+    dueDay: (data.dueDay as number | undefined) ?? 1,
+    anchorMonth: (data.anchorMonth as number | undefined) ?? null,
+    paidWith: (data.paidWith as PaidWith) ?? "debit",
+    createdBy: (data.createdBy as string) ?? "",
+    pendingWrite: snap.metadata.hasPendingWrites,
+  };
+});
+
+export const cardStatementConverter = readOnly<CardStatement>((snap) => {
+  const data = snap.data();
+  return {
+    startDate: data.startDate as string,
+    // The doc id IS the closing date; reading it from the id keeps the two
+    // from ever disagreeing.
+    closingDate: snap.id,
+    dueDate: data.dueDate as string,
+  };
+});
+
+export const cardChargeConverter = readOnly<CardCharge>((snap) => {
+  const data = snap.data();
+  return {
+    id: snap.id,
+    date: data.date as string,
+    detail: (data.detail as string | undefined) ?? "",
+    card: (data.card as CardBrand) ?? "visa",
+    usdCents: data.usdCents as number,
+    createdBy: (data.createdBy as string) ?? "",
+    pendingWrite: snap.metadata.hasPendingWrites,
   };
 });
 

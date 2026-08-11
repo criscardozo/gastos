@@ -182,6 +182,55 @@ function Toggle({
   );
 }
 
+/**
+ * Which build is running and when it was last updated.
+ *
+ * Every value is stamped at BUILD time by next.config.ts (version from
+ * package.json, commit + its date from Vercel's environment or from git), so
+ * nobody has to remember to bump a string — and what the card says is
+ * necessarily what is deployed.
+ */
+function VersionCard({ locale }: { locale: string }) {
+  const t = useTranslations("settings");
+
+  const version = process.env.NEXT_PUBLIC_APP_VERSION ?? "";
+  const sha = process.env.NEXT_PUBLIC_BUILD_SHA ?? "";
+  const isoDate = process.env.NEXT_PUBLIC_BUILD_DATE ?? "";
+
+  const built = isoDate !== "" ? new Date(isoDate) : null;
+  const updated =
+    built !== null && !Number.isNaN(built.getTime())
+      ? new Intl.DateTimeFormat(locale === "es" ? "es-AR" : "en-AU", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: locale !== "es",
+        }).format(built)
+      : t("versionUnknown");
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-[18px] border border-line bg-surface px-[18px] py-3.5">
+      <div className="flex flex-col gap-0.5">
+        <span className="section-label">{t("version")}</span>
+        <span className="tnum text-[13.5px] font-bold text-ink">
+          {version !== "" ? `v${version}` : t("versionUnknown")}
+          {sha !== "" && (
+            <span className="ml-1.5 font-semibold text-ink-3">{sha}</span>
+          )}
+        </span>
+      </div>
+      <div className="flex flex-col items-end gap-0.5">
+        <span className="section-label">{t("versionUpdated")}</span>
+        <span className="tnum text-[13.5px] font-semibold text-ink-2">
+          {updated}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function inviteCodeKey(householdId: string): string {
   return `gd:inviteCode:${householdId}`;
 }
@@ -465,6 +514,9 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Which build is actually running */}
+      <VersionCard locale={locale} />
 
       {/* Sign out */}
       <button
