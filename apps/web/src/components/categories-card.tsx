@@ -153,12 +153,20 @@ export function CategoriesCard({ household }: { household: Household }) {
 
   return (
     <div className="flex flex-col rounded-[18px] border border-line bg-surface px-[18px] py-4">
-      <div className="mb-1 flex items-baseline justify-between">
-        <span className="section-label">{t("title")}</span>
-        <span className="text-[11px] text-ink-3">{t("countsToBudgetHint")}</span>
-        <span className="tnum text-[11px] font-semibold text-ink-3">
-          {rows.length}/{MAX_CATEGORIES}
-        </span>
+      {/* The hint gets its own line. Sitting between the title and the counter
+          in a justify-between row, it had nothing to separate it from either —
+          two sentences long, it ran straight into "CATEGORÍAS" and wrapped
+          under the count. */}
+      <div className="mb-1 flex flex-col gap-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="section-label">{t("title")}</span>
+          <span className="tnum text-[11px] font-semibold text-ink-3">
+            {rows.length}/{MAX_CATEGORIES}
+          </span>
+        </div>
+        <p className="text-[11px] leading-snug text-ink-3">
+          {t("countsToBudgetHint")}
+        </p>
       </div>
 
       <div className="divide-y divide-soft">
