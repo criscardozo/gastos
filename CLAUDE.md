@@ -20,6 +20,12 @@ pnpm workspaces for the JS side (web + rules-tests). Swift and TS share no code 
 
 ## Hard constraints (do not violate)
 
+> The rules Cristian set, with the reasoning behind each — including the process
+> ones that don't live in code (when to push, what may cost money, how to verify)
+> — are collected in [`docs/reglas.md`](docs/reglas.md). This section stays the
+> authoritative short form for the technical ones.
+
+
 - **$0 infra budget.** Firebase Spark plan only — never introduce Cloud Functions (they require the paid Blaze plan). Vercel Hobby for web hosting. No paid services.
 - **No custom backend.** Both clients talk directly to Firebase (Auth + Firestore). **Firestore security rules are the only security boundary** — client-side route gating is cosmetic.
 - **Money is integer cents** (Swift `Int`, TS `number`). Never floats, never decimal strings. Format with `NumberFormatter` / `Intl.NumberFormat`.
