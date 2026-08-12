@@ -39,23 +39,27 @@ struct PiggyMark: View {
                 .frame(width: 62 * s, height: 50 * s)
                 .offset(x: 16 * s, y: 31 * s)
 
-            // Snout.
+            // Snout: wider than tall and clear of the body, with the nostrils
+            // side by side on the part that protrudes. Stacked vertically on a
+            // vertical capsule (as this was) reads as a power socket.
             RoundedRectangle(cornerRadius: 8.5 * s, style: .continuous)
                 .fill(bodyColor)
-                .frame(width: 17 * s, height: 20 * s)
-                .offset(x: 69 * s, y: 46 * s)
+                .frame(width: 20 * s, height: 17 * s)
+                .offset(x: 70 * s, y: 47.5 * s)
 
             // Nostrils + eye. Sub-pixel at small sizes, which is fine: they
             // read as texture rather than as features, same as the web mark.
-            dot(x: 77.5, y: 53, r: 2.2, color: detailColor)
-            dot(x: 77.5, y: 59.5, r: 2.2, color: detailColor)
+            dot(x: 81, y: 56, r: 2.3, color: detailColor)
+            dot(x: 86.5, y: 56, r: 2.3, color: detailColor)
             dot(x: 60.5, y: 49, r: 3, color: detailColor)
 
             // The slot on its back, and the coin going in.
-            RoundedRectangle(cornerRadius: 2.4 * s, style: .continuous)
+            // Fully inside the body: at x=35 the back's edge is at y=32.95, so
+            // a slot starting at 31.4 hung over it and read as a bite taken out.
+            RoundedRectangle(cornerRadius: 2.3 * s, style: .continuous)
                 .fill(detailColor)
-                .frame(width: 16 * s, height: 4.8 * s)
-                .offset(x: 35 * s, y: 31.4 * s)
+                .frame(width: 15 * s, height: 4.6 * s)
+                .offset(x: 36 * s, y: 34 * s)
             dot(x: 43, y: 16.5, r: 8.8, color: bodyColor)
             RoundedRectangle(cornerRadius: 1.8 * s, style: .continuous)
                 .fill(detailColor)

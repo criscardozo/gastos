@@ -44,12 +44,12 @@ export function PiggyMark({
       <rect x="29" y="70" width="10" height="14" rx="5" fill={c.body} />
       <rect x="55" y="70" width="10" height="14" rx="5" fill={c.body} />
       <ellipse cx="47" cy="56" rx="31" ry="25" fill={c.body} />
-      <rect x="69" y="46" width="17" height="20" rx="8.5" fill={c.body} />
-      <circle cx="77.5" cy="53" r="2.2" fill={c.detail} />
-      <circle cx="77.5" cy="59.5" r="2.2" fill={c.detail} />
+      <rect x="70" y="47.5" width="20" height="17" rx="8.5" fill={c.body} />
+      <circle cx="81" cy="56" r="2.3" fill={c.detail} />
+      <circle cx="86.5" cy="56" r="2.3" fill={c.detail} />
       <path d="M54 33.5 Q58 21.5 67 24.5 Q71.5 27.5 64.5 36 Z" fill={c.body} />
       <circle cx="60.5" cy="49" r="3" fill={c.detail} />
-      <rect x="35" y="31.4" width="16" height="4.8" rx="2.4" fill={c.detail} />
+      <rect x="36" y="34" width="15" height="4.6" rx="2.3" fill={c.detail} />
       <circle cx="43" cy="16.5" r="8.8" fill={c.coin} />
       <rect x="41.2" y="11.8" width="3.6" height="9.4" rx="1.8" fill={c.slot} />
     </svg>
