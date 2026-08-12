@@ -68,37 +68,68 @@ struct BudgetWidgetView: View {
                 empty
             }
         }
-        .containerBackground(for: .widget) { WidgetTheme.bg }
+        .containerBackground(for: .widget) { WidgetBackground(state: entry.snapshot?.state) }
     }
 
     // MARK: Home Screen small
 
+    /// Home Screen small.
+    ///
+    /// Three bands rather than a stack drifting to the top: the brand pinned to
+    /// the top, the figure taking the middle it deserves, the bar and the
+    /// countdown along the bottom. The old layout left the bottom third empty
+    /// and spent its only splash of colour on a 7pt dot that repeated what the
+    /// bar already said — so the dot is gone and the state now tints the card
+    /// itself, faintly.
     private func small(_ snapshot: BudgetSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(String(localized: "widget.remaining.label").uppercased())
-                .font(.system(size: 11, weight: .bold))
-                .kerning(0.7)
-                .foregroundStyle(WidgetTheme.inkTertiary)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                piggyTile
+                Text(String(localized: "widget.remaining.label").uppercased())
+                    .font(.system(size: 10.5, weight: .bold))
+                    .kerning(0.7)
+                    .foregroundStyle(WidgetTheme.inkTertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            Spacer(minLength: 2)
+
             Text(snapshot.formattedRemaining(compact: true))
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 30, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(snapshot.state == "over" ? WidgetTheme.red : WidgetTheme.ink)
                 .lineLimit(1)
-                .minimumScaleFactor(0.5)
+                .minimumScaleFactor(0.45)
+
+            Spacer(minLength: 6)
+
             bar(snapshot)
-            HStack(spacing: 4) {
-                if let days = snapshot.daysLeft() {
-                    Text(daysText(days))
-                        .font(.system(size: 11.5, weight: .semibold))
-                        .foregroundStyle(WidgetTheme.inkSecondary)
-                }
-                Spacer()
-                Circle()
-                    .fill(WidgetTheme.stateColor(snapshot.state))
-                    .frame(width: 7, height: 7)
+                .padding(.bottom, 7)
+
+            if let days = snapshot.daysLeft() {
+                Text(daysText(days))
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(WidgetTheme.inkSecondary)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    /// The mark on its coral tile, exactly as the app and the web sidebar wear
+    /// it — the one thing that makes the widget identifiable at a glance among
+    /// two dozen others.
+    private var piggyTile: some View {
+        RoundedRectangle(cornerRadius: 7, style: .continuous)
+            .fill(WidgetTheme.accent)
+            .frame(width: 21, height: 21)
+            .overlay(
+                PiggyMark(
+                    size: 15,
+                    bodyColor: WidgetTheme.cream,
+                    detailColor: WidgetTheme.accent
+                )
+            )
     }
 
     private func bar(_ snapshot: BudgetSnapshot) -> some View {
@@ -111,10 +142,11 @@ struct BudgetWidgetView: View {
                 )
                 Capsule()
                     .fill(WidgetTheme.stateColor(snapshot.state))
-                    .frame(width: geo.size.width * snapshot.spentFraction)
+                    // A sliver even at zero, so the bar never looks broken.
+                    .frame(width: max(geo.size.width * snapshot.spentFraction, 8))
             }
         }
-        .frame(height: 7)
+        .frame(height: 8)
     }
 
     // MARK: Lock Screen accessories

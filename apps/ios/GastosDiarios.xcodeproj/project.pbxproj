@@ -13,6 +13,7 @@
 		1F9BA58700725716F9D218B6 /* ExpenseDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770FE80DDDE76F46C9859BB8 /* ExpenseDetailSheet.swift */; };
 		274C430DD6B23B4F19C0A5E5 /* WatchConnectivityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA2FE7D38ADF32A88459CF /* WatchConnectivityModel.swift */; };
 		27FA6C49E3337B31FEF5AB05 /* BankMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9AE25283BC9E432099A5B3B /* BankMatch.swift */; };
+		287317EE4CCAB473C7B3B0DD /* PiggyMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BF3AEB1A7B631C490D0F18 /* PiggyMark.swift */; };
 		2CC4BB92F1CB68711C723A14 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 7BDAA615B344F7D33E02779C /* GoogleSignInSwift */; };
 		358B81D7BBDE72EE00BB04A4 /* SuggestionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */; };
 		40A40EFB2C8AE17A8ADFADCF /* WidgetTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EC5D52EACCD6C3040982EE4 /* WidgetTheme.swift */; };
@@ -130,6 +131,7 @@
 		2B6F41CE08795F7FABF2312F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseVerificationTests.swift; sourceTree = "<group>"; };
 		45E8539DAFA9587CC0291F04 /* CategoriesManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesManagerView.swift; sourceTree = "<group>"; };
+		48BF3AEB1A7B631C490D0F18 /* PiggyMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiggyMark.swift; sourceTree = "<group>"; };
 		4D2312BF519B44947A6A995D /* GastosDiariosWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosDiariosWidgetBundle.swift; sourceTree = "<group>"; };
 		552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatter.swift; sourceTree = "<group>"; };
 		5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -378,6 +380,7 @@
 				4D2312BF519B44947A6A995D /* GastosDiariosWidgetBundle.swift */,
 				2B6F41CE08795F7FABF2312F /* Info.plist */,
 				F53CD2A73A681E6F361C7C16 /* Localizable.xcstrings */,
+				48BF3AEB1A7B631C490D0F18 /* PiggyMark.swift */,
 				9EC5D52EACCD6C3040982EE4 /* WidgetTheme.swift */,
 			);
 			path = GastosDiariosWidget;
@@ -673,6 +676,7 @@
 				479F02C3187696EE7D8B592A /* BudgetSnapshot.swift in Sources */,
 				B9FE52D1FA9F7D04829C48D1 /* BudgetWidget.swift in Sources */,
 				A81659D5DF0A3C5EA2D6BC8D /* GastosDiariosWidgetBundle.swift in Sources */,
+				287317EE4CCAB473C7B3B0DD /* PiggyMark.swift in Sources */,
 				93D1A5BEC5F8DD031294522A /* QuickEntryIntent.swift in Sources */,
 				40A40EFB2C8AE17A8ADFADCF /* WidgetTheme.swift in Sources */,
 			);
