@@ -62,6 +62,18 @@ final class PeriodLogicTests: XCTestCase {
             let cases: [Case]
         }
 
+        struct Extend: Decodable {
+            struct Case: Decodable {
+                let name: String
+                let startDate: String
+                let endDate: String
+                let period: String
+                let expectedEndDate: String?
+                let expectedAddedDays: Int?
+            }
+            let cases: [Case]
+        }
+
         let addDays: [AddDays]
         let daysBetween: [DaysBetween]
         let periodEndDate: [PeriodEnd]
@@ -69,6 +81,7 @@ final class PeriodLogicTests: XCTestCase {
         let cascadeMaterialization: Cascade
         let todayInTimezone: Today
         let budgetState: Budget
+        let extendToFortnight: Extend
     }
 
     private static let vectors: Vectors = {
@@ -196,6 +209,51 @@ final class PeriodLogicTests: XCTestCase {
                 "todayInTimezone(\(vector.instant), \(vector.timezone))"
             )
         }
+    }
+
+    func testExtendToFortnightVectors() {
+        let cases = Self.vectors.extendToFortnight.cases
+        XCTAssertFalse(cases.isEmpty)
+        for vector in cases {
+            let result = PeriodLogic.extendToFortnight(
+                startDate: date(vector.startDate),
+                endDate: date(vector.endDate),
+                period: period(vector.period)
+            )
+            guard let expectedEnd = vector.expectedEndDate else {
+                XCTAssertNil(result, vector.name)
+                continue
+            }
+            guard let result else {
+                XCTFail("\(vector.name): expected \(expectedEnd), got nil")
+                continue
+            }
+            XCTAssertEqual(result.endDate, date(expectedEnd), vector.name)
+            XCTAssertEqual(result.addedDays, vector.expectedAddedDays, vector.name)
+        }
+    }
+
+    /// The point of the feature: the handover weekday must not move. Cristian's
+    /// weeks run Friday to Thursday, and an extended one still ends on a
+    /// Thursday — a week later.
+    func testExtendingKeepsTheHandoverWeekday() {
+        let start = date("2026-08-07")
+        let end = date("2026-08-13")
+        guard let extended = PeriodLogic.extendToFortnight(
+            startDate: start, endDate: end, period: .weekly
+        ) else {
+            XCTFail("a weekly period must be extendable")
+            return
+        }
+        XCTAssertEqual(PeriodLogic.addDays(extended.endDate, 1), date("2026-08-21"))
+        // An expense in the added week now falls inside this period, which is
+        // what makes the extension work without touching any expense doc.
+        XCTAssertTrue(PeriodLogic.containsDate(
+            startDate: start, endDate: extended.endDate, date: date("2026-08-20")
+        ))
+        XCTAssertFalse(PeriodLogic.containsDate(
+            startDate: start, endDate: extended.endDate, date: date("2026-08-21")
+        ))
     }
 
     func testBudgetStateVectors() {

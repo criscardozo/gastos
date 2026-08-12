@@ -77,6 +77,9 @@ rules_version = '2';
 //   - createdAt: timestamp (required, server time, immutable)
 //   - updatedAt: timestamp (required, server time)
 //   Deletes are DENIED: past periods are an immutable historical record.
+//   startDate never moves. endDate and period move in exactly ONE case: the
+//   week under way being stretched into a fortnight (weekly → fortnightly,
+//   end date strictly later, amount only growing). See the update rule.
 //
 // Subcollection: households/{id}/services
 // Document ID: random
@@ -402,13 +405,38 @@ service cloud.firestore {
           && isServerTimestamp(request.resource.data.createdAt)
           && isServerTimestamp(request.resource.data.updatedAt);
 
-        // Only the budget amount — and what of it was carried in, which is
-        // that amount's explanation — may change after materialization. Period
-        // boundaries and type never move.
+        // Two shapes of update, and nothing else.
+        //
+        // (a) Re-budgeting: the amount, and what of it was carried in — which
+        //     is that amount's explanation. Boundaries do not move.
+        // (b) Extending the week under way into a fortnight. This DOES move the
+        //     end date, which every other rule here refuses, so it is fenced in
+        //     hard: only forward, only weekly → fortnightly, only with the start
+        //     date and the carried-in figure untouched, and the budget can only
+        //     grow. One-way by construction — there is no branch back.
+        //
+        // What the rules cannot check is that the new end date is exactly
+        // startDate + 13: rules have no date arithmetic. That sum is the
+        // clients' job, and both compute it from the same
+        // `extendToFortnight` vectors, exactly as every other period
+        // calculation in this app is kept honest.
         allow update: if isMember(householdId)
           && isValidPeriodBudget(request.resource.data, startDate)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amountCents', 'source', 'rolloverCents', 'updatedAt'])
-          && isServerTimestamp(request.resource.data.updatedAt);
+          && isServerTimestamp(request.resource.data.updatedAt)
+          && (
+            // (a) re-budget
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amountCents', 'source', 'rolloverCents', 'updatedAt'])
+              && request.resource.data.endDate == resource.data.endDate
+              && request.resource.data.period == resource.data.period)
+            // (b) extend
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amountCents', 'source', 'period', 'endDate', 'updatedAt'])
+              && resource.data.period == 'weekly'
+              && request.resource.data.period == 'fortnightly'
+              && request.resource.data.startDate == resource.data.startDate
+              && request.resource.data.endDate > resource.data.endDate
+              && request.resource.data.amountCents >= resource.data.amountCents
+              && request.resource.data.source == 'custom')
+          );
 
         // Past periods are an immutable historical record.
         allow delete: if false;

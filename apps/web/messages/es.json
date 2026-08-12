@@ -285,6 +285,17 @@
     "later": "Ahora no",
     "back": "Volver"
   },
+  "extendPeriod": {
+    "title": "Extender a dos semanas",
+    "extend": "Extender a 2 semanas",
+    "endsNow": "Ahora termina",
+    "endsAfter": "Pasaría a terminar",
+    "addAmount": "Sumar al presupuesto",
+    "addAmountHelp": "Lo que agregás por la segunda semana. Viene con tu presupuesto por defecto, cambialo si querés.",
+    "newTotal": "Presupuesto del período",
+    "noWayBack": "Esto no se puede deshacer: el período queda de dos semanas y no hay forma de volverlo a una. Tocá de nuevo para confirmar.",
+    "confirm": "Sí, extender el período"
+  },
   "categories": {
     "groceries": "Súper",
     "coffee": "Café",

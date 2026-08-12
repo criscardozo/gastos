@@ -110,6 +110,46 @@ export function cascadeMaterialization(
   return created;
 }
 
+/** The parts of a materialized period the extension maths needs. */
+export interface PeriodBudgetLike {
+  startDate: string;
+  endDate: string;
+  period: PeriodType;
+  amountCents: number;
+}
+
+export interface PeriodExtension {
+  /** Where the period now ends, inclusive. */
+  endDate: string;
+  /** How many days it gained — always 7, but stated rather than assumed. */
+  addedDays: number;
+}
+
+/**
+ * Turn the week under way into two weeks, without moving where it started.
+ *
+ * The household budgets by the week (Friday to Thursday), and sometimes a few
+ * days in it becomes clear that this one has to stretch. The new end date is
+ * exactly the one a fortnightly period beginning that same day would have had,
+ * which is what keeps the NEXT period landing on the household's usual weekday:
+ * a week running Fri 7 → Thu 13 becomes Fri 7 → Thu 20, and the next one still
+ * opens on a Friday.
+ *
+ * Returns null for a period that is already a fortnight — there is nothing left
+ * to extend into, and this is deliberately one-way. Expenses need no migration:
+ * one belongs to whichever period's range contains its date, so moving the
+ * boundary IS the whole operation.
+ */
+export function extendToFortnight(period: {
+  startDate: string;
+  endDate: string;
+  period: PeriodType;
+}): PeriodExtension | null {
+  if (period.period !== "weekly") return null;
+  const endDate = periodEndDate(period.startDate, "fortnightly");
+  return { endDate, addedDays: daysBetween(period.endDate, endDate) };
+}
+
 /**
  * Budget progress state. `over` when spent exceeds the budget, `warning`
  * from 85% of the budget (inclusive), `comfortable` otherwise.

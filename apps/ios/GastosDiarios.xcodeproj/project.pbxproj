@@ -68,6 +68,7 @@
 		EC2434DE5909830DA8DB749F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D3934372BE7A86D42D837236 /* GoogleSignIn */; };
 		F66E126B602E61FCCC04EA5B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A3DE79D792BD15A233F74D /* SettingsView.swift */; };
 		F6C3A5A2215B37A39404FBF6 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1033958EAF0770812248EF2 /* HistoryView.swift */; };
+		FBA2FB7F467551ED953B03E1 /* ExtendPeriodSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D97F66821E44E31296A3C8CB /* ExtendPeriodSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -169,6 +170,7 @@
 		D087ED99498939948DFCD72D /* BankMatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankMatchTests.swift; sourceTree = "<group>"; };
 		D1033958EAF0770812248EF2 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		D4DB54625B627DD9D2F40F3D /* BudgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetSnapshot.swift; sourceTree = "<group>"; };
+		D97F66821E44E31296A3C8CB /* ExtendPeriodSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtendPeriodSheet.swift; sourceTree = "<group>"; };
 		E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestionsTests.swift; sourceTree = "<group>"; };
 		E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogic.swift; sourceTree = "<group>"; };
 		EC439A76443D441CA1E59FBA /* WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
@@ -280,6 +282,7 @@
 			isa = PBXGroup;
 			children = (
 				45E8539DAFA9587CC0291F04 /* CategoriesManagerView.swift */,
+				D97F66821E44E31296A3C8CB /* ExtendPeriodSheet.swift */,
 				F1A3DE79D792BD15A233F74D /* SettingsView.swift */,
 			);
 			path = Settings;
@@ -626,6 +629,7 @@
 				C003724BF4470744B6B53B53 /* Components.swift in Sources */,
 				1F9BA58700725716F9D218B6 /* ExpenseDetailSheet.swift in Sources */,
 				C85234FD7E915451EBD5B306 /* ExpenseFormView.swift in Sources */,
+				FBA2FB7F467551ED953B03E1 /* ExtendPeriodSheet.swift in Sources */,
 				A7E3EB7757720198B6CAB1C7 /* FirestoreService.swift in Sources */,
 				4A6170B92E597704ED1A35D9 /* GastosDiariosApp.swift in Sources */,
 				F6C3A5A2215B37A39404FBF6 /* HistoryView.swift in Sources */,

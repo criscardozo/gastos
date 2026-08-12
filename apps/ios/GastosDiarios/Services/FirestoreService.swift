@@ -353,6 +353,37 @@ final class FirestoreService {
             .updateData(data)
     }
 
+    /// Stretch the week under way into a fortnight: its end date moves out by a
+    /// week and the budget grows by whatever is being added for it.
+    ///
+    /// The only write in this app that moves a period boundary. It is safe
+    /// because expenses are bucketed by DATE rather than by a stored period id —
+    /// the days that were about to belong to the next period now belong to this
+    /// one, and not a single expense doc is touched. The security rules fence it
+    /// in to weekly → fortnightly, forwards only, with the start date and the
+    /// carried-in figure left alone.
+    ///
+    /// `endDate` must come from `PeriodLogic.extendToFortnight`: rules have no
+    /// date arithmetic and cannot check it, so the shared vectors are what keep
+    /// this and the web computing the same day.
+    func extendPeriodToFortnight(
+        householdId: String,
+        startDate: String,
+        endDate: String,
+        amountCents: Int
+    ) async throws {
+        try await db.collection("households").document(householdId)
+            .collection("periodBudgets").document(startDate)
+            .updateData([
+                "period": PeriodType.fortnightly.rawValue,
+                "endDate": endDate,
+                "amountCents": amountCents,
+                // Whatever it was, the amount is no longer the default template.
+                "source": "custom",
+                "updatedAt": FieldValue.serverTimestamp(),
+            ])
+    }
+
     // MARK: - Expenses
 
     func createExpense(

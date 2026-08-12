@@ -240,6 +240,41 @@ export async function updatePeriodAmount(
 
 /** Rename the household. Either member may do it (the rules' member-edit
  * branch); `name` is validated there as 1..60 characters. */
+/**
+ * Stretch the week under way into a fortnight: the end date moves out by a
+ * week and the budget grows by whatever is being added for it.
+ *
+ * The one write in this app that moves a period boundary. It is safe precisely
+ * because expenses are bucketed by date rather than by a stored period id —
+ * the days that were about to belong to the next period now belong to this one,
+ * and not a single expense doc is touched. The rules fence this in to
+ * weekly → fortnightly, forwards only, with the start date and the carried-in
+ * figure untouched.
+ *
+ * `endDate` must come from `extendToFortnight` — the rules have no date
+ * arithmetic and cannot check it, so the shared vectors are what keep both
+ * clients computing the same day.
+ */
+export async function extendPeriodToFortnight(
+  db: Firestore,
+  householdId: string,
+  startDate: string,
+  endDate: string,
+  amountCents: number,
+): Promise<void> {
+  await updateDoc(
+    doc(db, "households", householdId, "periodBudgets", startDate),
+    {
+      period: "fortnightly",
+      endDate,
+      amountCents,
+      // The amount no longer came from the default template, whatever it was.
+      source: "custom",
+      updatedAt: serverTimestamp(),
+    },
+  );
+}
+
 export async function updateHouseholdName(
   db: Firestore,
   householdId: string,

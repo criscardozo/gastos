@@ -81,6 +81,34 @@ Rules of the chain:
   together on purpose: the second is the first's explanation, so letting only one change
   would leave the record contradicting itself. That is what answering the start-period
   screen does when the leftover is included or dropped.
+- **Extending the week under way** is the ONE exception to that boundary rule.
+  Mid-period it can become clear that this week has to cover a fortnight, so
+  `period` goes `weekly → fortnightly`, `endDate` moves out by 7 days to exactly
+  what `startDate + 13` would have been, `amountCents` grows by whatever is being
+  added for the second week, and `source` becomes `"custom"`. `startDate` and
+  `rolloverCents` do not move — the latter records what was carried IN at the
+  start, which extending does not change.
+
+  The next period still opens on the household's usual weekday: a week running
+  Friday 7 → Thursday 13 becomes Friday 7 → Thursday 20, and the next one starts
+  Friday 21.
+
+  **No expense is touched.** An expense belongs to whichever period's range
+  contains its `date`, so the days that were about to fall into the next period
+  fall into this one the moment the boundary moves. That property is exactly why
+  expenses store no period id.
+
+  **One-way.** Nothing turns a fortnight back into a week — not the clients, not
+  the rules. Shrinking `endDate` would strand any expense already logged in the
+  added days between two periods. Both clients therefore ask for a second,
+  deliberate confirmation before writing.
+
+  The arithmetic is `extendToFortnight`, implemented twice (TS + Swift) and
+  validated against the `extendToFortnight` cases in
+  `shared/period-test-vectors.json`. The rules cannot check it — they have no
+  date arithmetic — so they only enforce the shape: weekly → fortnightly, end
+  date strictly later, start date and carried-in figure untouched, amount never
+  shrinking.
 - Changing `defaultBudget` affects only future, not-yet-materialized periods.
 
 ### `households/{householdId}/expenses/{expenseId}`

@@ -285,6 +285,17 @@
     "later": "Not now",
     "back": "Back"
   },
+  "extendPeriod": {
+    "title": "Extend to two weeks",
+    "extend": "Extend to 2 weeks",
+    "endsNow": "Ends now",
+    "endsAfter": "Would end",
+    "addAmount": "Add to the budget",
+    "addAmountHelp": "What you are adding for the second week. Prefilled with your default budget; change it if you like.",
+    "newTotal": "Budget for the period",
+    "noWayBack": "This cannot be undone: the period becomes two weeks and there is no way back to one. Press again to confirm.",
+    "confirm": "Yes, extend the period"
+  },
   "categories": {
     "groceries": "Groceries",
     "coffee": "Coffee",

@@ -443,6 +443,43 @@ final class AppModel {
         showNewPeriodSheet = true
     }
 
+    // MARK: - Extending the week under way
+
+    /// Where the period under way would end if it were stretched to two weeks,
+    /// or nil when there is nothing to stretch (it is already a fortnight).
+    /// Drives whether the button is even offered.
+    var extendedEndDate: CalendarDate? {
+        guard let current = currentPeriod,
+              let start = CalendarDate(current.startDate),
+              let end = CalendarDate(current.endDate)
+        else { return nil }
+        return PeriodLogic.extendToFortnight(
+            startDate: start, endDate: end, period: current.period
+        )?.endDate
+    }
+
+    /// Turn the week under way into a fortnight, adding `addedCents` to its
+    /// budget. ONE-WAY: nothing here or in the security rules walks it back.
+    ///
+    /// `rolloverCents` is deliberately untouched — it records what was carried
+    /// IN at the start of the period, which this does not change.
+    func extendCurrentPeriod(addedCents: Int) {
+        guard let current = currentPeriod,
+              let householdId = attachedHouseholdId,
+              let endDate = extendedEndDate,
+              addedCents > 0
+        else { return }
+        let total = current.amountCents + addedCents
+        Task {
+            try? await firestore.extendPeriodToFortnight(
+                householdId: householdId,
+                startDate: current.startDate,
+                endDate: endDate.raw,
+                amountCents: total
+            )
+        }
+    }
+
     /// Closing the manually-opened screen also counts as "seen".
     func markNewPeriodSeen() {
         guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }

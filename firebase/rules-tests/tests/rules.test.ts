@@ -852,6 +852,163 @@ describe("households/{id}/periodBudgets", () => {
     );
   });
 
+  it("the week under way can be stretched into a fortnight, once and forwards", async () => {
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-08-07");
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-08-07"),
+        periodBudgetDoc({
+          startDate: "2026-08-07",
+          endDate: "2026-08-13",
+          period: "weekly",
+          amountCents: 45000,
+          rolloverCents: 5000,
+        }),
+      );
+    });
+
+    // Friday-to-Thursday week becomes Friday-to-Thursday fortnight, with a
+    // week's budget added. The carried-in figure describes what came in at the
+    // START, so it does not move.
+    await assertSucceeds(
+      updateDoc(ref, {
+        period: "fortnightly",
+        endDate: "2026-08-20",
+        amountCents: 90000,
+        source: "custom",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("an extension cannot shrink, reverse, or move the start", async () => {
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-08-07");
+    const seedWeek = async () => {
+      await seed(env, async (admin) => {
+        await setDoc(
+          doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-08-07"),
+          periodBudgetDoc({
+            startDate: "2026-08-07",
+            endDate: "2026-08-13",
+            period: "weekly",
+            amountCents: 45000,
+          }),
+        );
+      });
+    };
+    await seedWeek();
+
+    // Pulling the end date BACKWARDS would strand expenses between periods.
+    await assertFails(
+      updateDoc(ref, {
+        period: "fortnightly",
+        endDate: "2026-08-10",
+        amountCents: 45000,
+        source: "custom",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // Moving the end without changing the type, or vice versa.
+    await assertFails(
+      updateDoc(ref, { endDate: "2026-08-20", updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(ref, { period: "fortnightly", updatedAt: serverTimestamp() }),
+    );
+    // The start of a period is never negotiable.
+    await assertFails(
+      updateDoc(ref, {
+        startDate: "2026-08-01",
+        period: "fortnightly",
+        endDate: "2026-08-20",
+        amountCents: 90000,
+        source: "custom",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // Extending must not quietly cut the budget.
+    await assertFails(
+      updateDoc(ref, {
+        period: "fortnightly",
+        endDate: "2026-08-20",
+        amountCents: 30000,
+        source: "custom",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // Nor rewrite what was carried in from the previous period.
+    await assertFails(
+      updateDoc(ref, {
+        period: "fortnightly",
+        endDate: "2026-08-20",
+        amountCents: 90000,
+        rolloverCents: 99000,
+        source: "custom",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("a fortnight cannot be extended again — the door only opens one way", async () => {
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-08-07");
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-08-07"),
+        periodBudgetDoc({
+          startDate: "2026-08-07",
+          endDate: "2026-08-20",
+          period: "fortnightly",
+          amountCents: 90000,
+        }),
+      );
+    });
+    await assertFails(
+      updateDoc(ref, {
+        period: "fortnightly",
+        endDate: "2026-08-27",
+        amountCents: 135000,
+        source: "custom",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // ...and it cannot be walked back to a week either.
+    await assertFails(
+      updateDoc(ref, {
+        period: "weekly",
+        endDate: "2026-08-13",
+        amountCents: 45000,
+        source: "custom",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("an outsider cannot extend anything", async () => {
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-08-07"),
+        periodBudgetDoc({
+          startDate: "2026-08-07",
+          endDate: "2026-08-13",
+          period: "weekly",
+          amountCents: 45000,
+        }),
+      );
+    });
+    await assertFails(
+      updateDoc(
+        doc(db(env, CAROL), "households", HOUSEHOLD, "periodBudgets", "2026-08-07"),
+        {
+          period: "fortnightly",
+          endDate: "2026-08-20",
+          amountCents: 90000,
+          source: "custom",
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    );
+  });
+
   it("periods are an immutable record — no deletes", async () => {
     await seed(env, async (admin) => {
       await setDoc(

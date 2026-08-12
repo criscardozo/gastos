@@ -705,3 +705,47 @@ test("services and card statements keep their own books", async ({ page }) => {
   await page.getByRole("link", { name: "Inicio", exact: true }).click();
   await expect(page.getByText("$900,00").first()).toBeVisible();
 });
+
+/**
+ * Stretching the week under way into a fortnight.
+ *
+ * The property worth pinning down is that NO expense is touched: one logged in
+ * the days that were about to belong to the next period has to start counting
+ * against this one the moment the boundary moves. That is what makes the whole
+ * feature a single field update instead of a migration, and it is only true
+ * because an expense stores a date rather than a period id.
+ */
+test("a week can be stretched into a fortnight, and swallows the days after it", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  const email = `e2e-extend-${Date.now()}@test.dev`;
+  await page.evaluate((e) => window.__devSignIn!("Extend Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await expect(page.getByText("¿Cuánto por período?")).toBeVisible();
+  // A WEEKLY household — extending is only offered on a week.
+  await page.getByRole("tab", { name: "Semanal" }).click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Ajustes", exact: true }).click();
+  await page.getByRole("button", { name: "Extender a 2 semanas" }).click();
+
+  // The dialog states the change as dates, and proposes the default budget.
+  await expect(page.getByText("Pasaría a terminar")).toBeVisible();
+  await page.getByLabel("Sumar al presupuesto").fill("900");
+  await expect(page.getByText("$1.800,00")).toBeVisible();
+
+  // One press is not enough: this cannot be undone.
+  await page.getByRole("button", { name: "Extender a 2 semanas" }).last().click();
+  await expect(page.getByText(/no se puede deshacer/)).toBeVisible();
+  await page.getByRole("button", { name: "Sí, extender el período" }).click();
+
+  // The period is a fortnight now, and the offer is gone: it is one-way.
+  await expect(page.getByRole("button", { name: "Extender a 2 semanas" })).toBeHidden();
+  await expect(page.getByText("Iniciar la quincena")).toBeVisible();
+  // The budget grew by exactly what was added.
+  await expect(page.getByText("$1.800,00").first()).toBeVisible();
+});

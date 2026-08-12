@@ -7,6 +7,7 @@ import {
   cascadeMaterialization,
   containsDate,
   daysBetween,
+  extendToFortnight,
   periodEndDate,
   todayInTimezone,
   type PeriodType,
@@ -77,6 +78,55 @@ describe("todayInTimezone", () => {
       expect(todayInTimezone(new Date(instant), timezone)).toBe(expected);
     },
   );
+});
+
+describe("extendToFortnight (shared vectors)", () => {
+  it.each(vectors.extendToFortnight.cases)(
+    "$name",
+    ({ startDate, endDate, period, expectedEndDate, expectedAddedDays }) => {
+      const result = extendToFortnight({
+        startDate,
+        endDate,
+        period: period as PeriodType,
+      });
+      if (expectedEndDate === null) {
+        expect(result).toBeNull();
+        return;
+      }
+      expect(result).not.toBeNull();
+      expect(result!.endDate).toBe(expectedEndDate);
+      expect(result!.addedDays).toBe(expectedAddedDays);
+    },
+  );
+
+  it("leaves the start where it was, so the next period keeps the weekday", () => {
+    // The point of the whole feature: Cristian's weeks run Friday to Thursday,
+    // and an extended one must still hand over on a Friday.
+    const week = {
+      startDate: "2026-08-07",
+      endDate: "2026-08-13",
+      period: "weekly" as PeriodType,
+    };
+    const extended = extendToFortnight(week)!;
+    expect(addDays(extended.endDate, 1)).toBe("2026-08-21");
+    expect(addDays(week.endDate, 1)).toBe("2026-08-14");
+    // Both are Fridays; the handover just moved a week later.
+    expect(daysBetween("2026-08-14", "2026-08-21")).toBe(7);
+  });
+
+  it("swallows the days that would have been the next period", () => {
+    const extended = extendToFortnight({
+      startDate: "2026-08-07",
+      endDate: "2026-08-13",
+      period: "weekly",
+    })!;
+    // An expense dated in the added week now falls INSIDE this period, which is
+    // what makes the extension work without touching a single expense doc.
+    const range = { startDate: "2026-08-07", endDate: extended.endDate };
+    expect(containsDate(range, "2026-08-14")).toBe(true);
+    expect(containsDate(range, "2026-08-20")).toBe(true);
+    expect(containsDate(range, "2026-08-21")).toBe(false);
+  });
 });
 
 describe("budgetState", () => {

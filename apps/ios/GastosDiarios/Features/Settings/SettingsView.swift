@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var showDefaultAmountSheet = false
     @State private var showPeriodBudgetSheet = false
+    @State private var showExtendPeriodSheet = false
     @State private var showCategoriesManager = false
     @State private var copied = false
     @State private var renamingHousehold = false
@@ -243,6 +244,37 @@ struct SettingsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                // Only a week can be stretched, and only into a fortnight, so
+                // the button simply is not there once it has been.
+                if period.period == .weekly {
+                    Button {
+                        showExtendPeriodSheet = true
+                    } label: {
+                        HStack(spacing: 9) {
+                            Image(systemName: "calendar.badge.plus")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text(l10n.t("extendPeriod.extend"))
+                                .appFont(14, .bold)
+                            Spacer()
+                        }
+                        .foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 13)
+                        .background(Theme.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .strokeBorder(Theme.borderPill, lineWidth: 1)
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .sheet(isPresented: $showExtendPeriodSheet) {
+                        ExtendPeriodSheet(period: period) {
+                            showExtendPeriodSheet = false
+                        }
+                    }
+                }
                 Text(l10n.t("settings.thisPeriod.foot"))
                     .appFont(12)
                     .foregroundStyle(Theme.inkTertiary)

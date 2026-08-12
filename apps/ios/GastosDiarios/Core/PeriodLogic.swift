@@ -135,6 +135,45 @@ enum PeriodLogic {
         startDate <= date && date <= endDate
     }
 
+    // MARK: Extending the week under way
+
+    /// The result of stretching a weekly period into a fortnight.
+    struct PeriodExtension: Equatable, Sendable {
+        /// Where the period now ends, inclusive.
+        let endDate: CalendarDate
+        /// How many days it gained — always 7, but stated rather than assumed.
+        let addedDays: Int
+    }
+
+    /// Turn the week under way into two weeks, without moving where it started.
+    ///
+    /// The household budgets by the week (Friday to Thursday), and sometimes a
+    /// few days in it becomes clear that this one has to stretch. The new end
+    /// date is exactly the one a fortnightly period beginning that same day
+    /// would have had, which is what keeps the NEXT period landing on the
+    /// household's usual weekday: a week running Fri 7 → Thu 13 becomes
+    /// Fri 7 → Thu 20, and the next one still opens on a Friday.
+    ///
+    /// nil for a period that is already a fortnight — there is nothing left to
+    /// extend into, and this is deliberately one-way. Expenses need no
+    /// migration: one belongs to whichever period's range contains its date, so
+    /// moving the boundary IS the whole operation.
+    ///
+    /// The TS twin is `extendToFortnight` in apps/web/src/lib/periods.ts; both
+    /// run the `extendToFortnight` cases in shared/period-test-vectors.json.
+    static func extendToFortnight(
+        startDate: CalendarDate,
+        endDate: CalendarDate,
+        period: PeriodType
+    ) -> PeriodExtension? {
+        guard period == .weekly else { return nil }
+        let extended = periodEndDate(startDate: startDate, period: .fortnightly)
+        return PeriodExtension(
+            endDate: extended,
+            addedDays: daysBetween(endDate, extended)
+        )
+    }
+
     /// The local calendar date of `instant` in `timezone` — never the device
     /// timezone, never UTC bucketing. This is the 23:30-in-Sydney fix.
     static func todayInTimezone(_ instant: Date, _ timezone: TimeZone) -> CalendarDate {
