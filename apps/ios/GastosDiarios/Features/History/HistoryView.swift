@@ -45,7 +45,7 @@ struct HistoryView: View {
             header
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
-                .padding(.bottom, unverifiedCount > 0 || !model.bankCharges.isEmpty ? 8 : 12)
+                .padding(.bottom, unverifiedCount > 0 || !model.expenseBankCharges.isEmpty ? 8 : 12)
             verificationBar
                 .padding(.horizontal, 20)
             if dayGroups.isEmpty {
@@ -282,7 +282,7 @@ struct HistoryView: View {
     /// charges nobody has matched yet, a chip that opens them for matching.
     @ViewBuilder
     private var verificationBar: some View {
-        if unverifiedCount > 0 || !model.bankCharges.isEmpty {
+        if unverifiedCount > 0 || !model.expenseBankCharges.isEmpty {
             HStack(spacing: 8) {
                 if unverifiedCount > 0 {
                     Button {
@@ -302,14 +302,14 @@ struct HistoryView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                if !model.bankCharges.isEmpty {
+                if !model.expenseBankCharges.isEmpty {
                     Button {
                         showBankCharges = true
                     } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "creditcard.fill")
                                 .font(.system(size: 11, weight: .semibold))
-                            Text(l10n.t("history.bankCharges", model.bankCharges.count))
+                            Text(l10n.t("history.bankCharges", model.expenseBankCharges.count))
                                 .appFont(12, .semibold)
                         }
                         .padding(.horizontal, 11)

@@ -536,11 +536,21 @@ final class AppModel {
         BankMatch.learnRate(suggestionExpenses)
     }
 
+    /// The charges this screen should offer: the debit card's, plus any whose
+    /// card the household has not identified. A credit-card charge is not an
+    /// expense waiting for its USD figure — it is a line on a card statement,
+    /// and belongs to the web's Tarjetas screen. Until cards are configured in
+    /// Ajustes this is every charge, exactly as it was before.
+    var expenseBankCharges: [BankCharge] {
+        guard let household else { return bankCharges }
+        return bankCharges.filter { household.belongsToExpenses(cardLast4: $0.cardLast4) }
+    }
+
     /// One suggestion per pending charge, matched against the expenses already
     /// loaded — which is where a charge from the last day or two lands.
     var bankChargeSuggestions: [BankMatch.Suggestion] {
         BankMatch.suggestMatches(
-            charges: bankCharges,
+            charges: expenseBankCharges,
             expenses: suggestionExpenses,
             referenceRate: learnedBankRate
         )

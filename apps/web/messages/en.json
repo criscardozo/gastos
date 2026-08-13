@@ -177,6 +177,13 @@
     "newer": "Next statement",
     "loading": "Loading…"
   },
+  "cardsInbox": {
+    "title": "Bank charges",
+    "hint": "{count, plural, one {# bank charge} other {# bank charges}} not yet on a statement.",
+    "add": "Add",
+    "dismiss": "Dismiss",
+    "unidentified": "This card is not configured in Settings, so the charge also appears under Expenses."
+  },
   "empty": {
     "noExpensesTitle": "No expenses yet",
     "noExpensesHint": "Log the first one — it takes less than 5 seconds."
@@ -326,6 +333,16 @@
     "maxReached": "You've reached the maximum of 30 categories.",
     "countsToBudget": "Does {name} count against the budget?",
     "countsToBudgetHint": "The switch sets whether a category eats into the period budget. Off, the spending is still recorded."
+  },
+  "cardsSettings": {
+    "title": "Cards",
+    "hint": "The bank identifies a card by its last four digits. Tell it which is which and every charge lands on the right screen.",
+    "add": "Add a card",
+    "last4": "Last four digits",
+    "debit": "Debit",
+    "credit": "Credit",
+    "duplicate": "Already added",
+    "fourDigits": "Must be four digits"
   },
   "quickEntry": {
     "saved": "Saved!",

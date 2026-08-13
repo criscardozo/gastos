@@ -37,6 +37,7 @@ authorization, not this doc.
 | `memberIds` | array<string> | uids. Hard cap of 2, enforced in rules |
 | `memberProfiles` | map<uid, {displayName, color}> | Denormalized for attribution display |
 | `categories` | map<id, Category> | Map keyed by id, NOT an array (see below) |
+| `cards` | map<last4, Card> \| absent | The household's cards, keyed by their last four digits (see below) |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
 `Category`: `{ key?: string, name?: string, icon: string, color: string, sortOrder: int,
@@ -52,6 +53,25 @@ budget maths (remaining, progress, state, the trend bars) so that things like
 health or nights out don't eat the weekly allowance. The rules do not validate
 category entries (a map's entries cannot be iterated in rules), so this field
 needs no rules change.
+
+`Card`: `{ kind: "debit" | "credit", brand?: "visa" | "mastercard" }`, in a map
+**keyed by the card's last four digits** — the only identifier the bank ever
+gives us. `brand` is meaningful for credit cards (the Tarjetas screen needs it,
+and the email never says it) and ignored for debit.
+
+Why it exists: the bank's notification emails name the card only as *"finalizada
+en 2024"*, and the ingestion already stores those digits on every charge
+(`bankCharges.cardLast4`). Knowing which digits are the debit card and which the
+credit one is what lets a charge be routed — a debit charge is a household
+expense waiting to be verified, a credit one belongs to a card statement. Same
+map-not-array reasoning as `categories`, and the rules validate it the same way:
+a map's entries cannot be iterated in rules, so the entry shape is a client
+contract. Capped at 6 entries.
+
+**A charge whose digits match nothing configured — or that carries none at all —
+is deliberately shown in BOTH places**, flagged as unidentified, rather than
+hidden from one. The alternative loses charges silently the day the bank changes
+its wording or a new card appears.
 
 ### `households/{householdId}/periodBudgets/{startDate}`
 

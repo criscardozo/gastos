@@ -21,6 +21,7 @@ import {
 } from "@/lib/firebase/mutations";
 import type { BankChargeDoc, Expense, Household } from "@/lib/firebase/converters";
 import { learnRate, suggestMatches } from "@/lib/bank-match";
+import { belongsToExpenses } from "@/lib/cards";
 import { formatCents, formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 
@@ -53,16 +54,23 @@ export function BankChargesPanel({
   const [choice, setChoice] = useState<Record<string, string>>({});
 
   const rate = useMemo(() => learnRate(expenses), [expenses]);
+  // Only what could be an EXPENSE: the debit card's charges, plus anything the
+  // household has not identified — a charge nobody claims must never vanish, so
+  // it shows here AND on Tarjetas rather than in neither.
+  const mine = useMemo(
+    () => charges.filter((c) => belongsToExpenses(c.cardLast4, household.cards)),
+    [charges, household.cards],
+  );
   const suggestions = useMemo(
-    () => suggestMatches(charges, expenses, rate),
-    [charges, expenses, rate],
+    () => suggestMatches(mine, expenses, rate),
+    [mine, expenses, rate],
   );
   const unverified = useMemo(
     () => expenses.filter((e) => !e.verified),
     [expenses],
   );
 
-  if (charges.length === 0) return null;
+  if (mine.length === 0) return null;
 
   const chosenFor = (chargeId: string, suggested: string | null): string =>
     choice[chargeId] ?? suggested ?? "";
@@ -100,7 +108,7 @@ export function BankChargesPanel({
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-[14.5px] font-bold text-ink">
-            {t("pending", { count: charges.length })}
+            {t("pending", { count: mine.length })}
           </span>
           <span className="text-[11.5px] text-ink-3">
             {rate !== null

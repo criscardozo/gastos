@@ -1024,6 +1024,52 @@ describe("households/{id}/periodBudgets", () => {
   });
 });
 
+  it("accepts the household's cards, and caps them", async () => {
+    await seedHousehold();
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD);
+
+    // Cristian's real pair: 2024 debit, 6576 credit.
+    await assertSucceeds(
+      updateDoc(ref, {
+        cards: {
+          "2024": { kind: "debit" },
+          "6576": { kind: "credit", brand: "visa" },
+        },
+        updatedAt: serverTimestamp(),
+      }),
+    );
+
+    // Six is the cap; a seventh is refused.
+    const many: Record<string, { kind: string }> = {};
+    for (let i = 0; i < 7; i += 1) many[`00${i}${i}`] = { kind: "debit" };
+    await assertFails(updateDoc(ref, { cards: many, updatedAt: serverTimestamp() }));
+
+    // The entry SHAPE is a client contract — a map's entries cannot be iterated
+    // in rules — exactly as `categories` has always been. Asserted so the gap is
+    // recorded rather than discovered.
+    await assertSucceeds(
+      updateDoc(ref, {
+        cards: { "2024": { nonsense: true } },
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(ref, { cards: "not-a-map", updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it("a household without cards still validates — the field is optional", async () => {
+    // Every household predates this field; making it required would reject the
+    // next write on all of them.
+    await seedHousehold();
+    await assertSucceeds(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD), {
+        name: "Merlines",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
 // ============================ services ============================
 
 describe("households/{id}/services", () => {

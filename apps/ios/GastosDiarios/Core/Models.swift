@@ -54,6 +54,25 @@ struct MemberProfile: Codable, Equatable {
 }
 
 /// `households/{householdId}`
+/// One of the household's cards. See shared/schema.md.
+struct HouseholdCard: Codable, Equatable {
+    /// "debit" | "credit". A string rather than an enum so an unknown value
+    /// from a newer client cannot fail decoding of the whole household.
+    var kind: String
+    /// "visa" | "mastercard" — only meaningful for credit, and only used by the
+    /// web's Tarjetas screen. Carried here so the model matches the document.
+    var brand: String?
+}
+
+/// Where a bank charge belongs, given the household's cards.
+enum ChargeRouting {
+    case debit
+    case credit
+    /// No digits in the email, or digits nobody has identified. ONE case for
+    /// both, because the answer to both is the same: show it rather than guess.
+    case unknown
+}
+
 struct Household: Codable, Identifiable {
     @DocumentID var id: String?
     var name: String
@@ -63,11 +82,39 @@ struct Household: Codable, Identifiable {
     var memberIds: [String]
     var memberProfiles: [String: MemberProfile]
     var categories: [String: Category]
+    /// The household's cards, keyed by their last four digits — the only
+    /// identifier the bank's notification emails ever give. Absent until
+    /// configured (web: Ajustes → Tarjetas), which reads as "identify nothing".
+    var cards: [String: HouseholdCard]?
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
 
     var timeZone: TimeZone {
         TimeZone(identifier: timezone) ?? TimeZone(identifier: "Australia/Sydney")!
+    }
+
+    /// Where a charge from the card ending in `last4` belongs.
+    ///
+    /// The TypeScript twin is `classifyCharge` in apps/web/src/lib/cards.ts.
+    /// Deliberately NOT driven by shared vectors, unlike the period and matching
+    /// arithmetic: this is a dictionary lookup with a fallback, not a
+    /// calculation two implementations can drift on.
+    func routing(forCardLast4 last4: String?) -> ChargeRouting {
+        guard let last4, !last4.isEmpty, let card = cards?[last4] else {
+            return .unknown
+        }
+        switch card.kind {
+        case "debit": return .debit
+        case "credit": return .credit
+        default: return .unknown
+        }
+    }
+
+    /// Charges this app should offer for expense verification: the debit card's,
+    /// plus anything unidentified — losing a charge is worse than showing it in
+    /// two places. The credit ones belong to the web's Tarjetas screen.
+    func belongsToExpenses(cardLast4: String?) -> Bool {
+        routing(forCardLast4: cardLast4) != .credit
     }
 
     /// Categories sorted for display.

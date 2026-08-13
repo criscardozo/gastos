@@ -749,3 +749,104 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
   // The budget grew by exactly what was added.
   await expect(page.getByText("$1.800,00").first()).toBeVisible();
 });
+
+/**
+ * Routing the bank's charges by which card they came from.
+ *
+ * The bank names a card exactly one way — "finalizada en 2024" — so the four
+ * digits are the only thing that can tell a household expense from a line on a
+ * credit-card statement. This walks the whole path: configure the cards, file
+ * one charge on each, and prove each lands on its own screen and nowhere else.
+ *
+ * The third case is the one that matters most: a charge on a card nobody
+ * configured appears in BOTH, because a charge that quietly picks the wrong
+ * screen is a charge you lose.
+ */
+test("charges are routed by the card they came from", async ({ page, request }) => {
+  const email = `e2e-cards-route-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Route Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const mine = ((await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[]).find((d) => d.fields.name.stringValue === "Hogar de Route");
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+
+  // The ingestion's job, by hand: one charge per card, plus one from a card
+  // nobody has heard of.
+  const charges: [string, number, string, string | null][] = [
+    ["gmail-debit", 815, "COLES 0831", "2024"],
+    ["gmail-credit", 1999, "STEAM", "6576"],
+    ["gmail-orphan", 4242, "TIENDA RARA", "9999"],
+  ];
+  for (const [id, usdCents, merchant, last4] of charges) {
+    await request.post(
+      `${REST}/households/${householdId}/bankCharges?documentId=${id}`,
+      {
+        headers: admin,
+        data: {
+          fields: {
+            usdCents: { integerValue: String(usdCents) },
+            date: { stringValue: statsDate(0) },
+            merchant: { stringValue: merchant },
+            ...(last4 !== null ? { cardLast4: { stringValue: last4 } } : {}),
+            importedAt: { timestampValue: new Date().toISOString() },
+          },
+        },
+      },
+    );
+  }
+
+  // Before any card is configured, everything is unidentified — so all three
+  // show under Gastos. That is the state every household starts in.
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(page.getByText("3 cargos del banco sin asignar")).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // Say which digits are which.
+  await page.getByRole("link", { name: "Ajustes", exact: true }).click();
+  await page.getByRole("button", { name: "Agregar tarjeta" }).click();
+  await page.getByLabel("Últimos 4 dígitos").fill("2024");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("••2024")).toBeVisible();
+
+  await page.getByRole("button", { name: "Agregar tarjeta" }).click();
+  await page.getByLabel("Últimos 4 dígitos").fill("6576");
+  await page.getByRole("tab", { name: "Crédito" }).click();
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("••6576")).toBeVisible();
+
+  // Gastos now offers the debit charge and the orphan — never the credit one.
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(page.getByText("2 cargos del banco sin asignar")).toBeVisible();
+  await page.getByRole("button", { name: "Revisar" }).click();
+  await expect(page.getByText("COLES 0831")).toBeVisible();
+  await expect(page.getByText("TIENDA RARA")).toBeVisible();
+  await expect(page.getByText("STEAM")).toBeHidden();
+
+  // Tarjetas offers the credit charge and the orphan — never the debit one.
+  await page.getByRole("link", { name: "Tarjetas", exact: true }).click();
+  await expect(page.getByText("STEAM")).toBeVisible();
+  await expect(page.getByText("TIENDA RARA")).toBeVisible();
+  await expect(page.getByText("COLES 0831")).toBeHidden();
+
+  // Recording one turns it into a card charge and retires the bank charge, so
+  // it leaves the inbox for good rather than being offered twice.
+  await page.getByRole("button", { name: "Abrir el primer resumen" }).click();
+  await page.getByRole("button", { name: "Abrir resumen" }).click();
+  await page.getByRole("button", { name: "Agregar US$ 19,99 · STEAM" }).click();
+  // The orphan is still waiting — importing one charge must not retire another.
+  await expect(page.getByText("TIENDA RARA")).toBeVisible();
+  // And STEAM now appears exactly once: on the statement, no longer in the
+  // inbox. Twice would mean the import created the line without retiring the
+  // bank charge, which is the whole reason that write is a single batch.
+  await expect(page.getByText("STEAM")).toHaveCount(1);
+});

@@ -16,6 +16,7 @@ import {
 import { Icon } from "@/components/ui/icon";
 import { AvatarPair } from "@/components/ui/avatar";
 import { Segmented } from "@/components/ui/segmented";
+import { CardsCard } from "@/components/cards-card";
 import { CategoriesCard } from "@/components/categories-card";
 import { ExtendPeriodDialog } from "@/components/extend-period-dialog";
 import { parseBudgetAmount } from "@/components/budget-amount-field";
@@ -497,6 +498,9 @@ export default function SettingsPage() {
 
       {/* Categories */}
       <CategoriesCard household={household} />
+
+      {/* Which four digits are which card — routes the bank's charges */}
+      <CardsCard household={household} />
 
       {/* Household + invite */}
       <div className="flex items-center gap-3.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">

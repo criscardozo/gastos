@@ -22,7 +22,7 @@ struct BankChargesSheet: View {
     var body: some View {
         NavigationStack {
             Group {
-                if model.bankCharges.isEmpty {
+                if model.expenseBankCharges.isEmpty {
                     emptyState
                 } else {
                     list
@@ -57,7 +57,7 @@ struct BankChargesSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 ForEach(model.bankChargeSuggestions, id: \.chargeId) { suggestion in
-                    if let charge = model.bankCharges.first(where: { $0.id == suggestion.chargeId }) {
+                    if let charge = model.expenseBankCharges.first(where: { $0.id == suggestion.chargeId }) {
                         card(charge: charge, suggestion: suggestion)
                     }
                 }

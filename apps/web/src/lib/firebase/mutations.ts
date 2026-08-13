@@ -24,6 +24,7 @@ import {
   type CategoryDef,
 } from "../categories";
 import type { PeriodRange, PeriodType } from "../periods";
+import type { HouseholdCards } from "../cards";
 import type { PaidWith, ServiceInterval } from "../services";
 import type { CardBrand, StatementRange } from "../statements";
 import { inviteConverter } from "./converters";
@@ -312,6 +313,22 @@ export async function updateDefaultBudget(
  * it with a literal `name` (rename), per shared/schema.md. Uses the member
  * update branch of the rules (only `categories` + `updatedAt` change).
  */
+/**
+ * Replace the household's cards. Written whole rather than per entry: the map
+ * is tiny, and a partial update through dotted paths would need the digits to be
+ * escaped — the exact trap `setCategory` documents on the iOS side.
+ */
+export async function updateHouseholdCards(
+  db: Firestore,
+  householdId: string,
+  cards: HouseholdCards,
+): Promise<void> {
+  await updateDoc(doc(db, "households", householdId), {
+    cards,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function updateHouseholdCategories(
   db: Firestore,
   householdId: string,
@@ -628,6 +645,37 @@ export async function updateCardCharge(
     usdCents: input.usdCents,
     updatedAt: serverTimestamp(),
   });
+}
+
+/**
+ * Turn one of the bank's charges into a card charge: the statement gains the
+ * line, and the charge leaves the pending list. ONE batch, for the same reason
+ * `assignBankCharge` is one — a charge that vanished without becoming anything,
+ * or a line recorded twice by a charge that stayed, are both wrong.
+ *
+ * The charge keeps its own date, so it lands in whichever statement's window
+ * contains it. That may not be the statement on screen, and that is correct:
+ * the date is what files it, not what the user happens to be looking at.
+ */
+export async function importBankChargeAsCardCharge(
+  db: Firestore,
+  householdId: string,
+  uid: string,
+  chargeId: string,
+  input: CardChargeInput,
+): Promise<void> {
+  const batch = writeBatch(db);
+  batch.set(doc(collection(db, "households", householdId, "cardCharges")), {
+    date: input.date,
+    detail: input.detail,
+    card: input.card,
+    usdCents: input.usdCents,
+    createdBy: uid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  batch.delete(doc(db, "households", householdId, "bankCharges", chargeId));
+  await batch.commit();
 }
 
 export async function deleteCardCharge(

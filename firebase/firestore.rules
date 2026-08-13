@@ -37,6 +37,11 @@ rules_version = '2';
 //     (required, keys ⊆ memberIds semantics enforced per-branch)
 //   - categories: map<id, category> (required, ≤ 30 entries; entry shape is a
 //     client contract — map entries cannot be iterated in rules)
+//   - cards: map<last4, {kind: "debit"|"credit", brand?: "visa"|"mastercard"}>
+//     (optional, ≤ 6 entries) — which of the household's cards each of the
+//     bank's "finalizada en NNNN" charges came from, so a debit charge can be
+//     routed to expense verification and a credit one to a card statement. Same
+//     client-contract entry shape as categories, for the same reason
 //   - createdAt: timestamp (required, server time, immutable)
 //   - updatedAt: timestamp (required, server time)
 //
@@ -251,7 +256,7 @@ service cloud.firestore {
     }
 
     function isValidHousehold(data) {
-      return data.keys().hasOnly(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'createdAt', 'updatedAt'])
+      return data.keys().hasOnly(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'cards', 'createdAt', 'updatedAt'])
         && data.keys().hasAll(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'createdAt', 'updatedAt'])
         && data.name is string && data.name.size() >= 1 && data.name.size() <= 60
         && data.currency is string && data.currency.matches('^[A-Z]{3}$')
@@ -259,7 +264,10 @@ service cloud.firestore {
         && isValidBudget(data.defaultBudget)
         && isValidMemberIds(data.memberIds)
         && data.memberProfiles is map && data.memberProfiles.size() <= 2
-        && data.categories is map && data.categories.size() >= 1 && data.categories.size() <= 30;
+        && data.categories is map && data.categories.size() >= 1 && data.categories.size() <= 30
+        // Optional so every household that predates it keeps validating — a
+        // required field here would reject the next write on all of them.
+        && (!('cards' in data) || (data.cards is map && data.cards.size() <= 6));
     }
 
     // Join self-add: a non-member adds ONLY themselves, touching ONLY

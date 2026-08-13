@@ -19,8 +19,9 @@ import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { CardMark, CARD_LABELS } from "@/components/ui/marks";
 import { CardChargeDialog, StatementDatesDialog } from "@/components/card-dialogs";
+import { CardChargesInbox } from "@/components/card-charges-inbox";
 import { getFirebaseClient } from "@/lib/firebase/client";
-import { useCardCharges, useCardStatements } from "@/lib/firebase/hooks";
+import { useBankCharges, useCardCharges, useCardStatements } from "@/lib/firebase/hooks";
 import type { CardCharge } from "@/lib/firebase/converters";
 import {
   addCardCharge,
@@ -75,6 +76,9 @@ export default function CardsPage() {
   const { statements, loading: statementsLoading } = useCardStatements(
     household?.id ?? null,
   );
+  // The bank's own charges, so the credit ones can be recorded without retyping
+  // what the email already said.
+  const { charges: bankCharges } = useBankCharges(household?.id ?? null);
 
   /** Index into `statements` (newest first). 0 is the open one. */
   const [index, setIndex] = useState(0);
@@ -121,6 +125,12 @@ export default function CardsPage() {
     return (
       <div className="mx-auto flex w-[660px] max-w-full flex-col gap-3.5">
         <h1 className="mb-1 text-[22px] font-bold text-ink">{t("title")}</h1>
+        <CardChargesInbox
+          household={household}
+          charges={bankCharges}
+          uid={user?.uid ?? null}
+          locale={locale}
+        />
         <div className="flex flex-col items-center gap-2.5 rounded-[18px] border border-line bg-surface px-6 py-10 text-center">
           <Icon name="credit_card" size={30} className="text-ink-3" />
           <span className="text-[15px] font-semibold text-ink">
@@ -168,6 +178,13 @@ export default function CardsPage() {
           </span>
         </button>
       </div>
+
+      <CardChargesInbox
+        household={household}
+        charges={bankCharges}
+        uid={user?.uid ?? null}
+        locale={locale}
+      />
 
       {shown !== null && (
         <div className="flex flex-col gap-3 rounded-[18px] border border-line bg-surface px-[18px] py-4">

@@ -177,6 +177,13 @@
     "newer": "Resumen siguiente",
     "loading": "Cargando…"
   },
+  "cardsInbox": {
+    "title": "Cargos del banco",
+    "hint": "{count, plural, one {# cargo del banco} other {# cargos del banco}} sin registrar en un resumen.",
+    "add": "Agregar",
+    "dismiss": "Descartar",
+    "unidentified": "Esta tarjeta no está configurada en Ajustes, así que el cargo también aparece en Gastos."
+  },
   "empty": {
     "noExpensesTitle": "Sin gastos todavía",
     "noExpensesHint": "Cargá el primero — tarda menos de 5 segundos."
@@ -326,6 +333,16 @@
     "maxReached": "Llegaron al máximo de 30 categorías.",
     "countsToBudget": "¿{name} descuenta del presupuesto?",
     "countsToBudgetHint": "El interruptor define si la categoría descuenta del presupuesto del período. Apagada, el gasto igual queda registrado."
+  },
+  "cardsSettings": {
+    "title": "Tarjetas",
+    "hint": "El banco identifica la tarjeta por sus últimos 4 dígitos. Decile cuál es cuál y cada cargo va a la pantalla que corresponde.",
+    "add": "Agregar tarjeta",
+    "last4": "Últimos 4 dígitos",
+    "debit": "Débito",
+    "credit": "Crédito",
+    "duplicate": "Ya está cargada",
+    "fourDigits": "Tienen que ser 4 dígitos"
   },
   "quickEntry": {
     "saved": "¡Guardado!",

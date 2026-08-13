@@ -11,6 +11,7 @@ import {
 
 import type { CategoryDef } from "../categories";
 import type { PeriodType } from "../periods";
+import type { HouseholdCards } from "../cards";
 import type { PaidWith, ServiceInterval } from "../services";
 import type { CardBrand } from "../statements";
 
@@ -43,6 +44,9 @@ export interface Household {
   memberIds: string[];
   memberProfiles: Record<string, MemberProfile>;
   categories: Record<string, CategoryDef>;
+  /** Keyed by the card's last four digits — the only identifier the bank gives.
+   * Empty until configured, which reads as "route nothing, show everything". */
+  cards: HouseholdCards;
 }
 
 export interface PeriodBudget {
@@ -164,6 +168,7 @@ export const householdConverter = readOnly<Household>((snap) => {
     memberIds: data.memberIds as string[],
     memberProfiles: data.memberProfiles as Record<string, MemberProfile>,
     categories: data.categories as Record<string, CategoryDef>,
+    cards: (data.cards as HouseholdCards | undefined) ?? {},
   };
 });
 

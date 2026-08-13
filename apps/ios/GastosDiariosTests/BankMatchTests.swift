@@ -177,3 +177,75 @@ final class BankMatchTests: XCTestCase {
         XCTAssertEqual(BankMatch.dateScore(gap: 9), 0.2)
     }
 }
+
+// MARK: - Routing a charge by its card
+
+/// Which screen a bank charge belongs to, given the household's cards.
+///
+/// The TypeScript twin is `classifyCharge` in apps/web/src/lib/cards.ts. Unlike
+/// the period and matching arithmetic this is NOT driven by shared vectors: it
+/// is a dictionary lookup with a fallback, not a calculation the two platforms
+/// can drift apart on. What is worth pinning down is the fallback itself —
+/// an unidentified charge must never disappear from this app.
+final class ChargeRoutingTests: XCTestCase {
+
+    /// Cristian's real pair: 2024 is the debit card, 6576 the credit one.
+    private func household(cards: [String: HouseholdCard]?) -> Household {
+        Household(
+            name: "Merlines",
+            currency: "AUD",
+            timezone: "Australia/Sydney",
+            defaultBudget: DefaultBudget(
+                amountCents: 17000, period: .weekly, anchorDate: "2026-07-17"
+            ),
+            memberIds: ["u1"],
+            memberProfiles: [:],
+            categories: [:],
+            cards: cards
+        )
+    }
+
+    private let configured: [String: HouseholdCard] = [
+        "2024": HouseholdCard(kind: "debit"),
+        "6576": HouseholdCard(kind: "credit", brand: "visa"),
+    ]
+
+    func testRoutesByTheDigitsTheBankPrinted() {
+        let h = household(cards: configured)
+        XCTAssertEqual(h.routing(forCardLast4: "2024"), .debit)
+        XCTAssertEqual(h.routing(forCardLast4: "6576"), .credit)
+    }
+
+    func testAnythingUnidentifiedIsUnknown() {
+        let h = household(cards: configured)
+        XCTAssertEqual(h.routing(forCardLast4: "9999"), .unknown)
+        XCTAssertEqual(h.routing(forCardLast4: nil), .unknown)
+        XCTAssertEqual(h.routing(forCardLast4: ""), .unknown)
+        // A value a newer client might write must not crash or be mistaken for
+        // one of the two we know.
+        XCTAssertEqual(
+            household(cards: ["1234": HouseholdCard(kind: "prepaid")])
+                .routing(forCardLast4: "1234"),
+            .unknown
+        )
+    }
+
+    func testCreditIsTheONLYThingThisAppHides() {
+        let h = household(cards: configured)
+        XCTAssertTrue(h.belongsToExpenses(cardLast4: "2024"))
+        XCTAssertFalse(h.belongsToExpenses(cardLast4: "6576"))
+        // The invariant that matters: an unidentified charge stays visible here,
+        // because the web shows it too and losing it is worse than repeating it.
+        XCTAssertTrue(h.belongsToExpenses(cardLast4: "9999"))
+        XCTAssertTrue(h.belongsToExpenses(cardLast4: nil))
+    }
+
+    func testEverythingShowsUntilCardsAreConfigured() {
+        // The state every household is in today, and returns to if cleared.
+        for cards in [nil, [:]] as [[String: HouseholdCard]?] {
+            let h = household(cards: cards)
+            XCTAssertTrue(h.belongsToExpenses(cardLast4: "2024"))
+            XCTAssertTrue(h.belongsToExpenses(cardLast4: "6576"))
+        }
+    }
+}
