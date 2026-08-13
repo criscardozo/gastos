@@ -274,23 +274,33 @@ export function Providers({ children }: { children: ReactNode }) {
   const [periodState, setPeriodState] = useState<{
     periods: PeriodBudget[];
     loading: boolean;
-  }>({ periods: [], loading: true });
+    /** Whether this snapshot is still the local cache, not the server's word.
+     * Materialization must not act on it — see below. */
+    fromCache: boolean;
+  }>({ periods: [], loading: true, fromCache: true });
   useEffect(() => {
     if (householdId === null) {
-      setPeriodState({ periods: [], loading: false });
+      setPeriodState({ periods: [], loading: false, fromCache: true });
       return;
     }
     const fb = getFirebaseClient();
     if (fb === null) return;
-    setPeriodState({ periods: [], loading: true });
+    setPeriodState({ periods: [], loading: true, fromCache: true });
     const q = query(
       collection(fb.db, "households", householdId, "periodBudgets"),
       orderBy("startDate", "desc"),
       limit(8),
     ).withConverter(periodBudgetConverter);
-    return onSnapshot(q, (snap) => {
+    // includeMetadataChanges so the cache→server transition arrives even when
+    // the documents are identical. Without it that event never fires, and a
+    // materialization gated on `fromCache` would simply never run.
+    return onSnapshot(q, { includeMetadataChanges: true }, (snap) => {
       const periods = snap.docs.map((d) => d.data()).reverse();
-      setPeriodState({ periods, loading: false });
+      setPeriodState({
+        periods,
+        loading: false,
+        fromCache: snap.metadata.fromCache,
+      });
     });
   }, [householdId]);
 
@@ -337,7 +347,16 @@ export function Providers({ children }: { children: ReactNode }) {
       household === null ||
       householdId === null ||
       today === null ||
-      periodState.loading
+      periodState.loading ||
+      // NEVER materialize from the offline cache. A period's endDate used to be
+      // immutable, so a stale copy chained to the same answer as a fresh one —
+      // extending a week into a fortnight ended that. A client opening on a
+      // cache written before an extension sees the OLD end date, decides the
+      // period is over, and writes a phantom period overlapping the real one.
+      // That happened: a 2026-08-14 week appeared inside a fortnight running to
+      // 2026-08-20. The rules cannot catch it (the create is well formed), so
+      // the guard belongs here.
+      periodState.fromCache
     ) {
       return;
     }
@@ -393,7 +412,7 @@ export function Providers({ children }: { children: ReactNode }) {
       .catch(() => {
         materializing.current = null;
       });
-  }, [household, householdId, today, periodState.loading, lastPeriod]);
+  }, [household, householdId, today, periodState.loading, periodState.fromCache, lastPeriod]);
 
   const currentPeriod = useMemo(() => {
     if (today === null) return null;

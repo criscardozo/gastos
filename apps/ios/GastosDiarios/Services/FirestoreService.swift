@@ -62,16 +62,22 @@ final class FirestoreService {
     /// Period budgets are a tiny, bounded collection by construction (one doc
     /// per elapsed week/fortnight), so listening to the whole subcollection is
     /// safe for the free tier.
+    /// `fromCache` says whether this snapshot is still the local cache rather
+    /// than the server's word. Materialization MUST NOT act on a cached one —
+    /// see AppModel.materializeIfNeeded. includeMetadataChanges is what makes
+    /// the cache→server transition arrive at all when the documents are
+    /// identical; without it that event never fires and a guard on `fromCache`
+    /// would block materialization forever.
     func listenPeriodBudgets(
         householdId: String,
-        onChange: @escaping ([PeriodBudget]) -> Void
+        onChange: @escaping ([PeriodBudget], _ fromCache: Bool) -> Void
     ) -> ListenerRegistration {
         db.collection("households").document(householdId)
             .collection("periodBudgets")
             .order(by: "startDate")
-            .addSnapshotListener { snapshot, _ in
+            .addSnapshotListener(includeMetadataChanges: true) { snapshot, _ in
                 let periods = snapshot?.documents.compactMap { try? $0.data(as: PeriodBudget.self) } ?? []
-                onChange(periods)
+                onChange(periods, snapshot?.metadata.isFromCache ?? true)
             }
     }
 

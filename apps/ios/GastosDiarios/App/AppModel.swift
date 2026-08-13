@@ -111,6 +111,9 @@ final class AppModel {
     private var currentListenerRange: (String, String)?
     private var viewedListenerRange: (String, String)?
     private var materializing = false
+    /// Whether `periods` still comes from the offline cache. Materialization
+    /// waits for the server, because a stale end date now means a wrong answer.
+    private var periodsFromCache = true
     private var creatingProfile = false
 
     // MARK: Derived
@@ -347,10 +350,11 @@ final class AppModel {
                 self.publishWidgetSnapshot()
             }
         }
-        periodsListener = firestore.listenPeriodBudgets(householdId: id) { [weak self] periods in
+        periodsListener = firestore.listenPeriodBudgets(householdId: id) { [weak self] periods, fromCache in
             guard let self else { return }
             let hadPeriods = !self.periods.isEmpty
             self.periods = periods
+            self.periodsFromCache = fromCache
             if self.viewedPeriodIndex == nil || !hadPeriods {
                 self.viewedPeriodIndex = self.currentPeriodIndex
             }
@@ -366,7 +370,17 @@ final class AppModel {
     // MARK: Period materialization
 
     private func materializeIfNeeded() {
-        guard !materializing,
+        // NEVER materialize from the offline cache. A period's endDate used to
+        // be immutable, so a stale copy chained to the same answer as a fresh
+        // one — extending a week into a fortnight ended that. Opening on a cache
+        // written before an extension, this saw the OLD end date, decided the
+        // period was over, and wrote a phantom period overlapping the real one:
+        // a 2026-08-14 week inside a fortnight running to 2026-08-20, which is
+        // what put the new-period sheet on screen mid-fortnight. The security
+        // rules cannot catch it — that create is perfectly well formed — so the
+        // guard belongs here.
+        guard !periodsFromCache,
+              !materializing,
               let household,
               let householdId = household.id ?? attachedHouseholdId,
               let anchor = CalendarDate(household.defaultBudget.anchorDate)
