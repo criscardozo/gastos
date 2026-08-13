@@ -18,6 +18,7 @@ project's $0 infrastructure rule leaves no room for Cloud Functions or a server.
 | `Code.gs` | The sweep: Gmail search → parse → Firestore create, plus the processed-message memory. |
 | `config.js` | Repairs the service-account key on its way out of the Script Properties box, which is where this setup most often breaks. Tested, for the same reason. |
 | `appsscript.json` | The project manifest, pinning the OAuth scopes to **read-only** Gmail plus outbound HTTPS. Without it Apps Script asks for full mailbox access; with it the script cannot modify or delete a single email even by accident. |
+| `retry.test.js` | Loads `Code.gs` in a VM with Gmail stubbed, to prove the retry retries once and still raises a persistent failure. |
 | `fixtures/consumo-autorizado.html` | A real notification, with the cardholder name and card digits scrubbed. |
 
 `pnpm test:ingest` runs the parser and key tests (22 of them, including the real

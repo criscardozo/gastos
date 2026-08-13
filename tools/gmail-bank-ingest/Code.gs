@@ -44,6 +44,38 @@ var SEEN_PROPERTY = "processedMessageIds";
 /** Enough ids to cover the lookback window many times over. */
 var SEEN_LIMIT = 400;
 
+/**
+ * Read the matching messages, retrying once on a transient Gmail failure.
+ *
+ * Gmail occasionally refuses a call for no lasting reason — a single run died
+ * with "Gmail operation not allowed" at 02:17 one morning while the runs either
+ * side of it, fifteen minutes apart, were fine. Apps Script emails the owner
+ * about every failed trigger, so without this a blip that healed itself before
+ * anyone read the message still sent an alarm.
+ *
+ * Deliberately ONE extra attempt after a short pause, not a long backoff: the
+ * trigger already runs every fifteen minutes, so anything that outlives a couple
+ * of seconds is better left to the next tick than to an execution held open
+ * against Apps Script's six-minute ceiling. If the second attempt fails too, the
+ * error is rethrown — at that point the alarm is worth having.
+ */
+function readMailbox(query) {
+  var attempts = 2;
+  for (var attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      var threads = GmailApp.search(query, 0, 50);
+      return GmailApp.getMessagesForThreads(threads);
+    } catch (error) {
+      if (attempt === attempts) throw error;
+      console.warn(
+        "bank-ingest: Gmail read failed (" + error.message +
+          "), retrying once in 2s",
+      );
+      Utilities.sleep(2000);
+    }
+  }
+}
+
 /** Entry point for the time-driven trigger. */
 function run() {
   var config = readConfig();
@@ -51,8 +83,7 @@ function run() {
   var query =
     config.query + " newer_than:" + config.lookbackDays + "d";
 
-  var threads = GmailApp.search(query, 0, 50);
-  var messages = GmailApp.getMessagesForThreads(threads);
+  var messages = readMailbox(query);
   var token = null;
   var imported = 0;
   var skipped = 0;
