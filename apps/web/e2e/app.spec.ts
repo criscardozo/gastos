@@ -753,7 +753,7 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
 /**
  * Routing the bank's charges by which card they came from.
  *
- * The bank names a card exactly one way — "finalizada en 2024" — so the four
+ * The bank names a card exactly one way — "finalizada en 1234" — so the four
  * digits are the only thing that can tell a household expense from a line on a
  * credit-card statement. This walks the whole path: configure the cards, file
  * one charge on each, and prove each lands on its own screen and nowhere else.
@@ -782,8 +782,8 @@ test("charges are routed by the card they came from", async ({ page, request }) 
   // The ingestion's job, by hand: one charge per card, plus one from a card
   // nobody has heard of.
   const charges: [string, number, string, string | null][] = [
-    ["gmail-debit", 815, "COLES 0831", "2024"],
-    ["gmail-credit", 1999, "STEAM", "6576"],
+    ["gmail-debit", 815, "COLES 0831", "1234"],
+    ["gmail-credit", 1999, "STEAM", "5678"],
     ["gmail-orphan", 4242, "TIENDA RARA", "9999"],
   ];
   for (const [id, usdCents, merchant, last4] of charges) {
@@ -814,15 +814,15 @@ test("charges are routed by the card they came from", async ({ page, request }) 
   // Say which digits are which.
   await page.getByRole("link", { name: "Ajustes", exact: true }).click();
   await page.getByRole("button", { name: "Agregar tarjeta" }).click();
-  await page.getByLabel("Últimos 4 dígitos").fill("2024");
+  await page.getByLabel("Últimos 4 dígitos").fill("1234");
   await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(page.getByText("••2024")).toBeVisible();
+  await expect(page.getByText("••1234")).toBeVisible();
 
   await page.getByRole("button", { name: "Agregar tarjeta" }).click();
-  await page.getByLabel("Últimos 4 dígitos").fill("6576");
+  await page.getByLabel("Últimos 4 dígitos").fill("5678");
   await page.getByRole("tab", { name: "Crédito" }).click();
   await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(page.getByText("••6576")).toBeVisible();
+  await expect(page.getByText("••5678")).toBeVisible();
 
   // Gastos now offers the debit charge and the orphan — never the credit one.
   await page.getByRole("link", { name: "Gastos", exact: true }).click();

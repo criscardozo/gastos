@@ -702,7 +702,7 @@ describe("households/{id}/bankCharges", () => {
         usdCents: 6390,
         date: "2026-08-01",
         merchant: "COLES 0831",
-        cardLast4: "2024",
+        cardLast4: "1234",
         importedAt: serverTimestamp(),
       });
     });
@@ -1028,12 +1028,12 @@ describe("households/{id}/periodBudgets", () => {
     await seedHousehold();
     const ref = doc(db(env, ALICE), "households", HOUSEHOLD);
 
-    // Cristian's real pair: 2024 debit, 6576 credit.
+    // Stand-ins, never anyone's real digits.
     await assertSucceeds(
       updateDoc(ref, {
         cards: {
-          "2024": { kind: "debit" },
-          "6576": { kind: "credit", brand: "visa" },
+          "1234": { kind: "debit" },
+          "5678": { kind: "credit", brand: "visa" },
         },
         updatedAt: serverTimestamp(),
       }),
@@ -1049,7 +1049,7 @@ describe("households/{id}/periodBudgets", () => {
     // recorded rather than discovered.
     await assertSucceeds(
       updateDoc(ref, {
-        cards: { "2024": { nonsense: true } },
+        cards: { "1234": { nonsense: true } },
         updatedAt: serverTimestamp(),
       }),
     );

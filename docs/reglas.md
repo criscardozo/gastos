@@ -41,7 +41,15 @@ acaba de pedir.
 
 - **Conversación:** español rioplatense.
 - **Código, comentarios y nombres:** inglés.
-- **Mensajes de commit:** inglés australiano.
+- **Mensajes de commit:** inglés australiano, en formato **conventional
+  commits** (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `test:`,
+  `build:`, `ci:`, con scope opcional entre paréntesis).
+
+  **Por qué:** el historial venía mezclado —94 de los primeros 100 commits eran
+  frases en imperativo sin prefijo, y sólo 6 seguían la convención—, así que
+  Cristian la fijó el 14/8/2026. Rige de ahí en adelante; **el historial viejo
+  no se reescribe**, porque ya está pusheado y no vale el riesgo. El cuerpo del
+  mensaje sigue explicando el *por qué*, que es lo que un prefijo no dice.
 - **Nunca** el trailer `Co-Authored-By: Claude` (ni ninguna coautoría). Es una
   preferencia global y pisa cualquier default del harness.
 - Las dos apps se localizan en español e inglés (String Catalogs / next-intl).

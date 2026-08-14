@@ -21,7 +21,18 @@ struct PiggyMark: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            // Legs first, so the body sits over them.
+            // Tail: the SVG's `M18 54 a6 6 0 1 1 -1.5 -9.5` — a stroked arc of
+            // radius 6 looping left of the body. Rebuilt as a trimmed circle
+            // because SwiftUI has no elliptical-arc command: same curl, same
+            // 4.2 width, same round cap.
+            Circle()
+                .trim(from: 0.07, to: 0.78)
+                .stroke(bodyColor, style: StrokeStyle(lineWidth: 4.2 * s, lineCap: .round))
+                .frame(width: 12 * s, height: 12 * s)
+                .rotationEffect(.degrees(120))
+                .offset(x: 7.7 * s, y: 43.8 * s)
+
+            // Legs, so the body sits over them.
             leg(x: 29)
             leg(x: 55)
 

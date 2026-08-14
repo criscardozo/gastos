@@ -3,7 +3,7 @@
 // Which card is which — the four digits the bank prints, and what they mean.
 //
 // The bank's notification emails identify a card exactly one way ("finalizada
-// en 2024"), and the ingestion stores those digits on every charge. Told which
+// en 1234"), and the ingestion stores those digits on every charge. Told which
 // digits belong to the debit card and which to the credit one, the app can route
 // a charge to the screen it belongs on instead of piling everything into expense
 // verification.
@@ -117,7 +117,7 @@ export function CardsCard({ household }: { household: Household }) {
               value={last4}
               onChange={(e) => setLast4(e.target.value.replace(/\D/g, "").slice(0, 4))}
               inputMode="numeric"
-              placeholder="2024"
+              placeholder="••••"
               aria-label={t("last4")}
               className={`${field} tnum`}
             />

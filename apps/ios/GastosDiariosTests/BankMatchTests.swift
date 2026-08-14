@@ -189,7 +189,8 @@ final class BankMatchTests: XCTestCase {
 /// an unidentified charge must never disappear from this app.
 final class ChargeRoutingTests: XCTestCase {
 
-    /// Cristian's real pair: 2024 is the debit card, 6576 the credit one.
+    /// Stand-ins, never anyone's real digits: the fixture in
+    /// tools/gmail-bank-ingest uses 1234 for the same reason.
     private func household(cards: [String: HouseholdCard]?) -> Household {
         Household(
             name: "Merlines",
@@ -206,14 +207,14 @@ final class ChargeRoutingTests: XCTestCase {
     }
 
     private let configured: [String: HouseholdCard] = [
-        "2024": HouseholdCard(kind: "debit"),
-        "6576": HouseholdCard(kind: "credit", brand: "visa"),
+        "1234": HouseholdCard(kind: "debit"),
+        "5678": HouseholdCard(kind: "credit", brand: "visa"),
     ]
 
     func testRoutesByTheDigitsTheBankPrinted() {
         let h = household(cards: configured)
-        XCTAssertEqual(h.routing(forCardLast4: "2024"), .debit)
-        XCTAssertEqual(h.routing(forCardLast4: "6576"), .credit)
+        XCTAssertEqual(h.routing(forCardLast4: "1234"), .debit)
+        XCTAssertEqual(h.routing(forCardLast4: "5678"), .credit)
     }
 
     func testAnythingUnidentifiedIsUnknown() {
@@ -232,8 +233,8 @@ final class ChargeRoutingTests: XCTestCase {
 
     func testCreditIsTheONLYThingThisAppHides() {
         let h = household(cards: configured)
-        XCTAssertTrue(h.belongsToExpenses(cardLast4: "2024"))
-        XCTAssertFalse(h.belongsToExpenses(cardLast4: "6576"))
+        XCTAssertTrue(h.belongsToExpenses(cardLast4: "1234"))
+        XCTAssertFalse(h.belongsToExpenses(cardLast4: "5678"))
         // The invariant that matters: an unidentified charge stays visible here,
         // because the web shows it too and losing it is worse than repeating it.
         XCTAssertTrue(h.belongsToExpenses(cardLast4: "9999"))
@@ -244,8 +245,8 @@ final class ChargeRoutingTests: XCTestCase {
         // The state every household is in today, and returns to if cleared.
         for cards in [nil, [:]] as [[String: HouseholdCard]?] {
             let h = household(cards: cards)
-            XCTAssertTrue(h.belongsToExpenses(cardLast4: "2024"))
-            XCTAssertTrue(h.belongsToExpenses(cardLast4: "6576"))
+            XCTAssertTrue(h.belongsToExpenses(cardLast4: "1234"))
+            XCTAssertTrue(h.belongsToExpenses(cardLast4: "5678"))
         }
     }
 }

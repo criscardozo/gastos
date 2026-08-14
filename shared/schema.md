@@ -60,7 +60,7 @@ gives us. `brand` is meaningful for credit cards (the Tarjetas screen needs it,
 and the email never says it) and ignored for debit.
 
 Why it exists: the bank's notification emails name the card only as *"finalizada
-en 2024"*, and the ingestion already stores those digits on every charge
+en 1234"*, and the ingestion already stores those digits on every charge
 (`bankCharges.cardLast4`). Knowing which digits are the debit card and which the
 credit one is what lets a charge be routed — a debit charge is a household
 expense waiting to be verified, a credit one belongs to a card statement. Same

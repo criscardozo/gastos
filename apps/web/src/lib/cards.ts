@@ -1,6 +1,6 @@
 // Which card a bank charge came from, and therefore which screen it belongs to.
 //
-// The bank names the card exactly one way — "finalizada en 2024" — and the
+// The bank names the card exactly one way — "finalizada en 1234" — and the
 // ingestion already stores those four digits on every charge. Told which digits
 // are the debit card and which the credit one, the app can route: a debit charge
 // is a household expense waiting for its USD figure, a credit charge is a line

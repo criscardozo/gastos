@@ -27,7 +27,7 @@ function charge(over: Partial<BankCharge> = {}): BankCharge {
     usdCents: 4152, // 63.90 AUD at ~0.65
     date: "2026-08-01",
     merchant: "COLES 0831",
-    cardLast4: "2024",
+    cardLast4: "1234",
     ...over,
   };
 }

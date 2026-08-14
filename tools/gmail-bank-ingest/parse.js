@@ -11,7 +11,7 @@
  *
  *   Queremos informarte que registramos una autorización de consumo de
  *   U$S 63,90 en el establecimiento COLES 0831 , el día 01/08/2026 a las
- *   02:13hs con la tarjeta de CRISTIAN CARDOZO finalizada en 2024
+ *   02:13hs con la tarjeta de NOMBRE APELLIDO finalizada en 1234
  *
  * Everything the matcher needs is in there: the USD the bank charged, the
  * merchant, the moment, and the last four digits of the card. There is NO AUD

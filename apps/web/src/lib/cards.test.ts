@@ -10,16 +10,17 @@ import {
   type HouseholdCards,
 } from "./cards";
 
-// Cristian's real pair: 2024 is the debit card, 6576 the credit one.
+// Stand-ins, never anyone's real digits: the fixture in tools/gmail-bank-ingest
+// uses 1234 for the same reason.
 const CARDS: HouseholdCards = {
-  "2024": { kind: "debit" },
-  "6576": { kind: "credit", brand: "visa" },
+  "1234": { kind: "debit" },
+  "5678": { kind: "credit", brand: "visa" },
 };
 
 describe("classifyCharge", () => {
   it("routes by the digits the bank printed", () => {
-    expect(classifyCharge("2024", CARDS)).toBe("debit");
-    expect(classifyCharge("6576", CARDS)).toBe("credit");
+    expect(classifyCharge("1234", CARDS)).toBe("debit");
+    expect(classifyCharge("5678", CARDS)).toBe("credit");
   });
 
   it("calls anything it was not told about unknown", () => {
@@ -36,17 +37,17 @@ describe("classifyCharge", () => {
   it("is unknown for everything until cards are configured", () => {
     // The state every household starts in, and the one it returns to if the
     // configuration is ever cleared.
-    expect(classifyCharge("2024", null)).toBe("unknown");
-    expect(classifyCharge("2024", {})).toBe("unknown");
+    expect(classifyCharge("1234", null)).toBe("unknown");
+    expect(classifyCharge("1234", {})).toBe("unknown");
   });
 });
 
 describe("routing", () => {
   it("sends debit to the expense screens and credit to Tarjetas", () => {
-    expect(belongsToExpenses("2024", CARDS)).toBe(true);
-    expect(belongsToCard("2024", CARDS)).toBe(false);
-    expect(belongsToCard("6576", CARDS)).toBe(true);
-    expect(belongsToExpenses("6576", CARDS)).toBe(false);
+    expect(belongsToExpenses("1234", CARDS)).toBe(true);
+    expect(belongsToCard("1234", CARDS)).toBe(false);
+    expect(belongsToCard("5678", CARDS)).toBe(true);
+    expect(belongsToExpenses("5678", CARDS)).toBe(false);
   });
 
   it("shows an unidentified charge in BOTH, never in neither", () => {
@@ -59,38 +60,38 @@ describe("routing", () => {
   });
 
   it("shows everything in both while nothing is configured", () => {
-    expect(belongsToExpenses("2024", {})).toBe(true);
-    expect(belongsToCard("2024", {})).toBe(true);
+    expect(belongsToExpenses("1234", {})).toBe(true);
+    expect(belongsToCard("1234", {})).toBe(true);
   });
 });
 
 describe("brandFor", () => {
   it("prefills the configured brand", () => {
-    expect(brandFor("6576", CARDS)).toBe("visa");
+    expect(brandFor("5678", CARDS)).toBe("visa");
   });
 
   it("is null when there is nothing to prefill, so the user picks", () => {
-    expect(brandFor("2024", CARDS)).toBeNull(); // debit carries no brand
+    expect(brandFor("1234", CARDS)).toBeNull(); // debit carries no brand
     expect(brandFor("9999", CARDS)).toBeNull();
     expect(brandFor(null, CARDS)).toBeNull();
-    expect(brandFor("6576", { "6576": { kind: "credit" } })).toBeNull();
+    expect(brandFor("5678", { "5678": { kind: "credit" } })).toBeNull();
   });
 });
 
 describe("isValidLast4", () => {
   it("takes four digits and nothing else", () => {
-    expect(isValidLast4("2024")).toBe(true);
+    expect(isValidLast4("1234")).toBe(true);
     expect(isValidLast4("0007")).toBe(true);
-    expect(isValidLast4("204")).toBe(false);
-    expect(isValidLast4("20244")).toBe(false);
-    expect(isValidLast4("20a4")).toBe(false);
+    expect(isValidLast4("123")).toBe(false);
+    expect(isValidLast4("12345")).toBe(false);
+    expect(isValidLast4("12a4")).toBe(false);
     expect(isValidLast4("")).toBe(false);
   });
 });
 
 describe("cardRows", () => {
   it("lists them in a stable order so the editor never jumps", () => {
-    expect(cardRows(CARDS).map((r) => r.last4)).toEqual(["2024", "6576"]);
+    expect(cardRows(CARDS).map((r) => r.last4)).toEqual(["1234", "5678"]);
     expect(cardRows({ "9999": { kind: "debit" }, "1111": { kind: "credit" } })
       .map((r) => r.last4)).toEqual(["1111", "9999"]);
   });
