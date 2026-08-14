@@ -455,9 +455,41 @@ export async function assignBankCharge(
 }
 
 /**
- * Retire a bank charge: it has been dismissed as not ours. Deleting is how a
- * charge leaves the pending list — the Gmail label the ingestion sets is what
- * stops the same email coming back.
+ * Discard a bank charge as not ours. This does NOT delete: the charge leaves
+ * the pending list but stays recoverable for 48 hours (see lib/bank-charges.ts),
+ * because dismissing is one press and there is no other way back — the
+ * ingestion's memory of processed Gmail message ids means no future sweep will
+ * re-import it.
+ *
+ * serverTimestamp() rather than a local clock: the rules only accept the
+ * server's own time, so neither client can decide how long its mistakes stay
+ * recoverable.
+ */
+export async function dismissBankCharge(
+  db: Firestore,
+  householdId: string,
+  chargeId: string,
+): Promise<void> {
+  await updateDoc(doc(db, "households", householdId, "bankCharges", chargeId), {
+    dismissedAt: serverTimestamp(),
+  });
+}
+
+/** Take a dismissal back: the charge returns to the pending list. */
+export async function restoreBankCharge(
+  db: Firestore,
+  householdId: string,
+  chargeId: string,
+): Promise<void> {
+  await updateDoc(doc(db, "households", householdId, "bankCharges", chargeId), {
+    dismissedAt: deleteField(),
+  });
+}
+
+/**
+ * Delete a charge for good. Two callers, and only two: the sweep that clears
+ * dismissals past the window, and the batch that matches a charge to an expense
+ * (there deleting is right — reconciling is not a mistake to take back).
  */
 export async function deleteBankCharge(
   db: Firestore,

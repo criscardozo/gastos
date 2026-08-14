@@ -90,6 +90,9 @@ export interface BankChargeDoc {
   date: string;
   merchant: string;
   cardLast4: string | null;
+  /** When a member discarded it; null while pending. Recoverable for
+   * DISMISS_WINDOW_HOURS after this — see lib/bank-charges.ts. */
+  dismissedAt: Date | null;
 }
 
 /** `households/{id}/services/{id}` — a recurring bill. See shared/schema.md. */
@@ -203,13 +206,20 @@ export const expenseConverter = readOnly<Expense>((snap) => {
 });
 
 export const bankChargeConverter = readOnly<BankChargeDoc>((snap) => {
-  const data = snap.data();
+  // `estimate` matters here: dismissedAt is written with serverTimestamp(), and
+  // by default a not-yet-acknowledged one reads back as null — which is exactly
+  // how this file spells "pending". Without the estimate a charge would sit
+  // there looking undismissed until the server answered, so pressing Descartar
+  // would appear to do nothing.
+  const data = snap.data({ serverTimestamps: "estimate" });
+  const dismissedAt = data.dismissedAt as Timestamp | undefined;
   return {
     id: snap.id,
     usdCents: data.usdCents as number,
     date: data.date as string,
     merchant: (data.merchant as string | undefined) ?? "",
     cardLast4: (data.cardLast4 as string | undefined) ?? null,
+    dismissedAt: dismissedAt?.toDate() ?? null,
   };
 });
 

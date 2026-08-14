@@ -182,7 +182,8 @@
     "hint": "{count, plural, one {# cargo del banco} other {# cargos del banco}} sin registrar en un resumen.",
     "add": "Agregar",
     "dismiss": "Descartar",
-    "unidentified": "Esta tarjeta no está configurada en Ajustes, así que el cargo también aparece en Gastos."
+    "unidentified": "Esta tarjeta no está configurada en Ajustes, así que el cargo también aparece en Gastos.",
+    "allClear": "No hay cargos del banco sin registrar."
   },
   "empty": {
     "noExpensesTitle": "Sin gastos todavía",
@@ -356,11 +357,11 @@
     "hide": "Ocultar",
     "assign": "Asignar",
     "discard": "Descartar",
-    "discardConfirm": "¿Descartar el cargo de {amount}? Se borra de la lista y no vuelve.",
     "chooseExpense": "Gasto a verificar",
     "none": "— elegí un gasto —",
     "noCandidate": "Sin candidato claro: elegilo a mano",
-    "suggested": "Sugerido · tasa {rate} · {score}%"
+    "suggested": "Sugerido · tasa {rate} · {score}%",
+    "allClear": "Sin cargos pendientes"
   },
   "detail": {
     "title": "Detalle del gasto",
@@ -414,5 +415,10 @@
     "periodsTitle": "Período a período",
     "periodsHint": "Porcentaje del presupuesto de cada período usado en este rango.",
     "outsideRange": "fuera del rango"
+  },
+  "bankDismissed": {
+    "summary": "{count, plural, one {# descartado} other {# descartados}}",
+    "hint": "Se pueden recuperar durante 48 horas; después se borran solos.",
+    "restore": "Restaurar"
   }
 }

@@ -17,7 +17,9 @@ import {
   type Firestore,
 } from "firebase/firestore";
 
+import { partitionCharges } from "../bank-charges";
 import { getFirebaseClient } from "./client";
+import { deleteBankCharge } from "./mutations";
 import {
   bankChargeConverter,
   cardChargeConverter,
@@ -84,20 +86,27 @@ export function useExpensesRange(
 
 /* ── Bank charges waiting to be matched ────────────────────────────────── */
 
-/** How many pending charges to listen to. A charge leaves the collection as
- * soon as it is matched or discarded, so the pending set is small by
+/** How many charges to listen to. A charge leaves the collection as soon as it
+ * is matched, and a dismissed one within 48 hours, so the set is small by
  * construction; the cap is a backstop, not a feature. */
 const MAX_PENDING_CHARGES = 50;
 
 export interface BankChargesState {
+  /** Pending AND recoverable — the callers split them with partitionCharges.
+   * Anything past the window is filtered out here and swept. */
   charges: BankChargeDoc[];
   loading: boolean;
 }
 
 /**
- * Live pending bank charges, oldest first (the ones that have been waiting
- * longest are the ones to deal with). Bounded by `limit`, like every other
- * listener in the app.
+ * Live bank charges, oldest first (the ones that have been waiting longest are
+ * the ones to deal with). Bounded by `limit`, like every other listener.
+ *
+ * This is also where expired dismissals get deleted. Without Cloud Functions
+ * there is nothing server-side to do it, so the client that opens the screen
+ * does — which makes the 48 hours a display window rather than a retention
+ * guarantee: nothing here is load-bearing, since every reader already hides
+ * whatever it would have deleted.
  */
 export function useBankCharges(householdId: string | null): BankChargesState {
   const [state, setState] = useState<BankChargesState>({
@@ -117,10 +126,20 @@ export function useBankCharges(householdId: string | null): BankChargesState {
       orderBy("date", "asc"),
       limit(MAX_PENDING_CHARGES),
     ).withConverter(bankChargeConverter);
+    // Asked to delete once per mount: the snapshot fires again on our own
+    // delete, and re-issuing it would be a write per round trip.
+    const sweeping = new Set<string>();
     const unsubscribe = onSnapshot(
       q,
       (snap) => {
-        setState({ charges: snap.docs.map((d) => d.data()), loading: false });
+        const all = snap.docs.map((d) => d.data());
+        const { pending, dismissed, expired } = partitionCharges(all, new Date());
+        setState({ charges: [...pending, ...dismissed], loading: false });
+        for (const charge of expired) {
+          if (sweeping.has(charge.id)) continue;
+          sweeping.add(charge.id);
+          void deleteBankCharge(fb.db, householdId, charge.id);
+        }
       },
       () => setState({ charges: [], loading: false }),
     );

@@ -373,13 +373,23 @@ service cloud.firestore {
       // A charge the bank reported by email, waiting to be matched to an
       // expense. The ingestion writes these with a service account (an IAM
       // principal, so rules do not apply to it); from a client they are
-      // READ-ONLY except for the delete that retires one, which is how a
-      // matched or discarded charge leaves the list. No client create or
-      // update: nobody should be able to invent a bank charge, and a charge
-      // never changes once imported.
+      // READ-ONLY except for two things: the delete that retires one, and
+      // `dismissedAt`. No client create: nobody should be able to invent a bank
+      // charge, and nothing the bank said about it may ever change.
+      //
+      // `dismissedAt` is the one exception, and it is kept as narrow as the
+      // rules language allows: the ONLY key the diff may touch, and only ever
+      // the server's own clock. Setting it discards the charge; removing it
+      // restores one within the 48h window. A client that could pick the value
+      // could park a charge in the recoverable list forever, or expire it on
+      // arrival — hence request.time rather than anything it sends.
       match /bankCharges/{messageId} {
         allow read: if isMember(householdId);
-        allow create, update: if false;
+        allow create: if false;
+        allow update: if isMember(householdId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dismissedAt'])
+          && (!('dismissedAt' in request.resource.data)
+              || isServerTimestamp(request.resource.data.dismissedAt));
         allow delete: if isMember(householdId);
       }
 

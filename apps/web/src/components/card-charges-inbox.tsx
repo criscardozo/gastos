@@ -17,12 +17,15 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import { CardMark } from "@/components/ui/marks";
+import { DismissedCharges } from "@/components/dismissed-charges";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
-  deleteBankCharge,
+  dismissBankCharge,
   importBankChargeAsCardCharge,
+  restoreBankCharge,
 } from "@/lib/firebase/mutations";
 import type { BankChargeDoc, Household } from "@/lib/firebase/converters";
+import { partitionCharges } from "@/lib/bank-charges";
 import { belongsToCard, brandFor, classifyCharge } from "@/lib/cards";
 import { formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
@@ -48,8 +51,14 @@ export function CardChargesInbox({
     () => charges.filter((c) => belongsToCard(c.cardLast4, household.cards)),
     [charges, household.cards],
   );
+  // The hook already dropped anything past the 48h window, so `dismissed` is
+  // exactly what can still be taken back.
+  const { pending, dismissed } = useMemo(
+    () => partitionCharges(mine, new Date()),
+    [mine],
+  );
 
-  if (mine.length === 0) return null;
+  if (pending.length === 0 && dismissed.length === 0) return null;
 
   const withDb = (fn: (db: NonNullable<ReturnType<typeof getFirebaseClient>>["db"]) => Promise<void>) => {
     const fb = getFirebaseClient();
@@ -62,12 +71,12 @@ export function CardChargesInbox({
       <div className="flex flex-col gap-1">
         <span className="section-label">{t("title")}</span>
         <p className="text-[11.5px] leading-snug text-ink-3">
-          {t("hint", { count: mine.length })}
+          {pending.length > 0 ? t("hint", { count: pending.length }) : t("allClear")}
         </p>
       </div>
 
       <div className="divide-y divide-soft">
-        {mine.map((charge) => {
+        {pending.map((charge) => {
           const configured = brandFor(charge.cardLast4, household.cards);
           const brand = brands[charge.id] ?? configured;
           const unidentified =
@@ -141,8 +150,9 @@ export function CardChargesInbox({
                 <button
                   type="button"
                   aria-label={`${t("dismiss")} ${formatUsd(charge.usdCents, locale)}`}
+                  // Recoverable for 48h from the list below, so no confirm.
                   onClick={() =>
-                    withDb((db) => deleteBankCharge(db, household.id, charge.id))
+                    withDb((db) => dismissBankCharge(db, household.id, charge.id))
                   }
                   className="px-1.5 py-[7px]"
                 >
@@ -162,6 +172,14 @@ export function CardChargesInbox({
           );
         })}
       </div>
+
+      <DismissedCharges
+        charges={dismissed}
+        onRestore={(chargeId) =>
+          withDb((db) => restoreBankCharge(db, household.id, chargeId))
+        }
+        locale={locale}
+      />
     </div>
   );
 }

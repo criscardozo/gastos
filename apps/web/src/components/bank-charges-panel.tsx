@@ -14,13 +14,20 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
+import { DismissedCharges } from "@/components/dismissed-charges";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   assignBankCharge,
-  deleteBankCharge,
+  dismissBankCharge,
+  restoreBankCharge,
 } from "@/lib/firebase/mutations";
 import type { BankChargeDoc, Expense, Household } from "@/lib/firebase/converters";
-import { learnRate, suggestMatches } from "@/lib/bank-match";
+import {
+  learnRate,
+  suggestMatches,
+  type BankCharge as MatchableCharge,
+} from "@/lib/bank-match";
+import { partitionCharges } from "@/lib/bank-charges";
 import { belongsToExpenses } from "@/lib/cards";
 import { formatCents, formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
@@ -61,16 +68,22 @@ export function BankChargesPanel({
     () => charges.filter((c) => belongsToExpenses(c.cardLast4, household.cards)),
     [charges, household.cards],
   );
+  // The hook already dropped anything past the window, so `dismissed` here is
+  // exactly what is still recoverable. `expired` is empty by construction.
+  const { pending, dismissed } = useMemo(
+    () => partitionCharges(mine, new Date()),
+    [mine],
+  );
   const suggestions = useMemo(
-    () => suggestMatches(mine, expenses, rate),
-    [mine, expenses, rate],
+    () => suggestMatches(pending, expenses, rate),
+    [pending, expenses, rate],
   );
   const unverified = useMemo(
     () => expenses.filter((e) => !e.verified),
     [expenses],
   );
 
-  if (mine.length === 0) return null;
+  if (pending.length === 0 && dismissed.length === 0) return null;
 
   const chosenFor = (chargeId: string, suggested: string | null): string =>
     choice[chargeId] ?? suggested ?? "";
@@ -78,7 +91,10 @@ export function BankChargesPanel({
   // Not awaited: see the entry forms. The batch lands in the local cache
   // immediately — the charge leaves this list and the expense shows its USD —
   // and Firestore syncs it when there is a network again.
-  const assign = (charge: BankChargeDoc, expenseId: string) => {
+  //
+  // Typed as the matcher's charge, not the stored doc: that is what the
+  // suggestions carry, and the id + amount is all either of these needs.
+  const assign = (charge: MatchableCharge, expenseId: string) => {
     const fb = getFirebaseClient();
     if (fb === null || expenseId === "") return;
     void assignBankCharge(
@@ -90,14 +106,19 @@ export function BankChargesPanel({
     );
   };
 
-  const discard = (charge: BankChargeDoc) => {
+  // No confirm dialog any more: dismissing is recoverable for 48 hours from
+  // the Descartados list below, which is a better answer to a misclick than a
+  // prompt on every single charge.
+  const discard = (charge: MatchableCharge) => {
     const fb = getFirebaseClient();
     if (fb === null) return;
-    const ok = window.confirm(
-      t("discardConfirm", { amount: formatUsd(charge.usdCents, locale) }),
-    );
-    if (!ok) return;
-    void deleteBankCharge(fb.db, household.id, charge.id);
+    void dismissBankCharge(fb.db, household.id, charge.id);
+  };
+
+  const restore = (chargeId: string) => {
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    void restoreBankCharge(fb.db, household.id, chargeId);
   };
 
   return (
@@ -108,21 +129,30 @@ export function BankChargesPanel({
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-[14.5px] font-bold text-ink">
-            {t("pending", { count: mine.length })}
+            {/* With nothing pending the card is only here for the discarded
+                list below, and "0 cargos sin asignar" would be a strange way
+                to say so. */}
+            {pending.length > 0
+              ? t("pending", { count: pending.length })
+              : t("allClear")}
           </span>
-          <span className="text-[11.5px] text-ink-3">
-            {rate !== null
-              ? t("hintWithRate", { rate: formatRate(rate, locale) })
-              : t("hint")}
-          </span>
+          {pending.length > 0 && (
+            <span className="text-[11.5px] text-ink-3">
+              {rate !== null
+                ? t("hintWithRate", { rate: formatRate(rate, locale) })
+                : t("hint")}
+            </span>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="rounded-full border border-pill bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink"
-        >
-          {open ? t("hide") : t("review")}
-        </button>
+        {pending.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            className="rounded-full border border-pill bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink"
+          >
+            {open ? t("hide") : t("review")}
+          </button>
+        )}
       </div>
 
       {open && (
@@ -199,6 +229,12 @@ export function BankChargesPanel({
           })}
         </div>
       )}
+
+      <DismissedCharges
+        charges={dismissed}
+        onRestore={restore}
+        locale={locale}
+      />
     </div>
   );
 }

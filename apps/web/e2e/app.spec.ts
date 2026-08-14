@@ -236,6 +236,23 @@ test("a bank charge is matched to the expense it paid for", async ({
   await page.getByRole("button", { name: "Revisar" }).click();
   await expect(page.getByText("US$ 41,54")).toBeVisible();
 
+  // Discarding is recoverable for 48 hours. Worth an end-to-end pass because
+  // it is the one flow that depends on BOTH the narrow update rule and the
+  // estimated server timestamp: without the estimate the charge would stay
+  // looking pending until the ack, and the press would seem to do nothing.
+  await page.getByRole("button", { name: "Descartar" }).click();
+  await expect(page.getByText("Sin cargos pendientes")).toBeVisible();
+  await page.getByRole("button", { name: "1 descartado" }).click();
+  await expect(page.getByText(/Se pueden recuperar durante 48 horas/)).toBeVisible();
+
+  // And back: the charge returns to the pending list, still matchable. The
+  // panel is still expanded from before — it does not collapse just because it
+  // briefly had nothing pending — so there is no Revisar to press again.
+  await page.getByRole("button", { name: /^Restaurar US\$ 41,54$/ }).click();
+  await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Ocultar" })).toBeVisible();
+  await expect(page.getByText("US$ 41,54")).toBeVisible();
+
   // It suggested the Coles expense rather than the 12,00 one.
   const picker = page.getByLabel("Gasto a verificar");
   const suggested = await picker.inputValue();

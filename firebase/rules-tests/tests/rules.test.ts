@@ -752,6 +752,52 @@ describe("households/{id}/bankCharges", () => {
       deleteDoc(doc(db(env, CAROL), "households", HOUSEHOLD, "bankCharges", "gmail-1")),
     );
   });
+
+  // --- dismissedAt: the one field a client may write ---
+
+  it("a member can dismiss a charge and restore it", async () => {
+    const charge = doc(
+      db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "gmail-1",
+    );
+    await assertSucceeds(updateDoc(charge, { dismissedAt: serverTimestamp() }));
+    // Removing the field is how Restore works, so it has to be allowed too.
+    await assertSucceeds(updateDoc(charge, { dismissedAt: deleteField() }));
+  });
+
+  it("dismissedAt must be the server's clock, not the client's", async () => {
+    // A client that picked the value could park a charge in the recoverable
+    // list forever, or expire it the moment it was dismissed.
+    await assertFails(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "gmail-1"), {
+        dismissedAt: new Date("2030-01-01"),
+      }),
+    );
+  });
+
+  it("dismissing may not smuggle in any other change", async () => {
+    // The point of the narrow diff: what the bank said stays exactly as the
+    // ingestion filed it, whatever else the write claims to be doing.
+    await assertFails(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "gmail-1"), {
+        dismissedAt: serverTimestamp(),
+        usdCents: 1,
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "gmail-1"), {
+        dismissedAt: serverTimestamp(),
+        merchant: "OTRO",
+      }),
+    );
+  });
+
+  it("an outsider cannot dismiss a charge", async () => {
+    await assertFails(
+      updateDoc(doc(db(env, CAROL), "households", HOUSEHOLD, "bankCharges", "gmail-1"), {
+        dismissedAt: serverTimestamp(),
+      }),
+    );
+  });
 });
 
 // ============================ periodBudgets ============================

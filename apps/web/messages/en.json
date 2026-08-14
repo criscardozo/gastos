@@ -182,7 +182,8 @@
     "hint": "{count, plural, one {# bank charge} other {# bank charges}} not yet on a statement.",
     "add": "Add",
     "dismiss": "Dismiss",
-    "unidentified": "This card is not configured in Settings, so the charge also appears under Expenses."
+    "unidentified": "This card is not configured in Settings, so the charge also appears under Expenses.",
+    "allClear": "No bank charges left to record."
   },
   "empty": {
     "noExpensesTitle": "No expenses yet",
@@ -356,11 +357,11 @@
     "hide": "Hide",
     "assign": "Assign",
     "discard": "Discard",
-    "discardConfirm": "Discard the {amount} charge? It leaves the list for good.",
     "chooseExpense": "Expense to verify",
     "none": "— pick an expense —",
     "noCandidate": "No clear candidate: pick it by hand",
-    "suggested": "Suggested · rate {rate} · {score}%"
+    "suggested": "Suggested · rate {rate} · {score}%",
+    "allClear": "Nothing pending"
   },
   "detail": {
     "title": "Expense detail",
@@ -414,5 +415,10 @@
     "periodsTitle": "Period by period",
     "periodsHint": "Share of each period's budget used within this range.",
     "outsideRange": "outside the range"
+  },
+  "bankDismissed": {
+    "summary": "{count, plural, one {# discarded} other {# discarded}}",
+    "hint": "Recoverable for 48 hours, then they delete themselves.",
+    "restore": "Restore"
   }
 }

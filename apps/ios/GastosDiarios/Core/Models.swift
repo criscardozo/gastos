@@ -195,7 +195,8 @@ struct ExpenseItem: Identifiable, Equatable {
 
 /// `households/{id}/bankCharges/{gmailMessageId}` — a charge the bank reported
 /// by email, waiting to be matched to an expense. Written only by the Gmail
-/// ingestion (see tools/gmail-bank-ingest); from here it is read and deleted.
+/// ingestion (see tools/gmail-bank-ingest); from here it is read, dismissed and
+/// deleted — `dismissedAt` is the one field a client may write.
 struct BankCharge: Codable, Identifiable, Equatable {
     @DocumentID var docId: String?
     /// What the bank charged, integer cents of USD.
@@ -206,6 +207,9 @@ struct BankCharge: Codable, Identifiable, Equatable {
     var merchant: String
     var cardLast4: String?
     @ServerTimestamp var importedAt: Date?
+    /// When a member discarded it; nil while pending. Recoverable for
+    /// `BankChargeInbox.dismissWindowHours` after this.
+    var dismissedAt: Date?
 
     /// The Gmail message id: the document id, and what makes imports
     /// idempotent. Non-optional for the matcher's sake.

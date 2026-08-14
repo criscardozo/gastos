@@ -16,13 +16,15 @@ struct BankChargesSheet: View {
 
     /// Manual overrides, charge id → expense id.
     @State private var choice: [String: String] = [:]
+    /// Collapsed by default: the discarded list is a safety net, not the job.
+    @State private var showDismissed = false
 
     private var l10n: L10n { model.l10n }
 
     var body: some View {
         NavigationStack {
             Group {
-                if model.expenseBankCharges.isEmpty {
+                if model.expenseBankCharges.isEmpty && model.dismissedBankCharges.isEmpty {
                     emptyState
                 } else {
                     list
@@ -45,26 +47,82 @@ struct BankChargesSheet: View {
     private var list: some View {
         ScrollView {
             VStack(spacing: 12) {
-                // The learned rate is the reason the suggestions are any good,
-                // so it is stated rather than hidden behind them.
-                Text(
-                    model.learnedBankRate.map {
-                        l10n.t("bank.hintWithRate", rateText($0))
-                    } ?? l10n.t("bank.hint")
-                )
-                .appFont(12)
-                .foregroundStyle(Theme.inkTertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                if !model.expenseBankCharges.isEmpty {
+                    // The learned rate is the reason the suggestions are any
+                    // good, so it is stated rather than hidden behind them.
+                    Text(
+                        model.learnedBankRate.map {
+                            l10n.t("bank.hintWithRate", rateText($0))
+                        } ?? l10n.t("bank.hint")
+                    )
+                    .appFont(12)
+                    .foregroundStyle(Theme.inkTertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
 
                 ForEach(model.bankChargeSuggestions, id: \.chargeId) { suggestion in
                     if let charge = model.expenseBankCharges.first(where: { $0.id == suggestion.chargeId }) {
                         card(charge: charge, suggestion: suggestion)
                     }
                 }
+
+                dismissedSection
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
             .padding(.bottom, 28)
+        }
+    }
+
+    /// What was discarded in the last 48 hours, and the way back.
+    ///
+    /// Discarding is a single press with no confirmation, which is right — it is
+    /// the common case, and prompting every time would be worse. What makes that
+    /// safe is this list: a dismissal is a stamp, not a delete.
+    @ViewBuilder
+    private var dismissedSection: some View {
+        let dismissed = model.dismissedBankCharges
+        if !dismissed.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                DisclosureGroup(isExpanded: $showDismissed) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(l10n.t("bank.dismissedHint"))
+                            .appFont(11.5)
+                            .foregroundStyle(Theme.inkTertiary)
+                        ForEach(dismissed, id: \.id) { charge in
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(MoneyFormatter.usd(charge.usdCents, locale: l10n.locale))
+                                        .appFont(14, .bold)
+                                        .monospacedDigit()
+                                        .foregroundStyle(Theme.inkSecondary)
+                                    Text(chargeSubtitle(charge))
+                                        .appFont(11)
+                                        .foregroundStyle(Theme.inkTertiary)
+                                }
+                                Spacer()
+                                Button(l10n.t("bank.restore")) {
+                                    model.restoreBankCharge(charge)
+                                }
+                                .appFont(12.5, .bold)
+                                .foregroundStyle(Theme.ink)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Theme.fill)
+                                .clipShape(Capsule())
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    .padding(.top, 8)
+                } label: {
+                    Text(l10n.t("bank.dismissedCount", dismissed.count))
+                        .appFont(12.5, .semibold)
+                        .foregroundStyle(Theme.inkSecondary)
+                }
+                .tint(Theme.inkTertiary)
+            }
+            .padding(.top, 4)
         }
     }
 

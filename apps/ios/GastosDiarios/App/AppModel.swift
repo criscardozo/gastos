@@ -107,6 +107,8 @@ final class AppModel {
     private var periodsListener: ListenerRegistration?
     private var currentExpensesListener: ListenerRegistration?
     private var bankChargesListener: ListenerRegistration?
+    /// Charges already handed to the sweep, so it never asks twice.
+    private var sweptChargeIds: Set<String> = []
     private var viewedExpensesListener: ListenerRegistration?
     private var currentListenerRange: (String, String)?
     private var viewedListenerRange: (String, String)?
@@ -298,6 +300,7 @@ final class AppModel {
         viewedExpensesListener?.remove(); viewedExpensesListener = nil
         bankChargesListener?.remove(); bankChargesListener = nil
         bankCharges = []
+        sweptChargeIds = []
         currentListenerRange = nil
         viewedListenerRange = nil
     }
@@ -337,7 +340,9 @@ final class AppModel {
 
         bankChargesListener = firestore.listenBankCharges(householdId: id) {
             [weak self] charges in
-            self?.bankCharges = charges
+            guard let self else { return }
+            self.bankCharges = charges
+            self.sweepExpiredDismissals(charges, householdId: id)
         }
 
         householdListener = firestore.listenHousehold(id: id) { [weak self] household in
@@ -536,14 +541,28 @@ final class AppModel {
         BankMatch.learnRate(suggestionExpenses)
     }
 
-    /// The charges this screen should offer: the debit card's, plus any whose
-    /// card the household has not identified. A credit-card charge is not an
-    /// expense waiting for its USD figure — it is a line on a card statement,
+    /// The charges this screen is concerned with: the debit card's, plus any
+    /// whose card the household has not identified. A credit-card charge is not
+    /// an expense waiting for its USD figure — it is a line on a card statement,
     /// and belongs to the web's Tarjetas screen. Until cards are configured in
     /// Ajustes this is every charge, exactly as it was before.
-    var expenseBankCharges: [BankCharge] {
+    ///
+    /// Dismissed ones are still in here; `expenseBankCharges` is the pending
+    /// half and `dismissedBankCharges` the recoverable one.
+    private var myBankCharges: [BankCharge] {
         guard let household else { return bankCharges }
         return bankCharges.filter { household.belongsToExpenses(cardLast4: $0.cardLast4) }
+    }
+
+    /// Waiting to be matched — what the sheet works through.
+    var expenseBankCharges: [BankCharge] {
+        BankChargeInbox.partition(myBankCharges, now: Date()).pending
+    }
+
+    /// Discarded in the last 48 hours, newest first: still one press from
+    /// coming back. Past the window they are swept, so this list empties itself.
+    var dismissedBankCharges: [BankCharge] {
+        BankChargeInbox.partition(myBankCharges, now: Date()).dismissed
     }
 
     /// One suggestion per pending charge, matched against the expenses already
@@ -577,14 +596,46 @@ final class AppModel {
         }
     }
 
-    /// Drop a charge that is not ours to match.
+    /// Discard a charge that is not ours to match. Recoverable for 48 hours —
+    /// which is why there is no confirmation prompt on the way in.
     func discardBankCharge(_ charge: BankCharge) {
         guard let householdId = attachedHouseholdId, !charge.id.isEmpty else { return }
         Task {
-            try? await firestore.deleteBankCharge(
+            try? await firestore.dismissBankCharge(
                 householdId: householdId,
                 chargeId: charge.id
             )
+        }
+    }
+
+    /// Undo a discard: the charge goes back to the pending list.
+    func restoreBankCharge(_ charge: BankCharge) {
+        guard let householdId = attachedHouseholdId, !charge.id.isEmpty else { return }
+        Task {
+            try? await firestore.restoreBankCharge(
+                householdId: householdId,
+                chargeId: charge.id
+            )
+        }
+    }
+
+    /// Delete dismissals past the 48-hour window. Without Cloud Functions there
+    /// is nothing server-side to expire them, so whichever client is listening
+    /// does it — which makes the window a display rule rather than a retention
+    /// guarantee. Nothing depends on this running: every reader already hides
+    /// what it would delete.
+    private func sweepExpiredDismissals(_ charges: [BankCharge], householdId: String) {
+        let expired = BankChargeInbox.partition(charges, now: Date()).expired
+        for charge in expired where !charge.id.isEmpty {
+            // Asked once per launch: our own delete fires the listener again,
+            // and re-issuing it would be a write per round trip.
+            guard sweptChargeIds.insert(charge.id).inserted else { continue }
+            Task {
+                try? await firestore.deleteBankCharge(
+                    householdId: householdId,
+                    chargeId: charge.id
+                )
+            }
         }
     }
 

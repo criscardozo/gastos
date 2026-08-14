@@ -181,19 +181,35 @@ create a second charge.
 | `merchant` | string | As the bank spells it, e.g. `"COLES 0831"`. May be empty |
 | `cardLast4` | string \| absent | Four digits, when the email states them |
 | `importedAt` | timestamp | When the ingestion filed it |
+| `dismissedAt` | timestamp \| absent | Set when a member discards the charge. Absent means pending — this is the only field a client may ever write |
 
 **Who writes this.** Only the Gmail ingestion (`tools/gmail-bank-ingest`), with
 its own service-account key. A service account is an IAM principal, so the
 security rules do not apply to it — and the rules therefore make this collection
-read-only from the clients, plus deletable. Nobody should be able to invent a
-bank charge, and a charge never changes once imported.
+read-only from the clients, plus deletable and `dismissedAt`-writable. Nobody
+should be able to invent a bank charge, and none of what the bank said about it
+ever changes.
 
-**How a charge leaves.** Deleted, once it has been matched to an expense (in the
-same batch that writes that expense's `usdCents` + `verified`) or dismissed —
-from either client; both carry the matcher, validated against
-`bank-match-vectors.json`. The
+**How a charge leaves.** Two different exits, deliberately not the same one:
+
+- **Matched** to an expense — deleted on the spot, in the same batch that writes
+  that expense's `usdCents` + `verified`. Reconciling is not a mistake anyone
+  needs to take back, and a charge that came back after being matched would
+  offer to verify an already-verified expense.
+- **Dismissed** — `dismissedAt` is stamped and the charge disappears from the
+  pending list, but the document stays. For 48 hours it is listed under
+  *Descartados* with a Restore button, which clears the field; after that a
+  client sweep deletes it for real.
+
+Both clients carry the matcher, validated against `bank-match-vectors.json`. The
 ingestion's own memory of processed Gmail message ids is what stops the next
-sweep re-importing it.
+sweep re-importing any of them.
+
+**Why 48 hours is a display window, not a retention guarantee.** With no Cloud
+Functions there is nothing server-side to expire a document, so the sweep runs
+in whichever client opens the screen. If neither app is opened the odd expired
+charge lingers — invisible either way, since every reader hides anything past
+the window. The clients agree on the cutoff, not on when it is enforced.
 
 ### `households/{householdId}/services/{serviceId}`
 

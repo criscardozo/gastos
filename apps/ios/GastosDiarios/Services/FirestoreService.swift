@@ -109,9 +109,11 @@ final class FirestoreService {
 
     // MARK: - Bank charges
 
-    /// Pending bank charges, oldest first and bounded like every listener here.
-    /// A charge leaves the collection as soon as it is matched or discarded, so
-    /// the pending set is small by construction; the cap is a backstop.
+    /// Bank charges, oldest first and bounded like every listener here. A charge
+    /// leaves the collection as soon as it is matched, and a dismissed one
+    /// within 48 hours, so the set is small by construction; the cap is a
+    /// backstop. Dismissed-but-recoverable ones come through too — AppModel
+    /// splits them with BankChargeInbox.
     func listenBankCharges(
         householdId: String,
         onChange: @escaping ([BankCharge]) -> Void
@@ -125,7 +127,15 @@ final class FirestoreService {
                     onChange([])
                     return
                 }
-                onChange(snapshot.documents.compactMap { try? $0.data(as: BankCharge.self) })
+                // `.estimate` matters: dismissedAt is written with the server's
+                // timestamp, and by default a not-yet-acknowledged one decodes
+                // as nil — which is exactly how the app spells "pending". Left
+                // at the default, a charge would sit there looking undismissed
+                // until the server answered, so Descartar would appear to do
+                // nothing.
+                onChange(snapshot.documents.compactMap {
+                    try? $0.data(as: BankCharge.self, with: .estimate)
+                })
             }
     }
 
@@ -153,9 +163,28 @@ final class FirestoreService {
         try await batch.commit()
     }
 
-    /// Retire a charge that has been dismissed as not ours. Deleting is how a
-    /// charge leaves the list; the ingestion's own memory of processed Gmail
-    /// message ids is what stops the next sweep re-importing it.
+    /// Discard a charge as not ours. This does NOT delete: the charge leaves the
+    /// pending list but stays recoverable for 48 hours, because dismissing is
+    /// one press and there is no other way back — the ingestion's memory of
+    /// processed Gmail message ids means no future sweep re-imports it.
+    ///
+    /// The server's clock, not this device's: the rules accept nothing else, so
+    /// neither client decides how long its own mistakes stay recoverable.
+    func dismissBankCharge(householdId: String, chargeId: String) async throws {
+        try await db.collection("households").document(householdId)
+            .collection("bankCharges").document(chargeId)
+            .updateData(["dismissedAt": FieldValue.serverTimestamp()])
+    }
+
+    /// Take a dismissal back: the charge returns to the pending list.
+    func restoreBankCharge(householdId: String, chargeId: String) async throws {
+        try await db.collection("households").document(householdId)
+            .collection("bankCharges").document(chargeId)
+            .updateData(["dismissedAt": FieldValue.delete()])
+    }
+
+    /// Delete a charge for good — the sweep that clears dismissals past the
+    /// window. (Matching one to an expense also deletes, in its own batch.)
     func deleteBankCharge(householdId: String, chargeId: String) async throws {
         try await db.collection("households").document(householdId)
             .collection("bankCharges").document(chargeId)
