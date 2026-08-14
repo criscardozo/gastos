@@ -430,8 +430,8 @@ struct SettingsView: View {
             Button {
                 showCategoriesManager = true
             } label: {
-                Card(padding: EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16)) {
-                    categoriesList
+                Card {
+                    categoriesRow
                 }
                 .contentShape(Rectangle())
             }
@@ -440,41 +440,27 @@ struct SettingsView: View {
         .padding(.bottom, 10)
     }
 
-    private var categoriesList: some View {
-        let entries = model.household?.sortedCategories ?? []
-        return VStack(spacing: 0) {
-            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                HStack(spacing: 11) {
-                    CategoryCircle(categoryId: entry.id, category: entry.category, size: 30)
-                    Text(l10n.categoryName(entry.category))
-                        .appFont(14, .semibold)
-                        .foregroundStyle(Theme.ink)
-                    Spacer()
-                    if index == 0 {
-                        editPill
-                    }
-                }
-                .padding(.vertical, 8)
-                if index < entries.count - 1 {
-                    Divider().overlay(Theme.separator)
+    /// One row into the manager rather than the whole list. Settings is a list
+    /// of things you can change, not a place to read your categories back — the
+    /// count in the header already answers "how many", and the sheet is where
+    /// any actual editing happens.
+    private var categoriesRow: some View {
+        let preview = Array((model.household?.sortedCategories ?? []).prefix(5))
+        return HStack(spacing: 11) {
+            // A few of them, overlapping, as a hint at what is behind the row.
+            HStack(spacing: -6) {
+                ForEach(Array(preview.enumerated()), id: \.element.id) { _, entry in
+                    CategoryCircle(categoryId: entry.id, category: entry.category, size: 26)
+                        .overlay(Circle().strokeBorder(Theme.surface, lineWidth: 1.5))
                 }
             }
-        }
-    }
-
-    private var editPill: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "pencil")
-                .font(.system(size: 11, weight: .bold))
             Text(l10n.t("categories.edit"))
-                .appFont(12, .bold)
+                .appFont(14.5, .semibold)
+                .foregroundStyle(Theme.ink)
+            Spacer()
+            chevron
         }
-        .foregroundStyle(Theme.ink)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(Theme.surface)
-        .clipShape(Capsule())
-        .overlay(Capsule().strokeBorder(Theme.borderPill, lineWidth: 1))
+        .padding(.vertical, 13)
     }
 
     // MARK: Household
