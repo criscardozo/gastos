@@ -175,7 +175,9 @@
     "emptyBody": "Abrí el primero con su fecha de cierre y la de vencimiento: los gastos que cargues se agrupan solos.",
     "older": "Resumen anterior",
     "newer": "Resumen siguiente",
-    "loading": "Cargando…"
+    "loading": "Cargando…",
+    "confirmClose": "Se cierra el resumen que llega hasta el {closing} y se abre uno nuevo hasta el {opening}. Los gastos que cargues después entran en el nuevo.",
+    "confirmCloseCta": "Sí, cerrar y abrir"
   },
   "cardsInbox": {
     "title": "Cargos del banco",

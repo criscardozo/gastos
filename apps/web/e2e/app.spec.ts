@@ -707,7 +707,13 @@ test("services and card statements keep their own books", async ({ page }) => {
   await page.getByRole("button", { name: "Cerrar y abrir el próximo" }).click();
   await expect(page.getByLabel("Cierre")).toHaveValue("2026-09-27");
   await expect(page.getByLabel("Vencimiento")).toHaveValue("2026-10-07");
-  await page.getByRole("button", { name: "Abrir resumen" }).click();
+  // Closing takes two presses on purpose — it happens once a month and there is
+  // no single button that undoes it. The first names the consequence.
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Cerrar y abrir el próximo" }).click();
+  // Scoped to the dialog: Next's route announcer is a role="alert" too.
+  await expect(dialog.getByRole("alert")).toContainText("Se cierra el resumen");
+  await page.getByRole("button", { name: "Sí, cerrar y abrir" }).click();
 
   // The new statement is empty; the charge did not follow it.
   await expect(page.getByText("Sin gastos en este resumen.")).toBeVisible();

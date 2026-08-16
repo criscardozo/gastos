@@ -10,6 +10,7 @@ import { Icon } from "@/components/ui/icon";
 import { CardMark } from "@/components/ui/marks";
 import type { CardCharge } from "@/lib/firebase/converters";
 import type { CardChargeInput } from "@/lib/firebase/mutations";
+import { formatLongDate } from "@/lib/dates";
 import { formatUsd, parseAmountToCents } from "@/lib/money";
 import { CARD_BRANDS, type CardBrand, type StatementRange } from "@/lib/statements";
 
@@ -186,11 +187,13 @@ export function StatementDatesDialog({
   proposal,
   /** The statement being closed, if any — shown so the window is obvious. */
   closing,
+  locale,
   onSave,
   onClose,
 }: {
   proposal: StatementRange;
   closing: StatementRange | null;
+  locale: string;
   onSave: (range: StatementRange) => void;
   onClose: () => void;
 }) {
@@ -200,11 +203,33 @@ export function StatementDatesDialog({
 
   const [closingDate, setClosingDate] = useState(proposal.closingDate);
   const [dueDate, setDueDate] = useState(proposal.dueDate);
+  /** Second press on the primary action. Only ever true when a statement is
+   * actually being closed — see `confirms` below. */
+  const [confirming, setConfirming] = useState(false);
 
   // The bill cannot be payable before it closes — the rules refuse it too.
   const ordered = dueDate > closingDate;
   const startsBefore = proposal.startDate <= closingDate;
   const valid = ordered && startsBefore && closingDate !== "" && dueDate !== "";
+
+  // Confirm only when something is being closed. Opening the FIRST statement
+  // runs through this same dialog and closes nothing, so asking "are you sure"
+  // there would be a prompt with no consequence behind it.
+  const confirms = closing !== null;
+
+  const primary = () => {
+    if (confirms && !confirming) {
+      setConfirming(true);
+      return;
+    }
+    onSave({ startDate: proposal.startDate, closingDate, dueDate });
+  };
+
+  // Editing the dates after asking makes the question stale — it named a date.
+  const editDate = (set: (value: string) => void) => (value: string) => {
+    setConfirming(false);
+    set(value);
+  };
 
   return (
     <div
@@ -228,7 +253,9 @@ export function StatementDatesDialog({
 
         <p className="text-[12.5px] text-ink-2">
           {closing !== null
-            ? t("closingHint", { date: closing.closingDate })
+            ? t("closingHint", {
+                date: formatLongDate(closing.closingDate, locale),
+              })
             : t("firstStatementHint")}
         </p>
 
@@ -237,7 +264,7 @@ export function StatementDatesDialog({
           <input
             type="date"
             value={closingDate}
-            onChange={(e) => setClosingDate(e.target.value)}
+            onChange={(e) => editDate(setClosingDate)(e.target.value)}
             className={FIELD}
           />
           <span className="text-[11.5px] text-ink-3">{t("closingDateHelp")}</span>
@@ -248,7 +275,7 @@ export function StatementDatesDialog({
           <input
             type="date"
             value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
+            onChange={(e) => editDate(setDueDate)(e.target.value)}
             className={FIELD}
           />
           <span className="text-[11.5px] text-ink-3">{t("dueDateHelp")}</span>
@@ -260,16 +287,44 @@ export function StatementDatesDialog({
           </p>
         )}
 
-        <button
-          type="button"
-          disabled={!valid}
-          onClick={() =>
-            onSave({ startDate: proposal.startDate, closingDate, dueDate })
-          }
-          className="mt-1 rounded-full bg-accent py-3 text-sm font-bold text-white disabled:opacity-40"
-        >
-          {t("openStatement")}
-        </button>
+        {confirming && closing !== null && (
+          // Names both dates: the question is only worth asking if it says
+          // exactly what is about to happen.
+          <p
+            className="rounded-[12px] bg-warn-bg px-3 py-2.5 text-[12px] leading-snug font-semibold"
+            style={{ color: "var(--warn-text)" }}
+            role="alert"
+          >
+            {t("confirmClose", {
+              closing: formatLongDate(closing.closingDate, locale),
+              opening: formatLongDate(closingDate, locale),
+            })}
+          </p>
+        )}
+
+        <div className="mt-1 flex items-center gap-2.5">
+          {confirming && (
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="rounded-full border border-line px-4 py-3 text-[13px] font-semibold text-ink-2"
+            >
+              {tCommon("cancel")}
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={!valid}
+            onClick={primary}
+            className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white disabled:opacity-40"
+          >
+            {confirming
+              ? t("confirmCloseCta")
+              : confirms
+                ? t("closeAndOpen")
+                : t("openStatement")}
+          </button>
+        </div>
       </div>
     </div>
   );

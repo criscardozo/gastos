@@ -151,6 +151,7 @@ export default function CardsPage() {
           <StatementDatesDialog
             proposal={proposal}
             closing={null}
+            locale={locale}
             onSave={(range) => {
               withDb((db) => openCardStatement(db, household.id, range));
               setIndex(0);
@@ -260,11 +261,14 @@ export default function CardsPage() {
           </div>
 
           {isCurrent && (
+            // Both secondary, and small. Closing a statement happens once a
+            // month; a full-width primary button gave a rare, hard-to-undo
+            // action the most prominent spot on the card.
             <div className="flex flex-wrap items-center gap-2.5 border-t border-soft pt-3">
               <button
                 type="button"
                 onClick={() => setDatesDialog(true)}
-                className="flex-1 rounded-full bg-ink px-4 py-2.5 text-[13px] font-bold text-bg"
+                className="rounded-full border border-line px-3.5 py-2 text-[12.5px] font-semibold text-ink-2"
               >
                 {t("closeAndOpen")}
               </button>
@@ -280,7 +284,7 @@ export default function CardsPage() {
                     setConfirmDeleteStatement(true);
                   }
                 }}
-                className="rounded-full border border-line px-3.5 py-2.5 text-[12.5px] font-semibold"
+                className="ml-auto rounded-full border border-line px-3.5 py-2 text-[12.5px] font-semibold"
                 style={{ color: "var(--over)" }}
               >
                 {confirmDeleteStatement
@@ -358,6 +362,7 @@ export default function CardsPage() {
         <StatementDatesDialog
           proposal={proposal}
           closing={shown}
+          locale={locale}
           onSave={(range) => {
             withDb((db) => openCardStatement(db, household.id, range));
             setIndex(0);
