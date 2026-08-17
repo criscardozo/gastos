@@ -129,4 +129,18 @@ struct L10n {
     func daysCount(_ days: Int) -> String {
         days == 1 ? t("days.one") : t("days.other", days)
     }
+
+    // Counted labels need a key per grammatical number: the catalog holds plain
+    // `%d` formats and `t(_:_:)` resolves them with String(format:), which has
+    // no notion of plurals — "%d descartados" would render "1 descartados".
+
+    /// "1 descartado" / "3 descartados" — the recoverable-dismissals disclosure.
+    func dismissedChargesCount(_ count: Int) -> String {
+        count == 1 ? t("bank.dismissedOne") : t("bank.dismissedOther", count)
+    }
+
+    /// "1 cargo del banco" / "2 cargos del banco" — the Historial chip.
+    func bankChargesCount(_ count: Int) -> String {
+        count == 1 ? t("history.bankChargesOne") : t("history.bankChargesOther", count)
+    }
 }

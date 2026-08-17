@@ -171,23 +171,6 @@
         }
       }
     },
-    "bank.dismissedCount": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d discarded"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d descartados"
-          }
-        }
-      }
-    },
     "bank.dismissedHint": {
       "extractionState": "manual",
       "localizations": {
@@ -201,6 +184,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Se pueden recuperar durante 48 horas; después se borran solos."
+          }
+        }
+      }
+    },
+    "bank.dismissedOne": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 discarded"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 descartado"
+          }
+        }
+      }
+    },
+    "bank.dismissedOther": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d discarded"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d descartados"
           }
         }
       }
@@ -1378,7 +1395,24 @@
         }
       }
     },
-    "history.bankCharges": {
+    "history.bankChargesOne": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 bank charge"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 cargo del banco"
+          }
+        }
+      }
+    },
+    "history.bankChargesOther": {
       "extractionState": "manual",
       "localizations": {
         "en": {

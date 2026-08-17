@@ -116,7 +116,7 @@ struct BankChargesSheet: View {
                     }
                     .padding(.top, 8)
                 } label: {
-                    Text(l10n.t("bank.dismissedCount", dismissed.count))
+                    Text(l10n.dismissedChargesCount(dismissed.count))
                         .appFont(12.5, .semibold)
                         .foregroundStyle(Theme.inkSecondary)
                 }

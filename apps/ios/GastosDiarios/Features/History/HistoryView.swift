@@ -309,7 +309,7 @@ struct HistoryView: View {
                         HStack(spacing: 5) {
                             Image(systemName: "creditcard.fill")
                                 .font(.system(size: 11, weight: .semibold))
-                            Text(l10n.t("history.bankCharges", model.expenseBankCharges.count))
+                            Text(l10n.bankChargesCount(model.expenseBankCharges.count))
                                 .appFont(12, .semibold)
                         }
                         .padding(.horizontal, 11)
