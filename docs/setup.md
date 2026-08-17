@@ -157,9 +157,16 @@ doesn't appear.
 pnpm install
 pnpm emulators          # Firebase emulator suite (Auth 9099, Firestore 8080, UI 4000)
 pnpm dev                # Next.js on :3000 — set NEXT_PUBLIC_USE_EMULATORS=1 to use emulators
-pnpm test:rules         # security-rules tests (starts its own emulator)
-pnpm test:web           # period-logic + unit tests
+pnpm test:rules         # security-rules tests (starts its own emulator, needs Java)
+pnpm test:web           # unit tests, incl. the shared period + bank-match vectors
+pnpm test:ingest        # the bank email parser (tools/gmail-bank-ingest)
+pnpm test               # all three
+pnpm verify:pwa         # service worker + offline cold start (needs a PRODUCTION build served)
 ```
+
+Playwright end-to-end tests are separate — they need the emulators already
+running, then `pnpm --filter web test:e2e`. See the header of
+`apps/web/playwright.config.ts`.
 
 ## Backup (manual, free)
 

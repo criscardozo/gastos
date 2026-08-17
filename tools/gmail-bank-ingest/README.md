@@ -2,9 +2,16 @@
 
 The card is paid in AUD but the bank bills it in USD at its own rate and emails a
 notification per purchase. This Apps Script files those emails into
-`households/{id}/bankCharges`, where the web app matches each charge to the
-expense it belongs to (`apps/web/src/lib/bank-match.ts`) and, once confirmed,
-writes `usdCents` + `verified` on that expense.
+`households/{id}/bankCharges`, where **either client** matches each charge to the
+expense it belongs to and, once confirmed, writes `usdCents` + `verified` on that
+expense. The matcher exists twice (`apps/web/src/lib/bank-match.ts`,
+`apps/ios/GastosDiarios/Core/BankMatch.swift`) and both run
+`shared/bank-match-vectors.json`.
+
+When the email names the card (`cardLast4`), the household can say which digits
+are the debit card and which the credit one (Ajustes → Tarjetas), and the charge
+is routed accordingly: debit charges wait to be matched to an expense, credit
+ones land on the web's Tarjetas screen. Digits nobody configured show in both.
 
 Apps Script was chosen because it is free, runs Google-side (no machine of ours
 stays on) and can read the mailbox without any OAuth plumbing of our own — the
@@ -21,9 +28,9 @@ project's $0 infrastructure rule leaves no room for Cloud Functions or a server.
 | `retry.test.js` | Loads `Code.gs` in a VM with Gmail stubbed, to prove the retry retries once and still raises a persistent failure. |
 | `fixtures/consumo-autorizado.html` | A real notification, with the cardholder name and card digits scrubbed. |
 
-`pnpm test:ingest` runs the parser and key tests (22 of them, including the real
-email, the Argentina→Sydney date conversion, and every mangled shape a pasted
-PEM arrives in).
+`pnpm test:ingest` runs the parser, key and retry tests (25 of them, including
+the real email, the Argentina→Sydney date conversion, and every mangled shape a
+pasted PEM arrives in).
 
 ## What the email gives us
 
@@ -31,8 +38,8 @@ PEM arrives in).
 > 63,90** en el establecimiento **COLES 0831**, el día **01/08/2026** a las
 > **02:13hs** con la tarjeta de … finalizada en **1234**
 
-USD, merchant, moment, card. **No AUD figure** — which is why the web app learns
-the bank's rate from the pairs it already has instead of calling an FX API.
+USD, merchant, moment, card. **No AUD figure** — which is why both clients learn
+the bank's rate from the pairs they already have instead of calling an FX API.
 
 The timestamp is Argentine wall time (ART, a fixed −03). It is converted to the
 household timezone before being stored, because a purchase at 9pm in Argentina is
@@ -116,9 +123,11 @@ subject (so a thread label would hide every later charge):
    filed comes back `409 ALREADY_EXISTS` and is treated as done. This is what
    protects a *pending* charge if the properties store is ever lost.
 
-A charge that has been matched or discarded is **deleted** from Firestore. Layer 1
-is what stops the next sweep re-creating it, which is why the memory is not
-optional.
+A **matched** charge is deleted from Firestore on the spot. A **discarded** one is
+only stamped (`dismissedAt`) and stays recoverable for 48 hours before a client
+sweep deletes it — see `shared/schema.md`. Either way it is layer 1 that stops
+the next sweep re-creating it, which is why the memory is not optional: without
+it, discarding a charge would just make it come back fifteen minutes later.
 
 ## `Invalid argument: key`
 

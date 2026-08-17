@@ -1,6 +1,14 @@
 # Design brief — prompt for Claude Design (claude.ai/design)
 
 Paste the prompt below into a new Claude Design project to design the screens.
+What it produced lives in [`docs/design/`](design/), which is the reference the
+apps are actually built against — this file is the input, not the output.
+
+> Kept in step with the product where it would otherwise mislead a fresh design
+> pass: the currency toggle it originally asked for was **removed** (the app
+> converts nothing — see PLAN §7), and the screens added later (Estadísticas,
+> Servicios, Tarjetas de Crédito) were designed from the same system rather than
+> from this brief.
 
 ---
 
@@ -15,8 +23,8 @@ banking / generic fintech.
   Secondary: **web dashboard** (Next.js) for analysis and full CRUD.
 - Bilingual: **Spanish and English** — design with both in mind (Spanish strings run ~25%
   longer; avoid tight fixed-width labels).
-- Currency: AUD, with an optional **temporary display toggle** to another currency (e.g. USD),
-  shown as approximate (~), never replacing the AUD amount as source of truth.
+- Currency: **AUD only** — the one currency anyone types and the only one any total reads.
+  Nothing is converted and no rate is ever estimated.
 - **Each period has its own budget**: there is a household default, but every week/fortnight
   can be given a custom amount. Past periods keep a record of what their budget was and
   whether it was weekly or fortnightly — history views compare each period's spend against
@@ -44,8 +52,8 @@ banking / generic fintech.
 3. **History**: expenses grouped by day; each row = category icon + note + amount + small
    avatar of who logged it. Swipe actions for edit/delete.
 4. **Settings**: default budget (amount, weekly/fortnightly, period start date — clearly
-   labeled as the default applied to future periods), display currency toggle, language
-   (es/en), invite partner (shareable code with copy action), sign out.
+   labeled as the default applied to future periods), language (es/en), invite partner
+   (shareable code with copy action), sign out.
 5. **Onboarding**: Google sign-in → create household OR join with an invite code → set the
    budget. Three light steps, no marketing fluff.
 
@@ -61,5 +69,4 @@ banking / generic fintech.
 Amount display (large tabular numerals), category chip/icon set, budget progress bar (3
 states), expense row, period navigator (‹ current period ›), per-period budget editor (default
 pre-filled, "custom" badge), new-period budget confirmation prompt, person avatar pair, empty
-states (no expenses yet / budget not set / offline), invite-code card, currency-approximate
-badge.
+states (no expenses yet / budget not set / offline), invite-code card.

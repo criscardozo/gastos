@@ -4,6 +4,12 @@ SwiftUI app (iOS 17+, MVVM with `@Observable`) for fast household expense entry.
 Talks directly to Firebase (Auth + Firestore) — the Firestore security rules in
 `firebase/firestore.rules` are the only security boundary.
 
+Three targets ship together: the app, a home-screen **widget** showing what is
+left this period, and a **Watch** companion for entry from the wrist. Beyond
+entry the app also matches the bank's charges (the ones the Gmail ingestion
+files) to the expenses they paid for. Servicios and Tarjetas de Crédito are
+deliberately web-only — see the root README.
+
 ## Project generation
 
 The Xcode project is generated with [XcodeGen](https://github.com/yonaskolb/XcodeGen)
@@ -26,9 +32,12 @@ xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiarios \
   -only-testing:GastosDiariosTests
 ```
 
-The unit tests validate the Swift period logic against every vector in
-`shared/period-test-vectors.json` (the same vectors the web TS implementation
-must pass).
+The suite runs the two shared vector files — `shared/period-test-vectors.json`
+for the calendar arithmetic and `shared/bank-match-vectors.json` for the charge
+matcher — against the Swift implementations, which is what stops them drifting
+from the TypeScript ones. The rest covers the logic that only exists here:
+budget entry parsing, expense verification, the 48h dismissal window and the
+free-account signing expiry.
 
 ## Google Sign-In configuration
 

@@ -40,8 +40,8 @@ No hay servidor propio.
 ```
 /
 ├── apps/
-│   ├── ios/                  # Proyecto Xcode (SwiftUI, dependencias vía SPM)
-│   └── web/                  # Next.js App Router + TS + Tailwind + next-intl + Recharts
+│   ├── ios/                  # Proyecto Xcode (SwiftUI, SPM): app + widget + Watch
+│   └── web/                  # Next.js App Router + TS + Tailwind + next-intl (además, PWA)
 ├── firebase/
 │   ├── firestore.rules
 │   ├── firestore.indexes.json
@@ -50,18 +50,24 @@ No hay servidor propio.
 ├── shared/
 │   ├── schema.md             # contrato de Firestore — fuente de verdad
 │   ├── categories.json       # categorías semilla (key, ícono, color)
-│   └── period-test-vectors.json  # casos de prueba multiplataforma de la lógica de períodos
+│   ├── period-test-vectors.json   # casos multiplataforma de la lógica de períodos
+│   └── bank-match-vectors.json    # ídem, del matcher de cargos del banco
+├── tools/
+│   └── gmail-bank-ingest/    # Apps Script: emails del banco → bankCharges (+ sus tests)
 ├── docs/                     # guías de setup (consola Firebase, Vercel, firma en Xcode)
 ├── LICENSE                   # MIT
 ├── README.md
-├── package.json              # raíz del workspace pnpm (web + rules-tests)
+├── package.json              # raíz del workspace pnpm
 └── pnpm-workspace.yaml
 ```
-- **Workspaces de pnpm** para el lado JS (web + rules-tests). Sin Turborepo — hay una sola app
-  JS; se agrega después solo si hace falta.
+- **Workspaces de pnpm** para el lado JS (web + rules-tests + gmail-bank-ingest). Sin
+  Turborepo — hay una sola app JS; se agrega después solo si hace falta.
 - Swift y TS no pueden compartir código; el contrato compartido son `schema.md`,
-  `categories.json` y los **vectores de prueba de períodos** (la única lógica realmente
-  multiplataforma, compartida como datos).
+  `categories.json` y los **vectores de prueba** (la lógica realmente multiplataforma,
+  compartida como datos): períodos y matcher del banco.
+- **Sin librería de gráficos.** El plan original decía Recharts; el diseño terminó pidiendo
+  barras que son divs y una línea SVG a mano, que además ahorra ~60 kB en el primer load de
+  una app cuya gracia es abrir rápido en el teléfono.
 - La config de cliente de Firebase (`GoogleService-Info.plist`, `NEXT_PUBLIC_FIREBASE_*`) es
   pública por diseño (las rules son la frontera); la config web va en variables de entorno de
   Vercel por prolijidad.
@@ -90,11 +96,21 @@ households/{householdId}/expenses/{expenseId}
   categoryId, note
   date: "YYYY-MM-DD"                 // fecha calendario local en la timezone DEL HOGAR
   createdBy: uid                     // atribución, no propiedad
+  usdCents?, verified                // lo que cobró el banco; sin eso, "no verificado" (§7)
   createdAt, updatedAt: server timestamps
 
 invites/{code}                       // el código ES el ID del documento (crypto-random, 10+ chars)
   householdId, createdBy, createdAt
 ```
+Colecciones agregadas después del plan original (detalle en `shared/schema.md`):
+```
+households/{id}/bankCharges/{gmailMessageId}   // lo que el banco avisó por email (§10)
+households/{id}/services/{id}                  // servicios recurrentes — registro aparte
+households/{id}/cardStatements/{closingDate}   // resúmenes de tarjeta
+households/{id}/cardCharges/{id}               // gastos de tarjeta, siempre USD
+households/{id}  → cards: { [last4]: {...} }   // qué tarjeta es débito y cuál crédito
+```
+Ninguno de esos registros suma contra el presupuesto: son libros aparte, a propósito.
 Decisiones incorporadas:
 - **Dinero**: centavos enteros (Swift `Int`, TS `number`). Firestore no tiene tipo decimal;
   int64 es nativo. Formateo con `NumberFormatter` / `Intl.NumberFormat`.
@@ -111,8 +127,14 @@ Decisiones incorporadas:
     cuánto era su presupuesto y si fue semanal o quincenal, aunque después cambien el default.
   - Cambiar el default (monto o tipo) afecta solo períodos **futuros** (aún no materializados).
     El período en curso se cambia editando su propio doc.
-  - Editar el presupuesto del período en curso nunca re-bucketea gastos: los límites del
-    período no cambian una vez materializado; solo cambia `amountCents`.
+  - Editar el presupuesto del período en curso nunca re-bucketea gastos: solo cambia
+    `amountCents`.
+  - **Única excepción a "los límites no se mueven":** una semana en curso puede estirarse a
+    quincena desde Ajustes. Empuja el `endDate` 7 días y suma el presupuesto de la segunda
+    semana, lo que **sí** re-bucketea los días que iban a caer en el período siguiente — que
+    es exactamente el punto. Ningún gasto se toca: como el gasto no guarda id de período,
+    mover el límite alcanza. Es de una sola dirección (una quincena no se estira otra vez) y
+    está acotada por su propia rama en las rules.
 - **Categorías**: map indexado por id (actualizar arrays de maps en Firestore es incómodo).
   Embebidas en el doc del hogar → un solo listener trae presupuesto + categorías + miembros en
   una sola lectura.
@@ -153,8 +175,13 @@ segundo UID ni siquiera podría unirse al hogar con tope de 2. Política:
   Developer Program pago, y la guía 4.8 de la App Store obliga a ofrecerlo si hay Google
   sign-in). Aun entonces, cada persona sigue usando un solo proveedor; el *linking* de
   proveedores es una feature opcional futura.
-- Web: usar **`signInWithPopup`** — `signInWithRedirect` se rompe con el ITP de Safari usando el
-  `authDomain` por defecto `*.firebaseapp.com`.
+- Web: **los dos flujos, según dónde corra**. El plan decía "solo `signInWithPopup`", porque
+  `signInWithRedirect` se rompe con el ITP de Safari usando el `authDomain` por defecto
+  `*.firebaseapp.com`. La solución real fue servir el handler de Firebase **same-origin**
+  (rewrite de `/__/auth/*` en `next.config.ts`, con `authDomain` = el host que sirve), y con
+  eso funcionan ambos: popup en una pestaña, y `signInWithRedirect` cuando la PWA está
+  instalada, donde el handshake de un popup hacia una ventana standalone no es confiable.
+  Agregar un dominio exige whitelistear `https://<dominio>/__/auth/handler` — ver `setup.md`.
 - ⚠️ **Realidad de distribución**: sin el Apple Developer Program (USD 99/año) no hay TestFlight
   ni App Store; los equipos personales gratuitos solo permiten sideload con **firma que expira a
   los 7 días** (re-deploy desde Xcode cada semana, a ambos teléfonos). Es la única decisión de
@@ -199,8 +226,10 @@ bi-moneda con `≈`, la moneda activa por usuario y el fetch diario a frankfurte
   React duplicando `onSnapshot` es la forma clásica en que un proyecto hobby quema 50k lecturas).
 - Persistencia offline en ambos clientes (`persistentLocalCache` con multi-tab en web; default
   en iOS) → recargas baratas, carga en iOS instantánea.
-- Tendencias sobre rangos largos: bien al principio (~2–3k lecturas por 6 meses); si crece,
-  pasar a queries de agregación `count()`/`sum()`. No se construye ahora.
+- Tendencias sobre rangos largos: **ya se pasó a agregaciones `sum()`** — un total histórico
+  cuesta 1 lectura en vez de traer los documentos, cacheado por sesión. Ojo con el índice: una
+  agregación necesita el campo sumado **dentro** del índice compuesto, por eso `amountCents`
+  aparece al final de los dos índices de `expenses`.
 
 ### 9. i18n
 - **Nombres de categorías**: híbrido. Las categorías semilla llevan una `key` (`groceries`,
@@ -212,15 +241,36 @@ bi-moneda con `≈`, la moneda activa por usuario y el fetch diario a frankfurte
   El idioma sigue al sistema/navegador, con override en settings (por usuario — cada miembro del
   hogar puede usar un idioma distinto).
 
+### 10. El banco, y los registros que no son el presupuesto
+Posterior al plan original, y consecuencia directa de §7: si la app no convierte nada, la
+única cifra en USD que puede existir es **la que cobró el banco**. Llega por email, uno por
+compra.
+
+- **Ingesta** (`tools/gmail-bank-ingest`): Apps Script con trigger de 15 minutos, permiso de
+  Gmail de **sólo lectura**, y su **propia** service account (revocable sin tocar la del
+  backup). Archiva cada email en `bankCharges` usando el id del mensaje de Gmail como id del
+  documento, así releer el mismo mail nunca duplica.
+- **Matcheo**: los dos clientes proponen a qué gasto corresponde cada cargo, con la tasa
+  aprendida de los pares ya verificados. Aceptar escribe `usdCents` + `verified` y borra el
+  cargo, en un solo batch. Descartar no borra: deja `dismissedAt` y el cargo se puede
+  recuperar por 48 h.
+- **Ruteo por tarjeta**: el email dice los últimos 4 dígitos. Configurados en Ajustes, un
+  cargo de débito espera un gasto y uno de crédito va a Tarjetas. Los dígitos que nadie
+  configuró aparecen en los dos lados — esconder un cargo cuesta más que mostrarlo dos veces.
+- **Servicios y Tarjetas de Crédito** son **registros aparte**: no suman al presupuesto, no
+  entran en las estadísticas ni en los exports. Y son **sólo web** a propósito: se hacen
+  sentado, no en la caja del supermercado.
+
 ## Resumen del stack
 
 | Pieza | Elección |
 |---|---|
-| iOS | SwiftUI, iOS 17+, MVVM con `@Observable`, Firebase iOS SDK vía SPM, persistencia offline de Firestore, String Catalogs |
-| Web | Next.js (App Router) + TypeScript, Tailwind CSS, next-intl, Firebase JS SDK (solo cliente, `onSnapshot`), Recharts |
+| iOS | SwiftUI, iOS 17+, MVVM con `@Observable`, Firebase iOS SDK vía SPM, persistencia offline de Firestore, String Catalogs. Widget (WidgetKit) + app de Watch |
+| Web | Next.js (App Router) + TypeScript, Tailwind CSS, next-intl, Firebase JS SDK (solo cliente, `onSnapshot`). **PWA** instalable (service worker propio en `public/sw.js`). Sin librería de gráficos |
+| Ingesta | Google Apps Script (gratis, del lado de Google, trigger de 15 min) con su propia service account |
 | Datos | Firebase Auth (Google como base) + Cloud Firestore plan Spark; rules + índices versionados en `firebase/` |
 | Hosting | Vercel Hobby (web, vía integración con Git); config de Firebase en variables de entorno |
-| Testing | `@firebase/rules-unit-testing` + emulador (vitest); vectores compartidos de lógica de períodos (vitest + XCTest); CI con GitHub Actions |
+| Testing | `@firebase/rules-unit-testing` + emulador (vitest); vectores compartidos de períodos y del matcher (vitest + XCTest); Playwright E2E contra emuladores; CI con GitHub Actions (solo Ubuntu — iOS se verifica local) |
 
 **Nota de arquitectura web**: totalmente renderizada en el cliente detrás de un shell estático
 es la decisión *correcta* (todos los datos son por usuario, en tiempo real y detrás de auth —
@@ -244,6 +294,13 @@ categoría, split por persona); tabla de gastos con filtros (rango de fechas, ca
 vs lo gastado** — el historial de presupuestos viene de `periodBudgets`); espejo de settings.
 
 ## Fases de implementación
+
+> **Estado:** fases 0 a 4 hechas. La 5 (Apple Developer Program) sigue sin decidirse: la
+> distribución es sideload con firma que expira a los 7 días. Lo de abajo queda como el plan
+> tal cual se escribió; lo que se construyó **además** del MVP —PWA instalable, widget, app
+> de Watch, estadísticas, exports (CSV/PDF/Excel + Drive), ingesta del banco, Servicios,
+> Tarjetas, rollover entre períodos y el estiramiento de semana a quincena— está en las
+> secciones de arriba y en el README.
 
 ### Fase 0 — Fundaciones (quemar el riesgo primero)
 Scaffold del repo (estructura de arriba), `LICENSE` (MIT), `README.md`, `.gitignore` (Xcode
@@ -287,12 +344,14 @@ que la app se pruebe a sí misma.
 - **Rules**: tests unitarios en el emulador (aislamiento por membresía, camino feliz de
   invitación, denegación del tercer usuario, chequeo de diff de auto-alta; `periodBudgets`
   solo accesible/escribible por miembros, con validación de forma).
-- **Lógica de períodos**: vitest (TS) + XCTest (Swift) contra
-  `shared/period-test-vectors.json`, incluyendo casos de DST, cambio semanal ↔ quincenal
-  entre períodos y materialización en cascada.
-- **Web**: `pnpm typecheck && pnpm lint && pnpm build`; E2E manual contra el emulator suite
-  local (Auth + Firestore); preview deploy en Vercel.
-- **iOS**: build en simulador contra el emulator suite.
+- **Lógica duplicada**: vitest (TS) + XCTest (Swift) contra los vectores compartidos —
+  `period-test-vectors.json` (DST, cambio semanal ↔ quincenal, materialización en cascada,
+  estiramiento a quincena) y `bank-match-vectors.json` (matcher del banco).
+- **Web**: `pnpm typecheck && pnpm lint && pnpm build`; **E2E automatizado con Playwright**
+  contra el emulator suite (ya no manual); `pnpm verify:pwa` para el service worker y el
+  arranque en frío sin red; preview deploy en Vercel.
+- **iOS**: build + `xcodebuild test` en simulador. Para *mirar* pantallas sin login de
+  Google, lanzar con `-useEmulators -devSignIn` y sembrar por REST — ver `docs/setup.md`.
 - **De punta a punta**: crear hogar en la web → unirse desde iOS con el código de invitación →
   cargar un gasto en iOS offline → reconectar → el gasto aparece en vivo en el dashboard web
   con el bucketing de período y la atribución correctos.

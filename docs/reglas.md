@@ -15,7 +15,7 @@ en vez de repetirlas de memoria.
 > *"deja de asumir el deployar, solo deploya cuando te diga"*
 
 - **Commitear: libre.** Terminar el trabajo y dejarlo commiteado es lo esperado.
-- **`git push`, `firebase deploy` y `./install-device.sh`: sólo cuando se pide,
+- **`git push`, `firebase deploy` e instalar en el iPhone: sólo cuando se pide,
   en ese mensaje.** Un permiso dado ayer no vale hoy.
 - Al terminar, decir qué quedó sin pushear y qué implicaría publicarlo.
 
