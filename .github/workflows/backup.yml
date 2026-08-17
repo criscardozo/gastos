@@ -58,7 +58,7 @@ jobs:
         id: stamp
         run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: firestore-backup-${{ steps.stamp.outputs.date }}
           path: backups/*.json
