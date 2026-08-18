@@ -523,10 +523,14 @@ construcción.</p>''', 900)
          "El importe usa su propio componente (<code>amount-input</code>) con cifras tabulares y un <code>$</code> apagado — no es un campo de texto con otro tamaño.",
          "Los mensajes de error van debajo, 11.5px/600, en <code>--over</code>. Nunca dentro del campo."])
 
+    rf = comp.rounded_full_breakdown()
+    rf_total = sum(rf.values())
     pages["components/pill.html"] = spec(
-        "Chips y pills", "Components", f"rounded-full, {usage.full_radius_uses()} usos",
-        "La forma más repetida del sistema. Un chip informa, un pill navega o filtra, y los "
-        "dos son la misma geometría: radio completo y padding horizontal generoso.",
+        "Chips y pills", "Components",
+        "Radio completo; un chip con radio numérico es un bug",
+        "La geometría más repetida del sistema, y por eso la más fácil de contar mal. Un chip "
+        "informa, un pill navega o filtra, y los dos son la misma forma: radio completo con "
+        "padding horizontal generoso.",
         f'''<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
   <div style="border-radius:999px;background:{light["--good-bg"]};color:{light["--good-text"]};
        padding:5px 11px;font-size:12px;font-weight:600">Van bien</div>
@@ -540,13 +544,28 @@ construcción.</p>''', 900)
   <div style="border-radius:999px;background:{light["--accent-soft"]};color:{light["--accent-strong"]};
        padding:5px 11px;font-size:11.5px;font-weight:700">Ajustado</div>
 </div>''',
-        "rounded-full + px-2.5…px-4 + py-1…py-2", usage.full_radius_uses(),
+        f"rounded-full + px-2.5…px-4 + py-1…py-2\n\n"
+        f"  De los {rf_total} usos de rounded-full en la app, sólo {rf['chip']} son chips:\n"
+        f"    {rf['chip']:>3}  chip / pill\n"
+        f"    {rf['primary']:>3}  botón primario  ← tiene su propio spec\n"
+        f"    {rf['circle']:>3}  círculo, avatar o punto\n"
+        f"    {rf['wide-button']:>3}  botón ancho\n"
+        f"    {rf['bar']:>3}  barra",
+        rf["chip"],
         ["Radio siempre <strong>completo</strong>. Un chip con radio numérico es un bug.",
-         "<strong>Chip de estado</strong>: fondo <code>--*-bg</code> (color al 12–16 %), texto <code>--*-text</code>. El par siempre junto: el fondo tenue nunca lleva el color pleno como texto.",
+         "<strong>Chip de estado</strong>: fondo <code>--*-bg</code> (color al 12–16 %), texto "
+         "<code>--*-text</code>. El par siempre junto: el fondo tenue nunca lleva el color pleno "
+         "como texto.",
          "<strong>Pill de navegación</strong>: <code>border-pill</code> sobre <code>--surface</code>, texto 700.",
-         "<strong>Badge de acento</strong>: <code>accent-soft</code> de fondo con <code>accent-strong</code> de texto — nunca <code>accent</code> pleno, que no contrasta sobre su propio tinte.",
+         "<strong>Badge de acento</strong>: <code>accent-soft</code> de fondo con "
+         "<code>accent-strong</code> de texto — nunca <code>accent</code> pleno, que no contrasta "
+         "sobre su propio tinte.",
          "Padding horizontal entre 10 y 16px según el peso del chip; vertical entre 4 y 8.",
-         "Un chip no se toca salvo que navegue. Si tiene acción, es un botón secundario."])
+         "Un chip no se toca salvo que navegue. Si tiene acción, es un botón secundario.",
+         f"<strong>Sobre el conteo:</strong> <code>rounded-full</code> no discrimina — lo comparten "
+         f"chips, botones, avatares y barras. Los {rf['primary']} usos que son el botón primario "
+         f"están contados en <em>su</em> spec, no acá. Sumar los dos números daría el doble de lo "
+         f"que hay."])
 
     return pages
 
