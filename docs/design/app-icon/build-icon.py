@@ -4,10 +4,11 @@
 Run:  python3 docs/design/app-icon/build-icon.py [size]
 Needs `rsvg-convert` (brew install librsvg). Writes SVG + PNG into ./out/.
 
-The three files the project actually ships are:
-  a-cream-on-coral -> apps/ios/GastosDiarios/Resources/.../appicon-1024.png
-                      apps/ios/GastosDiariosWatch/.../appicon-1024.png
-  c-dark           -> apps/ios/GastosDiarios/Resources/.../appicon-dark-1024.png
+Running it WRITES the shipped icons in place (see SHIPPED below) — iOS, the
+Watch, and the web's manifest + apple-touch icons. That is deliberate: the web
+PNGs were hand-made separately once and quietly kept the old snout for three
+weeks after the mark was fixed, because nothing tied them to it. One generator,
+one command, no drift.
 
 iOS wants a full-bleed square with NO alpha: the system applies the rounded
 mask itself, and an icon carrying its own corners gets double-rounded.
@@ -119,6 +120,10 @@ VARIANTS = {
     # this phone, not guessed: a neutral vertical ramp, #303030 at the top,
     # #232323 through the middle, #151515 at the bottom. Warm browns were tried
     # first and read as a different app sitting next to it.
+    # Maskable web icon: the same coral-on-cream, pulled in so the whole mark
+    # survives a circular crop. At scale 6.6 the content's half-diagonal is
+    # ~362 of the 409.6 the 80% safe circle allows on a 1024 canvas.
+    "d-maskable": dict(bg_from=CREAM, bg_to="#F1EADF", body=CORAL, detail=CREAM, scale=6.6),
     "c-dark": dict(
         bg_from="#303030", bg_to="#151515",
         body="#FF7A52", body_to=CORAL_DEEP, detail="#1E1E1E", scale=8.1,
@@ -126,18 +131,60 @@ VARIANTS = {
 }
 
 
+REPO = Path(__file__).resolve().parents[3]
+
+# variant -> [(size, path relative to the repo root), ...]
+SHIPPED = {
+    "a-cream-on-coral": [
+        (1024, "apps/ios/GastosDiarios/Resources/Assets.xcassets/AppIcon.appiconset/appicon-1024.png"),
+        (1024, "apps/ios/GastosDiariosWatch/Assets.xcassets/AppIcon.appiconset/appicon-1024.png"),
+    ],
+    "c-dark": [
+        (1024, "apps/ios/GastosDiarios/Resources/Assets.xcassets/AppIcon.appiconset/appicon-dark-1024.png"),
+    ],
+    # The web wears the inverse: coral mark on the app's paper, matching the
+    # manifest's own background_color (#FAF6EF) and the favicon in
+    # apps/web/src/app/icon.svg.
+    "b-coral-on-cream": [
+        (192, "apps/web/public/icons/icon-192.png"),
+        (512, "apps/web/public/icons/icon-512.png"),
+        (180, "apps/web/src/app/apple-icon.png"),
+    ],
+    # Maskable: Android and friends crop this to a circle, so the mark has to
+    # sit inside the 80%-diameter safe area. Same drawing, more air.
+    "d-maskable": [
+        (512, "apps/web/public/icons/icon-maskable-512.png"),
+    ],
+}
+
+
+def render(name: str, kwargs: dict, size: int) -> Path:
+    src = OUT / f"{name}.svg"
+    src.write_text(svg(**kwargs))
+    png = OUT / f"{name}-{size}.png"
+    subprocess.run(
+        ["rsvg-convert", "-w", str(size), "-h", str(size), "-o", str(png), str(src)],
+        check=True,
+    )
+    return png
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    size = int(sys.argv[1]) if len(sys.argv) > 1 else 1024
+    # Any argument renders previews only, without touching the shipped files.
+    preview_only = len(sys.argv) > 1
     for name, kwargs in VARIANTS.items():
-        src = OUT / f"{name}.svg"
-        src.write_text(svg(**kwargs))
-        png = OUT / f"{name}-{size}.png"
-        subprocess.run(
-            ["rsvg-convert", "-w", str(size), "-h", str(size), "-o", str(png), str(src)],
-            check=True,
-        )
-        print(f"  {png.name}")
+        if preview_only:
+            print(f"  {render(name, kwargs, int(sys.argv[1])).name}")
+            continue
+        for size, dest in SHIPPED.get(name, [(1024, None)]):
+            png = render(name, kwargs, size)
+            if dest is None:
+                print(f"  {png.name} (preview only)")
+                continue
+            target = REPO / dest
+            target.write_bytes(png.read_bytes())
+            print(f"  {size:>4}  {dest}")
 
 
 if __name__ == "__main__":
