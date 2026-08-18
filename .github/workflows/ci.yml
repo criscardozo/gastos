@@ -27,6 +27,13 @@ jobs:
       - run: pnpm --filter web lint
       - run: pnpm --filter web test
       - run: pnpm --filter web build
+      # The design tokens live in design-system/tokens.json and BOTH platforms
+      # are supposed to say exactly what it says. This fails when they stop —
+      # which has already happened twice by hand (a contrast bug in the dark
+      # warning text, and a track opacity off by 0.01). Ubuntu-only, no iOS
+      # toolchain needed: it is a text comparison.
+      - name: Design tokens match both platforms
+        run: python3 design-system/emit.py --verify
 
   e2e:
     name: Web — Playwright E2E (emulators)

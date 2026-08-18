@@ -49,7 +49,7 @@ enum Theme {
     /// Segmented control track, muted badges.
     static let fill = Color.hex(light: "#241A10", dark: "#F6EEE2", lightAlpha: 0.06, darkAlpha: 0.07)
     /// Progress track (light .08 / dark .09 per design).
-    static let track = Color.hex(light: "#241A10", dark: "#F6EEE2", lightAlpha: 0.08, darkAlpha: 0.09)
+    static let track = Color.hex(light: "#241A10", dark: "#F6EEE2", lightAlpha: 0.08, darkAlpha: 0.08)
     /// Row separators inside cards (.06).
     static let separator = Color.hex(light: "#241A10", dark: "#F6EEE2", lightAlpha: 0.06, darkAlpha: 0.06)
 

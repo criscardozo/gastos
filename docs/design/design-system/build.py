@@ -100,6 +100,26 @@ def used(pattern: str, cast=float) -> list[tuple[float, int]]:
     return sorted(counts.items(), key=lambda kv: -kv[1])
 
 
+def type_usage() -> list[tuple[float, dict[int, int]]]:
+    """Every text size, and the weights it is used at.
+
+    Size alone is not the step — the Stock team's report made that point and it
+    is right: 13px is used at weight 600 far more than at 400, so a system that
+    lists "13px / 400" sends the next app to the wrong place. Counted together.
+    """
+    seen: dict[float, dict[int, int]] = {}
+    for f in list(WEB_SRC.rglob("*.tsx")):
+        text = f.read_text()
+        for m in re.finditer(r'text-\[([0-9.]+)px\]([^"\n]*)', text):
+            size, rest = float(m.group(1)), m.group(2)
+            weight = (700 if "font-bold" in rest else
+                      600 if "font-semibold" in rest else
+                      500 if "font-medium" in rest else 400)
+            seen.setdefault(size, {}).setdefault(weight, 0)
+            seen[size][weight] += 1
+    return sorted(seen.items(), key=lambda kv: -sum(kv[1].values()))
+
+
 def page(title: str, group: str, subtitle: str, body: str, width: int = 900) -> str:
     """One design-system card. The first-line marker is what the pane indexes."""
     return f"""<!-- @dsCard group="{group}" name="{title}" subtitle="{subtitle}" width="{width}" -->
@@ -163,7 +183,7 @@ def build() -> dict[str, str]:
         "Paleta", "Colors", "Superficies, tinta y acento · claro y oscuro",
         f'''<h1>Paleta</h1>
 <p class="lede">Los dos clientes implementan estos valores exactamente; no se inventan colores.
-El acento es el mismo en ambas apariencias — es la marca, no una preferencia de tema.</p>
+El acento <strong>conserva su identidad</strong> en ambas apariencias, ajustando luminosidad si el fondo lo exige. El coral no necesita ajuste (5.96:1 sobre el fondo oscuro); un acento más oscuro sí — el verde <code>#2E9E5B</code> de otra app baja a 5.26:1, que pasa AA pero con poco margen. Todos los demás colores del sistema ya se aclaran en oscuro (<code>--good</code> va de #2E9E5B a #40BE74), así que la excepción era el acento, no la regla.</p>
 <div class="pair">{appearance_pane("Claro", light, CORE)}{appearance_pane("Oscuro", dark, CORE)}</div>''',
         980)
 
@@ -219,30 +239,56 @@ así que estos dos colores sólo tienen que distinguirse entre sí.</p>
 <div class="pair">{appearance_pane("Claro", light, MEMBERS)}{appearance_pane("Oscuro", dark, MEMBERS)}</div>''',
         760)
 
-    # ── Type: the scale the components actually reach for ──
-    sizes = used(r"text-\[([0-9.]+)px\]")
+    # ── Type: size AND weight, since the pair is the step ──
+    usage = type_usage()
+    def wlabel(ws: dict[int, int]) -> str:
+        return " · ".join(f"{w}×{n}" for w, n in sorted(ws.items(), key=lambda kv: -kv[1]))
     rows = "".join(
-        f'<div style="display:flex;align-items:baseline;gap:16px;padding:7px 0;'
+        f'<div style="display:flex;align-items:baseline;gap:14px;padding:8px 0;'
         f'border-bottom:1px solid {light["--line-soft"]}">'
-        f'<div style="width:62px;font-size:11.5px;font-variant-numeric:tabular-nums;'
+        f'<div style="width:54px;font-size:11.5px;font-variant-numeric:tabular-nums;'
         f'color:{light["--ink-tertiary"]}">{sz:g}px</div>'
-        f'<div style="width:52px;font-size:11px;color:{light["--ink-tertiary"]}">×{n}</div>'
-        f'<div style="font-size:{sz}px;font-weight:600">Gastos de la semana</div></div>'
-        for sz, n in sizes[:10])
+        f'<div style="width:118px;font-size:10.5px;color:{light["--ink-tertiary"]};'
+        f'font-variant-numeric:tabular-nums">{wlabel(ws)}</div>'
+        f'<div style="font-size:{sz}px;font-weight:{max(ws, key=ws.get)}">Gastos de la semana</div></div>'
+        for sz, ws in usage[:12])
     pages["type/scale.html"] = page(
-        "Tipografía", "Type", f"Outfit 400/600/700 · {len(sizes)} tamaños en uso",
+        "Tipografía", "Type", f"Outfit · {len(usage)} tamaños, contados con su peso",
         f'''<h1>Tipografía</h1>
-<p class="lede">Outfit en todos lados, en tres pesos. Los importes SIEMPRE llevan cifras
-tabulares (<code>tabular-nums</code> en web, <code>.monospacedDigit()</code> en iOS): sin eso
-el número salta al cambiar de dígito, y en una pantalla que se mira todo el día se nota.</p>
-<p class="lede">Los tamaños de abajo NO salen de la especificación escrita sino de contar
-cuántas veces los usa cada componente. Son {len(sizes)} distintos — más de los que un sistema
-querría, y ése es justamente el dato.</p>
+<p class="lede">Outfit en todos lados. Los importes SIEMPRE llevan cifras tabulares
+(<code>tabular-nums</code> / <code>.monospacedDigit()</code>): sin eso el número salta al
+cambiar de dígito.</p>
+<p class="lede">Cada fila cuenta <strong>tamaño y peso juntos</strong>, porque el peldaño es el
+par, no el tamaño. 13px se usa mucho más en 600 que en 400 — un sistema que dijera
+"13 / 400" mandaría a la próxima app al lugar equivocado. La muestra usa el peso más
+frecuente de cada tamaño.</p>
 <div class="pane" style="background:{light["--bg"]};color:{light["--ink"]}">
   <div style="font-size:66px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums">$ 823,60</div>
-  <div class="val" style="margin-bottom:20px">Importe héroe · tabular · −0.03em</div>
+  <div class="val" style="margin-bottom:20px">Entrada de monto · 52–66 · distinta de la cifra en card (~34)</div>
   {rows}
-</div>''', 760)
+</div>''', 800)
+
+    # ── Spacing: absent from the system until the Stock report asked for it ──
+    pads = used(r"px-\[([0-9.]+)px\]")
+    gaps = used(r"gap-\[([0-9.]+)px\]")
+    def bars(items, colour):
+        return "".join(
+            f'<div style="display:flex;align-items:center;gap:10px;padding:4px 0">'
+            f'<div style="width:46px;font-size:11.5px;font-variant-numeric:tabular-nums;'
+            f'color:{light["--ink-tertiary"]}">{v:g}px</div>'
+            f'<div style="height:13px;width:{v * 4}px;border-radius:3px;background:{colour}"></div>'
+            f'<div style="font-size:11px;color:{light["--ink-tertiary"]}">×{n}</div></div>'
+            for v, n in items[:7])
+    pages["foundations/spacing.html"] = page(
+        "Espaciado", "Foundations", "Padding y separaciones que el código realmente usa",
+        f'''<h1>Espaciado</h1>
+<p class="lede">El sistema no decía nada de espaciado hasta que la segunda app lo pidió — y
+sin esto, dos apps con los mismos colores igual se ven distintas. El padding horizontal de
+card es 18 y el de pantalla 20; ninguno de los dos estaba escrito en ningún lado.</p>
+<div class="pane" style="background:{light["--bg"]};color:{light["--ink"]}">
+  <h2 style="margin-top:0">Padding horizontal</h2>{bars(pads, light["--accent"])}
+  <h2>Separación entre elementos</h2>{bars(gaps, light["--ink-tertiary"])}
+</div>''', 620)
 
     # ── Shape: the radii the components actually reach for ──
     radii = used(r"rounded-\[([0-9.]+)px\]")
