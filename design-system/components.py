@@ -23,6 +23,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 WEB = REPO / "apps/web/src"
+IOS = REPO / "apps/ios/GastosDiarios"
 
 
 # Classes that name a ROLE. Geometry (rounded-*, px-*, py-*, text-*, flex) is
@@ -203,6 +204,54 @@ def rounded_full_breakdown() -> dict[str, int]:
             else:
                 b["wide-button"] += 1
     return b
+
+
+def padding_by_role() -> dict[str, int]:
+    """What the `px-*` classes are actually attached to.
+
+    Published beside the frequency chart because the chart alone reads as a
+    component property and is not one: no role owns the scale. Of 130 uses,
+    the largest share is buttons and chips, and the second largest is "other".
+    A number that belongs to everything belongs to nothing in particular.
+    """
+    b = {"botón/chip": 0, "campo": 0, "card": 0, "otro": 0}
+    for f in sorted(WEB.rglob("*.tsx")):
+        for m in re.finditer(r'[^"`]{0,110}\bpx-(?:[0-9.]+|\[[0-9]+px\])\b[^"`]{0,110}', f.read_text()):
+            s_ = m.group(0)
+            key = ("botón/chip" if "rounded-full" in s_ else
+                   "card" if "bg-surface" in s_ else
+                   "campo" if "bg-bg" in s_ else "otro")
+            b[key] += 1
+    return b
+
+
+def ios_screen_padding() -> tuple[int, int]:
+    """(dominant horizontal padding on iOS, uses).
+
+    Spacing is per-platform, the same way type already was. The page once
+    published a single "screen padding: 20" and I called it false after finding
+    nothing like it on the web — wrongly. 20 is iOS's, and it is measured: the
+    most-used `.padding(.horizontal, N)` in the app by some margin. What was
+    wrong was publishing one platform's number as the system's.
+    """
+    counts: dict[int, int] = {}
+    for f in sorted(IOS.rglob("*.swift")):
+        for v in re.findall(r"\.padding\(\.horizontal,\s*(\d+)\)", f.read_text()):
+            counts[int(v)] = counts.get(int(v), 0) + 1
+    top = max(counts.items(), key=lambda kv: kv[1])
+    return top
+
+
+def shell_padding() -> tuple[str, str]:
+    """The web's screen padding, read off the shell that applies it.
+
+    The page containers carry no horizontal padding of their own.
+    """
+    shell = (WEB / "components/app-shell.tsx").read_text()
+    m = re.search(r'\bpx-(\d+)\b[^"]*?\blg:px-(\d+)\b', shell)
+    if not m:
+        raise NotRepresentative("no encontré el padding del shell")
+    return f"{int(m.group(1)) * 4}px", f"{int(m.group(2)) * 4}px"
 
 
 if __name__ == "__main__":

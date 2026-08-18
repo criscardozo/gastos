@@ -287,9 +287,17 @@ Tailwind antes de agrupar (<code>text-sm</code> → 14, <code>text-xs</code> →
 <code>text-base</code> → 16). Sin eso quedaban 66 usos invisibles y el sistema documentaba
 14.5 (5 usos en web) mientras omitía 14 (25).</p>''', 900)
 
-    # ── Spacing: absent from the system until the Stock report asked for it ──
-    pads = usage.padding_x()
-    gaps = usage.gaps()
+    # ── Spacing ─────────────────────────────────────────────────────────
+    # Two claims that ARE attributable (screen padding, read off the shell that
+    # applies it; card padding, from the card's own anatomy string) and one
+    # chart that is NOT (px-* frequency), labelled as such. The page used to
+    # assert screen padding was 20 — taken from the prose in tokens.md, and
+    # false: the containers carry no horizontal padding at all.
+    pads, gaps_ = usage.padding_x(), usage.gaps()
+    roles = comp.padding_by_role()
+    shell_sm, shell_lg = comp.shell_padding()
+    ios_pad, ios_pad_n = comp.ios_screen_padding()
+    card_px = "18px"
     def bars(items, colour):
         return "".join(
             f'<div style="display:flex;align-items:center;gap:10px;padding:4px 0">'
@@ -298,16 +306,38 @@ Tailwind antes de agrupar (<code>text-sm</code> → 14, <code>text-xs</code> →
             f'<div style="height:13px;width:{v * 4}px;border-radius:3px;background:{colour}"></div>'
             f'<div style="font-size:11px;color:{light["--ink-tertiary"]}">×{n}</div></div>'
             for v, n in items[:7])
+    role_row = " · ".join(f"{k} {v}" for k, v in sorted(roles.items(), key=lambda kv: -kv[1]))
     pages["foundations/spacing.html"] = page(
-        "Espaciado", "Foundations", "Padding y separaciones que el código realmente usa",
+        "Espaciado", "Foundations", "Dos medidas atribuibles, y una tabla de frecuencias",
         f'''<h1>Espaciado</h1>
-<p class="lede">El sistema no decía nada de espaciado hasta que la segunda app lo pidió — y
-sin esto, dos apps con los mismos colores igual se ven distintas. El padding horizontal de
-card es 18 y el de pantalla 20; ninguno de los dos estaba escrito en ningún lado.</p>
+<p class="lede">El sistema no decía nada de espaciado hasta que una segunda app lo pidió — y
+sin esto, dos apps con los mismos colores igual se ven distintas.</p>
+
+<h2>Lo que sí es una medida, por plataforma</h2>
 <div class="pane" style="background:{light["--bg"]};color:{light["--ink"]}">
-  <h2 style="margin-top:0">Padding horizontal</h2>{bars(pads, light["--accent"])}
-  <h2>Separación entre elementos</h2>{bars(gaps, light["--ink-tertiary"])}
-</div>''', 620)
+  <div style="font-size:13px;line-height:1.7">
+    <strong>Pantalla · iOS:</strong> <code>{ios_pad}px</code>
+    (<code>.padding(.horizontal, {ios_pad})</code>, {ios_pad_n} usos — el dominante).<br>
+    <strong>Pantalla · web:</strong> <code>{shell_sm}</code>, subiendo a <code>{shell_lg}</code>
+    desde <code>lg</code>. Lo aplica el shell (<code>app-shell.tsx</code>), no las páginas: los
+    contenedores no llevan padding horizontal propio.<br>
+    <strong>Card:</strong> <code>{card_px}</code> horizontal, de la anatomía de la card. Ese sí
+    es el mismo en las dos.
+  </div>
+</div>
+<p class="lede" style="margin-top:10px"><strong>El espaciado es por plataforma</strong>, igual
+que la tipografía (título 22 web / 18 iOS, fila 14 / 14.5). Esta página publicaba un solo
+número de pantalla, 20, que es el de iOS; al no encontrarlo en la web lo di por inventado, y no
+lo era. El defecto no era el número sino publicar el de una plataforma como el del sistema.</p>
+
+<h2>Y lo que es sólo una frecuencia</h2>
+<p class="lede">La tabla de abajo cuenta la <strong>clase</strong>, no el componente. De los
+{sum(roles.values())} usos de <code>px-*</code>: {role_row}. Ningún rol se queda con la escala,
+así que estos números sirven para ver qué valores existen — no para deducir el padding de nada.</p>
+<div class="pane" style="background:{light["--bg"]};color:{light["--ink"]}">
+  <h2 style="margin-top:0">Padding horizontal · frecuencia de clase</h2>{bars(pads, light["--accent"])}
+  <h2>Separación entre elementos · frecuencia de clase</h2>{bars(gaps_, light["--ink-tertiary"])}
+</div>''', 680)
 
     # ── Shape: the radii the components actually reach for ──
     radii = usage.radii()
