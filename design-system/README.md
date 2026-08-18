@@ -1,54 +1,68 @@
 # Design tokens
 
-`tokens.json` is the source of truth for every colour both apps use. The web's
-CSS custom properties and the iOS `Theme` are supposed to say exactly what it
-says, and `emit.py --verify` is what proves they do — it runs in CI.
+`tokens.json` is the source of truth. The web's CSS custom properties and the
+iOS `Theme` are **generated from it**, so the two cannot say different things.
 
 ```sh
-python3 design-system/emit.py --verify   # CI: do both platforms match the tokens?
-python3 design-system/emit.py            # print what each platform should say
-python3 design-system/extract.py         # one-time bootstrap, already run
+python3 emit.py --write     # rewrite both platforms from tokens.json
+python3 emit.py --verify    # anatomy checks (attributable, representative)
 ```
 
-## Why this exists
+CI regenerates and fails if anything changed, which is stronger than comparing
+text: it proves the files can be rebuilt, not merely that they currently match.
+
+## Why
 
 The same 23 hex values were written twice, by hand, in two languages. Twice they
-were written *differently*:
+were written *differently*, and neither was caught by a test, a type checker or
+a review:
 
 - `--warn-text` never got a dark override on the web, so "Queda poco" rendered
-  the light-mode amber on a dark card — 4.42:1, under the 4.5:1 WCAG AA wants
-  for body text. iOS had brightened it long ago.
+  the light amber on a dark card — 4.42:1, under the 4.5:1 AA wants for body
+  text. iOS had brightened it long ago.
 - `--track` in dark was 0.08 on the web and 0.09 on iOS.
 
-Neither was caught by a test, a type checker or a review. They were caught by
-asking whether the design system matched the code, which is the question this
-directory exists to keep answering.
+Now a token exists once. Change `--bg`'s dark value and one command rewrites the
+Swift *and both* CSS dark blocks — the file carries them twice because CSS
+cannot share a block between a media query and an attribute selector, and
+keeping those two in step used to be a comment asking nicely.
 
-## The state it is in
+## What is generated, and what is not
 
-`emit.py --verify` currently emits **50 of 50** declarations character for
-character as they appear in `globals.css` and `Theme.swift`. That is what makes
-this layer a faithful mirror rather than a claim: it provably contains
-everything those two files say about colour.
+Only the token VALUES. Comments, ordering, the category palette, `--visa`,
+`--key-shadow` and everything else in those files is hand-written and left
+exactly where its author put it — the rewrite is line-level, not block-level.
 
-Which means the switch — making the two files *generated* rather than
-hand-written — is now a mechanical step rather than a migration. Nothing about
-the apps changes; the same characters simply arrive from one place instead of
-two. It has not been taken yet, on purpose: the mirror should earn a little
-mileage first.
+## Extracting this into its own repo
 
-## Shape
+`tokens.json` is portable today: 7.4 KB of data, no dependencies, nothing
+imported from `apps/`. Any app can read it.
 
-Kept package-shaped and self-contained — no imports from `apps/` — so extracting
-it into its own repo is a `git mv` plus a `package.json` on the day a second app
-needs to consume it *in code*. Until then the design layer is already shared
-through the Claude Design project, which is how the Stock app consumed it.
+The TOOLING is not, and saying otherwise would be wrong: `emit.py`, `usage.py`,
+`components.py` and `extract.py` all carry Gastos' own paths, because their job
+is to write into Gastos' files and to measure Gastos' components. So the split
+is not one `git mv`:
 
-Format is DTCG-flavoured (`$value` / `$type` / `$description`), with two local
+- `tokens.json` moves out, plus a generic emitter that takes its targets as
+  configuration instead of constants.
+- The measuring scripts stay with the app they measure, or grow a config too.
+
+Worth doing when a second app needs to generate its theme from the file. Until
+then the design layer is already shared through the Claude Design project,
+which is how the Stock app consumed it — and consumed it well enough to send
+back five defects in this system's own pages.
+
+## Format
+
+DTCG-flavoured (`$value` / `$type` / `$description`), with two local
 conventions:
 
-- `$value` is `{light, dark}` rather than a single value, because in this system
-  a colour is a pair. A token whose two halves are equal is the exception.
+- `$value` is `{light, dark}` rather than one value, because in this system a
+  colour is a pair. A token whose halves are equal is the exception.
 - A colour spelled as opacity over another gets `{base, alpha}`, which is how
-  iOS holds it. Storing the flattened `rgba()` would have thrown away the fact
-  that `--line-card` and `--fill` are the same ink at different strengths.
+  iOS holds it. Flattening to `rgba()` would throw away the fact that
+  `--line-card` and `--fill` are the same ink at different strengths.
+
+Type, radius and spacing carry `gastos.uses` — how often the code reaches for
+them — and type also carries the platform, because the row step is 14 on web
+and 14.5 on iOS and a single number would be false on one of them.

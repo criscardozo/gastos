@@ -33,7 +33,15 @@ extension Color {
     }
 }
 
-// MARK: - Design tokens (docs/design/tokens.md — implemented exactly)
+// MARK: - Design tokens
+//
+// The Color.hex(light:dark:) VALUES below are generated from
+// design-system/tokens.json — the same file the web's globals.css is generated
+// from, which is why the two cannot drift apart. Two of them had, before this:
+// the dark warning text sat under the AA contrast floor on web only, and the
+// track opacity differed by 0.01. Change a token there and run:
+//
+//     python3 design-system/emit.py --write
 
 enum Theme {
     // Core palette

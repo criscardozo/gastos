@@ -11,6 +11,7 @@ contains everything those files say. Until then it is a claim; after that it is
 a diff. Wire it into CI and the two can never drift again.
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -122,7 +123,55 @@ def verify() -> int:
     return 0
 
 
+def write() -> int:
+    """Rewrite each token's declaration in place, from tokens.json.
+
+    Line-level rather than block-level on purpose: the declarations are
+    interleaved with comments and with tokens that do not live here (the
+    category palette, --visa, --key-shadow). Replacing a region would either
+    drop those or force them into this file; replacing a line leaves every
+    other character exactly where its author put it.
+
+    This is the switch. Before it, tokens.json mirrored the two files and CI
+    checked they had not drifted. After it, the files are written FROM
+    tokens.json and drift is not a thing that can happen — the check becomes
+    "regenerate and see that nothing changed", which is stronger than comparing
+    text because it proves the files can be rebuilt, not merely that they match.
+    """
+    css, swift = CSS.read_text(), SWIFT.read_text()
+
+    for css_name, entry in flat():
+        lv = css_value(entry["$value"]["light"])
+        dv = css_value(entry["$value"]["dark"])
+        # The light block is the first declaration; the dark ones follow. Each
+        # is rewritten where it already sits, so indentation is preserved.
+        seen = 0
+        out = []
+        for line in css.split("\n"):
+            m = re.match(rf"^(\s*){re.escape(css_name)}:\s*[^;]+;(.*)$", line)
+            if m:
+                indent, tail = m.group(1), m.group(2)
+                value = lv if seen == 0 else dv
+                line = f"{indent}{css_name}: {value};{tail}"
+                seen += 1
+            out.append(line)
+        css = "\n".join(out)
+
+        line = swift_value(entry)
+        if line:
+            name = entry["$extensions"]["gastos.swift"]
+            swift = re.sub(rf"^(\s*)static let {name} = Color\.hex\([^)]*\)$",
+                           lambda m: m.group(1) + line, swift, flags=re.M)
+
+    CSS.write_text(css)
+    SWIFT.write_text(swift)
+    print(f"  reescritos desde tokens.json:\n    {CSS.relative_to(REPO)}\n    {SWIFT.relative_to(REPO)}")
+    return 0
+
+
 if __name__ == "__main__":
+    if "--write" in sys.argv:
+        sys.exit(write())
     if "--verify" in sys.argv:
         sys.exit(verify())
     light, dark = emit_css()

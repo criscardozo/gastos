@@ -1,0 +1,18 @@
+{
+  "name": "@cardozo/design-tokens",
+  "version": "0.1.0",
+  "description": "Design tokens for Gastos Diarios and the apps that share its look. Generated into each platform; never hand-edited in two places.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "tokens.json",
+  "exports": {
+    ".": "./tokens.json",
+    "./tokens.json": "./tokens.json"
+  },
+  "files": ["tokens.json", "README.md"],
+  "scripts": {
+    "verify": "python3 emit.py --verify",
+    "write": "python3 emit.py --write"
+  }
+}

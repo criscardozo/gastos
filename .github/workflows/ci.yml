@@ -27,12 +27,17 @@ jobs:
       - run: pnpm --filter web lint
       - run: pnpm --filter web test
       - run: pnpm --filter web build
-      # The design tokens live in design-system/tokens.json and BOTH platforms
-      # are supposed to say exactly what it says. This fails when they stop —
-      # which has already happened twice by hand (a contrast bug in the dark
-      # warning text, and a track opacity off by 0.01). Ubuntu-only, no iOS
-      # toolchain needed: it is a text comparison.
-      - name: Design tokens match both platforms
+      # globals.css and Theme.swift are GENERATED from design-system/tokens.json.
+      # Regenerating must be a no-op: if it is not, someone edited a token in one
+      # of the two platforms by hand, which is how the dark warning text ended up
+      # under the AA contrast floor on web only. Stronger than comparing text,
+      # because it proves the files can be rebuilt rather than that they match.
+      # Ubuntu-only — no iOS toolchain needed to rewrite a string.
+      - name: Design tokens rebuild both platforms unchanged
+        run: |
+          python3 design-system/emit.py --write
+          git diff --exit-code apps/web/src/app/globals.css apps/ios/GastosDiarios/Design/Theme.swift
+      - name: Component anatomy is attributable and representative
         run: python3 design-system/emit.py --verify
 
   e2e:

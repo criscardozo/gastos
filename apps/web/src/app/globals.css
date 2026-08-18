@@ -1,6 +1,15 @@
 @import "tailwindcss";
 
-/* ── Design tokens (docs/design/tokens.md) — light ─────────────────────── */
+/* ── Design tokens — light ─────────────────────────────────────────────
+   The VALUES below are generated from design-system/tokens.json; iOS's
+   Theme.swift is generated from the same file, which is what makes the two
+   unable to drift. Edit the token there and run:
+
+       python3 design-system/emit.py --write
+
+   Everything else here — comments, order, the category palette, --visa,
+   --key-shadow — is hand-written and left untouched by that command.
+   ───────────────────────────────────────────────────────────────────── */
 :root {
   --bg: #faf6ef;
   --surface: #ffffff;
