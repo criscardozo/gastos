@@ -47,6 +47,15 @@ is not one `git mv`:
   configuration instead of constants.
 - The measuring scripts stay with the app they measure, or grow a config too.
 
+One design note for that emitter, from the Stock team hitting it first: it needs
+each platform's NAME per token, not a naming convention. Measured here, 8 of the
+15 mapped tokens are not derivable from the CSS name by any rule —
+`--line-card` is `border`, `--good` is `green`, `--member-blue` is `avatarBlue`.
+The two platforms did not spell the same role differently, they *named* it
+differently. Which is why `$extensions."gastos.swift"` stores the exact
+identifier rather than deriving it: a kebab-to-camel emitter would have been
+wrong on more than half of them.
+
 Worth doing when a second app needs to generate its theme from the file. Until
 then the design layer is already shared through the Claude Design project,
 which is how the Stock app consumed it — and consumed it well enough to send
