@@ -56,6 +56,17 @@ differently. Which is why `$extensions."gastos.swift"` stores the exact
 identifier rather than deriving it: a kebab-to-camel emitter would have been
 wrong on more than half of them.
 
+The Stock app measured the same thing and found 3 of 16 — `--ink-secondary` is
+`ink2`, and no rule takes "secondary" to "2". Their read of why is better than
+"this repo grew untidily": Stock is newer, written by one person in one pass,
+and it has them anyway. The platforms name differently because they are read
+differently. `ink2` is short because a view writes it fifty times; and
+`--ink-secondary` is explicit because a token file is read, not typed.
+
+Note which of the two numbers is the more dangerous. A convention failing 8 of
+15 announces itself on the first build. One failing 3 of 16 looks like it works
+until the fourth token.
+
 Worth doing when a second app needs to generate its theme from the file. Until
 then the design layer is already shared through the Claude Design project,
 which is how the Stock app consumed it — and consumed it well enough to send
