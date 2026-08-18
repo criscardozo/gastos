@@ -73,6 +73,9 @@
     --good: #40be74;
     --good-text: #6fd79a;
     --good-bg: rgba(64, 190, 116, 0.16);
+    /* Brightened for dark, as iOS already had it: the light value on
+       --surface is 4.42:1, under the 4.5:1 AA needs for body text. */
+    --warn-text: #e39a0c;
 
     --member-blue: #4b87e8;
     --member-pink: #ef6d9c;
@@ -109,6 +112,9 @@
   --good: #40be74;
   --good-text: #6fd79a;
   --good-bg: rgba(64, 190, 116, 0.16);
+  /* Brightened for dark, as iOS already had it: the light value on
+     --surface is 4.42:1, under the 4.5:1 AA needs for body text. */
+  --warn-text: #e39a0c;
 
   --member-blue: #4b87e8;
   --member-pink: #ef6d9c;

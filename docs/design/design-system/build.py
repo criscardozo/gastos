@@ -24,6 +24,8 @@ REPO = Path(__file__).resolve().parents[3]
 OUT = Path(__file__).parent / "out"
 CSS = REPO / "apps/web/src/app/globals.css"
 CATEGORIES = REPO / "shared/categories.json"
+THEME = REPO / "apps/ios/GastosDiarios/Design/Theme.swift"
+WEB_SRC = REPO / "apps/web/src"
 
 FONT = ("https://fonts.googleapis.com/css2?"
         "family=Outfit:wght@400;600;700&display=swap")
@@ -55,6 +57,47 @@ def token_blocks(css: str) -> tuple[dict[str, str], dict[str, str]]:
                  + ", ".join(differing))
     # Dark overrides only some tokens; the rest fall through from light.
     return light, {**light, **darks[0]}
+
+
+def ios_theme() -> dict[str, tuple[str, str]]:
+    """The iOS palette, as (light, dark) hex pairs.
+
+    Only the entries WITHOUT an alpha override: those spell a colour outright.
+    The ones carrying lightAlpha/darkAlpha are ink-at-N%, a different encoding
+    of the same idea, and comparing their hex against a web rgba() would be
+    comparing two spellings rather than two colours.
+    """
+    swift = THEME.read_text()
+    return {
+        m.group(1): (m.group(2).lower(), m.group(3).lower())
+        for m in re.finditer(
+            r'static let (\w+) = Color\.hex\(light: "(#[0-9A-Fa-f]{6})", dark: "(#[0-9A-Fa-f]{6})"\)',
+            swift)
+    }
+
+
+# Swift name -> CSS token, for the pairs that mean the same thing.
+PARITY = {
+    "bg": "--bg", "surface": "--surface", "ink": "--ink",
+    "inkSecondary": "--ink-secondary", "inkTertiary": "--ink-tertiary",
+    "green": "--good", "greenText": "--good-text", "amberText": "--warn-text",
+    "avatarBlue": "--member-blue", "avatarPink": "--member-pink",
+}
+
+
+def used(pattern: str, cast=float) -> list[tuple[float, int]]:
+    """Every value matching `pattern` in the web source, with how often it is used.
+
+    Read off the code rather than off the spec prose. The two are not the same
+    thing — the written spec says cards are radius 20-24, and the radius the
+    components reach for most is 18 — and when they disagree it is the code that
+    ships. A scale page that quietly restates the doc would hide that.
+    """
+    counts: dict[float, int] = {}
+    for f in list(WEB_SRC.rglob("*.tsx")) + list(WEB_SRC.rglob("*.ts")):
+        for m in re.findall(pattern, f.read_text()):
+            counts[cast(m)] = counts.get(cast(m), 0) + 1
+    return sorted(counts.items(), key=lambda kv: -kv[1])
 
 
 def page(title: str, group: str, subtitle: str, body: str, width: int = 900) -> str:
@@ -176,43 +219,107 @@ así que estos dos colores sólo tienen que distinguirse entre sí.</p>
 <div class="pair">{appearance_pane("Claro", light, MEMBERS)}{appearance_pane("Oscuro", dark, MEMBERS)}</div>''',
         760)
 
-    # ── Type: the scale as the apps actually use it ──
+    # ── Type: the scale the components actually reach for ──
+    sizes = used(r"text-\[([0-9.]+)px\]")
+    rows = "".join(
+        f'<div style="display:flex;align-items:baseline;gap:16px;padding:7px 0;'
+        f'border-bottom:1px solid {light["--line-soft"]}">'
+        f'<div style="width:62px;font-size:11.5px;font-variant-numeric:tabular-nums;'
+        f'color:{light["--ink-tertiary"]}">{sz:g}px</div>'
+        f'<div style="width:52px;font-size:11px;color:{light["--ink-tertiary"]}">×{n}</div>'
+        f'<div style="font-size:{sz}px;font-weight:600">Gastos de la semana</div></div>'
+        for sz, n in sizes[:10])
     pages["type/scale.html"] = page(
-        "Tipografía", "Type", "Outfit 400/600/700 · cifras tabulares",
+        "Tipografía", "Type", f"Outfit 400/600/700 · {len(sizes)} tamaños en uso",
         f'''<h1>Tipografía</h1>
-<p class="lede">Outfit en todos lados, en tres pesos. Los importes SIEMPRE van con cifras
-tabulares (<code>font-variant-numeric: tabular-nums</code> en web,
-<code>.monospacedDigit()</code> en iOS) — sin eso el número salta al cambiar de dígito, que
-en una pantalla que se mira todo el día se nota.</p>
+<p class="lede">Outfit en todos lados, en tres pesos. Los importes SIEMPRE llevan cifras
+tabulares (<code>tabular-nums</code> en web, <code>.monospacedDigit()</code> en iOS): sin eso
+el número salta al cambiar de dígito, y en una pantalla que se mira todo el día se nota.</p>
+<p class="lede">Los tamaños de abajo NO salen de la especificación escrita sino de contar
+cuántas veces los usa cada componente. Son {len(sizes)} distintos — más de los que un sistema
+querría, y ése es justamente el dato.</p>
 <div class="pane" style="background:{light["--bg"]};color:{light["--ink"]}">
   <div style="font-size:66px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums">$ 823,60</div>
-  <div class="val" style="margin-bottom:22px">Importe héroe · 52–66px / 700 · tabular · −0.03em</div>
-  <div style="font-size:22px;font-weight:700">Título de pantalla</div>
-  <div class="val" style="margin-bottom:18px">22px / 700 (web) · 18px / 700 (iOS)</div>
-  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:{light["--ink-tertiary"]}">Etiqueta de sección</div>
-  <div class="val" style="margin-bottom:18px">11px / 700 · mayúsculas · +0.07em · tinta terciaria</div>
-  <div style="font-size:14.5px;font-weight:600">Cuerpo semibold · filas y botones</div>
-  <div style="font-size:13px;color:{light["--ink-secondary"]}">Cuerpo secundario · 13px / 400</div>
-  <div style="font-size:11.5px;color:{light["--ink-tertiary"]}">Pie · 11.5px / 400 · tinta terciaria</div>
+  <div class="val" style="margin-bottom:20px">Importe héroe · tabular · −0.03em</div>
+  {rows}
 </div>''', 760)
 
-    # ── Shape ──
+    # ── Shape: the radii the components actually reach for ──
+    radii = used(r"rounded-\[([0-9.]+)px\]")
+    chips = "".join(
+        f'<div style="text-align:center"><div style="width:74px;height:56px;border-radius:{r}px;'
+        f'background:{light["--surface"]};border:1px solid {light["--line-card"]}"></div>'
+        f'<div class="val">{r:g}px · ×{n}</div></div>'
+        for r, n in radii[:8])
+    full = used(r"(rounded-full)", cast=str)
     pages["foundations/shape.html"] = page(
-        "Forma y elevación", "Foundations", "Radios, bordes y la única sombra que hay",
+        "Forma y elevación", "Foundations", f"{len(radii)} radios explícitos + rounded-full",
         f'''<h1>Forma y elevación</h1>
 <p class="lede">Las tarjetas no llevan sombra: se separan del fondo por un borde de 1px. La
 única sombra fuerte del sistema es la del CTA primario, y es de color — coral al 35 %, no
 negro.</p>
-<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;background:{light["--bg"]};padding:22px;border-radius:18px">
-  <div><div style="width:150px;height:88px;border-radius:22px;background:{light["--surface"]};border:1px solid {light["--line-card"]}"></div>
-       <div class="val">Tarjeta · radio 20–24 · borde 1px · sin sombra</div></div>
-  <div><div style="height:38px;padding:0 18px;border-radius:999px;background:{light["--surface"]};border:1px solid {light["--line-pill"]};display:flex;align-items:center;font-size:12.5px;font-weight:700;color:{light["--ink"]}">Pill · radio 999</div>
-       <div class="val">Pills, chips y botones secundarios</div></div>
+<p class="lede">Los radios salen de contar el código, no de la especificación, y ahí aparece
+una diferencia que vale la pena saber: el documento dice que las tarjetas van entre 20 y 24,
+y el radio que más usan los componentes es 18. Cuando los dos no coinciden, el que se
+publica es el código.</p>
+<h2>Radios en uso</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap;background:{light["--bg"]};padding:20px;border-radius:18px">
+  {chips}
+  <div style="text-align:center"><div style="width:74px;height:56px;border-radius:999px;
+       background:{light["--surface"]};border:1px solid {light["--line-card"]}"></div>
+       <div class="val">full · ×{full[0][1] if full else 0}</div></div>
+</div>
+<h2>Elevación</h2>
+<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;background:{light["--bg"]};padding:22px;border-radius:18px">
   <div><div style="height:56px;padding:0 26px;border-radius:999px;background:{light["--accent"]};color:#fff;display:flex;align-items:center;font-weight:700;font-size:15px;box-shadow:0 8px 20px rgba(255,92,57,.35)">Guardar gasto</div>
-       <div class="val">CTA primario · 54–58px · sombra coral 35 %</div></div>
+       <div class="val">CTA primario · única sombra fuerte · coral 35 %</div></div>
   <div><div style="width:64px;height:52px;border-radius:14px;background:{light["--surface"]};box-shadow:0 1px 2px rgba(36,26,16,.06);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;color:{light["--ink"]}">7</div>
-       <div class="val">Tecla · radio 13–15</div></div>
+       <div class="val">Tecla · sombra apenas perceptible</div></div>
 </div>''', 900)
+
+    # ── Parity: the two clients, per token, divergence made loud ──
+    ios = ios_theme()
+    rows, diverged = [], 0
+    for sw, css in PARITY.items():
+        if sw not in ios or css not in light:
+            continue
+        il, idk = ios[sw]
+        wl, wd = light[css].strip().lower(), dark[css].strip().lower()
+        same = (il, idk) == (wl, wd)
+        diverged += 0 if same else 1
+        mark = ("<span style=\'color:#2e9e5b;font-weight:700\'>=</span>" if same
+                else "<span style=\'color:#e5484d;font-weight:700\'>≠</span>")
+        def cell(hexv):
+            return (f'<span style="display:inline-flex;align-items:center;gap:6px">'
+                    f'<span style="width:15px;height:15px;border-radius:4px;background:{hexv};'
+                    f'border:1px solid rgba(128,128,128,.3)"></span>'
+                    f'<code style="font-size:11.5px">{hexv}</code></span>')
+        bg = "" if same else ' style="background:rgba(229,72,77,.07)"'
+        rows.append(
+            f'<tr{bg}><td style="padding:8px 10px"><code>{css}</code></td>'
+            f'<td style="padding:8px 10px">{cell(wl)}</td><td style="padding:8px 10px">{cell(il)}</td>'
+            f'<td style="padding:8px 10px">{cell(wd)}</td><td style="padding:8px 10px">{cell(idk)}</td>'
+            f'<td style="padding:8px 10px;text-align:center">{mark}</td></tr>')
+
+    verdict = ("Los dos clientes coinciden en todos." if not diverged
+               else f"<strong>{diverged} de {len(rows)} divergen</strong> — la fila marcada es un bug, no una decisión.")
+    pages["foundations/parity.html"] = page(
+        "Paridad entre clientes", "Foundations",
+        f"web vs iOS · {len(rows)} tokens comparados",
+        f'''<h1>Paridad entre clientes</h1>
+<p class="lede">Los mismos tokens leídos de las DOS implementaciones —
+<code>globals.css</code> para la web y <code>Theme.swift</code> para iOS— y comparados.
+Esta página existe porque un design system que lee una sola plataforma esconde
+exactamente el tipo de divergencia que debería mostrar. {verdict}</p>
+<table style="border-collapse:collapse;width:100%;font-size:12.5px">
+<thead><tr style="text-align:left;opacity:.55;font-size:11px;text-transform:uppercase;letter-spacing:.06em">
+<th style="padding:8px 10px">Token</th><th style="padding:8px 10px">web claro</th>
+<th style="padding:8px 10px">iOS claro</th><th style="padding:8px 10px">web oscuro</th>
+<th style="padding:8px 10px">iOS oscuro</th><th style="padding:8px 10px"></th></tr></thead>
+<tbody>{"".join(rows)}</tbody></table>
+<p class="lede" style="margin-top:18px">Las 8 categorías no aparecen acá: las dos apps las
+leen del mismo <code>shared/categories.json</code>, así que no pueden divergir por
+construcción.</p>''', 900)
 
     return pages
 
