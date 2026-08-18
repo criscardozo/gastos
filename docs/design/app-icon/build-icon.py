@@ -32,7 +32,10 @@ CONTENT = {"x0": 11.0, "y0": 7.7, "x1": 90.0, "y1": 84.0}
 
 
 def mark(body: str, detail: str, scale: float) -> str:
-    """The piggy, on the 96 grid, scaled and centred on a 1024 canvas."""
+    """The piggy, on the 96 grid, scaled and centred on a 1024 canvas.
+
+    `body` is a paint reference, so it may be a flat colour or url(#body).
+    """
     cx = (CONTENT["x0"] + CONTENT["x1"]) / 2
     cy = (CONTENT["y0"] + CONTENT["y1"]) / 2
     tx = 512 - cx * scale
@@ -64,16 +67,40 @@ def mark(body: str, detail: str, scale: float) -> str:
   </g>"""
 
 
-def svg(bg_from: str, bg_to: str, body: str, detail: str, scale: float) -> str:
+def svg(
+    bg_from: str,
+    bg_to: str,
+    body: str,
+    detail: str,
+    scale: float,
+    body_to: str | None = None,
+) -> str:
+    """`body_to` puts a gradient on the MARK rather than only on the field.
+
+    That is what the dark appearance needs: Apple's own dark icons drop the
+    coloured field and let the glyph carry both the brand colour and the
+    gradient (compare the App Store icon in light and dark). A flat mark on a
+    dark field reads as a different app, not the same one at night.
+    """
+    body_paint = "url(#body)" if body_to else body
+    body_def = (
+        f"""
+    <linearGradient id="body" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="{body}"/>
+      <stop offset="1" stop-color="{body_to}"/>
+    </linearGradient>"""
+        if body_to
+        else ""
+    )
     return f"""<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="{bg_from}"/>
       <stop offset="1" stop-color="{bg_to}"/>
-    </linearGradient>
+    </linearGradient>{body_def}
   </defs>
   <rect width="1024" height="1024" fill="url(#bg)"/>
-{mark(body, detail, scale)}
+{mark(body_paint, detail, scale)}
 </svg>"""
 
 
@@ -82,8 +109,20 @@ VARIANTS = {
     "a-cream-on-coral": dict(bg_from=CORAL, bg_to=CORAL_DEEP, body=CREAM, detail=CORAL, scale=8.1),
     # Inverted: the app's paper as the field, the mark in coral.
     "b-coral-on-cream": dict(bg_from=CREAM, bg_to="#F1EADF", body=CORAL, detail=CREAM, scale=8.1),
-    # Dark appearance: the app's night paper, mark unchanged.
-    "c-dark": dict(bg_from="#241A10", bg_to="#191410", body=CREAM, detail=CORAL, scale=8.1),
+    # Dark appearance. NOT the app's own night paper (a warm brown) and NOT a
+    # cream mark: on a dark field a cream pig carried none of the brand colour,
+    # so at night this stopped being "the orange app". Apple's own icons make
+    # the opposite move — compare the App Store icon in light and dark — and
+    # let the GLYPH carry both the colour and the gradient.
+    #
+    # The field greys are MEASURED off a screenshot of the App Store icon on
+    # this phone, not guessed: a neutral vertical ramp, #303030 at the top,
+    # #232323 through the middle, #151515 at the bottom. Warm browns were tried
+    # first and read as a different app sitting next to it.
+    "c-dark": dict(
+        bg_from="#303030", bg_to="#151515",
+        body="#FF7A52", body_to=CORAL_DEEP, detail="#1E1E1E", scale=8.1,
+    ),
 }
 
 
