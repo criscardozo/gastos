@@ -58,6 +58,39 @@ def emit_css() -> tuple[list[str], list[str]]:
     return light, dark
 
 
+def coverage() -> list[str]:
+    """Values the code uses that the token file does not sanction.
+
+    The colour check compares declarations; this one cannot, because type,
+    radius and spacing are written inline across the components. So it asks the
+    other question — is anything in the code off-scale — which is what actually
+    erodes a system: not a token changing, but a one-off slipping in beside it.
+    """
+    sys.path.insert(0, str(ROOT))
+    import usage
+
+    off = []
+    def check(label, pairs, allowed, floor=8):
+        for value, uses in pairs:
+            if uses >= floor and f"{value:g}px" not in allowed:
+                off.append(f"{label} {value:g}px ({uses} usos) no está en tokens.json")
+
+    type_px = {e["$value"] for k, e in TOKENS.get("type", {}).items() if isinstance(e, dict)}
+    web = [(s_, sum(w.values())) for s_, w in usage.type_steps()]
+    ios = [(s_, sum(w.values())) for s_, w in usage.ios_type_steps()]
+    check("type web", web, type_px)
+    check("type iOS", ios, type_px)
+
+    radius_px = {e["$value"] for k, e in TOKENS.get("radius", {}).items() if isinstance(e, dict)}
+    check("radius", usage.radii(), radius_px)
+
+    sp = TOKENS.get("spacing", {})
+    check("padding", usage.padding_x(),
+          {e["$value"] for e in sp.get("padding", {}).values()})
+    check("gap", usage.gaps(), {e["$value"] for e in sp.get("gap", {}).values()})
+    return off
+
+
 def verify() -> int:
     """Every emitted declaration must appear verbatim in the file it targets."""
     css_text, swift_text = CSS.read_text(), SWIFT.read_text()
@@ -79,6 +112,13 @@ def verify() -> int:
             print(f"    · {m}")
         return 1
     print(f"  las {total} declaraciones emitidas coinciden con el código, carácter por carácter")
+    off = coverage()
+    if off:
+        print(f"\n  {len(off)} valores fuera de escala:")
+        for o in off:
+            print(f"    · {o}")
+        return 1
+    print("  y ningún tamaño, radio o espaciado de uso frecuente queda fuera de la escala")
     return 0
 
 

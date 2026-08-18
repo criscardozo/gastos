@@ -27,6 +27,9 @@ CATEGORIES = REPO / "shared/categories.json"
 THEME = REPO / "apps/ios/GastosDiarios/Design/Theme.swift"
 WEB_SRC = REPO / "apps/web/src"
 
+sys.path.insert(0, str(REPO / "design-system"))
+import usage  # noqa: E402  — the counting lives in the package, not here
+
 FONT = ("https://fonts.googleapis.com/css2?"
         "family=Outfit:wght@400;600;700&display=swap")
 
@@ -239,38 +242,53 @@ así que estos dos colores sólo tienen que distinguirse entre sí.</p>
 <div class="pair">{appearance_pane("Claro", light, MEMBERS)}{appearance_pane("Oscuro", dark, MEMBERS)}</div>''',
         760)
 
-    # ── Type: size AND weight, since the pair is the step ──
-    usage = type_usage()
-    def wlabel(ws: dict[int, int]) -> str:
-        return " · ".join(f"{w}×{n}" for w, n in sorted(ws.items(), key=lambda kv: -kv[1]))
+    # ── Type: both clients, because the step is not the same on each ──
+    web_t, ios_t = usage.type_steps(), usage.ios_type_steps()
+    ios_by_size = {sz: ws for sz, ws in ios_t}
+    web_by_size = {sz: ws for sz, ws in web_t}
+    tot = lambda ws: sum(ws.values())
+    sizes = sorted(set(web_by_size) | set(ios_by_size),
+                   key=lambda z: -(tot(web_by_size.get(z, {})) + tot(ios_by_size.get(z, {}))))
+
+    def cell(ws):
+        if not ws:
+            return f'<span style="color:{light["--ink-tertiary"]};opacity:.5">—</span>'
+        top = max(ws, key=ws.get)
+        return (f'<strong>{top}</strong> ×{ws[top]}'
+                + (f' <span style="opacity:.5">+{tot(ws) - ws[top]}</span>' if tot(ws) > ws[top] else ""))
+
     rows = "".join(
-        f'<div style="display:flex;align-items:baseline;gap:14px;padding:8px 0;'
-        f'border-bottom:1px solid {light["--line-soft"]}">'
-        f'<div style="width:54px;font-size:11.5px;font-variant-numeric:tabular-nums;'
-        f'color:{light["--ink-tertiary"]}">{sz:g}px</div>'
-        f'<div style="width:118px;font-size:10.5px;color:{light["--ink-tertiary"]};'
-        f'font-variant-numeric:tabular-nums">{wlabel(ws)}</div>'
-        f'<div style="font-size:{sz}px;font-weight:{max(ws, key=ws.get)}">Gastos de la semana</div></div>'
-        for sz, ws in usage[:12])
+        f'<tr><td style="padding:7px 10px;font-variant-numeric:tabular-nums">{sz:g}px</td>'
+        f'<td style="padding:7px 10px">{cell(web_by_size.get(sz))}</td>'
+        f'<td style="padding:7px 10px">{cell(ios_by_size.get(sz))}</td>'
+        f'<td style="padding:7px 10px;font-size:{min(sz, 24)}px;'
+        f'font-weight:{max(web_by_size.get(sz) or ios_by_size.get(sz), key=(web_by_size.get(sz) or ios_by_size.get(sz)).get)}">'
+        f'Gastos de la semana</td></tr>'
+        for sz in sizes[:12])
+
     pages["type/scale.html"] = page(
-        "Tipografía", "Type", f"Outfit · {len(usage)} tamaños, contados con su peso",
+        "Tipografía", "Type", f"web e iOS · {len(sizes)} peldaños contados con su peso",
         f'''<h1>Tipografía</h1>
-<p class="lede">Outfit en todos lados. Los importes SIEMPRE llevan cifras tabulares
-(<code>tabular-nums</code> / <code>.monospacedDigit()</code>): sin eso el número salta al
-cambiar de dígito.</p>
-<p class="lede">Cada fila cuenta <strong>tamaño y peso juntos</strong>, porque el peldaño es el
-par, no el tamaño. 13px se usa mucho más en 600 que en 400 — un sistema que dijera
-"13 / 400" mandaría a la próxima app al lugar equivocado. La muestra usa el peso más
-frecuente de cada tamaño.</p>
-<div class="pane" style="background:{light["--bg"]};color:{light["--ink"]}">
-  <div style="font-size:66px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums">$ 823,60</div>
-  <div class="val" style="margin-bottom:20px">Entrada de monto · 52–66 · distinta de la cifra en card (~34)</div>
-  {rows}
-</div>''', 800)
+<p class="lede">Outfit en los dos clientes. Los importes SIEMPRE llevan cifras tabulares
+(<code>tabular-nums</code> / <code>.monospacedDigit()</code>).</p>
+<p class="lede">Cada peldaño se cuenta con su <strong>peso</strong>, porque el par es el
+peldaño, y por <strong>plataforma</strong>, porque no son el mismo. La fila mide
+<strong>14 en web</strong> y <strong>14.5 en iOS</strong>; el título ya era 22 y 18. Eso no es
+un defecto —un teléfono a distancia de brazo no es una ventana de navegador— pero un sistema
+que afirmara un solo número sería falso en una de las dos.</p>
+<table style="border-collapse:collapse;width:100%;font-size:12.5px">
+<thead><tr style="text-align:left;opacity:.55;font-size:11px;text-transform:uppercase;letter-spacing:.06em">
+<th style="padding:7px 10px">Tamaño</th><th style="padding:7px 10px">web</th>
+<th style="padding:7px 10px">iOS</th><th style="padding:7px 10px">Muestra</th></tr></thead>
+<tbody>{rows}</tbody></table>
+<p class="lede" style="margin-top:16px">El conteo normaliza las utilidades nombradas de
+Tailwind antes de agrupar (<code>text-sm</code> → 14, <code>text-xs</code> → 12,
+<code>text-base</code> → 16). Sin eso quedaban 66 usos invisibles y el sistema documentaba
+14.5 (5 usos en web) mientras omitía 14 (25).</p>''', 900)
 
     # ── Spacing: absent from the system until the Stock report asked for it ──
-    pads = used(r"px-\[([0-9.]+)px\]")
-    gaps = used(r"gap-\[([0-9.]+)px\]")
+    pads = usage.padding_x()
+    gaps = usage.gaps()
     def bars(items, colour):
         return "".join(
             f'<div style="display:flex;align-items:center;gap:10px;padding:4px 0">'
@@ -291,13 +309,13 @@ card es 18 y el de pantalla 20; ninguno de los dos estaba escrito en ningún lad
 </div>''', 620)
 
     # ── Shape: the radii the components actually reach for ──
-    radii = used(r"rounded-\[([0-9.]+)px\]")
+    radii = usage.radii()
     chips = "".join(
         f'<div style="text-align:center"><div style="width:74px;height:56px;border-radius:{r}px;'
         f'background:{light["--surface"]};border:1px solid {light["--line-card"]}"></div>'
         f'<div class="val">{r:g}px · ×{n}</div></div>'
         for r, n in radii[:8])
-    full = used(r"(rounded-full)", cast=str)
+    full_n = usage.full_radius_uses()
     pages["foundations/shape.html"] = page(
         "Forma y elevación", "Foundations", f"{len(radii)} radios explícitos + rounded-full",
         f'''<h1>Forma y elevación</h1>
@@ -313,7 +331,7 @@ publica es el código.</p>
   {chips}
   <div style="text-align:center"><div style="width:74px;height:56px;border-radius:999px;
        background:{light["--surface"]};border:1px solid {light["--line-card"]}"></div>
-       <div class="val">full · ×{full[0][1] if full else 0}</div></div>
+       <div class="val">full · ×{full_n}</div></div>
 </div>
 <h2>Elevación</h2>
 <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;background:{light["--bg"]};padding:22px;border-radius:18px">
