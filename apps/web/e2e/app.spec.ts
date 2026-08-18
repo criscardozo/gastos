@@ -423,8 +423,27 @@ test("starting a period asks, and carries the leftover", async ({
   await expect(page.getByText("Repetir presupuesto · $900")).toBeVisible();
   await expect(page.getByText("Ahora no")).toHaveCount(0);
 
+  // The leftover is a server-side sum() over the PREVIOUS period, so it lands
+  // after the screen does. Wait for the row to show the figure it should have
+  // found — 900 budgeted less 700 spent — rather than for the row to merely
+  // exist. The row renders for ANY non-zero leftover, so clicking as soon as it
+  // appears will happily tick a wrong number and then fail twenty seconds later
+  // on the total, which is what CI kept doing while every local run passed.
+  const leftoverRow = page.getByRole("button", { name: /Incluir lo que sobró/ });
+  await expect(leftoverRow).toContainText("$200,00");
+
+  // And assert the period state directly, so a stray period fails HERE with a
+  // count rather than downstream as a missing figure. Verified by injecting one:
+  // this reports expect(3).toBe(2) in a second, where the old test spent
+  // twenty-five and blamed the total.
+  const periodsNow = await request.get(
+    `${REST}/households/${householdId}/periodBudgets`,
+    { headers: admin },
+  );
+  expect(((await periodsNow.json()).documents ?? []).length).toBe(2);
+
   // Ticking the leftover moves the figure and the button.
-  await page.getByText("Incluir lo que sobró").click();
+  await leftoverRow.click();
   await expect(page.getByText("$1.100,00")).toBeVisible();
   await expect(page.getByText("Repetir presupuesto · $1.100")).toBeVisible();
   await expect(page.getByText("$900 de siempre + $200 del período anterior")).toBeVisible();
