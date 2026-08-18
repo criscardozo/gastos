@@ -381,6 +381,30 @@ test("starting a period asks, and carries the leftover", async ({
   );
   expect(expense.ok()).toBe(true);
 
+  // The app is watching this collection the whole time, so between the deletes
+  // above and the writes it is free to materialize a period of its OWN — and a
+  // stray period sitting between the two this test wrote is not harmless: the
+  // leftover is read from the period BEFORE the current one, and a stray one
+  // has no expenses in it, so the figure silently comes back 0. That is what
+  // made this test fail on CI and never locally; the runner is slow enough to
+  // lose the race. Deleting anything we did not write closes it, and by now
+  // the two periods it wants exist, so there is nothing left for the app to
+  // create.
+  const wanted = new Set([previousStart, today]);
+  const after = await request.get(
+    `${REST}/households/${householdId}/periodBudgets`,
+    { headers: admin },
+  );
+  for (const doc of (((await after.json()).documents ?? []) as { name: string }[])) {
+    const id = doc.name.split("/").pop() as string;
+    if (!wanted.has(id)) {
+      await request.delete(
+        `${REST}/households/${householdId}/periodBudgets/${id}`,
+        { headers: admin },
+      );
+    }
+  }
+
   // Stand in the shoes of someone who answered LAST period and is opening the
   // app on the first day of this one. (Clearing storage instead would look
   // like a brand-new device, which by design is marked as seen rather than
