@@ -60,6 +60,21 @@ def dividers() -> list[tuple[str, int]]:
     return counts.most_common(3)
 
 
+def pill_padding_share() -> tuple[int, int]:
+    """(uses of py-2 on a pill or button, total uses of py-2).
+
+    The number that makes a bare padding count unusable as a component property:
+    a third of this app's py-2 is on rounded-full elements. Counting a utility
+    class is not counting a component.
+    """
+    on_pill = total = 0
+    for f in sorted(WEB.rglob("*.tsx")):
+        text = f.read_text()
+        total += len(re.findall(r"\bpy-2\b", text))
+        on_pill += len(re.findall(r'rounded-full[^"]{0,60}\bpy-2\b|\bpy-2\b[^"]{0,60}rounded-full', text))
+    return on_pill, total
+
+
 if __name__ == "__main__":
     for name, (classes, n) in anatomy().items():
         print(f"  {name:<10} ×{n}  {classes}")

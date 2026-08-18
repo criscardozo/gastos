@@ -436,11 +436,17 @@ construcción.</p>''', 900)
          "En iOS es <code>Card { }</code> con el mismo radio y padding — ver <code>Design/Card.swift</code>."])
 
     rows, divs = comp.row_padding(), comp.dividers()
-    px = lambda cls: f"{float(cls.split('-')[1]) * 4:g}px"
+    # NOT presented as "the row padding". A bare `py-*` count cannot be
+    # attributed to rows: of the 63 uses of py-2 in this app, 19 sit on pills
+    # and buttons. The rule is what transfers; the count is evidence for it and
+    # is labelled as the class frequency it actually is.
+    pill_py2 = comp.pill_padding_share()
     pages["components/row.html"] = spec(
-        "Fila de lista", "Components", f"{rows[0][0]} es el padding vertical dominante",
+        "Fila de lista", "Components",
+        "El padding sigue a la altura del contenido",
         "Una fila es la unidad de todo listado: un gasto, un servicio, un cargo del banco. "
-        "Lo que la define no es su contenido sino cuándo lleva divisor y cuándo no.",
+        "Lo que la define no es su contenido sino dos cosas que se copian mal — cuándo lleva "
+        "divisor, y de qué depende su padding.",
         f'''<div style="border-radius:18px;border:1px solid {light["--line-card"]};
              background:{light["--surface"]};padding:6px 18px">
   {"".join(f'''<div style="display:flex;align-items:center;gap:11px;padding:8px 0;
@@ -453,13 +459,24 @@ construcción.</p>''', 900)
          color:{light["--ink"]}">$ {v}</div></div>'''
     for i, (n, v) in enumerate([("Coles", "63,90"), ("Café", "12,50")]))}
 </div>''',
-        f"py-2  ({rows[0][1]} usos)   ·   " + "  ·  ".join(f"{c} ({n})" for c, n in rows[1:4]),
+        "  ·  ".join(f"{c} ({n})" for c, n in rows[:4])
+        + f"\n\n  Ojo: es la frecuencia de la CLASE, no un censo de filas. De los {pill_py2[1]}"
+          f" usos de py-2, {pill_py2[0]} están en pills y botones.",
         rows[0][1],
-        [f"Padding vertical <strong>{px(rows[0][0])}</strong> (<code>{rows[0][0]}</code>, {rows[0][1]} usos). "
-         f"Filas más altas usan <code>{rows[1][0]}</code> ({rows[1][1]}).",
-         f"<strong>Divisor entre filas de una misma lista</strong>: <code>{divs[1][0]}</code> en el contenedor ({divs[1][1]} usos). Nunca entre la última fila y el borde.",
-         f"<strong>Divisor para separar secciones dentro de una card</strong>: <code>{divs[0][0]}</code> ({divs[0][1]} usos). Es un rol distinto, no el mismo divisor.",
-         "El divisor es <code>--line-soft</code> (6 %), más tenue que el borde de la card (8 %): separa sin competir con el contorno.",
+        ["<strong>El padding sigue a la altura del contenido, no a una constante.</strong> "
+         "8px para una fila de texto + importe; <strong>12px cuando hay avatar, control o dos "
+         "líneas</strong>. Una fila con un badge de 36px y un stepper apretada a 8 hace que el "
+         "badge toque los divisores.",
+         "Corroborado por una segunda app: en Stock, las filas de texto + valor usan 10–12px y "
+         "las que llevan control usan 12 fijo. <strong>Ninguna baja de 10.</strong> Que acá el "
+         "número frecuente sea 8 dice más sobre esta app —cuyas filas son casi todas texto + "
+         "importe— que sobre el sistema.",
+         f"<strong>Divisor entre filas de una misma lista</strong>: <code>{divs[1][0]}</code> en "
+         f"el contenedor ({divs[1][1]} usos). Nunca entre la última fila y el borde.",
+         f"<strong>Divisor para separar secciones dentro de una card</strong>: "
+         f"<code>{divs[0][0]}</code> ({divs[0][1]} usos). Es un rol distinto, no el mismo divisor.",
+         "El divisor es <code>--line-soft</code> (6 %), más tenue que el borde de la card (8 %): "
+         "separa sin competir con el contorno.",
          "El importe va a la derecha, 700, con cifras tabulares. Siempre.",
          "La fila mide <strong>14px en web y 14.5 en iOS</strong> — ver Tipografía."])
 
