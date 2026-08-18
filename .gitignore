@@ -3,6 +3,10 @@
 
 # Local agent workspace
 .claude/
+# Skills vendored by `npx skills add`. The lockfile IS committed (it records
+# what is installed and from which commit); the 90-odd files it expands to are
+# not ours to carry.
+.agents/
 
 # Node
 node_modules/
