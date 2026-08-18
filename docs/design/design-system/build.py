@@ -412,7 +412,7 @@ construcción.</p>''', 900)
 <h2>Reglas</h2>
 <ul style="font-size:12.5px;line-height:1.55;padding-left:20px;margin:0">{rule_items}</ul>''', width)
 
-    card_cls, card_n = ana["card"]
+    card_cls, card_n = ana["card"][0], ana["card"][1]
     pages["components/card.html"] = spec(
         "Card", "Components", "El contenedor de todo",
         "Todo en las dos apps vive dentro de una card. No llevan sombra: se separan del fondo "
@@ -480,8 +480,8 @@ construcción.</p>''', 900)
          "El importe va a la derecha, 700, con cifras tabulares. Siempre.",
          "La fila mide <strong>14px en web y 14.5 en iOS</strong> — ver Tipografía."])
 
-    prim_cls, prim_n = ana["primary"]
-    sec_cls, sec_n = ana["secondary"]
+    prim_cls, prim_n = ana["primary"][0], ana["primary"][1]
+    sec_cls, sec_n = ana["secondary"][0], ana["secondary"][1]
     pages["components/button.html"] = spec(
         "Botones", "Components", "Primario, secundario y la única sombra del sistema",
         "Hay exactamente dos pesos de botón, y la diferencia entre ellos es la que le dice a "
@@ -505,19 +505,21 @@ construcción.</p>''', 900)
          "Deshabilitado es <code>disabled:opacity-40</code> — nunca un color distinto.",
          "Una acción importante pero infrecuente va <strong>secundaria</strong>, no primaria: la prominencia sigue a la frecuencia. Cerrar un resumen se hace una vez por mes y es secundaria."])
 
-    field_cls, field_n = ana["field"]
+    field_cls, field_n = ana["field"][0], ana["field"][1]
     pages["components/field.html"] = spec(
         "Campos", "Components", "Y el piso de 16px que no es estético",
         "Un campo se distingue de la card que lo contiene por el fondo, no por la sombra: "
         "va en <code>--bg</code> sobre <code>--surface</code>, o sea hundido.",
         f'''<div style="display:flex;flex-direction:column;gap:12px;max-width:320px">
-  <div style="border-radius:12px;border:1px solid {light["--line-card"]};background:{light["--bg"]};
-       padding:10px 12px;font-size:14px;color:{light["--ink-tertiary"]}">Nota (opcional)</div>
-  <div style="border-radius:12px;border:1px solid {light["--accent"]};background:{light["--bg"]};
-       padding:10px 12px;font-size:14px;color:{light["--ink"]}">Coles<span style="opacity:.5">|</span></div>
+  <div style="border-radius:10px;border:1px solid {light["--line-pill"]};background:{light["--bg"]};
+       padding:8px 10px;font-size:13.5px;font-weight:600;color:{light["--ink-tertiary"]}">Nota (opcional)</div>
+  <div style="border-radius:10px;border:1px solid {light["--accent"]};background:{light["--bg"]};
+       padding:8px 10px;font-size:13.5px;font-weight:600;color:{light["--ink"]}">Coles<span style="opacity:.5">|</span></div>
 </div>''',
         field_cls, field_n,
-        ["Radio <strong>12px</strong> (<code>rounded-xl</code>), fondo <code>--bg</code>, borde <code>--line-card</code>.",
+        ["Radio <strong>10px</strong>, borde <strong><code>--line-pill</code></strong>, fondo <code>--bg</code>. "
+         "El spec decía 12px y <code>--line-card</code>: eso existe en dos campos del onboarding, "
+         "la pantalla que se ve una vez. Las cinco pantallas de uso diario usan lo de arriba.",
          "Al foco cambia <strong>el borde a <code>--accent</code></strong> y nada más: sin <code>outline</code>, sin sombra, sin cambiar el fondo.",
          "<strong>Piso de 16px en el tamaño de fuente cuando el puntero es grueso.</strong> No es una decisión estética: Safari en iOS hace zoom sobre cualquier campo enfocado con menos de 16px, y el zoom no se revierte. Vive sin capa en <code>globals.css</code>, a propósito.",
          "El importe usa su propio componente (<code>amount-input</code>) con cifras tabulares y un <code>$</code> apagado — no es un campo de texto con otro tamaño.",

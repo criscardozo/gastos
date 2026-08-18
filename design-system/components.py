@@ -50,6 +50,74 @@ def assert_attributable(label: str, key: str) -> None:
             f"frecuencia de clase, no como anatomía del componente.")
 
 
+def variants(pattern: str) -> list[tuple[str, int, int]]:
+    """Every variant matching `pattern`: (classes, uses, distinct files).
+
+    Deliberately BROAD. The field spec published a 2-use variant that lives only
+    in onboarding while a 15-use one runs five daily screens — not because the
+    ranking was wrong but because the PATTERN was: it asked for `border-line`,
+    excluding the dominant `border-pill`, and a `rounded` matcher that did not accept
+    bracketed values, so `rounded-[10px]` never matched either. Having pre-filtered
+    on two axes, "most common" faithfully reported the most common of the subset
+    I had already chosen.
+
+    So patterns here match the whole family, and `dominant()` picks the winner.
+    """
+    found: dict[str, list[str]] = {}
+    for f in sorted(WEB.rglob("*.tsx")):
+        for m in re.findall(pattern, f.read_text()):
+            key = re.sub(r"\s+", " ", m if isinstance(m, str) else m[0]).strip()
+            found.setdefault(key, []).append(str(f))
+    return sorted(((k, len(v), len(set(v))) for k, v in found.items()),
+                  key=lambda t: -t[1])
+
+
+class NotRepresentative(Exception):
+    """Raised rather than publishing a variant that is not the common one."""
+
+
+MIN_USES = 8  # the same floor the type scale uses; below it, a step is noise
+
+
+def family(label: str, pattern: str, invariant: str) -> tuple[str, int]:
+    """For a component with no single dominant string: the invariant + sizes.
+
+    The primary button is the case. Its four variants are legitimately different
+    — a screen CTA, an inline primary, a full-width one in a dialog, a small one
+    — and no exact string reaches the floor, so there is nothing to crown. What
+    IS constant is `rounded-full bg-accent` with white 700 text; the sizes are
+    variants of a role, not competitors for one anatomy. Publishing the 4-use
+    string as "the primary button" was the same minority-variant defect as the
+    field, arrived at from the other direction.
+    """
+    vs = variants(pattern)
+    total = sum(u for _, u, _ in vs)
+    lines = [f"invariante  {invariant}", ""]
+    lines += [f"{u:>3} usos  {k}" for k, u, _ in vs[:5]]
+    assert_attributable(label, invariant)
+    return "\n".join(lines), total
+
+
+def dominant(label: str, pattern: str) -> tuple[str, int, int]:
+    """The most-used variant, refusing to publish a minority or a rarity.
+
+    Two ways to get this wrong, and the type scale had already answered both —
+    a step earns its place at 8 uses, and the frequent one wins. That floor was
+    written for type and never applied to components, which is how a 2-use field
+    got published as the field.
+    """
+    vs = variants(pattern)
+    if not vs:
+        raise NotRepresentative(f"{label}: el patrón no encontró nada")
+    top, uses, files = vs[0]
+    if uses < MIN_USES:
+        raise NotRepresentative(
+            f"{label}: la variante más usada tiene sólo {uses} usos, por debajo del "
+            f"piso de {MIN_USES}. Es ruido, no anatomía.")
+    assert_attributable(label, top)
+    return top, uses, files
+
+
 def _most_common(pattern: str) -> tuple[str, int]:
     """The variant of `pattern` the components repeat most, and how often."""
     counts: Counter[str] = Counter()
@@ -63,15 +131,23 @@ def _most_common(pattern: str) -> tuple[str, int]:
 
 def anatomy() -> dict[str, tuple[str, int]]:
     """The canonical class string for each component, measured."""
-    out = {
-        "card":      _most_common(r'rounded-\[[0-9]+px\][^"]{0,70}bg-surface[^"]{0,40}'),
-        "primary":   _most_common(r'rounded-full bg-accent[^"]{0,70}'),
-        "secondary": _most_common(r'rounded-full border border-pill[^"]{0,60}'),
-        "field":     _most_common(r'rounded-\w+ border border-line bg-bg[^"]{0,70}'),
+    return {
+        # Broad enough to see every variant of each family; `dominant` picks.
+        "card":      dominant("card",      r'rounded-[\w\[\]0-9px]+ border border-\w+ bg-surface[^"`]{0,45}'),
+        # No single string reaches the floor: these are one role in several
+        # sizes, so the invariant is published and the sizes listed under it.
+        "primary":   family("primary", r'rounded-full bg-accent[^"`]{0,70}',
+                            "rounded-full bg-accent + texto blanco 700"),
+        "secondary": family("secondary", r'rounded-full border border-pill[^"`]{0,60}',
+                            "rounded-full border border-pill + texto ink 700"),
+        # Also a family, and this is where the defect was worst: the published
+        # anatomy was a 2-use variant living only in onboarding, while five
+        # daily screens use another. Its 15 uses are not one string either —
+        # they share a prefix and differ in padding — so the invariant is what
+        # there is to publish.
+        "field":     family("field", r'rounded-[\w\[\]0-9px]+ border border-\w+ bg-bg[^"`]{0,60}',
+                            "rounded-[10px] border border-pill bg-bg"),
     }
-    for name, (classes, _) in out.items():
-        assert_attributable(name, classes)
-    return out
 
 
 def row_padding() -> list[tuple[str, int]]:
