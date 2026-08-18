@@ -29,6 +29,7 @@ WEB_SRC = REPO / "apps/web/src"
 
 sys.path.insert(0, str(REPO / "design-system"))
 import usage  # noqa: E402  — the counting lives in the package, not here
+import components as comp  # noqa: E402
 
 FONT = ("https://fonts.googleapis.com/css2?"
         "family=Outfit:wght@400;600;700&display=swap")
@@ -384,6 +385,151 @@ exactamente el tipo de divergencia que debería mostrar. {verdict}</p>
 <p class="lede" style="margin-top:18px">Las 8 categorías no aparecen acá: las dos apps las
 leen del mismo <code>shared/categories.json</code>, así que no pueden divergir por
 construcción.</p>''', 900)
+
+    # ── Components ──────────────────────────────────────────────────────
+    # The one layer that is NOT generated end to end. Anatomy measured, rules
+    # written — every page below says which is which, because a spec can go
+    # stale in a way the tokens no longer can.
+    ana = comp.anatomy()
+    DISCLAIMER = (
+        '<p class="lede" style="border-left:3px solid ' + light["--accent"] + ';padding-left:12px">'
+        '<strong>Anatomía medida, reglas escritas.</strong> Los números de abajo son la '
+        'combinación que los componentes más repiten en el código, no una elección hecha '
+        'al redactar esto. Las reglas, en cambio, son criterio leído del código: ninguna '
+        'herramienta las deriva. Si un spec y el código no coinciden, <em>el spec es el '
+        'bug</em>.</p>')
+
+    def spec(title, group, subtitle, intro, demo, classes, uses, rules, width=760):
+        rule_items = "".join(f"<li style=\"margin-bottom:7px\">{r}</li>" for r in rules)
+        return page(title, group, subtitle, f'''<h1>{title}</h1>
+<p class="lede">{intro}</p>
+{DISCLAIMER}
+<h2>Ejemplo</h2>
+<div style="background:{light["--bg"]};padding:24px;border-radius:18px">{demo}</div>
+<h2>Anatomía medida · {uses} usos</h2>
+<pre style="background:{light["--fill"]};padding:12px 14px;border-radius:12px;font-size:11.5px;
+     overflow-x:auto;margin:0"><code>{classes}</code></pre>
+<h2>Reglas</h2>
+<ul style="font-size:12.5px;line-height:1.55;padding-left:20px;margin:0">{rule_items}</ul>''', width)
+
+    card_cls, card_n = ana["card"]
+    pages["components/card.html"] = spec(
+        "Card", "Components", "El contenedor de todo",
+        "Todo en las dos apps vive dentro de una card. No llevan sombra: se separan del fondo "
+        "por un borde de 1px, que es lo que deja el fondo cálido a la vista en vez de taparlo.",
+        f'''<div style="border-radius:18px;border:1px solid {light["--line-card"]};
+             background:{light["--surface"]};padding:16px 18px">
+  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+       color:{light["--ink-tertiary"]};margin-bottom:10px">Presupuesto</div>
+  <div style="font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;
+       color:{light["--ink"]}">$ 823,60</div>
+  <div style="border-top:1px solid {light["--line-soft"]};margin-top:14px;padding-top:12px;
+       font-size:11.5px;color:{light["--ink-tertiary"]}">Quedan 4 días</div>
+</div>''',
+        card_cls, card_n,
+        ["Radio <strong>18px</strong>. El documento viejo decía 20–24; el código dice 18 y el código es el que se publica.",
+         "Padding <strong>18px horizontal, 16px vertical</strong> (<code>px-[18px] py-4</code>).",
+         "Borde de 1px en <code>--line-card</code>. <strong>Nunca sombra</strong> — la única sombra del sistema es la del CTA primario.",
+         "La variante ancha de dashboard usa radio 22 y <code>px-5 py-5 lg:px-6</code>. Es la excepción, no una segunda card.",
+         "El encabezado es <code>.section-label</code>: 11px/700, mayúsculas, +0.07em, tinta terciaria. Vive como clase en <code>globals.css</code>, no como utilidad.",
+         "El pie va separado por <code>border-t border-soft</code>, nunca por un margen.",
+         "En iOS es <code>Card { }</code> con el mismo radio y padding — ver <code>Design/Card.swift</code>."])
+
+    rows, divs = comp.row_padding(), comp.dividers()
+    px = lambda cls: f"{float(cls.split('-')[1]) * 4:g}px"
+    pages["components/row.html"] = spec(
+        "Fila de lista", "Components", f"{rows[0][0]} es el padding vertical dominante",
+        "Una fila es la unidad de todo listado: un gasto, un servicio, un cargo del banco. "
+        "Lo que la define no es su contenido sino cuándo lleva divisor y cuándo no.",
+        f'''<div style="border-radius:18px;border:1px solid {light["--line-card"]};
+             background:{light["--surface"]};padding:6px 18px">
+  {"".join(f'''<div style="display:flex;align-items:center;gap:11px;padding:8px 0;
+      {"border-top:1px solid " + light["--line-soft"] if i else ""}">
+    <div style="width:34px;height:34px;border-radius:999px;
+         background:color-mix(in srgb,{light["--cat-groceries"]} 14%,transparent);flex:none"></div>
+    <div style="flex:1"><div style="font-size:14px;font-weight:600;color:{light["--ink"]}">{n}</div>
+      <div style="font-size:11.5px;color:{light["--ink-tertiary"]}">Súper</div></div>
+    <div style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;
+         color:{light["--ink"]}">$ {v}</div></div>'''
+    for i, (n, v) in enumerate([("Coles", "63,90"), ("Café", "12,50")]))}
+</div>''',
+        f"py-2  ({rows[0][1]} usos)   ·   " + "  ·  ".join(f"{c} ({n})" for c, n in rows[1:4]),
+        rows[0][1],
+        [f"Padding vertical <strong>{px(rows[0][0])}</strong> (<code>{rows[0][0]}</code>, {rows[0][1]} usos). "
+         f"Filas más altas usan <code>{rows[1][0]}</code> ({rows[1][1]}).",
+         f"<strong>Divisor entre filas de una misma lista</strong>: <code>{divs[1][0]}</code> en el contenedor ({divs[1][1]} usos). Nunca entre la última fila y el borde.",
+         f"<strong>Divisor para separar secciones dentro de una card</strong>: <code>{divs[0][0]}</code> ({divs[0][1]} usos). Es un rol distinto, no el mismo divisor.",
+         "El divisor es <code>--line-soft</code> (6 %), más tenue que el borde de la card (8 %): separa sin competir con el contorno.",
+         "El importe va a la derecha, 700, con cifras tabulares. Siempre.",
+         "La fila mide <strong>14px en web y 14.5 en iOS</strong> — ver Tipografía."])
+
+    prim_cls, prim_n = ana["primary"]
+    sec_cls, sec_n = ana["secondary"]
+    pages["components/button.html"] = spec(
+        "Botones", "Components", "Primario, secundario y la única sombra del sistema",
+        "Hay exactamente dos pesos de botón, y la diferencia entre ellos es la que le dice a "
+        "alguien qué acción es la que se espera que haga.",
+        f'''<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <div style="height:56px;padding:0 26px;border-radius:999px;background:{light["--accent"]};
+       color:#fff;display:flex;align-items:center;font-weight:700;font-size:15px;
+       box-shadow:0 8px 20px rgba(255,92,57,.35)">Guardar gasto</div>
+  <div style="border-radius:999px;background:{light["--accent"]};color:#fff;padding:7px 16px;
+       font-size:13px;font-weight:700">Asignar</div>
+  <div style="border-radius:999px;border:1px solid {light["--line-pill"]};
+       background:{light["--surface"]};color:{light["--ink"]};padding:8px 16px;
+       font-size:13px;font-weight:700">Cerrar y abrir</div>
+  <div style="color:{light["--ink-secondary"]};font-size:12.5px;font-weight:600">Descartar</div>
+</div>''',
+        f"primario   {prim_cls}\nsecundario {sec_cls}", prim_n + sec_n,
+        ["<strong>CTA de pantalla</strong>: 54–58px de alto, radio completo, <code>bg-accent</code>, texto blanco 700, y la sombra <code>0 8px 20px rgba(255,92,57,.35)</code> — de color, no negra. Es la única sombra fuerte del sistema.",
+         f"<strong>Primario en línea</strong> (dentro de una card): <code>px-4 py-[7px] text-[13px]</code>, sin sombra. {prim_n} usos.",
+         f"<strong>Secundario</strong>: <code>border border-pill bg-surface</code>, misma altura, texto <code>--ink</code>. {sec_n} usos.",
+         "<strong>Terciario</strong>: texto pelado en <code>--ink-2</code>, sin borde ni fondo. Para lo que se puede ignorar (Descartar, Cancelar).",
+         "Deshabilitado es <code>disabled:opacity-40</code> — nunca un color distinto.",
+         "Una acción importante pero infrecuente va <strong>secundaria</strong>, no primaria: la prominencia sigue a la frecuencia. Cerrar un resumen se hace una vez por mes y es secundaria."])
+
+    field_cls, field_n = ana["field"]
+    pages["components/field.html"] = spec(
+        "Campos", "Components", "Y el piso de 16px que no es estético",
+        "Un campo se distingue de la card que lo contiene por el fondo, no por la sombra: "
+        "va en <code>--bg</code> sobre <code>--surface</code>, o sea hundido.",
+        f'''<div style="display:flex;flex-direction:column;gap:12px;max-width:320px">
+  <div style="border-radius:12px;border:1px solid {light["--line-card"]};background:{light["--bg"]};
+       padding:10px 12px;font-size:14px;color:{light["--ink-tertiary"]}">Nota (opcional)</div>
+  <div style="border-radius:12px;border:1px solid {light["--accent"]};background:{light["--bg"]};
+       padding:10px 12px;font-size:14px;color:{light["--ink"]}">Coles<span style="opacity:.5">|</span></div>
+</div>''',
+        field_cls, field_n,
+        ["Radio <strong>12px</strong> (<code>rounded-xl</code>), fondo <code>--bg</code>, borde <code>--line-card</code>.",
+         "Al foco cambia <strong>el borde a <code>--accent</code></strong> y nada más: sin <code>outline</code>, sin sombra, sin cambiar el fondo.",
+         "<strong>Piso de 16px en el tamaño de fuente cuando el puntero es grueso.</strong> No es una decisión estética: Safari en iOS hace zoom sobre cualquier campo enfocado con menos de 16px, y el zoom no se revierte. Vive sin capa en <code>globals.css</code>, a propósito.",
+         "El importe usa su propio componente (<code>amount-input</code>) con cifras tabulares y un <code>$</code> apagado — no es un campo de texto con otro tamaño.",
+         "Los mensajes de error van debajo, 11.5px/600, en <code>--over</code>. Nunca dentro del campo."])
+
+    pages["components/pill.html"] = spec(
+        "Chips y pills", "Components", f"rounded-full, {usage.full_radius_uses()} usos",
+        "La forma más repetida del sistema. Un chip informa, un pill navega o filtra, y los "
+        "dos son la misma geometría: radio completo y padding horizontal generoso.",
+        f'''<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+  <div style="border-radius:999px;background:{light["--good-bg"]};color:{light["--good-text"]};
+       padding:5px 11px;font-size:12px;font-weight:600">Van bien</div>
+  <div style="border-radius:999px;background:{light["--warn-bg"]};color:{light["--warn-text"]};
+       padding:5px 11px;font-size:12px;font-weight:600">Queda poco</div>
+  <div style="border-radius:999px;background:{light["--over-bg"]};color:{light["--over-text"]};
+       padding:5px 11px;font-size:12px;font-weight:600">Se pasaron</div>
+  <div style="border-radius:999px;border:1px solid {light["--line-pill"]};
+       background:{light["--surface"]};color:{light["--ink"]};padding:6px 14px;
+       font-size:12.5px;font-weight:700">‹ 14 – 20 ago ›</div>
+  <div style="border-radius:999px;background:{light["--accent-soft"]};color:{light["--accent-strong"]};
+       padding:5px 11px;font-size:11.5px;font-weight:700">Ajustado</div>
+</div>''',
+        "rounded-full + px-2.5…px-4 + py-1…py-2", usage.full_radius_uses(),
+        ["Radio siempre <strong>completo</strong>. Un chip con radio numérico es un bug.",
+         "<strong>Chip de estado</strong>: fondo <code>--*-bg</code> (color al 12–16 %), texto <code>--*-text</code>. El par siempre junto: el fondo tenue nunca lleva el color pleno como texto.",
+         "<strong>Pill de navegación</strong>: <code>border-pill</code> sobre <code>--surface</code>, texto 700.",
+         "<strong>Badge de acento</strong>: <code>accent-soft</code> de fondo con <code>accent-strong</code> de texto — nunca <code>accent</code> pleno, que no contrasta sobre su propio tinte.",
+         "Padding horizontal entre 10 y 16px según el peso del chip; vertical entre 4 y 8.",
+         "Un chip no se toca salvo que navegue. Si tiene acción, es un botón secundario."])
 
     return pages
 
