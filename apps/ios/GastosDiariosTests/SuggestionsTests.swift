@@ -37,29 +37,6 @@ final class SuggestionsTests: XCTestCase {
         ]
     }
 
-    // MARK: recentAmounts
-
-    func testRecentAmountsAreRecencyOrderedDistinctAndCategoryScoped() {
-        let amounts = Suggestions.recentAmounts(from: sample, categoryId: "coffee", limit: 3)
-        // Most recent coffee expenses (ignoring zero): id3(1100, 07-05),
-        // id2(4280, 07-03), id6(2500, 07-02). id1(1100) is a duplicate of id3.
-        XCTAssertEqual(amounts, [1100, 4280, 2500])
-    }
-
-    func testRecentAmountsRespectsLimit() {
-        XCTAssertEqual(Suggestions.recentAmounts(from: sample, categoryId: "coffee", limit: 2), [1100, 4280])
-    }
-
-    func testRecentAmountsNilCategoryConsidersAll() {
-        let amounts = Suggestions.recentAmounts(from: sample, categoryId: nil, limit: 4)
-        // Recency across all: id3(1100,07-05), id5(900,07-04), id2(4280,07-03), id6(2500,07-02).
-        XCTAssertEqual(amounts, [1100, 900, 4280, 2500])
-    }
-
-    func testRecentAmountsEmptyWhenNoHistory() {
-        XCTAssertTrue(Suggestions.recentAmounts(from: [], categoryId: "coffee").isEmpty)
-    }
-
     // MARK: topNotes
 
     func testTopNotesRankedByFrequencyThenRecency() {

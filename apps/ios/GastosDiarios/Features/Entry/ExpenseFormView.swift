@@ -204,17 +204,6 @@ struct ExpenseFormView: View {
 
     // MARK: Suggestions (derived from in-memory expenses only)
 
-    /// Recent-amount chips for the selected category — only while the amount is
-    /// still empty (they are quick-fills, not a live filter).
-    private var recentAmounts: [Int] {
-        guard !isEditing, amount.input.isEmpty else { return [] }
-        return Suggestions.recentAmounts(
-            from: model.suggestionExpenses,
-            categoryId: selectedCategoryId,
-            limit: 3
-        )
-    }
-
     /// Note autocomplete suggestions, filtered by what's typed so far. Drops a
     /// suggestion identical to the current note (nothing to fill).
     private var noteSuggestions: [String] {
@@ -240,9 +229,6 @@ struct ExpenseFormView: View {
                 }
                 heroAmount
                 categoryRow
-                if !recentAmounts.isEmpty {
-                    amountChips
-                }
                 noteField
                 if !noteSuggestions.isEmpty {
                     noteSuggestionBar
@@ -293,35 +279,6 @@ struct ExpenseFormView: View {
     }
 
     // MARK: Pieces
-
-    /// Horizontal recent-amount quick-fill pills, shown under the category row.
-    private var amountChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(recentAmounts, id: \.self) { cents in
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        withAnimation(.snappy(duration: 0.15)) {
-                            amount.setAUDCents(cents)
-                        }
-                    } label: {
-                        Text(MoneyFormatter.audCompact(cents, locale: l10n.locale))
-                            .appFont(13, .semibold)
-                            .monospacedDigit()
-                            .foregroundStyle(Theme.ink)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(Theme.fill)
-                            .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 20)
-        }
-        .padding(.horizontal, -20)
-        .padding(.bottom, 12)
-    }
 
     /// Note autocomplete pills, sitting under the field itself.
     ///

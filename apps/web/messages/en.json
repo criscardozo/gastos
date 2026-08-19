@@ -101,8 +101,6 @@
     "yesterday": "Yesterday",
     "noResults": "Nothing here",
     "noResultsHint": "No expense matches those filters.",
-    "recentAmounts": "Recent amounts:",
-    "useAmount": "Use {amount}",
     "pending": "Waiting to sync",
     "verified": "Verified",
     "unverified": "Unverified",

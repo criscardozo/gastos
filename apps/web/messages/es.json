@@ -101,8 +101,6 @@
     "yesterday": "Ayer",
     "noResults": "Nada por acá",
     "noResultsHint": "Ningún gasto coincide con esos filtros.",
-    "recentAmounts": "Montos recientes:",
-    "useAmount": "Usar {amount}",
     "pending": "Pendiente de sincronizar",
     "verified": "Verificado",
     "unverified": "Sin verificar",

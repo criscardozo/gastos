@@ -32,7 +32,6 @@ import type { Expense, Household, PeriodBudget } from "@/lib/firebase/converters
 import { categoryCircleBg, categoryColor, type CategoryDef } from "@/lib/categories";
 import {
   formatCents,
-  formatCentsCompact,
   formatUsd,
   parseAmountToCents,
 } from "@/lib/money";
@@ -314,30 +313,6 @@ export default function ExpensesPage() {
       .slice(0, 5)
       .map((v) => v.text);
   })();
-
-  const amountSuggestions = (() => {
-    const catId = effectiveAddForm.categoryId;
-    const seen = new Set<number>();
-    const out: number[] = [];
-    for (const e of [...expenses].sort(byCreated)) {
-      if (e.categoryId !== catId || seen.has(e.amountCents)) continue;
-      seen.add(e.amountCents);
-      out.push(e.amountCents);
-      if (out.length >= 3) break;
-    }
-    return out;
-  })();
-
-  /* Fill the amount field from a recent-amount chip (uses the same decimal
-     format as the inline input so parseAmountToCents accepts it). */
-  const fillAmount = (cents: number) => {
-    const str = (cents / 100).toLocaleString(
-      locale === "es" ? "es-AR" : "en-AU",
-      { minimumFractionDigits: 2, useGrouping: false },
-    );
-    setAddForm({ ...addForm, amount: str });
-    amountRef.current?.focus();
-  };
 
   // Resolved from the live list, so the dialog updates when the expense does
   // (verifying from inside it, a change landing from the other phone).
@@ -856,27 +831,6 @@ export default function ExpensesPage() {
             {t("save")}
           </button>
         </div>
-        {amountSuggestions.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 pl-8">
-            <span className="text-[11px] font-semibold text-ink-3">
-              {t("recentAmounts")}
-            </span>
-            {amountSuggestions.map((cents) => {
-              const label = formatCentsCompact(cents, household.currency, locale);
-              return (
-                <button
-                  key={cents}
-                  type="button"
-                  onClick={() => fillAmount(cents)}
-                  aria-label={t("useAmount", { amount: label })}
-                  className="tnum rounded-full border border-pill bg-fill px-2.5 py-1 text-[12px] font-semibold text-ink-2 hover:bg-track"
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {/* Detail of a tapped expense */}

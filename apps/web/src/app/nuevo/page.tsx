@@ -23,7 +23,6 @@ import {
 } from "@/lib/categories";
 import {
   formatCents,
-  formatCentsCompact,
   parseAmountToCents,
 } from "@/lib/money";
 import { budgetState, containsDate } from "@/lib/periods";
@@ -89,29 +88,6 @@ export default function QuickEntryPage() {
   const budget = currentPeriod?.amountCents ?? 0;
   const remaining = budget - spent;
   const state = budgetState(spent, budget);
-
-  /* Recent amounts for the selected category (from what's already loaded). */
-  const recentAmounts = (() => {
-    if (amount !== "" || effectiveCategoryId === null) return [];
-    const seen = new Set<number>();
-    const out: number[] = [];
-    const byNewest = [...expenses].sort(
-      (a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0),
-    );
-    for (const e of byNewest) {
-      if (e.categoryId !== effectiveCategoryId || seen.has(e.amountCents)) continue;
-      seen.add(e.amountCents);
-      out.push(e.amountCents);
-      if (out.length >= 3) break;
-    }
-    return out;
-  })();
-
-  const asInput = (cents: number) =>
-    (cents / 100).toLocaleString(locale === "es" ? "es-AR" : "en-AU", {
-      minimumFractionDigits: 2,
-      useGrouping: false,
-    });
 
   // Not awaited on purpose: Firestore only resolves a write once the server
   // acknowledges it, so awaiting would leave this form frozen — amount still
@@ -181,25 +157,6 @@ export default function QuickEntryPage() {
           />
         </div>
       </div>
-
-      {/* Recent amounts for this category */}
-      {recentAmounts.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-ink-3">
-            {t("recentAmounts")}
-          </span>
-          {recentAmounts.map((cents) => (
-            <button
-              key={cents}
-              type="button"
-              onClick={() => setAmount(asInput(cents))}
-              className="tnum rounded-full border border-pill bg-fill px-3 py-1 text-[12.5px] font-semibold text-ink-2"
-            >
-              {formatCentsCompact(cents, household.currency, locale)}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Categories */}
       <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">

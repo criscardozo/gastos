@@ -1,8 +1,8 @@
 import Foundation
 
 // MARK: - Quick-entry suggestions
-// Pure, testable derivation of "recent amount" chips and note autocomplete
-// from a set of expenses ALREADY loaded in memory (no extra Firestore reads).
+// Pure, testable derivation of the note autocomplete from a set of expenses
+// ALREADY loaded in memory (no extra Firestore reads).
 // NO Firebase imports here — operates on plain `Expense` values.
 
 enum Suggestions {
@@ -14,27 +14,6 @@ enum Suggestions {
         expenses.sorted {
             ($0.date, $0.createdAt ?? .distantPast) > ($1.date, $1.createdAt ?? .distantPast)
         }
-    }
-
-    /// Up to `limit` distinct recent amounts (in cents) for a category — the
-    /// values behind the amount quick-fill chips. Ordered by recency, deduped,
-    /// zero amounts dropped. `categoryId == nil` considers every expense.
-    static func recentAmounts(
-        from expenses: [Expense],
-        categoryId: String?,
-        limit: Int = 3
-    ) -> [Int] {
-        var seen = Set<Int>()
-        var result: [Int] = []
-        for expense in recencySorted(expenses) {
-            if let categoryId, expense.categoryId != categoryId { continue }
-            let cents = expense.amountCents
-            guard cents > 0, !seen.contains(cents) else { continue }
-            seen.insert(cents)
-            result.append(cents)
-            if result.count >= limit { break }
-        }
-        return result
     }
 
     /// Up to `limit` note suggestions for autocomplete, ranked by frequency
