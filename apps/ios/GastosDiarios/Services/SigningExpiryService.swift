@@ -21,8 +21,22 @@ enum SigningExpiryService {
     /// Whole days until the signature expires (0 = expires today, negative =
     /// already expired). nil when there is no profile to read.
     static func daysRemaining(now: Date = Date()) -> Int? {
+        if let forcedDaysRemaining { return forcedDaysRemaining }
         guard let expiryDate else { return nil }
         return daysRemaining(expiry: expiryDate, now: now)
+    }
+
+    /// Development override: `-fakeSigningDays N` reports N days left.
+    /// The banner it drives only shows in the last two days of a real profile,
+    /// and the Simulator carries none at all — so without this the layout the
+    /// banner pushes into is only testable two days out of every seven, on a
+    /// device. Same launch-argument mechanism as `-useEmulators`.
+    private static var forcedDaysRemaining: Int? {
+        let arguments = CommandLine.arguments
+        guard let flag = arguments.firstIndex(of: "-fakeSigningDays"),
+              arguments.index(after: flag) < arguments.endIndex
+        else { return nil }
+        return Int(arguments[arguments.index(after: flag)])
     }
 
     /// Whole calendar days between two instants — the testable core.
