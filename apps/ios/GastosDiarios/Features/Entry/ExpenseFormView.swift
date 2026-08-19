@@ -410,8 +410,13 @@ struct ExpenseFormView: View {
             }
             datePill
         }
+        // The block takes any spare height, but never LESS than it measures:
+        // without fixedSize a `maxHeight: .infinity` frame accepts a proposal
+        // smaller than its content and the 66pt figure plus the pill simply
+        // overflow — which is how the date pill ended up painted on top of the
+        // categories whenever the screen got crowded.
+        .fixedSize(horizontal: false, vertical: true)
         .frame(maxHeight: .infinity)
-        .frame(minHeight: 90)
     }
 
     /// Bridges the native `TextField` to the canonical `AmountInput`: reads the
