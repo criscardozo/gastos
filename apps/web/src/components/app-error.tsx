@@ -17,7 +17,14 @@
  * "could not read" rather than pretending the data is empty.
  */
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 
@@ -49,6 +56,25 @@ function describe(error: unknown): string {
   return String(error);
 }
 
+/**
+ * The mounted provider's reporter, for code that cannot use the hook.
+ *
+ * `Providers` renders this provider, so its own body sits ABOVE the context and
+ * `useAppError()` is unavailable there — and that body is where the household,
+ * the periods and the carryover are resolved, which is exactly where a failure
+ * matters most. Falls back to the console when nothing is mounted (a test, or
+ * a failure during the very first render).
+ */
+let mountedReport: ((error: unknown) => void) | null = null;
+
+export function reportAppError(error: unknown): void {
+  if (mountedReport !== null) {
+    mountedReport(error);
+    return;
+  }
+  console.error("[gastos]", error);
+}
+
 export function AppErrorProvider({ children }: { children: ReactNode }) {
   const [detail, setDetail] = useState<string | null>(null);
 
@@ -58,6 +84,13 @@ export function AppErrorProvider({ children }: { children: ReactNode }) {
     console.error("[gastos]", error);
     setDetail(describe(error));
   }, []);
+
+  useEffect(() => {
+    mountedReport = report;
+    return () => {
+      mountedReport = null;
+    };
+  }, [report]);
 
   const write = useCallback(
     (promise: Promise<unknown>) => {

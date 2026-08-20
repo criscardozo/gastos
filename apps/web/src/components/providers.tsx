@@ -16,7 +16,7 @@ import {
 } from "react";
 import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
 
-import { AppErrorProvider } from "@/components/app-error";
+import { AppErrorProvider, reportAppError } from "@/components/app-error";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   collection,
@@ -56,6 +56,13 @@ const MESSAGES: Record<Locale, AbstractIntlMessages> = {
 };
 
 const LOCALE_COOKIE = "gd_locale";
+
+/**
+ * How long to wait before trying the leftover read again. Long enough that a
+ * flaky connection is not hammered, short enough that the period gets
+ * materialized in the same sitting the user opened the app.
+ */
+const CARRYOVER_RETRY_MS = 20_000;
 
 /* ── Locale ────────────────────────────────────────────────────────────── */
 
@@ -362,6 +369,15 @@ export function Providers({ children }: { children: ReactNode }) {
   );
   const [manualStartPeriod, setManualStartPeriod] = useState(false);
   const materializing = useRef<string | null>(null);
+  /** Bumped to re-run materialization after a failed leftover read. */
+  const [carryoverAttempt, setCarryoverAttempt] = useState(0);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (retryTimer.current !== null) clearTimeout(retryTimer.current);
+    },
+    [],
+  );
   const household = householdState.household;
   useEffect(() => {
     if (householdId === null) {
@@ -414,24 +430,27 @@ export function Providers({ children }: { children: ReactNode }) {
     // With rollover on, whatever was left of the period that just ended is
     // added to the new one (a deficit carries too — the envelope has to add
     // up). One server-side sum, so this costs a single read.
-    const carryover = async (): Promise<number> => {
+    // null means "could not find out", which is NOT the same as zero. A period
+    // doc is an immutable historical record with a deterministic id, so
+    // materializing it with a made-up zero spends the leftover for good: the
+    // next pass sees the period already exists and never recomputes it. With
+    // rollover on, one failed read at the exact moment a period turns over used
+    // to erase the leftover silently, and the only way back was noticing and
+    // editing the amount by hand.
+    const carryover = async (): Promise<number | null> => {
       if (household.defaultBudget.rollover !== true || lastPeriod === null) {
         return 0;
       }
       const categoryIds = allCategoriesCount(household.categories)
         ? null
         : budgetCategoryIds(household.categories);
-      try {
-        const spent = await fetchPeriodSpent(
-          fb.db,
-          householdId,
-          { startDate: lastPeriod.startDate, endDate: lastPeriod.endDate },
-          categoryIds,
-        );
-        return lastPeriod.amountCents - spent;
-      } catch {
-        return 0; // offline or denied — start the period on its plain budget
-      }
+      const spent = await fetchPeriodSpent(
+        fb.db,
+        householdId,
+        { startDate: lastPeriod.startDate, endDate: lastPeriod.endDate },
+        categoryIds,
+      );
+      return lastPeriod.amountCents - spent;
     };
 
     void carryover()
@@ -442,13 +461,28 @@ export function Providers({ children }: { children: ReactNode }) {
           missing,
           household.defaultBudget.period,
           household.defaultBudget.amountCents,
-          rolloverCents,
+          rolloverCents ?? 0,
         ),
       )
-      .catch(() => {
+      .catch((error) => {
+        // Nothing is written. The guard is released so the next attempt can
+        // run, and one is scheduled: this is usually a network blip, and the
+        // effect's own dependencies would not change on their own to retry.
         materializing.current = null;
+        reportAppError(error);
+        retryTimer.current = setTimeout(() => {
+          setCarryoverAttempt((n) => n + 1);
+        }, CARRYOVER_RETRY_MS);
       });
-  }, [household, householdId, today, periodState.loading, periodState.fromCache, lastPeriod]);
+  }, [
+    household,
+    householdId,
+    today,
+    periodState.loading,
+    periodState.fromCache,
+    lastPeriod,
+    carryoverAttempt,
+  ]);
 
   const currentPeriod = useMemo(() => {
     if (today === null) return null;

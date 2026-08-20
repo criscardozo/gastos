@@ -12,7 +12,7 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { test, expect } from "@playwright/test";
+import { test, expect, type APIRequestContext } from "@playwright/test";
 
 declare global {
   interface Window {
@@ -292,6 +292,35 @@ function sydneyDate(days = 0): string {
 
 const admin = { Authorization: "Bearer owner" };
 
+/**
+ * The repo's real rules, and a way to put them back.
+ *
+ * Two tests below load restrictive rules on purpose, to make the server refuse
+ * something. Restoring them at the END OF THE TEST BODY is not enough: when the
+ * assertion in between fails, the restore never runs and every later test dies
+ * with PERMISSION_DENIED, blaming the wrong code. Hence afterEach.
+ */
+const REAL_RULES = readFileSync(
+  // Playwright's cwd is apps/web.
+  join(process.cwd(), "..", "..", "firebase", "firestore.rules"),
+  "utf8",
+);
+
+async function loadRules(
+  request: APIRequestContext,
+  content: string,
+): Promise<void> {
+  const res = await request.put(
+    `http://localhost:${FIRESTORE_PORT}/emulator/v1/projects/${PROJECT}:securityRules`,
+    { headers: admin, data: { rules: { files: [{ name: "firestore.rules", content }] } } },
+  );
+  expect(res.ok()).toBe(true);
+}
+
+test.afterEach(async ({ request }) => {
+  await loadRules(request, REAL_RULES);
+});
+
 test("starting a period asks, and carries the leftover", async ({
   page,
   request,
@@ -521,16 +550,148 @@ test("an expense saved offline does not freeze the form", async ({
   });
   await expect(page.getByLabel("0,00")).toHaveValue("");
 
+  // And no error dialog: Firestore queues a write made without signal and sends
+  // it later, so there is nothing to report. This is the other half of "a write
+  // the server refuses says so" — if offline alerted, that alert would be noise
+  // on every trip through a tunnel.
+  await expect(page.getByText("No se pudo guardar")).toHaveCount(0);
+
   // And it really does reach the server once there is one.
   await context.setOffline(false);
   await expect(page.getByText("Sin señal").first()).toBeVisible();
 });
 
-test("a write the server refuses says so, and offline does not", async ({
+test("a leftover that could not be read is not materialized as zero", async ({
   page,
-  context,
   request,
 }) => {
+  const email = `e2e-carry-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Carry Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const mine = ((await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[]).find((d) => d.fields.name.stringValue === "Hogar de Carry");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+
+  // Rollover on, and one period that ENDED yesterday with something left in it.
+  // No period for today: the app has to materialize it, which is when it reads
+  // the leftover.
+  const rollover = await request.patch(
+    `${REST}/households/${householdId}?updateMask.fieldPaths=defaultBudget`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          defaultBudget: {
+            mapValue: {
+              fields: {
+                amountCents: { integerValue: "90000" },
+                period: { stringValue: "fortnightly" },
+                anchorDate: { stringValue: sydneyDate(-14) },
+                rollover: { booleanValue: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  );
+  expect(rollover.ok()).toBe(true);
+
+  const yesterday = sydneyDate(-1);
+  const previousStart = sydneyDate(-14);
+  const existing = await request.get(
+    `${REST}/households/${householdId}/periodBudgets`,
+    { headers: admin },
+  );
+  for (const doc of (((await existing.json()).documents ?? []) as { name: string }[])) {
+    const id = doc.name.split("/").pop() as string;
+    await request.delete(
+      `${REST}/households/${householdId}/periodBudgets/${id}`,
+      { headers: admin },
+    );
+  }
+  const seeded = await request.patch(
+    `${REST}/households/${householdId}/periodBudgets/${previousStart}`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          startDate: { stringValue: previousStart },
+          endDate: { stringValue: yesterday },
+          period: { stringValue: "fortnightly" },
+          amountCents: { integerValue: "90000" },
+          source: { stringValue: "custom" },
+          createdAt: { timestampValue: new Date().toISOString() },
+          updatedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+  expect(seeded.ok()).toBe(true);
+
+  // Break ONLY the aggregation. Everything else — the listeners, the writes —
+  // keeps working, which is what makes this the narrow case it is: the server
+  // answered the period listener (so materialization is allowed to run) and
+  // then the one read that says how much was left fails.
+  // Break the one read that says how much was left: the leftover comes from a
+  // SUM aggregation over expenses. Everything else keeps working, which is what
+  // makes this the narrow case it is — the server answered the period listener,
+  // so materialization is allowed to run, and then this fails.
+  const denyExpenseReads = REAL_RULES.replace(
+    `      match /expenses/{expenseId} {
+        allow read: if isMember(householdId);`,
+    `      match /expenses/{expenseId} {
+        allow read: if false;`,
+  );
+  expect(denyExpenseReads).not.toBe(REAL_RULES);
+  await loadRules(request, denyExpenseReads);
+
+  // Park the browser off the app first: while a client is running it will
+  // happily materialize today's period itself, under the rules that still
+  // worked, and then there is nothing left for the reload to attempt.
+  await page.goto("about:blank");
+  const stale = await request.get(
+    `${REST}/households/${householdId}/periodBudgets`,
+    { headers: admin },
+  );
+  for (const doc of (((await stale.json()).documents ?? []) as { name: string }[])) {
+    const id = doc.name.split("/").pop() as string;
+    if (id === previousStart) continue;
+    await request.delete(
+      `${REST}/households/${householdId}/periodBudgets/${id}`,
+      { headers: admin },
+    );
+  }
+
+  await page.goto("/");
+
+  // It says so, instead of writing a period whose leftover is a made-up zero.
+  await expect(page.getByRole("dialog")).toContainText("No se pudo guardar", {
+    timeout: 25_000,
+  });
+
+  // And nothing was written: only the period this test seeded exists.
+  const periods = await request.get(
+    `${REST}/households/${householdId}/periodBudgets`,
+    { headers: admin },
+  );
+  const ids = (((await periods.json()).documents ?? []) as { name: string }[]).map(
+    (d) => d.name.split("/").pop(),
+  );
+  expect(ids).toEqual([previousStart]);
+});
+
+test("a write the server refuses says so", async ({ page, request }) => {
   const email = `e2e-refused-${Date.now()}@test.dev`;
   await page.goto("/");
   await page.waitForFunction(() => typeof window.__devSignIn === "function");
@@ -543,17 +704,10 @@ test("a write the server refuses says so, and offline does not", async ({
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
   await expect(page.getByLabel("0,00")).toHaveValue("");
 
-  // Offline first: Firestore queues these instead of failing them, so the
-  // dialog must NOT appear. This half is what makes the other half meaningful.
-  await context.setOffline(true);
-  await page.getByLabel("0,00").fill("10,00");
-  await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(page.getByText("Sin conexión")).toHaveCount(0);
-  await expect(page.getByText("No se pudo guardar")).toHaveCount(0);
-  await context.setOffline(false);
-
-  // Now make the server refuse. Loading rules into the emulator is how a real
-  // rejection is produced without touching the repo's own rules file.
+  // Make the server refuse. Loading rules into the emulator is how a real
+  // rejection is produced without touching the repo's own rules file. The
+  // matching "offline must stay quiet" case lives in the offline test above,
+  // which is where the offline machinery already is.
   const deny = `
     rules_version = '2';
     service cloud.firestore {
@@ -561,11 +715,7 @@ test("a write the server refuses says so, and offline does not", async ({
         match /{document=**} { allow read: if true; allow write: if false; }
       }
     }`;
-  const loaded = await request.put(
-    `http://localhost:${FIRESTORE_PORT}/emulator/v1/projects/${PROJECT}:securityRules`,
-    { headers: admin, data: { rules: { files: [{ name: "firestore.rules", content: deny }] } } },
-  );
-  expect(loaded.ok()).toBe(true);
+  await loadRules(request, deny);
 
   await page.getByLabel("0,00").fill("33,00");
   await page.getByLabel("Nota (opcional)").fill("Rechazado");
@@ -576,19 +726,6 @@ test("a write the server refuses says so, and offline does not", async ({
   await expect(page.getByRole("dialog")).toContainText("No se pudo guardar");
   await page.getByRole("button", { name: "Entendido" }).click();
   await expect(page.getByText("No se pudo guardar")).toHaveCount(0);
-
-  // Put the real rules back: the emulator keeps whatever was loaded last, and
-  // every test after this one would otherwise run against deny-all.
-  const real = readFileSync(
-    // Playwright's cwd is apps/web.
-    join(process.cwd(), "..", "..", "firebase", "firestore.rules"),
-    "utf8",
-  );
-  const restored = await request.put(
-    `http://localhost:${FIRESTORE_PORT}/emulator/v1/projects/${PROJECT}:securityRules`,
-    { headers: admin, data: { rules: { files: [{ name: "firestore.rules", content: real }] } } },
-  );
-  expect(restored.ok()).toBe(true);
 });
 
 test("renaming a category keeps it out of the budget", async ({
