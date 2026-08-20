@@ -49,3 +49,11 @@ coverage/
 .vitest/
 apps/web/tsconfig.tsbuildinfo
 .gstack/
+
+# Next 16 writes these on every `next dev` (see
+# node_modules/next/dist/server/lib/generate-agent-files.js) and re-creates them
+# if deleted. Ignored rather than committed: the repo's agent instructions are
+# the CLAUDE.md Cristian wrote at the root, and a generated one appearing in
+# apps/web would quietly add a second voice nobody chose.
+apps/web/AGENTS.md
+apps/web/CLAUDE.md

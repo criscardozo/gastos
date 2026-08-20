@@ -2,6 +2,22 @@ packages:
   - apps/web
   - firebase/rules-tests
   - tools/gmail-bank-ingest
+
+# One version per shared tool, referenced as `catalog:` from every workspace.
+# The three workspaces had already drifted in what they DECLARED (vitest as
+# ^4.0.0 here and ^4.1.10 there) even while pnpm happened to resolve them to
+# the same build — and the Stock app, which shares this stack, drifted far
+# enough that its rules were being tested with a different TypeScript than its
+# app compiled with. This is the cheap way to make that impossible rather than
+# unlikely.
+catalog:
+  vitest: ^4.1.11
+  # NOT 12.18.0: pnpm's release-age quarantine (a supply-chain guard) refuses
+  # it as too freshly published, and the only way to take it is to write 45
+  # bypass entries into this file. It can move once the quarantine lets it.
+  firebase: ^12.17.1
+  typescript: ^5.9.3
+  '@types/node': ^24.13.3
 allowBuilds:
   '@firebase/util': true
   '@parcel/watcher': true
@@ -17,3 +33,4 @@ allowBuilds:
 # affected 8.5.x). Build-time only — kept until Next ships the bump itself.
 overrides:
   postcss: ^8.5.18
+
