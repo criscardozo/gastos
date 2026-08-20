@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
@@ -11,8 +12,31 @@ final class FirestoreService {
 
     private let db: Firestore
 
+    /// Diagnostics that must survive a release build, so a charge that stops
+    /// arriving can be explained from a device log instead of guessed at.
+    private static let log = Logger(subsystem: "dev.cardozo.gastosdiarios", category: "firestore")
+
+    /// Called when the SERVER refuses a write.
+    ///
+    /// Firestore does not fail a write for being offline — it queues it locally
+    /// and sends it later — so anything that reaches here was rejected on
+    /// purpose: a security rule said no, or the document does not have the
+    /// shape the rules require. That means the change the user just made is
+    /// saved nowhere, while the local cache keeps showing it as applied. Left
+    /// unreported, the app lies indefinitely.
+    var onWriteRejected: ((Error) -> Void)?
+
     init() {
         self.db = Firestore.firestore()
+    }
+
+    /// Completion handler for the fire-and-forget writes: reports a rejection
+    /// and ignores success. Used instead of dropping the error on the floor.
+    private func reportingCompletion() -> (Error?) -> Void {
+        { [weak self] error in
+            guard let error else { return }
+            self?.onWriteRejected?(error)
+        }
     }
 
     /// True when this launch is pointed at the local emulator suite: the
@@ -122,7 +146,15 @@ final class FirestoreService {
             .collection("bankCharges")
             .order(by: "date")
             .limit(to: 50)
-            .addSnapshotListener { snapshot, _ in
+            .addSnapshotListener { snapshot, error in
+                // Logged rather than dropped. These charges are the one thing
+                // in the database this app does not write — an Apps Script
+                // does, from whatever the bank's email looked like that day —
+                // so a charge whose shape stopped decoding is a real
+                // possibility, and it would otherwise just never appear.
+                if let error {
+                    Self.log.error("bankCharges listener failed: \(error.localizedDescription, privacy: .public)")
+                }
                 guard let snapshot else {
                     onChange([])
                     return
@@ -133,9 +165,15 @@ final class FirestoreService {
                 // at the default, a charge would sit there looking undismissed
                 // until the server answered, so Descartar would appear to do
                 // nothing.
-                onChange(snapshot.documents.compactMap {
+                let charges = snapshot.documents.compactMap {
                     try? $0.data(as: BankCharge.self, with: .estimate)
-                })
+                }
+                if charges.count != snapshot.documents.count {
+                    Self.log.error(
+                        "bankCharges: \(snapshot.documents.count - charges.count, privacy: .public) of \(snapshot.documents.count, privacy: .public) documents did not decode"
+                    )
+                }
+                onChange(charges)
             }
     }
 
@@ -449,7 +487,7 @@ final class FirestoreService {
             "createdAt": FieldValue.serverTimestamp(),
             "updatedAt": FieldValue.serverTimestamp(),
         ]
-        document.setData(data)
+        document.setData(data, completion: reportingCompletion())
     }
 
     func updateExpense(
@@ -478,7 +516,7 @@ final class FirestoreService {
         }
         db.collection("households").document(householdId)
             .collection("expenses").document(expenseId)
-            .updateData(data)
+            .updateData(data, completion: reportingCompletion())
     }
 
     /// Record (or clear) what the bank charged for an expense in USD. The pair
@@ -496,13 +534,13 @@ final class FirestoreService {
         ]
         db.collection("households").document(householdId)
             .collection("expenses").document(expenseId)
-            .updateData(data)
+            .updateData(data, completion: reportingCompletion())
     }
 
     func deleteExpense(householdId: String, expenseId: String) {
         db.collection("households").document(householdId)
             .collection("expenses").document(expenseId)
-            .delete()
+            .delete(completion: reportingCompletion())
     }
 
     /// One-shot spent total for a past period: a single server-side SUM

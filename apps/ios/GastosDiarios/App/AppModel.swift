@@ -46,6 +46,10 @@ final class AppModel {
     private(set) var newPeriodPromptIsManual = false
     var authError: String?
     var isSigningIn = false
+    /// A write the server REFUSED, in the user's words. Never set by being
+    /// offline: Firestore queues those and sends them later. See
+    /// FirestoreService.onWriteRejected for why silence was the wrong default.
+    var writeError: String?
 
     /// Main tab bar selection — settable from outside SwiftUI (App Intent /
     /// URL scheme) so Back Tap → "Registrar gasto" lands on quick entry.
@@ -249,10 +253,33 @@ final class AppModel {
         return periods.filter { $0.startDate < currentStart }.reversed()
     }
 
+    // MARK: Writes
+
+    /// Runs a Firestore write and surfaces a rejection instead of dropping it.
+    /// Callers stay synchronous — awaiting a write would freeze the UI until
+    /// the server answered, which is the whole reason these are fire-and-forget.
+    private func write(_ operation: @escaping () async throws -> Void) {
+        Task { await self.awaitWrite(operation) }
+    }
+
+    /// Same, for callers already inside an async context.
+    private func awaitWrite(_ operation: () async throws -> Void) async {
+        do {
+            try await operation()
+        } catch {
+            writeError = error.localizedDescription
+        }
+    }
+
     // MARK: Lifecycle
 
     func start() {
         AppModel.shared = self
+        // Writes that never go through this model (expenses are fire-and-forget
+        // in the service) report here too.
+        firestore.onWriteRejected = { [weak self] error in
+            self?.writeError = error.localizedDescription
+        }
         // The signing expiry moves with every re-signing, so re-schedule the
         // warnings each launch. Never prompts for permission (see the service).
         Task { await SigningExpiryService.scheduleWarnings(l10n: self.l10n) }
@@ -324,7 +351,7 @@ final class AppModel {
                 guard !self.creatingProfile else { return }
                 self.creatingProfile = true
                 let name = self.authDisplayName
-                Task { try? await self.firestore.createUserProfile(uid: uid, displayName: name) }
+                write { try await self.firestore.createUserProfile(uid: uid, displayName: name) }
             }
         }
     }
@@ -489,8 +516,8 @@ final class AppModel {
               addedCents > 0
         else { return }
         let total = current.amountCents + addedCents
-        Task {
-            try? await firestore.extendPeriodToFortnight(
+        write {
+            try await self.firestore.extendPeriodToFortnight(
                 householdId: householdId,
                 startDate: current.startDate,
                 endDate: endDate.raw,
@@ -522,8 +549,8 @@ final class AppModel {
         guard amountCents != current.amountCents
                 || rolloverCents != (current.rolloverCents ?? 0)
         else { return }
-        Task {
-            try? await firestore.updatePeriodBudget(
+        write {
+            try await self.firestore.updatePeriodBudget(
                 householdId: householdId,
                 startDate: current.startDate,
                 amountCents: amountCents,
@@ -586,8 +613,8 @@ final class AppModel {
     /// leaves the list, in one batch.
     func assignBankCharge(_ charge: BankCharge, to expenseId: String) {
         guard let householdId = attachedHouseholdId, !charge.id.isEmpty else { return }
-        Task {
-            try? await firestore.assignBankCharge(
+        write {
+            try await self.firestore.assignBankCharge(
                 householdId: householdId,
                 chargeId: charge.id,
                 expenseId: expenseId,
@@ -600,8 +627,8 @@ final class AppModel {
     /// which is why there is no confirmation prompt on the way in.
     func discardBankCharge(_ charge: BankCharge) {
         guard let householdId = attachedHouseholdId, !charge.id.isEmpty else { return }
-        Task {
-            try? await firestore.dismissBankCharge(
+        write {
+            try await self.firestore.dismissBankCharge(
                 householdId: householdId,
                 chargeId: charge.id
             )
@@ -611,8 +638,8 @@ final class AppModel {
     /// Undo a discard: the charge goes back to the pending list.
     func restoreBankCharge(_ charge: BankCharge) {
         guard let householdId = attachedHouseholdId, !charge.id.isEmpty else { return }
-        Task {
-            try? await firestore.restoreBankCharge(
+        write {
+            try await self.firestore.restoreBankCharge(
                 householdId: householdId,
                 chargeId: charge.id
             )
@@ -630,8 +657,8 @@ final class AppModel {
             // Asked once per launch: our own delete fires the listener again,
             // and re-issuing it would be a write per round trip.
             guard sweptChargeIds.insert(charge.id).inserted else { continue }
-            Task {
-                try? await firestore.deleteBankCharge(
+            write {
+                try await self.firestore.deleteBankCharge(
                     householdId: householdId,
                     chargeId: charge.id
                 )
@@ -835,7 +862,7 @@ final class AppModel {
             anchorDate: anchorDate.raw
         )
         do {
-            let id = try await firestore.createHousehold(
+            let id = try await self.firestore.createHousehold(
                 uid: uid,
                 displayName: authDisplayName,
                 memberColor: "#2A6FDB",
@@ -853,7 +880,7 @@ final class AppModel {
         guard let uid else { return false }
         let normalized = Self.normalizeInviteCode(code)
         do {
-            let id = try await firestore.joinHousehold(
+            let id = try await self.firestore.joinHousehold(
                 code: normalized,
                 uid: uid,
                 displayName: authDisplayName,
@@ -893,7 +920,7 @@ final class AppModel {
         inviteCode = code
         Task {
             do {
-                try await firestore.createInvite(code: code, householdId: householdId, uid: uid)
+                try await self.firestore.createInvite(code: code, householdId: householdId, uid: uid)
                 UserDefaults.standard.set(code, forKey: key)
             } catch {
                 self.inviteCode = nil
@@ -1005,7 +1032,7 @@ final class AppModel {
     func setLanguage(_ language: String) {
         guard let uid else { return }
         userProfile?.language = language
-        Task { try? await firestore.updateUser(uid: uid, fields: ["language": language]) }
+        write { try await self.firestore.updateUser(uid: uid, fields: ["language": language]) }
     }
 
     /// Renames the household, trimming and capping to the 60 characters the
@@ -1015,14 +1042,14 @@ final class AppModel {
         let trimmed = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60))
         guard !trimmed.isEmpty, trimmed != household?.name else { return }
         household?.name = trimmed
-        Task { try? await firestore.updateHouseholdName(householdId: householdId, name: trimmed) }
+        write { try await self.firestore.updateHouseholdName(householdId: householdId, name: trimmed) }
     }
 
     /// Turns the carry-the-leftover policy on or off for future periods.
     func setRollover(_ enabled: Bool) {
         guard let householdId = attachedHouseholdId else { return }
         household?.defaultBudget.rollover = enabled
-        Task { try? await firestore.updateRollover(householdId: householdId, enabled: enabled) }
+        write { try await self.firestore.updateRollover(householdId: householdId, enabled: enabled) }
     }
 
     func setDefaultBudget(amountCents: Int? = nil, period: PeriodType? = nil) {
@@ -1030,13 +1057,13 @@ final class AppModel {
         var budget = household.defaultBudget
         if let amountCents { budget.amountCents = amountCents }
         if let period { budget.period = period }
-        Task { try? await firestore.updateDefaultBudget(householdId: householdId, budget: budget) }
+        write { try await self.firestore.updateDefaultBudget(householdId: householdId, budget: budget) }
     }
 
     func adjustCurrentPeriodBudget(amountCents: Int) {
         guard let current = currentPeriod, let householdId = attachedHouseholdId, amountCents > 0 else { return }
-        Task {
-            try? await firestore.updatePeriodBudget(
+        write {
+            try await self.firestore.updatePeriodBudget(
                 householdId: householdId,
                 startDate: current.startDate,
                 amountCents: amountCents
@@ -1058,7 +1085,7 @@ final class AppModel {
         category.name = trimmed
         household?.categories[id] = category  // optimistic; listener confirms
         let data = Self.categoryData(category)
-        Task { try? await firestore.setCategory(householdId: householdId, id: id, data: data) }
+        write { try await self.firestore.setCategory(householdId: householdId, id: id, data: data) }
     }
 
     /// `materialIcon` is the Material Symbols name (schema stores material
@@ -1073,7 +1100,7 @@ final class AppModel {
         let category = Category(key: nil, name: trimmed, icon: materialIcon, color: colorHex, sortOrder: sortOrder)
         self.household?.categories[id] = category
         let data = Self.categoryData(category)
-        Task { try? await firestore.setCategory(householdId: householdId, id: id, data: data) }
+        write { try await self.firestore.setCategory(householdId: householdId, id: id, data: data) }
     }
 
     /// Flips whether a category eats into the period budget.
@@ -1084,7 +1111,7 @@ final class AppModel {
         category.countsToBudget = counts ? nil : false
         household?.categories[id] = category  // optimistic; listener confirms
         let data = Self.categoryData(category)
-        Task { try? await firestore.setCategory(householdId: householdId, id: id, data: data) }
+        write { try await self.firestore.setCategory(householdId: householdId, id: id, data: data) }
         publishWidgetSnapshot()  // the remaining figure just changed
     }
 
@@ -1095,7 +1122,7 @@ final class AppModel {
               (household?.categories.count ?? 0) > 1  // rules require >= 1
         else { return }
         household?.categories.removeValue(forKey: id)
-        Task { try? await firestore.deleteCategory(householdId: householdId, id: id) }
+        write { try await self.firestore.deleteCategory(householdId: householdId, id: id) }
     }
 
     /// List reorder: rewrites sortOrder to the new visual index.
@@ -1109,7 +1136,7 @@ final class AppModel {
             self.household?.categories[entry.id]?.sortOrder = index
         }
         guard !orders.isEmpty else { return }
-        Task { try? await firestore.updateCategorySortOrders(householdId: householdId, orders: orders) }
+        write { try await self.firestore.updateCategorySortOrders(householdId: householdId, orders: orders) }
     }
 
     private static func categoryData(_ category: Category) -> [String: Any] {

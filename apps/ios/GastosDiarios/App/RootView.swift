@@ -27,6 +27,22 @@ struct RootView: View {
             }
         }
         .tint(Theme.accent)
+        // A refused write is worth interrupting for: the change looks applied
+        // in the local cache and is saved nowhere, so a banner that scrolls
+        // away would leave the app quietly lying. Not shown when merely
+        // offline — Firestore queues those writes instead of failing them.
+        .alert(
+            model.l10n.t("error.write.title"),
+            isPresented: Binding(
+                get: { model.writeError != nil },
+                set: { if !$0 { model.writeError = nil } }
+            ),
+            presenting: model.writeError
+        ) { _ in
+            Button(model.l10n.t("common.done")) { model.writeError = nil }
+        } message: { detail in
+            Text("\(model.l10n.t("error.write.body"))\n\n\(detail)")
+        }
         .environment(\.locale, model.l10n.locale)
         // Manual appearance override (Sistema/Claro/Oscuro in Settings).
         .preferredColorScheme(model.appearance.colorScheme)

@@ -1242,6 +1242,40 @@
         }
       }
     },
+    "error.write.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server refused the change, so it was not saved. Try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El servidor rechazó el cambio, así que no quedó guardado. Volvé a intentarlo."
+          }
+        }
+      }
+    },
+    "error.write.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo guardar"
+          }
+        }
+      }
+    },
     "extendPeriod.addAmount": {
       "extractionState": "manual",
       "localizations": {
