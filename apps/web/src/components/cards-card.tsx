@@ -16,6 +16,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
+import { useAppError } from "@/components/app-error";
 import { Segmented } from "@/components/ui/segmented";
 import { CardMark } from "@/components/ui/marks";
 import { getFirebaseClient } from "@/lib/firebase/client";
@@ -31,6 +32,7 @@ import {
 import { CARD_BRANDS, type CardBrand } from "@/lib/statements";
 
 export function CardsCard({ household }: { household: Household }) {
+  const { write } = useAppError();
   const t = useTranslations("cardsSettings");
   const tCommon = useTranslations("expenses");
 
@@ -47,7 +49,7 @@ export function CardsCard({ household }: { household: Household }) {
   const save = (cards: HouseholdCards) => {
     const fb = getFirebaseClient();
     // Never awaited: Firestore resolves a write only on server ack.
-    if (fb !== null) void updateHouseholdCards(fb.db, household.id, cards);
+    if (fb !== null) write(updateHouseholdCards(fb.db, household.id, cards));
   };
 
   const add = () => {

@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
+import { useAppError } from "@/components/app-error";
 import { DismissedCharges } from "@/components/dismissed-charges";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
@@ -56,6 +57,7 @@ export function BankChargesPanel({
   locale: string;
 }) {
   const t = useTranslations("bank");
+  const { write } = useAppError();
   const [open, setOpen] = useState(false);
   /** Manual overrides, charge id → expense id ("" = none chosen). */
   const [choice, setChoice] = useState<Record<string, string>>({});
@@ -97,12 +99,14 @@ export function BankChargesPanel({
   const assign = (charge: MatchableCharge, expenseId: string) => {
     const fb = getFirebaseClient();
     if (fb === null || expenseId === "") return;
-    void assignBankCharge(
-      fb.db,
-      household.id,
-      charge.id,
-      expenseId,
-      charge.usdCents,
+    write(
+      assignBankCharge(
+        fb.db,
+        household.id,
+        charge.id,
+        expenseId,
+        charge.usdCents,
+      ),
     );
   };
 
@@ -112,13 +116,13 @@ export function BankChargesPanel({
   const discard = (charge: MatchableCharge) => {
     const fb = getFirebaseClient();
     if (fb === null) return;
-    void dismissBankCharge(fb.db, household.id, charge.id);
+    write(dismissBankCharge(fb.db, household.id, charge.id));
   };
 
   const restore = (chargeId: string) => {
     const fb = getFirebaseClient();
     if (fb === null) return;
-    void restoreBankCharge(fb.db, household.id, chargeId);
+    write(restoreBankCharge(fb.db, household.id, chargeId));
   };
 
   return (

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
+import { useAppError } from "@/components/app-error";
 import { Icon } from "@/components/ui/icon";
 import { Segmented } from "@/components/ui/segmented";
 import { BankChargesPanel } from "@/components/bank-charges-panel";
@@ -204,6 +205,7 @@ export default function ExpensesPage() {
   const tDash = useTranslations("dashboard");
   const tCat = useTranslations("categories");
   const { locale } = useLocale();
+  const { write } = useAppError();
   const { user } = useAuth();
   const { household, periods, currentPeriod, today } = useHousehold();
 
@@ -356,12 +358,14 @@ export default function ExpensesPage() {
     const fb = getFirebaseClient();
     const money = buildAmountFields(effectiveAddForm.amount, locale);
     if (fb === null || money === null || effectiveAddForm.date === "") return;
-    void addExpense(fb.db, household.id, user.uid, {
-      ...money,
-      categoryId: effectiveAddForm.categoryId,
-      note: effectiveAddForm.note.trim(),
-      date: effectiveAddForm.date,
-    });
+    write(
+      addExpense(fb.db, household.id, user.uid, {
+        ...money,
+        categoryId: effectiveAddForm.categoryId,
+        note: effectiveAddForm.note.trim(),
+        date: effectiveAddForm.date,
+      }),
+    );
     setAddForm({ amount: "", categoryId: effectiveAddForm.categoryId, note: "", date: addForm.date });
     amountRef.current?.focus();
   };
@@ -395,12 +399,14 @@ export default function ExpensesPage() {
     const previous = expenses.find((e) => e.id === editingId);
     const amountChanged =
       previous !== undefined && previous.amountCents !== input.amountCents;
-    void updateExpense(
-      fb.db,
-      household.id,
-      editingId,
-      input,
-      amountChanged && previous.verified,
+    write(
+      updateExpense(
+        fb.db,
+        household.id,
+        editingId,
+        input,
+        amountChanged && previous.verified,
+      ),
     );
     setEditingId(null);
     setEditForm(null);
@@ -422,7 +428,7 @@ export default function ExpensesPage() {
   const submitVerify = (usdCents: number | null) => {
     const fb = getFirebaseClient();
     if (fb === null || verifyingId === null) return;
-    void setExpenseVerification(fb.db, household.id, verifyingId, usdCents);
+    write(setExpenseVerification(fb.db, household.id, verifyingId, usdCents));
     setVerifyingId(null);
     setVerifyAmount("");
   };

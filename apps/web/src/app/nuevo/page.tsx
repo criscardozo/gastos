@@ -12,6 +12,7 @@ import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
+import { useAppError } from "@/components/app-error";
 import { Icon } from "@/components/ui/icon";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { addExpense } from "@/lib/firebase/mutations";
@@ -35,6 +36,7 @@ export default function QuickEntryPage() {
   const tCat = useTranslations("categories");
   const tEntry = useTranslations("quickEntry");
   const { locale } = useLocale();
+  const { write } = useAppError();
   const { user } = useAuth();
   const { household, currentPeriod, today } = useHousehold();
 
@@ -97,12 +99,14 @@ export default function QuickEntryPage() {
   const save = () => {
     const fb = getFirebaseClient();
     if (fb === null || !canSave || audCents === null) return;
-    void addExpense(fb.db, household.id, user.uid, {
-      amountCents: audCents,
-      categoryId: effectiveCategoryId,
-      note: note.trim(),
-      date: effectiveDate,
-    });
+    write(
+      addExpense(fb.db, household.id, user.uid, {
+        amountCents: audCents,
+        categoryId: effectiveCategoryId,
+        note: note.trim(),
+        date: effectiveDate,
+      }),
+    );
     setAmount("");
     setNote("");
     setJustSaved(true);

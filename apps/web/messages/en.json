@@ -420,5 +420,10 @@
     "summary": "{count, plural, one {# discarded} other {# discarded}}",
     "hint": "Recoverable for 48 hours, then they delete themselves.",
     "restore": "Restore"
+  },
+  "errors": {
+    "title": "Could not save",
+    "body": "The server refused the change, so it was not saved. Try again.",
+    "dismiss": "Got it"
   }
 }

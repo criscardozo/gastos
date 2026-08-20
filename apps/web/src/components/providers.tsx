@@ -15,6 +15,8 @@ import {
   type ReactNode,
 } from "react";
 import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
+
+import { AppErrorProvider } from "@/components/app-error";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   collection,
@@ -217,12 +219,22 @@ export function Providers({ children }: { children: ReactNode }) {
     if (fb === null) return;
     setUserState({ userDoc: null, loading: true });
     const ref = doc(fb.db, "users", uid).withConverter(userConverter);
-    return onSnapshot(ref, (snap) => {
-      setUserState({
-        userDoc: snap.exists() ? snap.data() : null,
-        loading: false,
-      });
-    });
+    return onSnapshot(
+      ref,
+      (snap) => {
+        setUserState({
+          userDoc: snap.exists() ? snap.data() : null,
+          loading: false,
+        });
+      },
+      // Without this the success handler never runs, `loading` stays true for
+      // ever and every page bails on its `=== null` guard: a blank screen with
+      // no spinner, no message and nothing to tap.
+      (error) => {
+        console.error("[gastos] users listener", error);
+        setUserState({ userDoc: null, loading: false });
+      },
+    );
   }, [uid, auth.initializing]);
 
   // Create users/{uid} on first sign-in.
@@ -230,7 +242,12 @@ export function Providers({ children }: { children: ReactNode }) {
     if (uid === null || auth.user === null) return;
     const fb = getFirebaseClient();
     if (fb === null) return;
-    void ensureUserDoc(fb.db, uid, auth.user.displayName ?? "");
+    // Logged rather than surfaced: this effect lives ABOVE AppErrorProvider, so
+    // there is no dialog to reach from here. If it fails there is no user doc,
+    // which the app already shows as onboarding rather than as a wrong number.
+    void ensureUserDoc(fb.db, uid, auth.user.displayName ?? "").catch((error) => {
+      console.error("[gastos] ensureUserDoc", error);
+    });
   }, [uid, auth.user]);
 
   // Follow the user's stored language preference.
@@ -262,12 +279,20 @@ export function Providers({ children }: { children: ReactNode }) {
     const ref = doc(fb.db, "households", householdId).withConverter(
       householdConverter,
     );
-    return onSnapshot(ref, (snap) => {
-      setHouseholdState({
-        household: snap.exists() ? snap.data() : null,
-        loading: false,
-      });
-    });
+    return onSnapshot(
+      ref,
+      (snap) => {
+        setHouseholdState({
+          household: snap.exists() ? snap.data() : null,
+          loading: false,
+        });
+      },
+      // Of the three this is the one that decides whether the app exists at all.
+      (error) => {
+        console.error("[gastos] household listener", error);
+        setHouseholdState({ household: null, loading: false });
+      },
+    );
   }, [householdId, uid, userState.loading]);
 
   /* Period budgets: bounded window of the most recent periods. */
@@ -294,14 +319,25 @@ export function Providers({ children }: { children: ReactNode }) {
     // includeMetadataChanges so the cache→server transition arrives even when
     // the documents are identical. Without it that event never fires, and a
     // materialization gated on `fromCache` would simply never run.
-    return onSnapshot(q, { includeMetadataChanges: true }, (snap) => {
-      const periods = snap.docs.map((d) => d.data()).reverse();
-      setPeriodState({
-        periods,
-        loading: false,
-        fromCache: snap.metadata.fromCache,
-      });
-    });
+    return onSnapshot(
+      q,
+      { includeMetadataChanges: true },
+      (snap) => {
+        const periods = snap.docs.map((d) => d.data()).reverse();
+        setPeriodState({
+          periods,
+          loading: false,
+          fromCache: snap.metadata.fromCache,
+        });
+      },
+      // fromCache stays true on failure ON PURPOSE: materialization is gated on
+      // it, and a failed read must never be mistaken for the server saying
+      // there are no periods — that would materialize a duplicate.
+      (error) => {
+        console.error("[gastos] periodBudgets listener", error);
+        setPeriodState({ periods: [], loading: false, fromCache: true });
+      },
+    );
   }, [householdId]);
 
   /* Today in the household timezone, refreshed every minute. */
@@ -485,13 +521,15 @@ export function Providers({ children }: { children: ReactNode }) {
         messages={MESSAGES[locale]}
         timeZone={timezone ?? "Australia/Sydney"}
       >
-        <AuthContext.Provider value={auth}>
-          <UserDocContext.Provider value={userState}>
-            <HouseholdContext.Provider value={householdValue}>
-              {children}
-            </HouseholdContext.Provider>
-          </UserDocContext.Provider>
-        </AuthContext.Provider>
+        <AppErrorProvider>
+          <AuthContext.Provider value={auth}>
+            <UserDocContext.Provider value={userState}>
+              <HouseholdContext.Provider value={householdValue}>
+                {children}
+              </HouseholdContext.Provider>
+            </UserDocContext.Provider>
+          </AuthContext.Provider>
+        </AppErrorProvider>
       </NextIntlClientProvider>
     </LocaleContext.Provider>
   );

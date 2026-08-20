@@ -37,6 +37,12 @@ import type { PeriodRange } from "../periods";
 export interface ExpensesState {
   expenses: Expense[];
   loading: boolean;
+  /**
+   * The listener errored. Distinct from an empty result: the screen must say it
+   * could not read rather than draw a zero. Reads DO fail offline, unlike
+   * writes, which Firestore queues instead.
+   */
+  failed?: boolean;
 }
 
 /**
@@ -76,7 +82,14 @@ export function useExpensesRange(
       (snap) => {
         setState({ expenses: snap.docs.map((d) => d.data()), loading: false });
       },
-      () => setState({ expenses: [], loading: false }),
+      // A read that FAILED is not a read that came back empty. This used to
+      // set an empty list either way, so a listener error rendered as "nothing
+      // here" — indistinguishable from the real thing, and for expenses that
+      // means a period showing its whole budget unspent.
+      (error) => {
+        console.error("[gastos] expenses listener", error);
+        setState({ expenses: [], loading: false, failed: true });
+      },
     );
     return unsubscribe;
   }, [householdId, startDate, endDate]);
@@ -96,6 +109,12 @@ export interface BankChargesState {
    * Anything past the window is filtered out here and swept. */
   charges: BankChargeDoc[];
   loading: boolean;
+  /**
+   * The listener errored. Distinct from an empty result: the screen must say it
+   * could not read rather than draw a zero. Reads DO fail offline, unlike
+   * writes, which Firestore queues instead.
+   */
+  failed?: boolean;
 }
 
 /**
@@ -141,7 +160,14 @@ export function useBankCharges(householdId: string | null): BankChargesState {
           void deleteBankCharge(fb.db, householdId, charge.id);
         }
       },
-      () => setState({ charges: [], loading: false }),
+      // A read that FAILED is not a read that came back empty. This used to
+      // set an empty list either way, so a listener error rendered as "nothing
+      // here" — indistinguishable from the real thing, and for expenses that
+      // means a period showing its whole budget unspent.
+      (error) => {
+        console.error("[gastos] bankCharges listener", error);
+        setState({ charges: [], loading: false, failed: true });
+      },
     );
     return unsubscribe;
   }, [householdId]);
@@ -157,6 +183,12 @@ const MAX_SERVICES = 60;
 export interface ServicesState {
   services: ServiceDoc[];
   loading: boolean;
+  /**
+   * The listener errored. Distinct from an empty result: the screen must say it
+   * could not read rather than draw a zero. Reads DO fail offline, unlike
+   * writes, which Firestore queues instead.
+   */
+  failed?: boolean;
 }
 
 /**
@@ -187,7 +219,14 @@ export function useServices(householdId: string | null): ServicesState {
       (snap) => {
         setState({ services: snap.docs.map((d) => d.data()), loading: false });
       },
-      () => setState({ services: [], loading: false }),
+      // A read that FAILED is not a read that came back empty. This used to
+      // set an empty list either way, so a listener error rendered as "nothing
+      // here" — indistinguishable from the real thing, and for expenses that
+      // means a period showing its whole budget unspent.
+      (error) => {
+        console.error("[gastos] services listener", error);
+        setState({ services: [], loading: false, failed: true });
+      },
     );
   }, [householdId]);
 
@@ -202,6 +241,12 @@ const MAX_STATEMENTS = 13;
 export interface StatementsState {
   statements: CardStatement[];
   loading: boolean;
+  /**
+   * The listener errored. Distinct from an empty result: the screen must say it
+   * could not read rather than draw a zero. Reads DO fail offline, unlike
+   * writes, which Firestore queues instead.
+   */
+  failed?: boolean;
 }
 
 /** Statements, newest closing date first. */
@@ -228,7 +273,14 @@ export function useCardStatements(householdId: string | null): StatementsState {
       (snap) => {
         setState({ statements: snap.docs.map((d) => d.data()), loading: false });
       },
-      () => setState({ statements: [], loading: false }),
+      // A read that FAILED is not a read that came back empty. This used to
+      // set an empty list either way, so a listener error rendered as "nothing
+      // here" — indistinguishable from the real thing, and for expenses that
+      // means a period showing its whole budget unspent.
+      (error) => {
+        console.error("[gastos] cardStatements listener", error);
+        setState({ statements: [], loading: false, failed: true });
+      },
     );
   }, [householdId]);
 
@@ -238,6 +290,12 @@ export function useCardStatements(householdId: string | null): StatementsState {
 export interface CardChargesState {
   charges: CardCharge[];
   loading: boolean;
+  /**
+   * The listener errored. Distinct from an empty result: the screen must say it
+   * could not read rather than draw a zero. Reads DO fail offline, unlike
+   * writes, which Firestore queues instead.
+   */
+  failed?: boolean;
 }
 
 /**
@@ -274,7 +332,14 @@ export function useCardCharges(
       (snap) => {
         setState({ charges: snap.docs.map((d) => d.data()), loading: false });
       },
-      () => setState({ charges: [], loading: false }),
+      // A read that FAILED is not a read that came back empty. This used to
+      // set an empty list either way, so a listener error rendered as "nothing
+      // here" — indistinguishable from the real thing, and for expenses that
+      // means a period showing its whole budget unspent.
+      (error) => {
+        console.error("[gastos] cardCharges listener", error);
+        setState({ charges: [], loading: false, failed: true });
+      },
     );
   }, [householdId, startDate, closingDate]);
 

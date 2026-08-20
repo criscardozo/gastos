@@ -10,6 +10,8 @@
 // The default locale is Spanish (es-AR formatting), so assertions use the
 // Spanish copy until the language is switched at the end.
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 
 declare global {
@@ -522,6 +524,71 @@ test("an expense saved offline does not freeze the form", async ({
   // And it really does reach the server once there is one.
   await context.setOffline(false);
   await expect(page.getByText("Sin señal").first()).toBeVisible();
+});
+
+test("a write the server refuses says so, and offline does not", async ({
+  page,
+  context,
+  request,
+}) => {
+  const email = `e2e-refused-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Refused Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(page.getByLabel("0,00")).toHaveValue("");
+
+  // Offline first: Firestore queues these instead of failing them, so the
+  // dialog must NOT appear. This half is what makes the other half meaningful.
+  await context.setOffline(true);
+  await page.getByLabel("0,00").fill("10,00");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Sin conexión")).toHaveCount(0);
+  await expect(page.getByText("No se pudo guardar")).toHaveCount(0);
+  await context.setOffline(false);
+
+  // Now make the server refuse. Loading rules into the emulator is how a real
+  // rejection is produced without touching the repo's own rules file.
+  const deny = `
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        match /{document=**} { allow read: if true; allow write: if false; }
+      }
+    }`;
+  const loaded = await request.put(
+    `http://localhost:${FIRESTORE_PORT}/emulator/v1/projects/${PROJECT}:securityRules`,
+    { headers: admin, data: { rules: { files: [{ name: "firestore.rules", content: deny }] } } },
+  );
+  expect(loaded.ok()).toBe(true);
+
+  await page.getByLabel("0,00").fill("33,00");
+  await page.getByLabel("Nota (opcional)").fill("Rechazado");
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  // The whole point: the app says the change did not stick, instead of leaving
+  // the local cache showing it as saved for ever.
+  await expect(page.getByRole("dialog")).toContainText("No se pudo guardar");
+  await page.getByRole("button", { name: "Entendido" }).click();
+  await expect(page.getByText("No se pudo guardar")).toHaveCount(0);
+
+  // Put the real rules back: the emulator keeps whatever was loaded last, and
+  // every test after this one would otherwise run against deny-all.
+  const real = readFileSync(
+    // Playwright's cwd is apps/web.
+    join(process.cwd(), "..", "..", "firebase", "firestore.rules"),
+    "utf8",
+  );
+  const restored = await request.put(
+    `http://localhost:${FIRESTORE_PORT}/emulator/v1/projects/${PROJECT}:securityRules`,
+    { headers: admin, data: { rules: { files: [{ name: "firestore.rules", content: real }] } } },
+  );
+  expect(restored.ok()).toBe(true);
 });
 
 test("renaming a category keeps it out of the budget", async ({

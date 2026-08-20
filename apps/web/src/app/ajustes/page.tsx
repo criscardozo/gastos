@@ -285,7 +285,12 @@ export default function SettingsPage() {
         localStorage.setItem(inviteCodeKey(householdId), code);
         setInviteCode(code);
       })
-      .catch(() => undefined);
+      // Swallowed on purpose: the code is generated lazily when the invite card
+      // is opened, and failing to mint one shows the card without a code. There
+      // is nothing the user did that could be reported as not having worked.
+      .catch((error) => {
+        console.error("[gastos] createInvite", error);
+      });
     return () => {
       cancelled = true;
     };

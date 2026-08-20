@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useHousehold, useLocale } from "@/components/providers";
+import { useAppError } from "@/components/app-error";
 import { Icon } from "@/components/ui/icon";
 import { AmountInput } from "@/components/ui/amount-input";
 import { parseBudgetAmount } from "@/components/budget-amount-field";
@@ -41,6 +42,7 @@ export function StartPeriodScreen({
 }) {
   const t = useTranslations("newPeriod");
   const { locale } = useLocale();
+  const { write } = useAppError();
   const { household, periods, acknowledgeNewPeriod } = useHousehold();
 
   const [includeRollover, setIncludeRollover] = useState(
@@ -117,12 +119,14 @@ export function StartPeriodScreen({
         amountCents !== period.amountCents ||
         rolloverCents !== period.rolloverCents
       ) {
-        void updatePeriodAmount(
-          fb.db,
-          household.id,
-          period.startDate,
-          amountCents,
-          rolloverCents,
+        write(
+          updatePeriodAmount(
+            fb.db,
+            household.id,
+            period.startDate,
+            amountCents,
+            rolloverCents,
+          ),
         );
       }
     }

@@ -420,5 +420,10 @@
     "summary": "{count, plural, one {# descartado} other {# descartados}}",
     "hint": "Se pueden recuperar durante 48 horas; después se borran solos.",
     "restore": "Restaurar"
+  },
+  "errors": {
+    "title": "No se pudo guardar",
+    "body": "El servidor rechazó el cambio, así que no quedó guardado. Volvé a intentarlo.",
+    "dismiss": "Entendido"
   }
 }
