@@ -26,6 +26,12 @@ jobs:
       - run: pnpm --filter web typecheck
       - run: pnpm --filter web lint
       - run: pnpm --filter web test
+      # The bank-email parser's own suite. It runs here rather than in its own
+      # job because it needs nothing but the install that already happened: 25
+      # tests over the shapes the bank actually sends. Left out of CI until
+      # now, which meant a change to the wording it matches would have surfaced
+      # as a charge quietly never arriving.
+      - run: pnpm --filter gmail-bank-ingest test
       - run: pnpm --filter web build
       # globals.css and Theme.swift are GENERATED from design-system/tokens.json.
       # Regenerating must be a no-op: if it is not, someone edited a token in one
@@ -39,6 +45,16 @@ jobs:
           git diff --exit-code apps/web/src/app/globals.css apps/ios/GastosDiarios/Design/Theme.swift
       - name: Component anatomy is attributable and representative
         run: python3 design-system/emit.py --verify
+      # The PWA is how the app stays on the phone, so "does it still start with
+      # no network" is a release-blocking question. It needs the PRODUCTION
+      # build above (the service worker is not served by `next dev`), which is
+      # why it lives in this job and not in the e2e one.
+      - name: PWA still installs and starts offline
+        run: |
+          pnpm --filter web exec playwright install --with-deps chromium
+          pnpm --filter web exec next start -p 3112 &
+          npx wait-on http://localhost:3112 --timeout 120000
+          pnpm --filter web verify:pwa
 
   e2e:
     name: Web — Playwright E2E (emulators)
