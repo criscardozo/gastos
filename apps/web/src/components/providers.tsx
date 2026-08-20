@@ -511,15 +511,23 @@ export function Providers({ children }: { children: ReactNode }) {
     if (currentPeriod !== null) setManualStartPeriod(true);
   }, [currentPeriod]);
 
-  /* Ask on a period whose budget nobody has confirmed — the same rule iOS
-   * uses, so it no longer matters WHICH client materialized it. */
+  /* Ask on a period nobody has answered for.
+   *
+   * `confirmed` comes from the period doc, so answering anywhere settles it
+   * everywhere — which is the whole point. It used to be decided by `source`
+   * plus a localStorage key, and both parts were wrong: accepting the offered
+   * amount writes no change (so `source` stays "default"), and the key is per
+   * device, so confirming on the phone left this browser asking again.
+   *
+   * The local key survives for one job only: a period that started before this
+   * device ever saw the household is not a question worth asking here. */
   const startPeriodPrompt = useMemo(() => {
     if (currentPeriod === null || ackedStart === undefined) return null;
     if (manualStartPeriod) return { period: currentPeriod, manual: true };
+    if (currentPeriod.confirmed) return null;
     if (ackedStart === null || ackedStart === currentPeriod.startDate) {
       return null;
     }
-    if (currentPeriod.source !== "default") return null;
     return { period: currentPeriod, manual: false };
   }, [currentPeriod, ackedStart, manualStartPeriod]);
 

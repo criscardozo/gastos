@@ -395,8 +395,21 @@ service cloud.firestore {
 
       // ------------------------ periodBudgets ------------------------
 
+      // Whether somebody in the household has answered for this period.
+      //
+      // A fact about the past: it may be added once and never changed or taken
+      // back. It exists because the answer used to be kept on the DEVICE
+      // (UserDefaults on iOS, localStorage on web), so confirming on the phone
+      // left the web — and the other member's phone — asking the same question
+      // about a period that was already settled.
+      function confirmationIsHonest(before, after) {
+        return ('confirmedAt' in before)
+          ? (('confirmedAt' in after) && after.confirmedAt == before.confirmedAt)
+          : (!('confirmedAt' in after) || isServerTimestamp(after.confirmedAt));
+      }
+
       function isValidPeriodBudget(data, startDateId) {
-        return data.keys().hasOnly(['startDate', 'endDate', 'period', 'amountCents', 'source', 'rolloverCents', 'createdAt', 'updatedAt'])
+        return data.keys().hasOnly(['startDate', 'endDate', 'period', 'amountCents', 'source', 'rolloverCents', 'confirmedAt', 'createdAt', 'updatedAt'])
           && data.keys().hasAll(['startDate', 'endDate', 'period', 'amountCents', 'source', 'createdAt', 'updatedAt'])
           && isCalendarDate(data.startDate)
           && data.startDate == startDateId
@@ -412,7 +425,8 @@ service cloud.firestore {
           && (!('rolloverCents' in data)
               || (data.rolloverCents is int
                   && data.rolloverCents >= -100000000
-                  && data.rolloverCents <= 100000000));
+                  && data.rolloverCents <= 100000000))
+          && (!('confirmedAt' in data) || data.confirmedAt is timestamp);
       }
 
       match /periodBudgets/{startDate} {
@@ -421,17 +435,22 @@ service cloud.firestore {
         allow create: if isMember(householdId)
           && isValidPeriodBudget(request.resource.data, startDate)
           && isServerTimestamp(request.resource.data.createdAt)
-          && isServerTimestamp(request.resource.data.updatedAt);
+          && isServerTimestamp(request.resource.data.updatedAt)
+          && (!('confirmedAt' in request.resource.data)
+              || isServerTimestamp(request.resource.data.confirmedAt));
 
-        // Two shapes of update, and nothing else.
+        // Three shapes of update, and nothing else.
         //
         // (a) Re-budgeting: the amount, and what of it was carried in — which
-        //     is that amount's explanation. Boundaries do not move.
+        //     is that amount's explanation. Boundaries do not move. May carry
+        //     the confirmation, since answering the sheet is what re-budgets.
         // (b) Extending the week under way into a fortnight. This DOES move the
         //     end date, which every other rule here refuses, so it is fenced in
         //     hard: only forward, only weekly → fortnightly, only with the start
         //     date and the carried-in figure untouched, and the budget can only
         //     grow. One-way by construction — there is no branch back.
+        // (c) Confirming, and nothing else: the household accepted this
+        //     period's budget as it stands. Cannot touch a single figure.
         //
         // What the rules cannot check is that the new end date is exactly
         // startDate + 13: rules have no date arithmetic. That sum is the
@@ -441,11 +460,14 @@ service cloud.firestore {
         allow update: if isMember(householdId)
           && isValidPeriodBudget(request.resource.data, startDate)
           && isServerTimestamp(request.resource.data.updatedAt)
+          && confirmationIsHonest(resource.data, request.resource.data)
           && (
             // (a) re-budget
-            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amountCents', 'source', 'rolloverCents', 'updatedAt'])
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amountCents', 'source', 'rolloverCents', 'confirmedAt', 'updatedAt'])
               && request.resource.data.endDate == resource.data.endDate
               && request.resource.data.period == resource.data.period)
+            // (c) confirm
+            || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmedAt', 'updatedAt'])
             // (b) extend
             || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amountCents', 'source', 'period', 'endDate', 'updatedAt'])
               && resource.data.period == 'weekly'

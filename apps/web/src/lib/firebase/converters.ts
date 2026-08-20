@@ -59,6 +59,13 @@ export interface PeriodBudget {
   /** How much of `amountCents` came from the previous period. Signed: an
    * overspent period carries its deficit forward. Display only. */
   rolloverCents: number;
+  /**
+   * Somebody in the household answered the start-period sheet for this period.
+   * false means nobody has — not "this device has not seen it", which is what
+   * the old per-device key meant and why confirming on the phone left the web
+   * asking again.
+   */
+  confirmed: boolean;
 }
 
 export interface Expense {
@@ -176,7 +183,11 @@ export const householdConverter = readOnly<Household>((snap) => {
 });
 
 export const periodBudgetConverter = readOnly<PeriodBudget>((snap) => {
-  const data = snap.data();
+  // `estimate` matters for confirmedAt: by default a serverTimestamp that the
+  // server has not acknowledged yet reads back as null, so the sheet would come
+  // straight back after being answered and stay until the round trip finished.
+  // Same reason iOS decodes bankCharges with .estimate.
+  const data = snap.data({ serverTimestamps: "estimate" });
   return {
     startDate: data.startDate as string,
     endDate: data.endDate as string,
@@ -184,6 +195,8 @@ export const periodBudgetConverter = readOnly<PeriodBudget>((snap) => {
     amountCents: data.amountCents as number,
     source: data.source as "default" | "custom",
     rolloverCents: (data.rolloverCents as number | undefined) ?? 0,
+    // A boolean: nothing needs the instant, only whether it happened.
+    confirmed: data.confirmedAt != null,
   };
 });
 

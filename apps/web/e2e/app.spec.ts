@@ -490,7 +490,8 @@ test("starting a period asks, and carries the leftover", async ({
   await expect(page.getByText("Te queda")).toBeVisible();
   await expect(page.getByText("$1.100,00").first()).toBeVisible();
 
-  // It wrote both figures — the amount and what of it was carried in.
+  // It wrote both figures — the amount and what of it was carried in — and
+  // stamped the answer on the DOCUMENT, so no other device asks again.
   await expect
     .poll(async () => {
       const res = await request.get(
@@ -499,15 +500,26 @@ test("starting a period asks, and carries the leftover", async ({
       );
       const fields = (await res.json()).fields as Record<
         string,
-        { integerValue?: string; stringValue?: string }
+        { integerValue?: string; stringValue?: string; timestampValue?: string }
       >;
       return [
         fields.amountCents?.integerValue,
         fields.rolloverCents?.integerValue,
         fields.source?.stringValue,
+        fields.confirmedAt?.timestampValue === undefined ? "unconfirmed" : "confirmed",
       ].join("/");
     })
-    .toBe("110000/20000/custom");
+    .toBe("110000/20000/custom/confirmed");
+
+  // And a device that never answered does not ask about it either: same
+  // household, same period, storage wiped so this looks like another phone.
+  await page.evaluate(
+    ([id, start]) => localStorage.setItem(`gd:newPeriodAck:${id}`, start),
+    [householdId, previousStart],
+  );
+  await page.reload();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/Repetir presupuesto/)).toHaveCount(0);
 
   // Ajustes can bring the screen back, and that one CAN be dismissed.
   await page.getByRole("link", { name: "Ajustes" }).click();
@@ -656,9 +668,19 @@ test("a leftover that could not be read is not materialized as zero", async ({
   expect(denyExpenseReads).not.toBe(REAL_RULES);
   await loadRules(request, denyExpenseReads);
 
-  // Park the browser off the app first: while a client is running it will
-  // happily materialize today's period itself, under the rules that still
-  // worked, and then there is nothing left for the reload to attempt.
+  // Wait until the new rules actually bite before clearing anything. Loading
+  // them is not instant, and the app materializes today's period the moment it
+  // can read the leftover — so without this the test races the emulator and
+  // passes or fails on timing. The month total is the probe: it is another
+  // aggregation over expenses, so "no disponible" means reads are refused now.
+  await page.goto("/");
+  await expect(page.getByText("No disponible por ahora")).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // Park the browser off the app: while a client is running it will happily
+  // materialize today's period itself, and then there is nothing left for the
+  // reload to attempt.
   await page.goto("about:blank");
   const stale = await request.get(
     `${REST}/households/${householdId}/periodBudgets`,
@@ -674,7 +696,6 @@ test("a leftover that could not be read is not materialized as zero", async ({
   }
 
   await page.goto("/");
-
   // It says so, instead of writing a period whose leftover is a made-up zero.
   await expect(page.getByRole("dialog")).toContainText("No se pudo guardar", {
     timeout: 25_000,

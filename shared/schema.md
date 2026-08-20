@@ -88,6 +88,7 @@ of what the budget was (amount + weekly/fortnightly).
 | `amountCents` | int | This period's **effective** budget — anything carried over from the previous period is already inside it |
 | `rolloverCents` | int \| absent | How much of `amountCents` was carried in. Signed: an overspent period carries its deficit forward. Absent ⇒ 0. Explanation only; nothing sums it |
 | `source` | `"default"` \| `"custom"` | Whether it came from the default or was set by hand |
+| `confirmedAt` | timestamp \| absent | When somebody in the household answered the new-period sheet for this period. Absent ⇒ nobody has, and every client asks. Write-once: the rules accept it added, never changed or removed |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
 Rules of the chain:
@@ -101,6 +102,14 @@ Rules of the chain:
   together on purpose: the second is the first's explanation, so letting only one change
   would leave the record contradicting itself. That is what answering the start-period
   screen does when the leftover is included or dropped.
+- **Answering the start-period screen stamps `confirmedAt`**, even when the
+  budget offered is accepted unchanged. That answer is a decision of the
+  HOUSEHOLD, not of the device that happened to be in hand: it used to live in
+  `UserDefaults` on iOS and `localStorage` on the web, so confirming on the
+  phone left the web — and the other member's phone — asking again about a
+  period already settled, every period, forever. Clients ask when the current
+  period has no `confirmedAt`; the per-device key survives only to suppress the
+  sheet for a period that started before that device ever saw the household.
 - **Extending the week under way** is the ONE exception to that boundary rule.
   Mid-period it can become clear that this week has to cover a fortnight, so
   `period` goes `weekly → fortnightly`, `endDate` moves out by 7 days to exactly

@@ -459,8 +459,16 @@ final class AppModel {
         }
     }
 
-    /// "New period" sheet: first open inside a freshly materialized,
-    /// still-default period.
+    /// "New period" sheet: first open inside a period nobody has answered for.
+    ///
+    /// `isConfirmed` lives on the period doc, so answering on any device settles
+    /// it on all of them. It used to be decided by `source == "default"` plus
+    /// this local key, and both halves were wrong: accepting the offered amount
+    /// writes no change (so `source` stays "default"), and the key is per
+    /// device — confirming here left the web asking again, every period.
+    ///
+    /// The key survives for one job: a period that started before this device
+    /// ever saw the household is not a question worth asking.
     private func checkNewPeriodPrompt() {
         guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }
         let key = "seenPeriodStart.\(householdId)"
@@ -472,12 +480,12 @@ final class AppModel {
             UserDefaults.standard.set(current.startDate, forKey: key)
             return
         }
-        if current.source == "default" {
+        if current.isConfirmed {
+            UserDefaults.standard.set(current.startDate, forKey: key)
+        } else {
             // A period actually starting: no way out but answering it.
             newPeriodPromptIsManual = false
             showNewPeriodSheet = true
-        } else {
-            UserDefaults.standard.set(current.startDate, forKey: key)
         }
     }
 
@@ -544,18 +552,28 @@ final class AppModel {
         UserDefaults.standard.set(current.startDate, forKey: "seenPeriodStart.\(householdId)")
         showNewPeriodSheet = false
         newPeriodPromptIsManual = false
-        // Materialization may already have written exactly this; a write that
-        // changes nothing would only flip `source` to "custom" for no reason.
-        guard amountCents != current.amountCents
-                || rolloverCents != (current.rolloverCents ?? 0)
-        else { return }
-        write {
-            try await self.firestore.updatePeriodBudget(
-                householdId: householdId,
-                startDate: current.startDate,
-                amountCents: amountCents,
-                rolloverCents: rolloverCents
-            )
+        // Two shapes, and the difference is not cosmetic. Changing the amount
+        // re-budgets AND confirms in one write; accepting what was offered
+        // changes no figure, so it writes only the confirmation — which this
+        // used to skip entirely, leaving the answer in this phone's
+        // UserDefaults and every other client still asking.
+        if amountCents != current.amountCents
+            || rolloverCents != (current.rolloverCents ?? 0) {
+            write {
+                try await self.firestore.updatePeriodBudget(
+                    householdId: householdId,
+                    startDate: current.startDate,
+                    amountCents: amountCents,
+                    rolloverCents: rolloverCents
+                )
+            }
+        } else if !current.isConfirmed {
+            write {
+                try await self.firestore.confirmPeriod(
+                    householdId: householdId,
+                    startDate: current.startDate
+                )
+            }
         }
     }
 

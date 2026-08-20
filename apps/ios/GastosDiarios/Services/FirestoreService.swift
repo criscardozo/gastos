@@ -100,7 +100,13 @@ final class FirestoreService {
             .collection("periodBudgets")
             .order(by: "startDate")
             .addSnapshotListener(includeMetadataChanges: true) { snapshot, _ in
-                let periods = snapshot?.documents.compactMap { try? $0.data(as: PeriodBudget.self) } ?? []
+                // `.estimate` for confirmedAt: by default a serverTimestamp the
+                // server has not acknowledged yet decodes as nil, so the
+                // start-period screen would come straight back after being
+                // answered and sit there until the round trip finished.
+                let periods = snapshot?.documents.compactMap {
+                    try? $0.data(as: PeriodBudget.self, with: .estimate)
+                } ?? []
                 onChange(periods, snapshot?.metadata.isFromCache ?? true)
             }
     }
@@ -418,12 +424,31 @@ final class FirestoreService {
         var data: [String: Any] = [
             "amountCents": amountCents,
             "source": "custom",
+            // Setting the amount by hand IS answering for this period.
+            "confirmedAt": FieldValue.serverTimestamp(),
             "updatedAt": FieldValue.serverTimestamp(),
         ]
         if let rolloverCents { data["rolloverCents"] = rolloverCents }
         try await db.collection("households").document(householdId)
             .collection("periodBudgets").document(startDate)
             .updateData(data)
+    }
+
+    /// Record that somebody answered the start-period screen, accepting the
+    /// budget as it stands.
+    ///
+    /// Its own write because accepting the offered amount changes no figure —
+    /// and the old code therefore wrote NOTHING, leaving the answer in this
+    /// phone's UserDefaults while the web and the other member's phone kept
+    /// asking about a period already settled. The rules take this shape once
+    /// and refuse to let it be changed or taken back.
+    func confirmPeriod(householdId: String, startDate: String) async throws {
+        try await db.collection("households").document(householdId)
+            .collection("periodBudgets").document(startDate)
+            .updateData([
+                "confirmedAt": FieldValue.serverTimestamp(),
+                "updatedAt": FieldValue.serverTimestamp(),
+            ])
     }
 
     /// Stretch the week under way into a fortnight: its end date moves out by a

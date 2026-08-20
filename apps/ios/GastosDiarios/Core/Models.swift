@@ -141,18 +141,28 @@ struct PeriodBudget: Codable, Identifiable, Equatable {
     /// How much of `amountCents` was carried in from the previous period.
     /// Signed; display only (shared/schema.md).
     var rolloverCents: Int?
+    /// When somebody in the household answered the start-period screen for
+    /// this period. nil ⇒ nobody has, and every client asks.
+    @ServerTimestamp var confirmedAt: Date?
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
 
+    // Hand-written, so anything the UI reacts to has to be listed. confirmedAt
+    // belongs here: leave it out and answering the screen changes nothing the
+    // view can see, so it stays open until something else moves.
     static func == (lhs: PeriodBudget, rhs: PeriodBudget) -> Bool {
         lhs.startDate == rhs.startDate
             && lhs.endDate == rhs.endDate
             && lhs.period == rhs.period
             && lhs.amountCents == rhs.amountCents
             && lhs.source == rhs.source
+            && lhs.isConfirmed == rhs.isConfirmed
     }
 
     var isCustom: Bool { source == "custom" }
+
+    /// Answered by somebody, on any device.
+    var isConfirmed: Bool { confirmedAt != nil }
 
     var start: CalendarDate? { CalendarDate(startDate) }
     var end: CalendarDate? { CalendarDate(endDate) }

@@ -25,7 +25,7 @@ import { Icon } from "@/components/ui/icon";
 import { AmountInput } from "@/components/ui/amount-input";
 import { parseBudgetAmount } from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
-import { updatePeriodAmount } from "@/lib/firebase/mutations";
+import { confirmPeriod, updatePeriodAmount } from "@/lib/firebase/mutations";
 import { fetchPeriodSpent } from "@/lib/firebase/hooks";
 import { allCategoriesCount, budgetCategoryIds } from "@/lib/categories";
 import { formatCents, formatCentsCompact } from "@/lib/money";
@@ -113,8 +113,11 @@ export function StartPeriodScreen({
   const confirm = (amountCents: number, rolloverCents: number) => {
     const fb = getFirebaseClient();
     if (fb !== null && amountCents > 0) {
-      // Materialization may already have written exactly this; a write that
-      // changes nothing would only flip `source` to "custom" for no reason.
+      // Two shapes, and the difference is not cosmetic. Changing the amount
+      // re-budgets AND confirms in one write; accepting what was offered
+      // changes no figure, so it writes only the confirmation — which the old
+      // code skipped entirely, leaving the answer in this device's
+      // localStorage and every other client still asking.
       if (
         amountCents !== period.amountCents ||
         rolloverCents !== period.rolloverCents
@@ -128,6 +131,8 @@ export function StartPeriodScreen({
             rolloverCents,
           ),
         );
+      } else if (!period.confirmed) {
+        write(confirmPeriod(fb.db, household.id, period.startDate));
       }
     }
     acknowledgeNewPeriod();

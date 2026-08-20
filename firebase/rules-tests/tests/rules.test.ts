@@ -1068,6 +1068,94 @@ describe("households/{id}/periodBudgets", () => {
       ),
     );
   });
+
+  // ---------------------------- confirmedAt ----------------------------
+
+  it("a member can confirm a period without touching a figure", async () => {
+    const ref = doc(
+      db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01",
+    );
+    await assertSucceeds(setDoc(ref, periodBudgetDoc()));
+    await assertSucceeds(
+      updateDoc(ref, { confirmedAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it("confirming needs the server's clock, not the device's", async () => {
+    // The whole point of the field is that every client agrees this period was
+    // answered; a client-supplied time is a claim, not a fact.
+    const ref = doc(
+      db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01",
+    );
+    await assertSucceeds(setDoc(ref, periodBudgetDoc()));
+    await assertFails(
+      // A date far from request.time: `new Date()` can land ON request.time in
+      // the emulator, which would pass for the wrong reason.
+      updateDoc(ref, {
+        confirmedAt: new Date("2030-01-01"),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("a confirmation cannot be taken back or rewritten", async () => {
+    const ref = doc(
+      db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01",
+    );
+    await assertSucceeds(
+      setDoc(ref, periodBudgetDoc({ confirmedAt: serverTimestamp() })),
+    );
+    await assertFails(
+      updateDoc(ref, { confirmedAt: deleteField(), updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(ref, { confirmedAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it("re-budgeting may carry the confirmation, since answering is what re-budgets", async () => {
+    const ref = doc(
+      db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01",
+    );
+    await assertSucceeds(setDoc(ref, periodBudgetDoc()));
+    await assertSucceeds(
+      updateDoc(ref, {
+        amountCents: 95000,
+        source: "custom",
+        confirmedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("a confirmation cannot smuggle a moved boundary", async () => {
+    const ref = doc(
+      db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01",
+    );
+    await assertSucceeds(setDoc(ref, periodBudgetDoc()));
+    await assertFails(
+      updateDoc(ref, {
+        endDate: "2026-07-28",
+        confirmedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("a non-member cannot confirm", async () => {
+    await assertSucceeds(
+      setDoc(
+        doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
+        periodBudgetDoc(),
+      ),
+    );
+    await assertFails(
+      updateDoc(
+        doc(db(env, CAROL), "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
+        { confirmedAt: serverTimestamp(), updatedAt: serverTimestamp() },
+      ),
+    );
+  });
 });
 
   it("accepts the household's cards, and caps them", async () => {

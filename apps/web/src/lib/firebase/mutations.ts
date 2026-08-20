@@ -234,8 +234,31 @@ export async function updatePeriodAmount(
       amountCents,
       source: "custom",
       ...(rolloverCents === undefined ? {} : { rolloverCents }),
+      // Setting the amount by hand IS answering for this period.
+      confirmedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     },
+  );
+}
+
+/**
+ * Record that somebody answered the start-period sheet, accepting the budget
+ * as it stands.
+ *
+ * Its own write because accepting the offered amount changes no figure — and
+ * the old code therefore wrote NOTHING, leaving the answer in this device's
+ * localStorage. The web then asked again, and so did the other member's phone,
+ * every period. The rules accept this shape once and refuse to let it be
+ * changed or taken back.
+ */
+export async function confirmPeriod(
+  db: Firestore,
+  householdId: string,
+  startDate: string,
+): Promise<void> {
+  await updateDoc(
+    doc(db, "households", householdId, "periodBudgets", startDate),
+    { confirmedAt: serverTimestamp(), updatedAt: serverTimestamp() },
   );
 }
 
