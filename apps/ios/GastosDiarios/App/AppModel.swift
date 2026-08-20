@@ -1092,7 +1092,7 @@ final class AppModel {
     /// names; iOS maps them to SF Symbols for display).
     func addCategory(name: String, colorHex: String, materialIcon: String) {
         guard let householdId = attachedHouseholdId, let household else { return }
-        guard household.categories.count < 30 else { return }  // rules cap
+        guard household.categories.count < SeedCategories.maxCategories else { return }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let id = "c" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased().prefix(12)

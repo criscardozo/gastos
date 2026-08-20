@@ -244,6 +244,17 @@ struct SeedCategory: Decodable {
 }
 
 enum SeedCategories {
+    /// Most entries households/{id}.categories may hold, enforced in the rules.
+    ///
+    /// The number is Firestore's `in` limit, not a product decision: the budget
+    /// total for a past period is one SUM aggregation filtered by
+    /// `categoryId in [...]`, so a household with more budgeted categories than
+    /// `in` accepts would break that one query and nothing else. Raising it
+    /// here fails apps/web/src/lib/categories.test.ts, which is the point —
+    /// there are three copies of this cap (rules, web, here) and no way for
+    /// Swift to import either of the others.
+    static let maxCategories = 30
+
     private struct File: Decodable {
         let categories: [SeedCategory]
     }

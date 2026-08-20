@@ -65,7 +65,22 @@ export function seedCategoriesMap(): Record<string, CategoryDef> {
 
 const seedById = new Map(seedCategories.map((c) => [c.id, c]));
 
-/** Rules cap: households/{id}.categories map may hold at most 30 entries. */
+/**
+ * Most values a Firestore `in` filter accepts. The budget total is one
+ * server-side SUM aggregation filtered by `categoryId in [...]`, so this is a
+ * hard ceiling on how many categories can count towards a budget — go past it
+ * and the aggregation throws at runtime, for whoever has that many, on a query
+ * nothing else exercises.
+ */
+export const FIRESTORE_IN_LIMIT = 30;
+
+/**
+ * Rules cap: households/{id}.categories map may hold at most 30 entries.
+ *
+ * The number is deliberately the `in` limit and not a product decision, which
+ * is what categories.test.ts pins: raising the cap in the rules without
+ * rewriting the aggregation is the mistake this exists to catch.
+ */
 export const MAX_CATEGORIES = 30;
 
 /** The 8 seed palette colors (light variants) offered for custom categories. */

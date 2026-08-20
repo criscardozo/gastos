@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Categories management (Settings → CATEGORÍAS): rename, add, reorder and
-/// delete the household's categories map (rules cap: 30 entries).
+/// delete the household's categories map (capped at
+/// `SeedCategories.maxCategories`, which the rules enforce).
 struct CategoriesManagerView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -70,9 +71,9 @@ struct CategoriesManagerView: View {
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(entries.count < 30 ? Theme.accentStrong : Theme.inkTertiary)
+                            .foregroundStyle(entries.count < SeedCategories.maxCategories ? Theme.accentStrong : Theme.inkTertiary)
                     }
-                    .disabled(entries.count >= 30)  // rules cap, enforced in UI
+                    .disabled(entries.count >= SeedCategories.maxCategories)  // rules cap, enforced in UI
                 }
             }
         }
