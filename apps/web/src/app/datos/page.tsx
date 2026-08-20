@@ -31,7 +31,12 @@ import { Icon } from "@/components/ui/icon";
 import { Segmented } from "@/components/ui/segmented";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { expenseConverter, type Expense } from "@/lib/firebase/converters";
-import { formatCents, formatUsd, parseAmountToCents } from "@/lib/money";
+import {
+  formatCents,
+  formatUsd,
+  MAX_AMOUNT_CENTS,
+  parseAmountToCents,
+} from "@/lib/money";
 import { formatPeriodRange } from "@/lib/dates";
 import { addDays, type PeriodRange } from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv, parseCsv } from "@/lib/export/csv";
@@ -91,7 +96,6 @@ interface PreviewRow {
 }
 
 // Amount cap mirrors the security rule (1..10_000_000 cents).
-const MAX_AMOUNT_CENTS = 10_000_000;
 const MAX_NOTE_LEN = 200;
 const BATCH_CHUNK = 400;
 
@@ -409,12 +413,12 @@ export default function DataPage() {
         .slice(0, MAX_NOTE_LEN);
 
       const dateOk = isRealDate(rawDate);
-      const parsed = parseAmountToCents(rawAmount);
+      const parsed = parseAmountToCents(rawAmount, locale);
       const amountOk = parsed !== null && parsed <= MAX_AMOUNT_CENTS;
 
       // An empty monto_usd is normal (unverified); a filled one must be a real
       // positive amount, since it is what makes the row verified.
-      const parsedUsd = rawUsd === "" ? null : parseAmountToCents(rawUsd);
+      const parsedUsd = rawUsd === "" ? null : parseAmountToCents(rawUsd, locale);
       const usdOk =
         rawUsd === "" ||
         (parsedUsd !== null && parsedUsd <= MAX_AMOUNT_CENTS);

@@ -67,4 +67,26 @@ final class AmountInputEditingTests: XCTestCase {
         input.setDisplay("0,", separator: ",")
         XCTAssertEqual(input.editingText(separator: ","), "0,")
     }
+
+    /// A pasted amount carrying its grouping mark keeps its VALUE.
+    ///
+    /// The decimal pad has no grouping key, so this is the paste path — and it
+    /// used to read "1.050" in Spanish as 1,05: a thousandth of the amount,
+    /// large enough to look like a real expense. Same defect the web parser
+    /// had (parseAmountToCents), found by the Stock session reviewing this one.
+    func testPastedGroupingMarkIsNotADecimalPoint() {
+        var spanish = AmountInput()
+        spanish.setDisplay("1.050", separator: ",")
+        XCTAssertEqual(spanish.cents, 105_000)
+
+        spanish.setDisplay("1.234.567,89", separator: ",")
+        XCTAssertEqual(spanish.cents, 123_456_789)
+
+        var english = AmountInput()
+        english.setDisplay("1,050", separator: ".")
+        XCTAssertEqual(english.cents, 105_000)
+
+        english.setDisplay("1,050.00", separator: ".")
+        XCTAssertEqual(english.cents, 105_000)
+    }
 }

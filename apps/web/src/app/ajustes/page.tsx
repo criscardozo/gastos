@@ -58,7 +58,7 @@ function EditableAmount({
   const [value, setValue] = useState("");
 
   const commit = () => {
-    const parsed = parseBudgetAmount(value);
+    const parsed = parseBudgetAmount(value, locale);
     if (parsed !== null && parsed !== cents) onSave(parsed);
     setEditing(false);
   };

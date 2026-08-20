@@ -54,7 +54,7 @@ export function ExtendPeriodDialog({
   }, [onClose]);
 
   const extension = extendToFortnight(period);
-  const addedCents = parseAmountToCents(amount);
+  const addedCents = parseAmountToCents(amount, locale);
   const valid = extension !== null && addedCents !== null;
   const newTotal = period.amountCents + (addedCents ?? 0);
 

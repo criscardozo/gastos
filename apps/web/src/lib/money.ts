@@ -61,22 +61,67 @@ export function formatUsd(cents: number, locale: string): string {
 }
 
 /**
- * Parse free-form amount input into integer cents. Accepts comma decimals
- * ("12,50"), dot decimals ("12.50") and thousand separators ("1.050,00").
+ * Parse free-form amount input into integer cents, in the caller's locale.
+ *
+ * The locale is not decoration: without it the two separators cannot be told
+ * apart, and the old version assumed "." was always thousands and "," always
+ * decimal. That made the app unable to re-read its own output — in en-AU it
+ * turned the "$1,050.00" it had just printed into 105 cents, and in es-AR the
+ * perfectly ordinary "1.050" into 1,05. A thousandth of the intended amount,
+ * plausible enough to be written to the ledger unnoticed.
+ *
+ * The rules, in order:
+ *   - both separators present → the LAST one is the decimal point;
+ *   - one separator, and it is the locale's decimal → decimal;
+ *   - one separator, and it is the locale's grouping mark → grouping, but only
+ *     if it is followed by exactly three digits. "1.050" groups; "12.50" and
+ *     "1.5" do not, and nobody typing those means fifteen hundredths, so they
+ *     are read as decimals.
+ *
  * Returns null when the input is not a positive amount.
  */
-export function parseAmountToCents(input: string): number | null {
+/**
+ * The largest amount the security rules accept (1..10_000_000 cents, so
+ * $100.000). It lived in datos/page.tsx, which meant the CSV import was the
+ * only screen that checked it: typing $200.000 into the entry form passed the
+ * client, reached the server and was refused there — silently, because a
+ * refused write had no way to say so.
+ */
+export const MAX_AMOUNT_CENTS = 10_000_000;
+
+export function parseAmountToCents(input: string, locale: string): number | null {
   const raw = input.replace(/[^\d.,-]/g, "").trim();
   if (raw === "") return null;
+
+  const decimalMark = locale === "es" ? "," : ".";
+  const groupMark = locale === "es" ? "." : ",";
+  const hasDecimal = raw.includes(decimalMark);
+  const hasGroup = raw.includes(groupMark);
+
   let normalized: string;
-  if (raw.includes(",")) {
-    // Comma is the decimal separator; dots are thousand separators.
-    normalized = raw.replace(/\./g, "").replace(",", ".");
+  if (hasDecimal && hasGroup) {
+    // Whichever comes last is the decimal point; the other groups digits.
+    const decimalIsLast = raw.lastIndexOf(decimalMark) > raw.lastIndexOf(groupMark);
+    const [decimal, group] = decimalIsLast
+      ? [decimalMark, groupMark]
+      : [groupMark, decimalMark];
+    normalized = raw.split(group).join("").split(decimal).join(".");
+  } else if (hasDecimal) {
+    normalized = raw.split(decimalMark).join(".");
+  } else if (hasGroup) {
+    // Grouping only if it actually groups: three digits after every mark.
+    const parts = raw.split(groupMark);
+    const groups = parts.slice(1).every((part) => /^\d{3}$/.test(part));
+    normalized = groups ? parts.join("") : parts.join(".");
   } else {
     normalized = raw;
   }
+
+  // More than one "." left means the input was never a number.
+  if ((normalized.match(/\./g) ?? []).length > 1) return null;
   const value = Number(normalized);
   if (!Number.isFinite(value) || value <= 0) return null;
   const cents = Math.round(value * 100);
-  return cents > 0 ? cents : null;
+  if (cents <= 0 || cents > MAX_AMOUNT_CENTS) return null;
+  return cents;
 }

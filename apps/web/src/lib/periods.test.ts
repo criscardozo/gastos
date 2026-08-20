@@ -166,14 +166,8 @@ describe("money formatting", () => {
   });
 
   it("parses comma and dot decimal input to cents", () => {
-    expect(parseAmountToCents("12,50")).toBe(1250);
-    expect(parseAmountToCents("12.50")).toBe(1250);
-    expect(parseAmountToCents("1.050,00")).toBe(105000);
-    expect(parseAmountToCents("900")).toBe(90000);
-    expect(parseAmountToCents("$42,80")).toBe(4280);
-    expect(parseAmountToCents("")).toBeNull();
-    expect(parseAmountToCents("0")).toBeNull();
-    expect(parseAmountToCents("-5")).toBeNull();
-    expect(parseAmountToCents("abc")).toBeNull();
+    // Amount parsing has its own suite now (money.test.ts), where the
+    // locale-dependent cases live.
+    expect(parseAmountToCents("12,50", "es")).toBe(1250);
   });
 });

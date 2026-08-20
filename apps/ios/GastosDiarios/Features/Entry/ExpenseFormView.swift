@@ -43,13 +43,20 @@ struct AmountInput: Equatable {
     }
 
     /// Normalizes free-typed text from a native decimal-pad `TextField` into
-    /// the canonical `self.text`. The locale separator (and a stray ".") map
-    /// to ",", everything that isn't a digit or separator is stripped, and the
-    /// same caps `tap` enforces apply: at most 7 integer digits and 2 decimals.
+    /// the canonical `self.text`. Same caps `tap` enforces: at most 7 integer
+    /// digits and 2 decimals.
+    ///
+    /// The grouping mark is DROPPED rather than treated as a decimal point.
+    /// The decimal pad has no key for it, so this only happens on paste — but
+    /// pasting "1.050" in Spanish used to land 1,05 in the field, a thousandth
+    /// of the amount, which is exactly the defect the web parser had (see
+    /// parseAmountToCents in money.ts).
     mutating func setDisplay(_ typed: String, separator: String) {
-        // Map the locale separator (and a raw ".") to the canonical comma.
-        var normalized = typed.replacingOccurrences(of: separator, with: ",")
-        normalized = normalized.replacingOccurrences(of: ".", with: ",")
+        let grouping = separator == "," ? "." : ","
+        // Grouping is presentation, not value: "1.050" is one thousand and
+        // fifty, so the mark goes away instead of becoming a decimal point.
+        var normalized = typed.replacingOccurrences(of: grouping, with: "")
+        normalized = normalized.replacingOccurrences(of: separator, with: ",")
         // Keep only digits and commas.
         normalized = String(normalized.filter { $0.isNumber || $0 == "," })
         // Split on the FIRST separator; anything after is decimals.

@@ -71,7 +71,7 @@ export default function QuickEntryPage() {
       : (categories[0]?.id ?? null);
   const effectiveDate = date !== "" ? date : (today ?? "");
 
-  const audCents = parseAmountToCents(amount);
+  const audCents = parseAmountToCents(amount, locale);
   const canSave =
     audCents !== null && effectiveCategoryId !== null && effectiveDate !== "";
 

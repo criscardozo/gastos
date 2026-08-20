@@ -70,8 +70,8 @@ export function ServiceDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const audCents = parseAmountToCents(aud);
-  const usdCents = parseAmountToCents(usd);
+  const audCents = parseAmountToCents(aud, locale);
+  const usdCents = parseAmountToCents(usd, locale);
   const day = Number(dueDay);
   const dayValid = Number.isInteger(day) && day >= 1 && day <= 31;
   // At least one price: a row with neither says nothing, and the rules agree.

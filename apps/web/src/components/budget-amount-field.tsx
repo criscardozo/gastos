@@ -9,7 +9,13 @@
 
 import { parseAmountToCents } from "@/lib/money";
 
-/** Typed amount → AUD integer cents, or null when it isn't a positive amount. */
-export function parseBudgetAmount(input: string): number | null {
-  return parseAmountToCents(input);
+/**
+ * Typed amount → AUD integer cents, or null when it isn't a positive amount.
+ *
+ * The locale is required, not optional: "1.050" is a thousand and fifty in
+ * Spanish and one point oh five in English, and guessing got it wrong by a
+ * factor of a thousand. See parseAmountToCents.
+ */
+export function parseBudgetAmount(input: string, locale: string): number | null {
+  return parseAmountToCents(input, locale);
 }

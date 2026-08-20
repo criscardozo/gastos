@@ -60,7 +60,7 @@ export function CardChargeDialog({
     charge !== null ? (charge.usdCents / 100).toFixed(2) : "",
   );
 
-  const usdCents = parseAmountToCents(amount);
+  const usdCents = parseAmountToCents(amount, locale);
   const valid = usdCents !== null && /^\d{4}-\d{2}-\d{2}$/.test(date);
 
   return (

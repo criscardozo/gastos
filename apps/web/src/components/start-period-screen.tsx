@@ -102,7 +102,7 @@ export function StartPeriodScreen({
       ? Math.max(1, defaultAmount + leftover)
       : defaultAmount;
 
-  const typed = parseBudgetAmount(amount);
+  const typed = parseBudgetAmount(amount, locale);
 
   // Not awaited on purpose. Firestore resolves a write only once the server
   // acknowledges it, and this screen cannot be dismissed — awaiting would trap

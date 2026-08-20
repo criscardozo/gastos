@@ -224,7 +224,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState(false);
 
-  const cents = parseBudgetAmount(amount);
+  const cents = parseBudgetAmount(amount, locale);
   const valid = cents !== null && name.trim() !== "" && startDate !== "";
 
   const create = async () => {

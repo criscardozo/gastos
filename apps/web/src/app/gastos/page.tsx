@@ -190,8 +190,9 @@ type VerificationFilter = "all" | "unverified" | "verified";
 /** Typed amount → the expense's AUD cents, or null when unparsable. */
 function buildAmountFields(
   amount: string,
+  locale: string,
 ): Pick<ExpenseInput, "amountCents"> | null {
-  const amountCents = parseAmountToCents(amount);
+  const amountCents = parseAmountToCents(amount, locale);
   return amountCents === null ? null : { amountCents };
 }
 
@@ -353,7 +354,7 @@ export default function ExpensesPage() {
   // has always written fire-and-forget.
   const submitAdd = () => {
     const fb = getFirebaseClient();
-    const money = buildAmountFields(effectiveAddForm.amount);
+    const money = buildAmountFields(effectiveAddForm.amount, locale);
     if (fb === null || money === null || effectiveAddForm.date === "") return;
     void addExpense(fb.db, household.id, user.uid, {
       ...money,
@@ -381,7 +382,7 @@ export default function ExpensesPage() {
   const submitEdit = () => {
     const fb = getFirebaseClient();
     if (fb === null || editingId === null || editForm === null) return;
-    const money = buildAmountFields(editForm.amount);
+    const money = buildAmountFields(editForm.amount, locale);
     if (money === null || editForm.date === "") return;
     const input: ExpenseInput = {
       ...money,
@@ -473,7 +474,7 @@ export default function ExpensesPage() {
       categories.find((c) => c.id === e.categoryId)?.label ?? tCat("deleted");
 
     if (verifyingId === e.id) {
-      const typed = parseAmountToCents(verifyAmount);
+      const typed = parseAmountToCents(verifyAmount, locale);
       return (
         <div
           key={e.id}
@@ -825,7 +826,7 @@ export default function ExpensesPage() {
           <button
             type="button"
             onClick={submitAdd}
-            disabled={parseAmountToCents(effectiveAddForm.amount) === null}
+            disabled={parseAmountToCents(effectiveAddForm.amount, locale) === null}
             className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
           >
             {t("save")}
