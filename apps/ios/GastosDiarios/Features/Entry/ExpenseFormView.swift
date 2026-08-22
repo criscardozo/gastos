@@ -52,13 +52,37 @@ struct AmountInput: Equatable {
     /// of the amount, which is exactly the defect the web parser had (see
     /// parseAmountToCents in money.ts).
     mutating func setDisplay(_ typed: String, separator: String) {
-        let grouping = separator == "," ? "." : ","
-        // Grouping is presentation, not value: "1.050" is one thousand and
-        // fifty, so the mark goes away instead of becoming a decimal point.
-        var normalized = typed.replacingOccurrences(of: grouping, with: "")
-        normalized = normalized.replacingOccurrences(of: separator, with: ",")
-        // Keep only digits and commas.
-        normalized = String(normalized.filter { $0.isNumber || $0 == "," })
+        let grouping: Character = separator == "," ? "." : ","
+        let decimal: Character = Character(separator)
+        // Keep only digits and the two marks.
+        let cleaned = String(typed.filter { $0.isNumber || $0 == grouping || $0 == decimal })
+        // Which mark is the decimal point, when it cannot be assumed.
+        //
+        // `separator` is the APP's language, while the keypad hands over the
+        // DEVICE's — a phone set to English with the app in Spanish types
+        // "90.12" for ninety and twelve. Dropping the grouping mark outright
+        // read that as 9012, which is how $90,12 was entered and $9.012 saved.
+        //
+        // So the mark only groups when it actually groups: exactly three digits
+        // after every occurrence. "1.050" groups; "90.12" and "1.5" do not, and
+        // nobody typing those means a thousand-and-something. Same rule as the
+        // web's parseAmountToCents.
+        var normalized: String
+        let hasDecimal = cleaned.contains(decimal)
+        let hasGrouping = cleaned.contains(grouping)
+        if hasDecimal && hasGrouping {
+            // Whichever comes last is the decimal point.
+            let decimalIsLast = cleaned.lastIndex(of: decimal)! > cleaned.lastIndex(of: grouping)!
+            let (dec, grp) = decimalIsLast ? (decimal, grouping) : (grouping, decimal)
+            normalized = cleaned.split(separator: grp, omittingEmptySubsequences: false).joined()
+            normalized = normalized.replacingOccurrences(of: String(dec), with: ",")
+        } else if hasGrouping && !hasDecimal {
+            let parts = cleaned.split(separator: grouping, omittingEmptySubsequences: false)
+            let groups = parts.dropFirst().allSatisfy { $0.count == 3 && $0.allSatisfy(\.isNumber) }
+            normalized = groups ? parts.joined() : parts.joined(separator: ",")
+        } else {
+            normalized = cleaned.replacingOccurrences(of: String(decimal), with: ",")
+        }
         // Split on the FIRST separator; anything after is decimals.
         let hasSeparator = normalized.contains(",")
         let parts = normalized.split(separator: ",", omittingEmptySubsequences: false)

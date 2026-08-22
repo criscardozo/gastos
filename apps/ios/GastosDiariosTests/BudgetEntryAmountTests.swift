@@ -68,6 +68,29 @@ final class AmountInputEditingTests: XCTestCase {
         XCTAssertEqual(input.editingText(separator: ","), "0,")
     }
 
+    /// The case that actually happened: the app in Spanish, the PHONE in
+    /// English, so the decimal pad hands over "." while `separator` — which
+    /// comes from the app's language — says ",".
+    ///
+    /// Ninety and twelve cents was typed as "90.12" and saved as $9.012,00,
+    /// a hundred times over, because the earlier fix dropped the grouping mark
+    /// outright instead of asking whether it was grouping anything.
+    func testADecimalTypedWithTheOtherLocaleSeparator() {
+        var input = AmountInput()
+        input.setDisplay("90.12", separator: ",")
+        XCTAssertEqual(input.cents, 9012)
+
+        // And the mirror image: app in English, phone in Spanish.
+        var english = AmountInput()
+        english.setDisplay("90,12", separator: ".")
+        XCTAssertEqual(english.cents, 9012)
+
+        // One decimal digit is still a decimal, not a truncated thousand.
+        var one = AmountInput()
+        one.setDisplay("1.5", separator: ",")
+        XCTAssertEqual(one.cents, 150)
+    }
+
     /// A pasted amount carrying its grouping mark keeps its VALUE.
     ///
     /// The decimal pad has no grouping key, so this is the paste path — and it
