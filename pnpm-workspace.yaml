@@ -15,7 +15,7 @@ catalog:
   # NOT 12.18.0: pnpm's release-age quarantine (a supply-chain guard) refuses
   # it as too freshly published, and the only way to take it is to write 45
   # bypass entries into this file. It can move once the quarantine lets it.
-  firebase: ^12.17.1
+  firebase: ^12.18.0
   typescript: ^5.9.3
   '@types/node': ^24.13.3
 allowBuilds:
