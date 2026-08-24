@@ -78,6 +78,27 @@ acaba de pedir.
 - **No esperar la promesa de una escritura para mover la UI.** Firestore sólo la
   resuelve cuando el servidor confirma: `await` congela el formulario mientras
   no hay señal, aunque el dato ya esté guardado local. Escribir y seguir.
+- **Una escritura parcial tiene que decir qué le pasa a los campos que NO
+  menciona**, y la respuesta tiene que estar escrita donde se escribe.
+
+  Las dos puntas de la misma regla, cada una con su bug:
+
+  - **Reemplaza**: escribir un mapa entero (`{"defaultBudget": {...}}`) lo
+    sustituye. El payload de iOS nunca llevaba `rollover`, así que cambiar el
+    monto del presupuesto **apagaba el arrastre del sobrante** y el período
+    siguiente se materializaba sin él. Estaba vivo en producción.
+  - **Mergea**: escribir campo por campo deja intacto lo que no nombra. En la
+    app Stock, un switch que se apagaba dejaba de mandar su campo y el
+    documento se quedaba con el valor viejo — un apagado invisible.
+
+  El reemplazo **no es** el error: `categories.{id}` en Gastos escribe la
+  entrada completa **a propósito**, porque así desaparece `countsToBudget:
+  false` cuando la categoría vuelve a contar. La diferencia entre ese caso y el
+  de `defaultBudget` no es la técnica, es que uno estaba decidido y comentado y
+  el otro no.
+
+  Fijado con un test que afirma lo que Firestore hace con cada forma, no lo que
+  las reglas permiten (aceptan las dos).
 
 ## 6. Código
 
@@ -102,6 +123,16 @@ acaba de pedir.
 - Si algo no se pudo verificar, **decirlo** en el reporte. "Compila" no es
   "funciona".
 - Lo que dice un paso de CI en verde no reemplaza mirar el artefacto.
+- **Verificar el caso que se te ocurrió no es verificar el que pasa.** El
+  arreglo del parser de montos en iOS traía un test que cubría el caso
+  imaginado (pegar `1.050`) y nunca el real: tipear `90.12` con la app en
+  español y el teléfono en inglés. El test pasó mientras el bug guardaba
+  $9.012 donde iban $90,12. Antes de dar por cerrado un arreglo, preguntarse
+  **cómo llega el dato de verdad**, no cómo llegaría en el ejemplo.
+- **Un recurso que no se encuentra puede devolver algo plausible.** `L10n`
+  buscaba las cadenas en `Bundle.main`, que en un bundle de tests es el runner:
+  cada lookup devolvía la clave, y `"days.one"` se ve como un texto. Un `nil`
+  al menos es honesto; una clave se cuela hasta la pantalla.
 
 ## 8. Secretos
 
@@ -117,6 +148,22 @@ acaba de pedir.
   emulador de Firestore usa ese mismo puerto: antes de matar algo ahí, verificar
   qué proceso es.
 - No dejar emuladores ni servidores de dev corriendo al terminar.
+- **Reinstalar NO renueva la firma.** El perfil del team gratuito se **reusa**:
+  el build toma el que ya existe y conserva su vencimiento original, así que
+  reinstalar el día antes no compra nada. Para emitir uno nuevo (7 días
+  completos) hay que **apartar los perfiles** de
+  `~/Library/Developer/Xcode/UserData/Provisioning Profiles` — los tres:
+  app, widget y watchkitapp — y recompilar con `-allowProvisioningUpdates`.
+  Verificar leyendo `CreationDate`/`ExpirationDate` del
+  `embedded.mobileprovision` del bundle, no suponiendo.
+- **Cuando Xcode se actualiza puede quedarse sin la plataforma watchOS**, y
+  entonces no compila NADA de iOS — simulador ni dispositivo — porque el esquema
+  de la app embebe la app del reloj. Se baja con
+  `xcodebuild -downloadPlatform watchOS` (varios GB). El esquema
+  `GastosDiariosTests` existe para que el loop de tests no dependa de eso.
+- El **device support** también se desfasa: si el iPhone se actualiza antes que
+  Xcode, `xcodebuild` dice que la versión de iOS "is not installed" y no hay
+  build para dispositivo hasta bajar el componente.
 
 ---
 
