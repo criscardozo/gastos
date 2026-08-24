@@ -361,14 +361,22 @@ final class FirestoreService {
         ])
     }
 
+    /// Field by field, NOT the whole map.
+    ///
+    /// Writing `["defaultBudget": [...]]` replaces the map, and this payload
+    /// never carried `rollover` — so changing the amount or the period silently
+    /// turned the carry-the-leftover setting OFF, and the next period was
+    /// materialized without the leftover. The web has always written these as
+    /// separate paths, which is why it never had it.
+    ///
+    /// Anything absent from a dotted path is left alone, which is the property
+    /// this needs: a setting nobody touched must survive editing its neighbour.
     func updateDefaultBudget(householdId: String, budget: DefaultBudget) async throws {
         try await db.collection("households").document(householdId).updateData([
-            "defaultBudget": [
-                "amountCents": budget.amountCents,
-                "period": budget.period.rawValue,
-                "anchorDate": budget.anchorDate,
-            ],
-            "updatedAt": FieldValue.serverTimestamp(),
+            FieldPath(["defaultBudget", "amountCents"]): budget.amountCents,
+            FieldPath(["defaultBudget", "period"]): budget.period.rawValue,
+            FieldPath(["defaultBudget", "anchorDate"]): budget.anchorDate,
+            FieldPath(["updatedAt"]): FieldValue.serverTimestamp(),
         ])
     }
 

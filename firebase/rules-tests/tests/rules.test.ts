@@ -15,7 +15,7 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   ALICE,
   BOB,
@@ -214,6 +214,51 @@ describe("households/{id} — create & member access", () => {
     );
     await assertFails(setDoc(ref, householdDoc(ALICE, { extra: 1 })));
     await assertFails(setDoc(ref, householdDoc(ALICE, { currency: "aud" })));
+  });
+
+  it("editing the default budget does not switch rollover off", async () => {
+    // Not a rules test: a test of what Firestore DOES, pinned here because the
+    // difference cost a real setting. Writing the whole `defaultBudget` map
+    // replaces it, so a payload that never carried `rollover` turned the
+    // carry-the-leftover setting off — silently, and the next period was then
+    // materialized without the leftover. iOS wrote the map; the web has always
+    // written separate paths. Both write paths now.
+    await seedHousehold();
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD);
+    await assertSucceeds(
+      updateDoc(ref, { "defaultBudget.rollover": true, updatedAt: serverTimestamp() }),
+    );
+
+    // Editing a neighbouring field, one path at a time: rollover survives.
+    await assertSucceeds(
+      updateDoc(ref, {
+        "defaultBudget.amountCents": 95000,
+        "defaultBudget.period": "weekly",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    let after = await getDoc(ref);
+    expect(after.data()?.defaultBudget).toMatchObject({
+      amountCents: 95000,
+      period: "weekly",
+      rollover: true,
+    });
+
+    // And the shape that caused it: the same edit as a whole-map write drops
+    // the setting entirely. Asserted so nobody reintroduces it believing
+    // Firestore merges nested maps on update. It does not.
+    await assertSucceeds(
+      updateDoc(ref, {
+        defaultBudget: {
+          amountCents: 90000,
+          period: "fortnightly",
+          anchorDate: "2026-07-01",
+        },
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    after = await getDoc(ref);
+    expect(after.data()?.defaultBudget.rollover).toBeUndefined();
   });
 
   it("accepts the optional rollover setting and per-period carryover", async () => {
