@@ -269,11 +269,25 @@ enum SeedCategories {
         let categories: [SeedCategory]
     }
 
+    /// Loaded from `shared/categories.json`, bundled as a resource.
+    ///
+    /// Resolved through a type in this module rather than `Bundle.main`: in a
+    /// unit-test bundle that is the runner, so the lookup would miss and this
+    /// would answer an EMPTY LIST — a plausible value that is not the truth,
+    /// which is the shape of half the bugs in docs/reglas.md. Same reason L10n
+    /// resolves its strings the same way.
     static let all: [SeedCategory] = {
-        guard let url = Bundle.main.url(forResource: "categories", withExtension: "json"),
+        guard let url = Bundle(for: SeedCategoriesBundleToken.self)
+                .url(forResource: "categories", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let file = try? JSONDecoder().decode(File.self, from: data)
-        else { return [] }
+        else {
+            // Not silent: with no seed categories the onboarding would try to
+            // create a household the rules refuse (they require at least one),
+            // and the failure would surface far from here.
+            assertionFailure("categories.json missing from the bundle")
+            return []
+        }
         return file.categories.sorted { $0.sortOrder < $1.sortOrder }
     }()
 
@@ -339,3 +353,6 @@ enum SeedCategories {
         return map
     }
 }
+
+/// Anchor for `Bundle(for:)` — see SeedCategories.all.
+private final class SeedCategoriesBundleToken {}

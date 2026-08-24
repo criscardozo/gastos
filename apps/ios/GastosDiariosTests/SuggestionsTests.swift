@@ -2,6 +2,22 @@ import XCTest
 
 final class SuggestionsTests: XCTestCase {
 
+    /// The seed categories load AT ALL in this target.
+    ///
+    /// `SeedCategories.all` answers an empty list when it cannot find its JSON,
+    /// so a lookup against the wrong bundle looks exactly like a category file
+    /// with nothing in it. This asserts the resource is really there — which is
+    /// also what keeps the `categories.json` entry in project.yml honest.
+    func testSeedCategoriesAreLoadedInThisBundle() {
+        XCTAssertFalse(SeedCategories.all.isEmpty, "categories.json not found")
+        XCTAssertEqual(SeedCategories.all.first?.id, "groceries", "sorted by sortOrder")
+        XCTAssertEqual(
+            SeedCategories.sfSymbol(forMaterialIcon: "shopping_basket"),
+            "basket.fill"
+        )
+    }
+
+
     // Builds an Expense; `createdAt` is derived from `date` so recency ordering
     // (date desc, then createdAt desc) is deterministic in the tests.
     private func expense(
