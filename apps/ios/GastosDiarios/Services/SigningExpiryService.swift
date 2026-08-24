@@ -62,11 +62,49 @@ enum SigningExpiryService {
     /// payload — so the plist is sliced out by its XML delimiters instead of
     /// pulling in a crypto dependency.
     private static func readEmbeddedProfileExpiry() -> Date? {
-        guard let url = Bundle.main.url(
-            forResource: "embedded",
-            withExtension: "mobileprovision"
-        ), let data = try? Data(contentsOf: url) else { return nil }
-        return expiry(fromProfile: data)
+        let profiles = embeddedProfileURLs().compactMap { try? Data(contentsOf: $0) }
+        return earliestExpiry(fromProfiles: profiles)
+    }
+
+    /// Every provisioning profile the installed bundle carries: the app's, the
+    /// widget's, and the watch app's.
+    ///
+    /// Found by walking PlugIns/ and Watch/ rather than by naming the
+    /// extensions, so a target added later is covered without anyone coming
+    /// back here.
+    private static func embeddedProfileURLs(in bundle: Bundle = .main) -> [URL] {
+        var urls: [URL] = []
+        if let own = bundle.url(forResource: "embedded", withExtension: "mobileprovision") {
+            urls.append(own)
+        }
+        let manager = FileManager.default
+        for directory in ["PlugIns", "Watch"] {
+            let container = bundle.bundleURL.appendingPathComponent(directory)
+            guard let children = try? manager.contentsOfDirectory(
+                at: container, includingPropertiesForKeys: nil
+            ) else { continue }
+            for child in children {
+                let candidate = child.appendingPathComponent("embedded.mobileprovision")
+                if manager.fileExists(atPath: candidate.path) { urls.append(candidate) }
+            }
+        }
+        return urls
+    }
+
+    /// The EARLIEST expiry among the bundle's profiles — not the app's.
+    ///
+    /// Each target is signed with its own profile and they need not expire
+    /// together: the free team reuses whatever profile already exists, so one
+    /// minted on a different day carries a different date. This app's three
+    /// were five days apart earlier today for exactly that reason.
+    ///
+    /// Reading only the app's would make this screen answer "7 days left" while
+    /// the widget or the watch app stopped working on day 2 — a plausible
+    /// number that is not the one that matters, in the one place whose whole
+    /// job is to say when the build dies. Pure and internal so a test can run
+    /// it without a signed bundle.
+    static func earliestExpiry(fromProfiles profiles: [Data]) -> Date? {
+        profiles.compactMap { expiry(fromProfile: $0) }.min()
     }
 
     /// Slices the plist out of a `.mobileprovision` blob and reads its expiry.

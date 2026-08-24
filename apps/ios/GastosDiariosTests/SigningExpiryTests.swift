@@ -56,6 +56,42 @@ final class SigningExpiryTests: XCTestCase {
         XCTAssertNil(SigningExpiryService.expiry(fromProfile: data))
     }
 
+    /// The bundle carries a profile per signed target — app, widget, watch app —
+    /// and they need not expire on the same day: the free team reuses whatever
+    /// profile exists, so one minted separately carries its own date. These
+    /// three were five days apart earlier today.
+    ///
+    /// What matters is the FIRST one to die, not the app's. Reading the app's
+    /// alone would report "7 days left" while the watch app stopped opening on
+    /// day 2 — and this is the one screen whose job is to say when the build
+    /// dies. Found by the Stock session hitting the same thing.
+    func testTakesTheEarliestExpiryOfEveryProfileInTheBundle() throws {
+        let app = makeProfile(expiry: "2026-07-31T03:48:39Z")
+        let widget = makeProfile(expiry: "2026-07-26T03:48:39Z")  // the short one
+        let watch = makeProfile(expiry: "2026-07-28T03:48:39Z")
+
+        let earliest = try XCTUnwrap(
+            SigningExpiryService.earliestExpiry(fromProfiles: [app, widget, watch])
+        )
+        XCTAssertEqual(
+            earliest,
+            try XCTUnwrap(SigningExpiryService.expiry(fromProfile: widget)),
+            "must be the widget's, whatever order they come in"
+        )
+
+        // Order must not matter.
+        XCTAssertEqual(
+            SigningExpiryService.earliestExpiry(fromProfiles: [widget, app, watch]),
+            earliest
+        )
+        // An unreadable profile is skipped, not fatal.
+        XCTAssertEqual(
+            SigningExpiryService.earliestExpiry(fromProfiles: [Data([0x30]), app, widget]),
+            earliest
+        )
+        XCTAssertNil(SigningExpiryService.earliestExpiry(fromProfiles: []))
+    }
+
     // MARK: Day arithmetic (drives the banner + the Settings row)
 
     private func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int = 12) -> Date {
