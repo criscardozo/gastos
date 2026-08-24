@@ -9,12 +9,15 @@
 /* Begin PBXBuildFile section */
 		06CE1F0D1CB52AFD497DCEE6 /* WatchSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1B3142A37042E43AF35EC1 /* WatchSupport.swift */; };
 		11C3DF0A5473FBAE652B047B /* bank-match-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 8A795380C7AD182D04979254 /* bank-match-vectors.json */; };
+		1331895649B5F9CF8C93401D /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E33FD8DDEB4A07F1B2A435 /* L10n.swift */; };
+		1D715F394294FC39E44D5552 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */; };
 		1F4703215A63555016DC9CC6 /* GastosDiariosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F2E45F4FFC8505622F84485F /* GastosDiariosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1F9BA58700725716F9D218B6 /* ExpenseDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770FE80DDDE76F46C9859BB8 /* ExpenseDetailSheet.swift */; };
 		274C430DD6B23B4F19C0A5E5 /* WatchConnectivityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA2FE7D38ADF32A88459CF /* WatchConnectivityModel.swift */; };
 		27FA6C49E3337B31FEF5AB05 /* BankMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9AE25283BC9E432099A5B3B /* BankMatch.swift */; };
 		287317EE4CCAB473C7B3B0DD /* PiggyMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BF3AEB1A7B631C490D0F18 /* PiggyMark.swift */; };
 		2CC4BB92F1CB68711C723A14 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 7BDAA615B344F7D33E02779C /* GoogleSignInSwift */; };
+		2CD243C91826F313B2AF2ECE /* AmountInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E1BD1553193EC737896A64 /* AmountInput.swift */; };
 		358B81D7BBDE72EE00BB04A4 /* SuggestionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */; };
 		40A40EFB2C8AE17A8ADFADCF /* WidgetTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EC5D52EACCD6C3040982EE4 /* WidgetTheme.swift */; };
 		479F02C3187696EE7D8B592A /* BudgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DB54625B627DD9D2F40F3D /* BudgetSnapshot.swift */; };
@@ -22,19 +25,25 @@
 		49E2809F85C38193CDA8E175 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 145F6B37DD56D3F48641A9AB /* Theme.swift */; };
 		4A6170B92E597704ED1A35D9 /* GastosDiariosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86228DE8CD158F7CBF6F706A /* GastosDiariosApp.swift */; };
 		4A7C9399EB868F5BD37FCEE2 /* PeriodLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */; };
+		4CDD97FED70D3E038184719A /* PeriodLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */; };
 		4E0559786DE3931FCA38453B /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ED43CCFFBE449FFB095396B /* AuthService.swift */; };
 		50F8A743A1A76D4AC3AB60A9 /* Suggestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F33893831374AFF5EE633D25 /* Suggestions.swift */; };
 		5172346AA7A7E3798CDDB9FD /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 88C4CEE8AB2BD7C3B1A50660 /* GoogleService-Info.plist */; };
+		52378CE8A71972A60EC5BC8B /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 6CE6F0254D1C5B196361D078 /* FirebaseFirestore */; };
 		5294EA0188CE3A372AA24069 /* CategoriesManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45E8539DAFA9587CC0291F04 /* CategoriesManagerView.swift */; };
 		5455A60CA071010D3B53B606 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC439A76443D441CA1E59FBA /* WidgetBridge.swift */; };
 		57088CAAA6CBF0A900D6546B /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 0C6A902D5FD08D33DF0CB379 /* FirebaseFirestore */; };
 		5E46E4B94AD5C7F23B172691 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6536FA32700C9D56775F646 /* OnboardingView.swift */; };
+		6008755B5E31D86FA663DC85 /* SigningExpiryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F2CD9DC403E30E0D49F3C5 /* SigningExpiryService.swift */; };
+		63968EB55472433519654B79 /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = B2DE59304825CBC116B66700 /* categories.json */; };
 		64A277BCB7F020EF239963C3 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E33FD8DDEB4A07F1B2A435 /* L10n.swift */; };
 		680E4B8C6F5A7FE48B79B090 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 03D045921BA5FA8C21C1F897 /* Assets.xcassets */; };
 		6946D942898FFB0E720BE6A8 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F2F3CF0DA3B43BF2B52F6274 /* Localizable.xcstrings */; };
 		6C5BE67620D8309FBFC6AA29 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */; };
 		6F988A6795BF9227AEDA3A80 /* SigningExpiryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F875CB9A4249023372B6A501 /* SigningExpiryTests.swift */; };
 		789F6152666388E18CA30122 /* ExpenseVerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */; };
+		79C3AAF1F72C5A8D5923D2AF /* BankChargeInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */; };
+		7FDB5283CC22C18562CD767D /* AmountInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E1BD1553193EC737896A64 /* AmountInput.swift */; };
 		822EFD43241545538E9E07A9 /* SigningExpiryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F2CD9DC403E30E0D49F3C5 /* SigningExpiryService.swift */; };
 		8268094E7E032831B3671199 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C8F75E05B2CB5526FAED626 /* AppModel.swift */; };
 		8352CF5D8B36C1504025D291 /* BudgetAmountEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21D8B26F267E4D4FF49927C /* BudgetAmountEditor.swift */; };
@@ -46,6 +55,7 @@
 		93D1A5BEC5F8DD031294522A /* QuickEntryIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */; };
 		98CF0F503439808C29ADD186 /* MoneyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */; };
 		9AB064ED54CA05C3CAA73F45 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F53CD2A73A681E6F361C7C16 /* Localizable.xcstrings */; };
+		9CFA81C8752C64844F91ACAA /* Suggestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F33893831374AFF5EE633D25 /* Suggestions.swift */; };
 		9ED3E316CDD7541FFB9D1270 /* QuickEntryIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */; };
 		9F9E15C2ABBF4A7A747FDC1E /* period-test-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = C61FCF0E69A7236D256390A7 /* period-test-vectors.json */; };
 		A5F76507F0CC0B20997205D6 /* ReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7484D19116522C218B8D7881 /* ReminderService.swift */; };
@@ -54,6 +64,7 @@
 		B088F40899D33FEB92EE2A8A /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23612A2AE85E20827C54AF6A /* Models.swift */; };
 		B34CA47D13921BED80C35823 /* GastosDiariosWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9E73BFFFDD149DEA34FF6D4B /* GastosDiariosWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B9FE52D1FA9F7D04829C48D1 /* BudgetWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A287043194DBE706C3F695D1 /* BudgetWidget.swift */; };
+		BAD0594FFEBDF616197DE08A /* MoneyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */; };
 		BB8BF40DF8B481EB06B9C2A1 /* BankMatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D087ED99498939948DFCD72D /* BankMatchTests.swift */; };
 		C003724BF4470744B6B53B53 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C12B6B3B51CC9E2962B1CE /* Components.swift */; };
 		C19497155C651CCEC6F0E5E9 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */; };
@@ -61,6 +72,7 @@
 		C92E8EBD9E46D90366CB2EA9 /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */; };
 		CB8092081896A331FD25750E /* BankChargeInboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021A158506471604F1680607 /* BankChargeInboxTests.swift */; };
 		D1D835112EBEB73ADD5E788C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB86DA59B8D86AC1BE949A16 /* Assets.xcassets */; };
+		DAA68B4CBEDC600E9A6BE6DC /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23612A2AE85E20827C54AF6A /* Models.swift */; };
 		DE10CA45FBC616EAE3F58B0E /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 899B0F90EA1747BB99A5B325 /* FirebaseAuth */; };
 		E0BCA48607F739A48666E584 /* BankChargeInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */; };
 		E2B11B14C6758B571316975F /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = B2DE59304825CBC116B66700 /* categories.json */; };
@@ -72,6 +84,7 @@
 		ECD72F7F796CCE30319D28CD /* CountLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED06E0D2EF77E0D2F45131F /* CountLabelTests.swift */; };
 		F66E126B602E61FCCC04EA5B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A3DE79D792BD15A233F74D /* SettingsView.swift */; };
 		F6C3A5A2215B37A39404FBF6 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1033958EAF0770812248EF2 /* HistoryView.swift */; };
+		FB84BD17683A1D65FE9ED3BF /* BankMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9AE25283BC9E432099A5B3B /* BankMatch.swift */; };
 		FBA2FB7F467551ED953B03E1 /* ExtendPeriodSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D97F66821E44E31296A3C8CB /* ExtendPeriodSheet.swift */; };
 /* End PBXBuildFile section */
 
@@ -82,13 +95,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = CA80E83009431AB805515F6A;
 			remoteInfo = GastosDiariosWatch;
-		};
-		3305006560AA7F7A2AEA76B7 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = E5E643F7313A6B9B20269C15 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = BB77704655A94E52B0EDAC2D;
-			remoteInfo = GastosDiarios;
 		};
 		A922AC201CD2FAA6B33C72C7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -129,6 +135,7 @@
 		03D045921BA5FA8C21C1F897 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		145F6B37DD56D3F48641A9AB /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		1C8F75E05B2CB5526FAED626 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		20E1BD1553193EC737896A64 /* AmountInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountInput.swift; sourceTree = "<group>"; };
 		23612A2AE85E20827C54AF6A /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		24370CD3C5C4E80E76227FF0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2B3321D9E7495AC37BDC6004 /* GastosDiarios.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GastosDiarios.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -195,6 +202,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		12E4AECEDF2FAC23254E0E78 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				52378CE8A71972A60EC5BC8B /* FirebaseFirestore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BE46184CD8812337AB59EF65 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -220,6 +235,7 @@
 		04C722E8D013CF1E463B702E /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				20E1BD1553193EC737896A64 /* AmountInput.swift */,
 				36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */,
 				F9AE25283BC9E432099A5B3B /* BankMatch.swift */,
 				75E33FD8DDEB4A07F1B2A435 /* L10n.swift */,
@@ -444,14 +460,15 @@
 			buildPhases = (
 				B1D55FAA70503958CC69DF35 /* Sources */,
 				6A70F1F6476F9661A2EB0655 /* Resources */,
+				12E4AECEDF2FAC23254E0E78 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				88151C337B88ACB3AFE3C97F /* PBXTargetDependency */,
 			);
 			name = GastosDiariosTests;
 			packageProductDependencies = (
+				6CE6F0254D1C5B196361D078 /* FirebaseFirestore */,
 			);
 			productName = GastosDiariosTests;
 			productReference = 6B98CA105FB223E5AFAF9A68 /* GastosDiariosTests.xctest */;
@@ -589,7 +606,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1D715F394294FC39E44D5552 /* Localizable.xcstrings in Resources */,
 				11C3DF0A5473FBAE652B047B /* bank-match-vectors.json in Resources */,
+				63968EB55472433519654B79 /* categories.json in Resources */,
 				9F9E15C2ABBF4A7A747FDC1E /* period-test-vectors.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -632,6 +651,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7FDB5283CC22C18562CD767D /* AmountInput.swift in Sources */,
 				8268094E7E032831B3671199 /* AppModel.swift in Sources */,
 				4E0559786DE3931FCA38453B /* AuthService.swift in Sources */,
 				E0BCA48607F739A48666E584 /* BankChargeInbox.swift in Sources */,
@@ -670,13 +690,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2CD243C91826F313B2AF2ECE /* AmountInput.swift in Sources */,
+				79C3AAF1F72C5A8D5923D2AF /* BankChargeInbox.swift in Sources */,
 				CB8092081896A331FD25750E /* BankChargeInboxTests.swift in Sources */,
+				FB84BD17683A1D65FE9ED3BF /* BankMatch.swift in Sources */,
 				BB8BF40DF8B481EB06B9C2A1 /* BankMatchTests.swift in Sources */,
 				93121744B6DC03F3CEEEE2FC /* BudgetEntryAmountTests.swift in Sources */,
 				ECD72F7F796CCE30319D28CD /* CountLabelTests.swift in Sources */,
 				789F6152666388E18CA30122 /* ExpenseVerificationTests.swift in Sources */,
+				1331895649B5F9CF8C93401D /* L10n.swift in Sources */,
+				DAA68B4CBEDC600E9A6BE6DC /* Models.swift in Sources */,
+				BAD0594FFEBDF616197DE08A /* MoneyFormatter.swift in Sources */,
+				4CDD97FED70D3E038184719A /* PeriodLogic.swift in Sources */,
 				4A7C9399EB868F5BD37FCEE2 /* PeriodLogicTests.swift in Sources */,
+				6008755B5E31D86FA663DC85 /* SigningExpiryService.swift in Sources */,
 				6F988A6795BF9227AEDA3A80 /* SigningExpiryTests.swift in Sources */,
+				9CFA81C8752C64844F91ACAA /* Suggestions.swift in Sources */,
 				358B81D7BBDE72EE00BB04A4 /* SuggestionsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -706,11 +735,6 @@
 			isa = PBXTargetDependency;
 			target = CA80E83009431AB805515F6A /* GastosDiariosWatch */;
 			targetProxy = 0059ACA86300142D6A06E0B7 /* PBXContainerItemProxy */;
-		};
-		88151C337B88ACB3AFE3C97F /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = BB77704655A94E52B0EDAC2D /* GastosDiarios */;
-			targetProxy = 3305006560AA7F7A2AEA76B7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -815,7 +839,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.cardozo.gastosdiarios.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GastosDiarios.app/GastosDiarios";
 			};
 			name = Release;
 		};
@@ -971,7 +994,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.cardozo.gastosdiarios.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GastosDiarios.app/GastosDiarios";
 			};
 			name = Debug;
 		};
@@ -1063,6 +1085,11 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		0C6A902D5FD08D33DF0CB379 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EFD307EACD471E743A74DCBF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		6CE6F0254D1C5B196361D078 /* FirebaseFirestore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = EFD307EACD471E743A74DCBF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;

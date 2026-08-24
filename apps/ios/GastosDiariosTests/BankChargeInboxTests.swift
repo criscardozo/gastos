@@ -1,5 +1,4 @@
 import XCTest
-@testable import GastosDiarios
 
 /// The 48-hour window a dismissed bank charge can be taken back in.
 ///

@@ -1,5 +1,4 @@
 import XCTest
-@testable import GastosDiarios
 
 /// An expense is verified only once the BANK has reported what it charged in
 /// USD. `verified` is a stored flag, but a flag with no figure behind it means

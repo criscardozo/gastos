@@ -11,10 +11,19 @@ struct L10n {
         Locale(identifier: language == "en" ? "en_AU" : "es_AR")
     }
 
+    /// The bundle these strings were compiled into.
+    ///
+    /// NOT `Bundle.main`: in a unit-test bundle that is the test runner, which
+    /// carries no .lproj, so every lookup silently returned the key itself
+    /// ("days.one" instead of "1 día"). Resolving through a type in this module
+    /// gives the app bundle in the app and the test bundle in tests, which is
+    /// what lets the tests run without depending on the app target at all.
+    private static let resourceBundle = Bundle(for: L10nBundleToken.self)
+
     private var bundle: Bundle {
-        guard let path = Bundle.main.path(forResource: language, ofType: "lproj"),
+        guard let path = Self.resourceBundle.path(forResource: language, ofType: "lproj"),
               let bundle = Bundle(path: path)
-        else { return .main }
+        else { return Self.resourceBundle }
         return bundle
     }
 
@@ -144,3 +153,7 @@ struct L10n {
         count == 1 ? t("history.bankChargesOne") : t("history.bankChargesOther", count)
     }
 }
+
+/// Anchor for `Bundle(for:)`. A struct has no class to hand it, and hardcoding
+/// an identifier would break the moment the bundle id changes.
+private final class L10nBundleToken {}

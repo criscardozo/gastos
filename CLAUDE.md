@@ -55,7 +55,11 @@ All JS commands run from the repo root (pnpm workspace):
 - `pnpm test:rules` — Firestore rules tests (spins up the emulator via `firebase emulators:exec`; needs a **JDK 21 or newer** — firebase-tools 15 dropped older ones, and on Java 17 it refuses to start rather than warning).
 - `pnpm emulators` — local emulator suite (Auth 9099, Firestore 8080, UI 4000).
 - iOS: `cd apps/ios && xcodegen && open GastosDiarios.xcodeproj`. CLI tests:
-  `xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiarios -destination 'platform=iOS Simulator,name=<iPhone>' -only-testing:GastosDiariosTests`.
+  `xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiariosTests -destination 'platform=iOS Simulator,name=<iPhone>'`.
+  That scheme builds ONLY the test bundle, which compiles `GastosDiarios/Core`
+  directly instead of depending on the app — the app embeds the watchOS app, so
+  the old `-scheme GastosDiarios` needed the watchOS platform installed to run a
+  unit test. Use `-scheme GastosDiarios` to build or run the app itself.
 - Deploy rules: `firebase deploy --only firestore:rules,firestore:indexes --config firebase/firebase.json --project qcris-gastos-diarios`.
 - `pnpm backup` dumps the whole project to `backups/` (gitignored). The same script runs weekly on GitHub Actions (`.github/workflows/backup.yml`, Thursdays), keeping the dump as a 90-day artifact — Firestore's managed export needs Blaze.
 - One-time console setup (Firestore db creation, Google provider, Vercel): `docs/setup.md`. Distribution is free-account sideload (7-day signing expiry) until the Apple Developer decision (PLAN Phase 5).

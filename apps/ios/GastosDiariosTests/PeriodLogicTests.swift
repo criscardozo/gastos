@@ -1,5 +1,4 @@
 import XCTest
-@testable import GastosDiarios
 
 // Runs EVERY vector section from shared/period-test-vectors.json (bundled as a
 // test resource). The web TypeScript implementation must pass the same file.

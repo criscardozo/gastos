@@ -245,7 +245,11 @@ open GastosDiarios.xcodeproj
   multiplier, and this project's rule is that Actions never costs anything, so
   the iOS app is built and tested locally against a simulator before each
   change lands:
-  `xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiarios -destination 'platform=iOS Simulator,name=<iPhone>' -only-testing:GastosDiariosTests`.
+  `xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiariosTests -destination 'platform=iOS Simulator,name=<iPhone>'`.
+  That scheme builds ONLY the test bundle, which compiles `GastosDiarios/Core`
+  directly instead of depending on the app — the app embeds the watchOS app, so
+  the old `-scheme GastosDiarios` needed the watchOS platform installed to run a
+  unit test. Use `-scheme GastosDiarios` to build or run the app itself.
   Everything that does run on Actions (`CI`, `Backup`) is Ubuntu.
 - Signing: personal (free) team → 7-day certificate; re-run from Xcode weekly on each phone.
   This is the documented $0 path until the Apple Developer Program decision (PLAN Phase 5).

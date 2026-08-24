@@ -1,34 +1,5 @@
 import SwiftUI
 
-// MARK: - Budget amount entry
-
-/// Keypad amount for the budget editors. AUD is the only currency anyone types,
-/// so this is a thin wrapper over `AmountInput` — kept as its own type because
-/// the four editors (onboarding step 3, settings default amount, adjust-current
-/// -period, new-period sheet) share it and only ever hand `audCents` to
-/// Firestore.
-struct BudgetEntryAmount: Equatable {
-    var input = AmountInput()
-
-    /// Integer cents to persist.
-    var audCents: Int { input.cents }
-
-    mutating func tap(_ key: KeypadKey) {
-        input.tap(key)
-    }
-
-    /// Fills an amount (e.g. a recent-amount quick-fill chip).
-    mutating func setAUDCents(_ cents: Int) {
-        input = .fromCents(cents)
-    }
-
-    static func fromAUDCents(_ cents: Int) -> BudgetEntryAmount {
-        var value = BudgetEntryAmount()
-        value.input = .fromCents(cents)
-        return value
-    }
-}
-
 /// Shared amount display for the four budget editors: the big tabular amount
 /// with its "$" symbol. The keypad and the save CTA stay screen-specific.
 struct BudgetAmountEditor: View {

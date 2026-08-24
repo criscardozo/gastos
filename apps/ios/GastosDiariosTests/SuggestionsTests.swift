@@ -1,5 +1,4 @@
 import XCTest
-@testable import GastosDiarios
 
 final class SuggestionsTests: XCTestCase {
 

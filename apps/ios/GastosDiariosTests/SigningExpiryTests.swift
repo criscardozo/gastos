@@ -1,5 +1,4 @@
 import XCTest
-@testable import GastosDiarios
 
 /// The signing-expiry logic can never exercise itself on a Simulator build —
 /// there is no `embedded.mobileprovision` in the bundle — so the two fragile

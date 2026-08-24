@@ -153,11 +153,33 @@ targets:
         WKApplication: true
         WKCompanionAppBundleIdentifier: dev.cardozo.gastosdiarios
 
+  # Compiles Core/ DIRECTLY instead of depending on the app target.
+  #
+  # The app embeds the watchOS app, so depending on it made `xcodebuild test`
+  # require the watchOS platform to be installed — and when Xcode updated to
+  # 26.6 that platform went missing and the whole test loop stopped for a
+  # multi-gigabyte download. A unit test about parsing "90,12" has no business
+  # needing a watch SDK.
+  #
+  # The cost is that a test touching something outside this list fails to
+  # compile rather than failing an assertion. That is the trade: the list below
+  # is the domain, and the domain is what these tests are about. Anything that
+  # needs the app (SwiftUI views, AppModel) belongs in the app scheme.
   GastosDiariosTests:
     type: bundle.unit-test
     platform: iOS
     sources:
       - path: GastosDiariosTests
+      - path: GastosDiarios/Core
+      - path: GastosDiarios/Services/SigningExpiryService.swift
+      # The strings L10n looks up. Compiled into the TEST bundle, which is why
+      # L10n resolves its bundle through a type in its own module rather than
+      # assuming Bundle.main.
+      - path: GastosDiarios/Resources/Localizable.xcstrings
+        buildPhase: resources
+      # SeedCategories decodes this at runtime.
+      - path: ../../shared/categories.json
+        buildPhase: resources
       # Shared cross-platform test vectors (Swift + TS must both pass).
       - path: ../../shared/period-test-vectors.json
         buildPhase: resources
@@ -169,7 +191,9 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastosdiarios.tests
     dependencies:
-      - target: GastosDiarios
+      # Models.swift uses @DocumentID / @ServerTimestamp.
+      - package: Firebase
+        product: FirebaseFirestore
 
 schemes:
   GastosDiarios:
@@ -190,6 +214,18 @@ schemes:
       config: Debug
     archive:
       config: Release
+  # Tests on their own, so the loop does not need the watchOS platform just
+  # because the app scheme embeds a watch app. Use this one to run tests; the
+  # GastosDiarios scheme is for running the app.
+  GastosDiariosTests:
+    build:
+      targets:
+        GastosDiariosTests: [test]
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - GastosDiariosTests
   GastosDiariosWatch:
     build:
       targets:

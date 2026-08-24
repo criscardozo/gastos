@@ -1,5 +1,4 @@
 import XCTest
-@testable import GastosDiarios
 
 /// Runs `shared/bank-match-vectors.json` (bundled as a test resource) against
 /// the Swift matcher. The TypeScript one runs the same file in

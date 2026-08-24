@@ -1,5 +1,4 @@
 import XCTest
-@testable import GastosDiarios
 
 /// `BudgetEntryAmount` is the entry model shared by the four budget editors and
 /// the expense form. AUD is the only currency anyone types, so these tests pin
