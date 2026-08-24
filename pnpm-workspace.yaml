@@ -12,9 +12,10 @@ packages:
 # unlikely.
 catalog:
   vitest: ^4.1.11
-  # NOT 12.18.0: pnpm's release-age quarantine (a supply-chain guard) refuses
-  # it as too freshly published, and the only way to take it is to write 45
-  # bypass entries into this file. It can move once the quarantine lets it.
+  # Held at 12.17.1 for two days: pnpm's release-age quarantine — a
+  # supply-chain guard — refused 12.18.0 as too freshly published, and taking
+  # it then meant writing 45 bypass entries into this file. Dependabot brought
+  # it in once the quarantine let go, with no bypass. Same rule next time.
   firebase: ^12.18.0
   typescript: ^5.9.3
   '@types/node': ^24.13.3
