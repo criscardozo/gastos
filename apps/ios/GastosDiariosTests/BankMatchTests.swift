@@ -89,6 +89,25 @@ final class BankMatchTests: XCTestCase {
 
     // MARK: The vectors
 
+    /// The same guard as the period vectors: a group added to the file that no
+    /// test decodes would leave the suite green having run less.
+    func testEveryGroupInTheFileIsRunBySomeTest() throws {
+        let url = try XCTUnwrap(
+            Bundle(for: BankMatchTests.self)
+                .url(forResource: "bank-match-vectors", withExtension: "json")
+        )
+        let raw = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
+        )
+        let groups = Set(raw.keys).subtracting(["_comment"])
+        XCTAssertEqual(
+            groups,
+            ["learnRate", "suggestMatches"],
+            "a group was added to or removed from the vectors: decode it and "
+                + "run it, or the suite quietly covers less"
+        )
+    }
+
     func testLearnRateVectors() {
         for testCase in Self.vectors.learnRate {
             let expenses = testCase.expenses.enumerated().map { index, pair in

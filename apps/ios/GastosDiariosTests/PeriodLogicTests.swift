@@ -112,6 +112,50 @@ final class PeriodLogicTests: XCTestCase {
         return period
     }
 
+    // MARK: - The file and the suite agree
+
+    /// Every group in the JSON is one this suite actually runs.
+    ///
+    /// `Decodable` ignores keys the struct does not declare, so a group added
+    /// to the vectors would sit there unrun with the suite still green — a pass
+    /// that means "I ran less than you think". The Stock session hit exactly
+    /// that: added cases, watched them "pass", and they were being skipped.
+    func testEveryGroupInTheFileIsRunBySomeTest() throws {
+        let url = try XCTUnwrap(
+            Bundle(for: PeriodLogicTests.self)
+                .url(forResource: "period-test-vectors", withExtension: "json")
+        )
+        let raw = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
+        )
+        let groups = Set(raw.keys).subtracting(["version", "comment"])
+        XCTAssertEqual(
+            groups,
+            [
+                "addDays", "daysBetween", "periodEndDate", "containment",
+                "cascadeMaterialization", "todayInTimezone", "budgetState",
+                "extendToFortnight",
+            ],
+            "a group was added to or removed from the vectors: decode it in "
+                + "`Vectors` and run it, or the suite quietly covers less"
+        )
+    }
+
+    /// How many cases this suite believes it runs. Adding one to the file
+    /// changes this number, which is the point: it forces a look.
+    func testTheCaseCountIsWhatTheSuiteThinks() {
+        let counted =
+            Self.vectors.addDays.count
+            + Self.vectors.daysBetween.count
+            + Self.vectors.periodEndDate.count
+            + Self.vectors.containment.count
+            + Self.vectors.cascadeMaterialization.cases.count
+            + Self.vectors.todayInTimezone.cases.count
+            + Self.vectors.budgetState.cases.count
+            + Self.vectors.extendToFortnight.cases.count
+        XCTAssertEqual(counted, 58)
+    }
+
     // MARK: - Sections
 
     func testAddDaysVectors() {

@@ -19,6 +19,47 @@ import {
   parseAmountToCents,
 } from "./money";
 
+/**
+ * The file and the suite agree on how much is being run.
+ *
+ * A group added to the vectors that no test reads would leave this suite green
+ * having covered less — the same trap on the Swift side, where Decodable
+ * silently ignores keys the struct does not declare. Pinned on both platforms
+ * because the whole point of the shared file is that neither drifts.
+ */
+describe("period vectors", () => {
+  it("runs every group in the file", () => {
+    const groups = Object.keys(vectors).filter(
+      (key) => key !== "version" && key !== "comment",
+    );
+    expect(new Set(groups)).toEqual(
+      new Set([
+        "addDays",
+        "daysBetween",
+        "periodEndDate",
+        "containment",
+        "cascadeMaterialization",
+        "todayInTimezone",
+        "budgetState",
+        "extendToFortnight",
+      ]),
+    );
+  });
+
+  it("runs the number of cases the suite thinks it does", () => {
+    const counted =
+      vectors.addDays.length +
+      vectors.daysBetween.length +
+      vectors.periodEndDate.length +
+      vectors.containment.length +
+      vectors.cascadeMaterialization.cases.length +
+      vectors.todayInTimezone.cases.length +
+      vectors.budgetState.cases.length +
+      vectors.extendToFortnight.cases.length;
+    expect(counted).toBe(58);
+  });
+});
+
 describe("addDays", () => {
   it.each(vectors.addDays)(
     "$date + $days days = $expected",

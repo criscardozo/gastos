@@ -12,6 +12,13 @@ import {
   type MatchableExpense,
 } from "./bank-match";
 
+describe("bank match vectors", () => {
+  it("runs every group in the file", () => {
+    const groups = Object.keys(vectors).filter((key) => key !== "_comment");
+    expect(new Set(groups)).toEqual(new Set(["learnRate", "suggestMatches"]));
+  });
+});
+
 describe("shared vectors: learnRate", () => {
   it.each(vectors.learnRate)("$name", ({ expenses, expected }) => {
     const rate = learnRate(
