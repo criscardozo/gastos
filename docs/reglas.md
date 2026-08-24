@@ -129,6 +129,14 @@ acaba de pedir.
   español y el teléfono en inglés. El test pasó mientras el bug guardaba
   $9.012 donde iban $90,12. Antes de dar por cerrado un arreglo, preguntarse
   **cómo llega el dato de verdad**, no cómo llegaría en el ejemplo.
+- **Un fallo que se ve como un dato válido es peor que uno que se ve como un
+  fallo.** Es la forma general de casi todo lo que se arregló acá: el listener
+  que contestaba un error de lectura con la lista vacía (una semana sin gastos
+  es indistinguible de una semana que no se pudo leer), el parser que guardaba
+  $9.012 en vez de $90,12 (un número plausible), el arrastre que se
+  materializaba como cero, la escritura rechazada que la caché local seguía
+  mostrando como aplicada. Cuando algo no se pudo hacer, el estado tiene que
+  poder decirlo; un cero, una lista vacía o una clave sin traducir no lo dicen.
 - **Un recurso que no se encuentra puede devolver algo plausible.** `L10n`
   buscaba las cadenas en `Bundle.main`, que en un bundle de tests es el runner:
   cada lookup devolvía la clave, y `"days.one"` se ve como un texto. Un `nil`
@@ -152,10 +160,17 @@ acaba de pedir.
   el build toma el que ya existe y conserva su vencimiento original, así que
   reinstalar el día antes no compra nada. Para emitir uno nuevo (7 días
   completos) hay que **apartar los perfiles** de
-  `~/Library/Developer/Xcode/UserData/Provisioning Profiles` — los tres:
-  app, widget y watchkitapp — y recompilar con `-allowProvisioningUpdates`.
-  Verificar leyendo `CreationDate`/`ExpirationDate` del
-  `embedded.mobileprovision` del bundle, no suponiendo.
+  `~/Library/Developer/Xcode/UserData/Provisioning Profiles` y recompilar con
+  `-allowProvisioningUpdates`.
+- **Apartar los tres juntos** (app, widget y watchkitapp), no sólo el de la app.
+  Xcode reemite en una sola pasada los que falten, con lo que quedan alineados
+  al segundo; el que se emite solo, en otro momento, queda desfasado. Pasó: el
+  del watchkitapp venció cinco días después que los otros dos porque se emitió
+  aparte, al agregar la app del reloj al bundle.
+- **El que manda es el más corto, no el de la app.** Con fechas distintas, lo
+  primero que deja de funcionar es lo que firma el perfil que vence antes — el
+  widget o el reloj, sin que la app dé señal. Verificar leyendo
+  `CreationDate`/`ExpirationDate` de cada uno, no suponiendo.
 - **Cuando Xcode se actualiza puede quedarse sin la plataforma watchOS**, y
   entonces no compila NADA de iOS — simulador ni dispositivo — porque el esquema
   de la app embebe la app del reloj. Se baja con
