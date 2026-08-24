@@ -6,9 +6,9 @@
     "test": "firebase emulators:exec --only firestore --project demo-gastos-diarios --config ../firebase.json 'vitest run'"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^5.0.0",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "firebase": "catalog:",
-    "firebase-tools": "^15.27.0",
+    "firebase-tools": "^15.28.1",
     "vitest": "catalog:"
   }
 }
