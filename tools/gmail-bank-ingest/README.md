@@ -24,8 +24,10 @@ project's $0 infrastructure rule leaves no room for Cloud Functions or a server.
 | `parse.js` | Pure parsing of one email. Shared verbatim between Apps Script and the vitest suite here — this is the risky part, so it is the tested part. |
 | `Code.gs` | The sweep: Gmail search → parse → Firestore create, plus the processed-message memory. |
 | `config.js` | Repairs the service-account key on its way out of the Script Properties box, which is where this setup most often breaks. Tested, for the same reason. |
+| `ping.js` | Whether a manual "traer ahora" request counts as current. The entire safety of the public endpoint is this one comparison, so it lives apart from `Code.gs` and is tested. |
 | `appsscript.json` | The project manifest, pinning the OAuth scopes to **read-only** Gmail plus outbound HTTPS. Without it Apps Script asks for full mailbox access; with it the script cannot modify or delete a single email even by accident. |
 | `retry.test.js` | Loads `Code.gs` in a VM with Gmail stubbed, to prove the retry retries once and still raises a persistent failure. |
+| `ping.test.js` | The freshness window, including a stamp from the future. |
 | `fixtures/consumo-autorizado.html` | A real notification, with the cardholder name and card digits scrubbed. |
 
 `pnpm test:ingest` runs the parser, key and retry tests (25 of them, including
@@ -75,9 +77,15 @@ without breaking the other. The key file never goes near the repo — paste its
 
 1. In the Gmail account that receives the notifications, open
    <https://script.google.com> → **New project**.
-2. Create three files matching this folder: `parse.js` and `config.js` (as
-   `.gs` files — paste the contents; Apps Script concatenates files, so their
-   functions become available to `Code.gs`) and `Code.gs`.
+2. Create four files matching this folder: `parse.js`, `config.js` and
+   `ping.js` (as `.gs` files — paste the contents; Apps Script concatenates
+   files, so their functions become available to `Code.gs`) and `Code.gs`.
+
+   **Nothing here syncs itself.** Apps Script has no connection to this repo, so
+   every change to these files has to be pasted again — and a web app keeps
+   serving the version it was deployed from, so after pasting you also have to
+   publish a new version (see below). "Script function not found: doGet" is what
+   an out-of-date project looks like from the browser.
 3. **Project Settings → check "Show appsscript.json manifest file"**, then
    replace that file with the `appsscript.json` here. This is what keeps the
    Gmail authorisation READ-ONLY: do it before the first run, because the scopes
@@ -115,8 +123,13 @@ Gmail search plus a couple of HTTPS calls.
 Without this, a charge shows up within fifteen minutes. With it, the apps can
 ask for a run immediately.
 
-9. **Deploy → New deployment → Web app**. Execute as *me*, access
-   **Anyone**. Copy the `/exec` URL.
+9. Paste `ping.js` and the current `Code.gs` (see step 2 — this is the part
+   people miss), then **Deploy → New deployment → Web app**. Execute as *me*,
+   access **Anyone**. Copy the `/exec` URL.
+
+   Already deployed once? **Deploy → Manage deployments → the pencil → Version:
+   New version → Deploy.** Editing the code is not enough: the URL keeps serving
+   the version it was published from.
 10. Give it to the clients:
     - web: `NEXT_PUBLIC_INGEST_URL` in the Vercel project's env vars;
     - iOS: `xcodebuild ... GD_INGEST_URL=https://script.google.com/.../exec`,
