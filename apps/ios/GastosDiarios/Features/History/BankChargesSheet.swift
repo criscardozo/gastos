@@ -34,6 +34,24 @@ struct BankChargesSheet: View {
             .navigationTitle(l10n.t("bank.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // Left, not next to Listo: it is the one destructive-adjacent
+                // thing here in that it talks to the outside, and putting it
+                // beside the dismiss button invites the wrong tap.
+                ToolbarItem(placement: .topBarLeading) {
+                    if AppModel.ingestEndpoint != nil {
+                        Button {
+                            model.requestBankIngest()
+                        } label: {
+                            if model.isFetchingCharges {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Label(l10n.t("bank.fetchNow"), systemImage: "arrow.clockwise")
+                                    .appFont(14, .semibold)
+                            }
+                        }
+                        .disabled(model.isFetchingCharges)
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(l10n.t("common.done")) { onDone() }
                         .appFont(15, .semibold)

@@ -38,6 +38,7 @@ authorization, not this doc.
 | `memberProfiles` | map<uid, {displayName, color}> | Denormalized for attribution display |
 | `categories` | map<id, Category> | Map keyed by id, NOT an array (see below) |
 | `cards` | map<last4, Card> \| absent | The household's cards, keyed by their last four digits (see below) |
+| `ingestRequestedAt` | timestamp \| absent | "Somebody pressed *traer ahora*". The apps stamp it with the SERVER's clock — members only, enforced in the rules — and then ping the Gmail ingestion's web app, which does no work unless it finds a stamp under two minutes old. The authorisation for a manual run is this write, not the HTTP request; see `tools/gmail-bank-ingest/README.md` |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
 `Category`: `{ key?: string, name?: string, icon: string, color: string, sortOrder: int,

@@ -256,7 +256,7 @@ service cloud.firestore {
     }
 
     function isValidHousehold(data) {
-      return data.keys().hasOnly(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'cards', 'createdAt', 'updatedAt'])
+      return data.keys().hasOnly(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'cards', 'ingestRequestedAt', 'createdAt', 'updatedAt'])
         && data.keys().hasAll(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'createdAt', 'updatedAt'])
         && data.name is string && data.name.size() >= 1 && data.name.size() <= 60
         && data.currency is string && data.currency.matches('^[A-Z]{3}$')
@@ -267,7 +267,16 @@ service cloud.firestore {
         && data.categories is map && data.categories.size() >= 1 && data.categories.size() <= 30
         // Optional so every household that predates it keeps validating — a
         // required field here would reject the next write on all of them.
-        && (!('cards' in data) || (data.cards is map && data.cards.size() <= 6));
+        && (!('cards' in data) || (data.cards is map && data.cards.size() <= 6))
+        // "Somebody asked the Gmail ingestion to run now."
+        //
+        // The mailbox lives in Apps Script and cannot be reached from a phone,
+        // so the button writes this and then pings the script's public URL. The
+        // script only does any work if it finds a stamp from the last couple of
+        // minutes — which means the AUTHORISATION for a manual run is this
+        // write, checked by the rules below, and not a secret in the client.
+        // A secret would not be one: the web bundle is public.
+        && (!('ingestRequestedAt' in data) || data.ingestRequestedAt is timestamp);
     }
 
     // Join self-add: a non-member adds ONLY themselves, touching ONLY
@@ -301,7 +310,22 @@ service cloud.firestore {
       allow update: if isValidHousehold(request.resource.data)
         && request.resource.data.createdAt == resource.data.createdAt
         && isServerTimestamp(request.resource.data.updatedAt)
+        // Whatever branch below allows the write: if the ingestion stamp MOVED,
+        // it moved to the server's clock. Outside the branches on purpose —
+        // the member-edit branch would otherwise let a device set it, and the
+        // script trusts this stamp to decide that a run was just asked for.
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['ingestRequestedAt'])
+            || isServerTimestamp(request.resource.data.ingestRequestedAt))
         && (
+          // (0) asking the ingestion to run: a member stamps ingestRequestedAt
+          // with the SERVER's clock and touches nothing else. The server clock
+          // matters — the script trusts this stamp to decide whether a request
+          // is recent, so a device clock would be a claim rather than a fact.
+          (request.auth != null
+            && request.auth.uid in resource.data.memberIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ingestRequestedAt', 'updatedAt'])
+            && isServerTimestamp(request.resource.data.ingestRequestedAt))
+          ||
           // (a) member edit: membership roster is immutable; a member may
           // edit only their OWN memberProfiles entry
           (request.auth != null

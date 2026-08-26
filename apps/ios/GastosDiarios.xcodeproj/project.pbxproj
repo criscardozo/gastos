@@ -746,6 +746,7 @@
 				CODE_SIGN_ENTITLEMENTS = GastosDiarios/GastosDiarios.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				GD_INGEST_URL = "";
 				INFOPLIST_FILE = GastosDiarios/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -967,6 +968,7 @@
 				CODE_SIGN_ENTITLEMENTS = GastosDiarios/GastosDiarios.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				GD_INGEST_URL = "";
 				INFOPLIST_FILE = GastosDiarios/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

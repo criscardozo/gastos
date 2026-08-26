@@ -123,6 +123,83 @@ function run() {
 }
 
 /**
+ * The manual "traer ahora" button, from the phone or the web.
+ *
+ * The mailbox is only reachable from here, so the apps cannot do the ingestion
+ * themselves. They stamp `households/{id}.ingestRequestedAt` — a write only a
+ * member can make, which the security rules enforce and which must carry the
+ * SERVER's clock — and then ping this URL.
+ *
+ * The authorisation is that write, not this request. This endpoint is public
+ * because an Apps Script web app has no other useful auth mode from a native
+ * app, so anyone who finds the URL can call it: without a fresh stamp they get
+ * `ignored` and one Firestore read, which is the whole blast radius. A shared
+ * secret was the alternative and would have been theatre — the web bundle is
+ * public, so the secret would be too.
+ *
+ * Never throws at the caller: the button is a convenience, and the 15-minute
+ * trigger is the actual guarantee. A failure here just means waiting for it.
+ */
+function doPost() {
+  return handlePing();
+}
+
+/** Same from a browser, which makes it testable by pasting the URL. */
+function doGet() {
+  return handlePing();
+}
+
+function handlePing() {
+  var result;
+  try {
+    var config = readConfig();
+    var token = getAccessToken(config);
+    var requestedAt = readIngestRequestedAt(config, token);
+    // isRequestFresh lives in ping.js so it can be tested — see ping.test.js.
+    // Everything about this endpoint's safety is that one check.
+    if (!isRequestFresh(requestedAt, new Date())) {
+      result = {
+        status: "ignored",
+        reason: requestedAt === null ? "no request" : "request is not recent",
+      };
+    } else {
+      run();
+      result = { status: "ran" };
+    }
+  } catch (error) {
+    console.error("bank-ingest: ping failed: " + error);
+    result = { status: "error", reason: String(error).slice(0, 200) };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(
+    ContentService.MimeType.JSON,
+  );
+}
+
+/** `households/{id}.ingestRequestedAt`, or null when it is not set. */
+function readIngestRequestedAt(config, token) {
+  var url =
+    "https://firestore.googleapis.com/v1/projects/" +
+    encodeURIComponent(config.projectId) +
+    "/databases/(default)/documents/households/" +
+    encodeURIComponent(config.householdId) +
+    "?mask.fieldPaths=ingestRequestedAt";
+
+  var response = UrlFetchApp.fetch(url, {
+    method: "get",
+    headers: { Authorization: "Bearer " + token },
+    muteHttpExceptions: true,
+  });
+  if (response.getResponseCode() !== 200) {
+    throw new Error(
+      "could not read the household: HTTP " + response.getResponseCode(),
+    );
+  }
+  var fields = JSON.parse(response.getContentText()).fields;
+  if (!fields || !fields.ingestRequestedAt) return null;
+  return new Date(fields.ingestRequestedAt.timestampValue);
+}
+
+/**
  * One-off helper: check the Script Properties without touching Gmail or
  * Firestore. Logs the shape of the key, never the key itself. Run this first
  * when `run` fails with a credentials error.

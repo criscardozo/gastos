@@ -361,7 +361,9 @@
     "none": "— elegí un gasto —",
     "noCandidate": "Sin candidato claro: elegilo a mano",
     "suggested": "Sugerido · tasa {rate} · {score}%",
-    "allClear": "Sin cargos pendientes"
+    "allClear": "Sin cargos pendientes",
+    "fetchNow": "Traer del banco",
+    "fetching": "Buscando…"
   },
   "detail": {
     "title": "Detalle del gasto",

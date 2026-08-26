@@ -641,6 +641,40 @@ final class AppModel {
         }
     }
 
+    /// The Apps Script web app that runs the ingestion, from Info.plist.
+    /// nil when it is not configured, which hides the button rather than
+    /// offering one that cannot work.
+    static let ingestEndpoint: URL? = {
+        guard let raw = Bundle.main.object(forInfoDictionaryKey: "GDIngestURL") as? String,
+              !raw.isEmpty,
+              let url = URL(string: raw)
+        else { return nil }
+        return url
+    }()
+
+    /// True while a manual fetch is in flight — gates the double tap. What tells
+    /// the user it worked is a charge appearing, which the listener does.
+    private(set) var isFetchingCharges = false
+
+    func requestBankIngest() {
+        guard let householdId = attachedHouseholdId, !isFetchingCharges else { return }
+        isFetchingCharges = true
+        write {
+            defer {
+                // Long enough that a charge has a chance to arrive before the
+                // button invites another go.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(4))
+                    self.isFetchingCharges = false
+                }
+            }
+            try await self.firestore.requestBankIngest(
+                householdId: householdId,
+                endpoint: Self.ingestEndpoint
+            )
+        }
+    }
+
     /// Discard a charge that is not ours to match. Recoverable for 48 hours —
     /// which is why there is no confirmation prompt on the way in.
     func discardBankCharge(_ charge: BankCharge) {

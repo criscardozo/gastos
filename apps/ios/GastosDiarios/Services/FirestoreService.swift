@@ -442,6 +442,32 @@ final class FirestoreService {
             .updateData(data)
     }
 
+    /// Ask the Gmail ingestion to run now.
+    ///
+    /// Two steps, and the ORDER is the security model. The stamp goes first:
+    /// only a member can write it (the rules say so) and it must carry the
+    /// SERVER's clock, so it is a fact rather than a claim. The ping second: the
+    /// Apps Script endpoint is public — a native app has no useful way to
+    /// authenticate to one — and it does no work unless it finds that stamp
+    /// within a couple of minutes.
+    ///
+    /// The ping's failure is swallowed on purpose: the button is a convenience
+    /// and the 15-minute trigger is the guarantee, so a failed ping costs the
+    /// wait it was trying to skip. The REJECTION of the write is not swallowed —
+    /// it goes through the usual channel, because that one means the request was
+    /// never made.
+    func requestBankIngest(householdId: String, endpoint: URL?) async throws {
+        try await db.collection("households").document(householdId).updateData([
+            FieldPath(["ingestRequestedAt"]): FieldValue.serverTimestamp(),
+            FieldPath(["updatedAt"]): FieldValue.serverTimestamp(),
+        ])
+        guard let endpoint else { return }
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 10
+        _ = try? await URLSession.shared.data(for: request)
+    }
+
     /// Record that somebody answered the start-period screen, accepting the
     /// budget as it stands.
     ///

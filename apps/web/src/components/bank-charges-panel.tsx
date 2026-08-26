@@ -20,6 +20,7 @@ import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   assignBankCharge,
   dismissBankCharge,
+  requestBankIngest,
   restoreBankCharge,
 } from "@/lib/firebase/mutations";
 import type { BankChargeDoc, Expense, Household } from "@/lib/firebase/converters";
@@ -40,6 +41,13 @@ function formatRate(rate: number, locale: string): string {
     maximumFractionDigits: 3,
   }).format(rate);
 }
+
+/**
+ * The Apps Script web app that runs the Gmail ingestion, from
+ * NEXT_PUBLIC_INGEST_URL. Absent — a local dev run, or before the script is
+ * deployed — the button is not rendered at all rather than shown broken.
+ */
+const INGEST_ENDPOINT = process.env.NEXT_PUBLIC_INGEST_URL ?? null;
 
 export function BankChargesPanel({
   household,
@@ -85,7 +93,43 @@ export function BankChargesPanel({
     [expenses],
   );
 
-  if (pending.length === 0 && dismissed.length === 0) return null;
+  // Ask the ingestion to run now. Firestore is written first and the endpoint
+  // pinged second — see requestBankIngest for why that order IS the security
+  // model. `fetching` only gates the double click: what tells the user it
+  // worked is a charge appearing, which the listener does on its own.
+  const [fetching, setFetching] = useState(false);
+  const fetchNow = () => {
+    const fb = getFirebaseClient();
+    if (fb === null || fetching) return;
+    setFetching(true);
+    write(
+      requestBankIngest(fb.db, household.id, INGEST_ENDPOINT).finally(() => {
+        // Long enough that the charge has a chance to arrive before the button
+        // invites another go.
+        setTimeout(() => setFetching(false), 4000);
+      }),
+    );
+  };
+
+  const fetchButton = INGEST_ENDPOINT === null ? null : (
+    <button
+      type="button"
+      onClick={fetchNow}
+      disabled={fetching}
+      className="flex items-center gap-1.5 rounded-full border border-pill px-3 py-1 text-[12.5px] font-semibold text-ink-2 disabled:opacity-60"
+    >
+      <Icon name={fetching ? "hourglass_top" : "sync"} size={15} />
+      {fetching ? t("fetching") : t("fetchNow")}
+    </button>
+  );
+
+  // With nothing pending the panel is just the button: this is exactly when
+  // somebody wants it, and returning null here used to hide the only way to
+  // ask for a charge that has not arrived yet.
+  if (pending.length === 0 && dismissed.length === 0) {
+    if (fetchButton === null) return null;
+    return <div className="flex justify-end">{fetchButton}</div>;
+  }
 
   const chosenFor = (chargeId: string, suggested: string | null): string =>
     choice[chargeId] ?? suggested ?? "";
@@ -148,6 +192,7 @@ export function BankChargesPanel({
             </span>
           )}
         </div>
+        {fetchButton}
         {pending.length > 0 && (
           <button
             type="button"

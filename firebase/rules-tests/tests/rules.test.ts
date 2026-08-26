@@ -1237,6 +1237,62 @@ describe("households/{id}/periodBudgets", () => {
     );
   });
 
+  // ------------------------ ingestRequestedAt ------------------------
+
+  it("a member can ask the Gmail ingestion to run", async () => {
+    await seedHousehold();
+    await assertSucceeds(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD), {
+        ingestRequestedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("the request needs the server's clock", async () => {
+    // The script trusts this stamp to decide whether a run was just asked for.
+    // A device clock would be a claim; this makes it a fact.
+    await seedHousehold();
+    await assertFails(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD), {
+        ingestRequestedAt: new Date("2030-01-01"),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("a stranger cannot ask for a run", async () => {
+    await seedHousehold();
+    await assertFails(
+      updateDoc(doc(db(env, CAROL), "households", HOUSEHOLD), {
+        ingestRequestedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("the stamp still needs the server's clock inside a bigger edit", async () => {
+    // Members may legitimately rename the household or change the default
+    // budget, so those are NOT smuggling. What must hold either way is that
+    // the stamp itself never comes from a device — which is why the rule sits
+    // outside the branches rather than in its own.
+    await seedHousehold();
+    await assertSucceeds(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD), {
+        name: "Merlines",
+        ingestRequestedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD), {
+        name: "Merlines",
+        ingestRequestedAt: new Date("2030-01-01"),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
   it("a household without cards still validates — the field is optional", async () => {
     // Every household predates this field; making it required would reject the
     // next write on all of them.

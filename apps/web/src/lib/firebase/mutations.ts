@@ -299,6 +299,38 @@ export async function extendPeriodToFortnight(
   );
 }
 
+/**
+ * Ask the Gmail ingestion to run now.
+ *
+ * Two steps, and the ORDER is the security model. The stamp goes in first: only
+ * a member can write it (the rules say so) and it must carry the server's
+ * clock, so it is a fact rather than a claim. The ping second: the Apps Script
+ * endpoint is public — a native app has no useful way to authenticate to one —
+ * and it does no work unless it finds that stamp within a couple of minutes.
+ *
+ * The ping is deliberately not awaited for its body and its failure is
+ * swallowed: the button is a convenience and the 15-minute trigger is the real
+ * guarantee, so the worst case of a failed ping is the wait it was skipping.
+ * `mode: "no-cors"` because Apps Script does not answer preflight — the
+ * response is unreadable, which is fine since nothing here reads it.
+ */
+export async function requestBankIngest(
+  db: Firestore,
+  householdId: string,
+  endpoint: string | null,
+): Promise<void> {
+  await updateDoc(doc(db, "households", householdId), {
+    ingestRequestedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  if (endpoint === null) return;
+  try {
+    await fetch(endpoint, { method: "POST", mode: "no-cors" });
+  } catch {
+    // Left for the next scheduled run.
+  }
+}
+
 export async function updateHouseholdName(
   db: Firestore,
   householdId: string,

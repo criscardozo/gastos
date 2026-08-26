@@ -256,6 +256,23 @@
         }
       }
     },
+    "bank.fetchNow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fetch"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Traer"
+          }
+        }
+      }
+    },
     "bank.hint": {
       "extractionState": "manual",
       "localizations": {

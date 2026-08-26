@@ -44,6 +44,9 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
         OTHER_LDFLAGS: -ObjC
+        # Overridable at build time: xcodebuild GD_INGEST_URL=https://...
+        # Empty by default, which the app reads as "not configured".
+        GD_INGEST_URL: ""
     info:
       path: GastosDiarios/Info.plist
       properties:
@@ -59,6 +62,12 @@ targets:
         # Google Sign-In configuration — must match CLIENT_ID /
         # REVERSED_CLIENT_ID in Resources/GoogleService-Info.plist.
         GIDClientID: 56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8.apps.googleusercontent.com
+        # The Apps Script web app that runs the Gmail ingestion on demand.
+        # Empty until it is deployed (docs/setup.md) — with no URL the "traer
+        # ahora" button is not shown at all rather than shown broken. Not a
+        # secret: the endpoint does nothing without a fresh request stamped on
+        # the household, which only a member can write.
+        GDIngestURL: $(GD_INGEST_URL)
         CFBundleURLTypes:
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:

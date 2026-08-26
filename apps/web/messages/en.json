@@ -361,7 +361,9 @@
     "none": "— pick an expense —",
     "noCandidate": "No clear candidate: pick it by hand",
     "suggested": "Suggested · rate {rate} · {score}%",
-    "allClear": "Nothing pending"
+    "allClear": "Nothing pending",
+    "fetchNow": "Fetch from the bank",
+    "fetching": "Fetching…"
   },
   "detail": {
     "title": "Expense detail",

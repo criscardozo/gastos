@@ -110,6 +110,35 @@ Apps Script quotas on a free account are generous for this: a 15-minute trigger
 is ~2,900 runs a month against a 90 min/day runtime allowance, and each run is a
 Gmail search plus a couple of HTTPS calls.
 
+## The "traer ahora" button (optional)
+
+Without this, a charge shows up within fifteen minutes. With it, the apps can
+ask for a run immediately.
+
+9. **Deploy → New deployment → Web app**. Execute as *me*, access
+   **Anyone**. Copy the `/exec` URL.
+10. Give it to the clients:
+    - web: `NEXT_PUBLIC_INGEST_URL` in the Vercel project's env vars;
+    - iOS: `xcodebuild ... GD_INGEST_URL=https://script.google.com/.../exec`,
+      or set `GD_INGEST_URL` in the target's build settings.
+
+    With no URL configured the button is not rendered at all, so this step is
+    genuinely optional.
+
+**Why "Anyone" is not a hole.** The endpoint is public because an Apps Script
+web app has no auth mode a native app can use. It does no work on its own: the
+apps first stamp `households/{id}.ingestRequestedAt`, a write the security rules
+only allow to a MEMBER and only with the server's clock, and the endpoint
+ignores any ping without a stamp from the last two minutes (`ping.js`, tested).
+
+So the authorisation is that write, not the request. Somebody who finds the URL
+gets `{"status":"ignored"}` and costs one Firestore read. The alternative was a
+shared secret in the clients, which would have been theatre: the web bundle is
+public, so the secret would be too.
+
+Pasting the URL into a browser is a valid smoke test — `doGet` answers the same
+JSON, so you can see `ignored` before anyone has pressed anything.
+
 ## How duplicates are prevented
 
 Two independent layers, because Gmail groups these emails into a single thread by
