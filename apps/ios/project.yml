@@ -44,9 +44,15 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
         OTHER_LDFLAGS: -ObjC
-        # Overridable at build time: xcodebuild GD_INGEST_URL=https://...
-        # Empty by default, which the app reads as "not configured".
-        GD_INGEST_URL: ""
+        # The Apps Script web app that runs the Gmail ingestion on demand.
+        #
+        # In the repo for the same reason GIDClientID below is: it is not a
+        # secret. The endpoint does no work without a request stamped on the
+        # household in the last two minutes, which only a member can write —
+        # the security is that stamp, not this URL being hard to find. Keeping
+        # it here means every build has the button; passing it per build would
+        # make it vanish silently the first time somebody forgot.
+        GD_INGEST_URL: https://script.google.com/macros/s/AKfycbxq9Vn_eMC_fLdLV4itZFL0ABHr0BdMZCzZeOyA68vECKBawpVIHcikn48tdpHan4h9mw/exec
     info:
       path: GastosDiarios/Info.plist
       properties:

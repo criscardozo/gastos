@@ -746,7 +746,7 @@
 				CODE_SIGN_ENTITLEMENTS = GastosDiarios/GastosDiarios.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				GD_INGEST_URL = "";
+				GD_INGEST_URL = "https://script.google.com/macros/s/AKfycbxq9Vn_eMC_fLdLV4itZFL0ABHr0BdMZCzZeOyA68vECKBawpVIHcikn48tdpHan4h9mw/exec";
 				INFOPLIST_FILE = GastosDiarios/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -968,7 +968,7 @@
 				CODE_SIGN_ENTITLEMENTS = GastosDiarios/GastosDiarios.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				GD_INGEST_URL = "";
+				GD_INGEST_URL = "https://script.google.com/macros/s/AKfycbxq9Vn_eMC_fLdLV4itZFL0ABHr0BdMZCzZeOyA68vECKBawpVIHcikn48tdpHan4h9mw/exec";
 				INFOPLIST_FILE = GastosDiarios/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
