@@ -179,6 +179,14 @@ acaba de pedir.
 - El **device support** también se desfasa: si el iPhone se actualiza antes que
   Xcode, `xcodebuild` dice que la versión de iOS "is not installed" y no hay
   build para dispositivo hasta bajar el componente.
+- **Los `.xcscheme` los genera `xcodegen`, no Xcode.** Si aparece un diff en
+  ellos (típicamente `version = "1.3"` → `"1.7"` y bloques
+  `CommandLineArguments` vacíos), es la herramienta poniéndose al día con un
+  archivo que quedó viejo: **commitearlo**, no revertirlo. Lo reverti dos veces
+  culpando a Xcode antes de comprobarlo — checkout del archivo en 1.3, correr
+  `xcodegen`, y vuelve a 1.7 sin abrir el proyecto. Que un checkout limpio más
+  `xcodegen` deje el árbol limpio es lo que hace que un diff accidental
+  signifique algo.
 
 ---
 
