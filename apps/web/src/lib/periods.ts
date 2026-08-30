@@ -55,6 +55,46 @@ export function periodEndDate(startDate: string, period: PeriodType): string {
 }
 
 /** Whether `date` falls inside the inclusive [startDate, endDate] range. */
+/**
+ * The calendar month `date` falls in, as a range.
+ *
+ * Calendar months are NOT budget periods — a period is a materialized doc with
+ * its own budget, and a month is just a window to look through. Both the Gastos
+ * list and the stats screen offer one, so the arithmetic lives here with the
+ * rest of it rather than being written twice.
+ */
+export function monthRange(date: string): PeriodRange {
+  const [year, month] = date.split("-");
+  const last = new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate();
+  return {
+    startDate: `${year}-${month}-01`,
+    endDate: `${year}-${month}-${String(last).padStart(2, "0")}`,
+  };
+}
+
+/** `count` calendar months ending with the one `date` falls in, newest first. */
+export function recentMonths(date: string, count: number): PeriodRange[] {
+  const year = Number(date.slice(0, 4));
+  const month = Number(date.slice(5, 7));
+  return Array.from({ length: count }, (_, i) => {
+    // Date.UTC normalizes a month of 0 or -1 into the previous year by itself,
+    // which is why this counts backwards through it instead of by hand.
+    const d = new Date(Date.UTC(year, month - 1 - i, 1));
+    return monthRange(
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-01`,
+    );
+  });
+}
+
+/** The `months` calendar months ending with the one `date` falls in. */
+export function monthsBackRange(date: string, months: number): PeriodRange {
+  const all = recentMonths(date, months);
+  return {
+    startDate: all[all.length - 1].startDate,
+    endDate: all[0].endDate,
+  };
+}
+
 export function containsDate(range: PeriodRange, date: string): boolean {
   return range.startDate <= date && date <= range.endDate;
 }

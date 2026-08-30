@@ -101,14 +101,54 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   await expect(page.getByText("Café de prueba").first()).toBeVisible();
   await page.getByLabel("verification").selectOption("all");
 
+  // The same list can be looked at by calendar MONTH, which crosses period
+  // boundaries on purpose — a fortnight is the budget, a month is a window.
+  const thisMonth = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Australia/Sydney",
+  })
+    .format(new Date())
+    .slice(0, 7);
+  await page.getByLabel("period").selectOption(`month:${thisMonth}`);
+  // The pill names the month rather than printing its two boundary dates.
+  const monthName = new Intl.DateTimeFormat("es-AR", {
+    month: "long",
+    timeZone: "Australia/Sydney",
+  }).format(new Date());
+  await expect(
+    page.getByText(`${monthName} ${thisMonth.slice(0, 4)}`).first(),
+  ).toBeVisible();
+  await expect(page.getByText("Café de prueba").first()).toBeVisible();
+
   // Dashboard "Te queda" reflects it: 900,00 − 12,50 = 887,50.
   await page.getByRole("link", { name: "Inicio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible();
   await expect(page.getByText("$887,50").first()).toBeVisible();
 
-  // Data page: export the current period as CSV and import new expenses.
+  // Data page: the grid shows the range, and the export carries the same rows.
   await page.getByRole("link", { name: "Datos", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Datos" })).toBeVisible();
+
+  // The expense is ON SCREEN before any file exists — the point of the page.
+  await expect(page.getByText("Café de prueba")).toBeVisible();
+  // `.first()`: the grid prints it in the row and again in the total footer.
+  await expect(page.getByText("US$ 8,15").first()).toBeVisible();
+
+  // Sorting is by column heading, and it is the export's order too.
+  await page.getByRole("button", { name: "Monto" }).click();
+  await expect(
+    page.getByRole("columnheader", { name: "Monto" }),
+  ).toHaveAttribute("aria-sort", "ascending");
+  await page.getByRole("button", { name: "Monto" }).click();
+  await expect(
+    page.getByRole("columnheader", { name: "Monto" }),
+  ).toHaveAttribute("aria-sort", "descending");
+
+  // Filtering the grid narrows what leaves with you: a note nothing matches
+  // empties both, and clearing it brings the row back.
+  await page.getByLabel("Buscar en la nota").fill("nada-coincide");
+  await expect(page.getByText("Café de prueba")).toBeHidden();
+  await page.getByLabel("Buscar en la nota").fill("");
+  await expect(page.getByText("Café de prueba")).toBeVisible();
 
   // Export CSV — a download fires and carries the expense we just added.
   const [download] = await Promise.all([
@@ -133,6 +173,10 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
     timeZone: "Australia/Sydney",
   }).format(new Date());
   const importCsv = `fecha,categoria,nota,monto_aud,moneda,monto_original,creado_por\n${today},Súper,Gasto importado,13.00,USD,20.00,E2E Tester\n`;
+  // Importing lives in Ajustes now: it is the one control on either screen
+  // that writes rows, and it had been sitting next to four read-only buttons.
+  await page.getByRole("link", { name: "Ajustes" }).click();
+  await expect(page.getByRole("heading", { name: "Ajustes" })).toBeVisible();
   await page.getByLabel("Elegir archivo CSV").setInputFiles({
     name: "import.csv",
     mimeType: "text/csv",
@@ -150,7 +194,6 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
 
   // Settings: switch the language to English and assert a label changes.
   await page.getByRole("link", { name: "Ajustes" }).click();
-  await expect(page.getByRole("heading", { name: "Ajustes" })).toBeVisible();
   await page.getByRole("tab", { name: "English" }).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
 });

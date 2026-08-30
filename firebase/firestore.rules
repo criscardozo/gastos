@@ -133,6 +133,9 @@ rules_version = '2';
 //     taxes with IIBB + IVA RG 4240 on top of RG 5617. ABSENT MEANS TRUE —
 //     nearly everything on this card is one, and every charge predates the
 //     field. See apps/web/src/lib/card-taxes.ts)
+//   - verified: bool (optional; somebody checked this line against the paper
+//     statement. ABSENT MEANS FALSE — the opposite default to `digital`, and
+//     deliberately: an unchecked charge must never claim to have been checked)
 //   - createdBy: uid string (required, = author on create, immutable)
 //   - createdAt: timestamp (required, server time, immutable)
 //   - updatedAt: timestamp (required, server time)
@@ -620,10 +623,13 @@ service cloud.firestore {
       // ------------------------ cardCharges ------------------------
 
       function isValidCardCharge(data) {
-        return data.keys().hasOnly(['date', 'detail', 'card', 'usdCents', 'digital', 'createdBy', 'createdAt', 'updatedAt'])
+        return data.keys().hasOnly(['date', 'detail', 'card', 'usdCents', 'digital', 'verified', 'createdBy', 'createdAt', 'updatedAt'])
           && data.keys().hasAll(['date', 'detail', 'card', 'usdCents', 'createdBy', 'createdAt', 'updatedAt'])
-          // Optional, because every charge written before it exists without it.
+          // Both optional, because every charge written before them exists
+          // without them. They default in OPPOSITE directions on the client —
+          // see the field notes at the top of this file.
           && (!('digital' in data) || data.digital is bool)
+          && (!('verified' in data) || data.verified is bool)
           && isCalendarDate(data.date)
           && data.detail is string && data.detail.size() <= 200
           && data.card in ['visa', 'mastercard']

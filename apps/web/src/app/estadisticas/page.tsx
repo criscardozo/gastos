@@ -15,9 +15,12 @@ import { useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { Avatar } from "@/components/ui/avatar";
 import { Segmented } from "@/components/ui/segmented";
+import { CurrencyTag } from "@/components/ui/marks";
 import {
   BarRow,
+  DayAxis,
   DayBars,
+  DayLine,
   HeadlineStat,
   PaceChart,
   StatCard,
@@ -26,11 +29,17 @@ import { getFirebaseClient } from "@/lib/firebase/client";
 import { expenseConverter } from "@/lib/firebase/converters";
 import { categoryColor } from "@/lib/categories";
 import { formatCents, formatCentsCompact, formatUsd } from "@/lib/money";
-import { formatPeriodRange, formatShortDate } from "@/lib/dates";
+import {
+  formatMonthLabel,
+  formatPeriodRange,
+  formatShortDate,
+} from "@/lib/dates";
 import {
   addDays,
   containsDate,
   daysBetween,
+  monthRange,
+  monthsBackRange,
   type PeriodRange,
 } from "@/lib/periods";
 import {
@@ -46,7 +55,13 @@ import {
   type StatExpense,
 } from "@/lib/stats";
 
-type RangePreset = "period" | "month" | "quarter" | "custom";
+type RangePreset =
+  | "period"
+  | "month"
+  | "quarter"
+  | "semester"
+  | "year"
+  | "custom";
 
 /** How far today's spend is from the even-pace line, in cents. */
 function paceGap({
@@ -62,23 +77,18 @@ function paceGap({
   return Math.abs((spent[i] ?? 0) - (pace[i] ?? 0));
 }
 
-/** First and last day of the calendar month containing `date`. */
-function monthRange(date: string): PeriodRange {
-  const [year, month] = date.split("-");
-  const last = new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate();
-  return {
-    startDate: `${year}-${month}-01`,
-    endDate: `${year}-${month}-${String(last).padStart(2, "0")}`,
-  };
-}
-
 export default function StatsPage() {
   const t = useTranslations("stats");
   const tCat = useTranslations("categories");
   const { locale } = useLocale();
   const { household, periods, currentPeriod, today } = useHousehold();
 
-  const [preset, setPreset] = useState<RangePreset>("period");
+  // The month is what somebody opening this screen almost always means, and it
+  // is the only range that stays comparable from one visit to the next — a
+  // "period" is a fortnight that moves.
+  const [preset, setPreset] = useState<RangePreset>("month");
+  /** Bars answer "which day was big", the line answers "what shape was it". */
+  const [dailyMode, setDailyMode] = useState<"bars" | "line">("bars");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [state, setState] = useState<{
@@ -99,9 +109,34 @@ export default function StatsPage() {
     if (preset === "quarter") {
       return { startDate: addDays(today, -89), endDate: today };
     }
+    // Whole calendar months rather than "n days back": half a year counted in
+    // days starts mid-February, and every month total in the chart would then
+    // be a partial one.
+    if (preset === "semester") return monthsBackRange(today, 6);
+    if (preset === "year") return monthsBackRange(today, 12);
     const p = currentPeriod ?? periods[periods.length - 1] ?? null;
     return p === null ? null : { startDate: p.startDate, endDate: p.endDate };
   }, [preset, today, customFrom, customTo, currentPeriod, periods]);
+
+  /**
+   * What to call the range on screen. A calendar month gets its own name
+   * ("agosto 2026"); everything else is named after the button that chose it,
+   * because "1 mar – 31 ago" is a range, not a name.
+   */
+  const rangeTitle =
+    preset === "month" && range !== null
+      ? formatMonthLabel(range.startDate, locale)
+      : t(
+          preset === "period"
+            ? "rangePeriod"
+            : preset === "quarter"
+              ? "rangeQuarter"
+              : preset === "semester"
+                ? "rangeSemester"
+                : preset === "year"
+                  ? "rangeYear"
+                  : "rangeCustom",
+        );
 
   /* One bounded read per range. */
   const householdId = household?.id ?? null;
@@ -201,12 +236,21 @@ export default function StatsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-y-2">
         <h1 className="text-[22px] font-bold text-ink">{t("title")}</h1>
-        {range !== null && (
-          <span className="text-[13px] font-semibold text-ink-2">
-            {formatPeriodRange(range.startDate, range.endDate, locale, "short")}
-          </span>
-        )}
       </div>
+
+      {/* What is on screen, said once and said large. The dates underneath are
+          not decoration: "este mes" and "medio año" both look like a chart, and
+          the only way to know which one you are reading is the range itself. */}
+      {range !== null && (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[26px] font-bold leading-none tracking-[-0.02em] text-ink">
+            {rangeTitle}
+          </span>
+          <span className="text-[12.5px] text-ink-3">
+            {formatPeriodRange(range.startDate, range.endDate, locale, "long")}
+          </span>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2.5">
         <Segmented<RangePreset>
@@ -215,6 +259,8 @@ export default function StatsPage() {
             { value: "period", label: t("rangePeriod") },
             { value: "month", label: t("rangeMonth") },
             { value: "quarter", label: t("rangeQuarter") },
+            { value: "semester", label: t("rangeSemester") },
+            { value: "year", label: t("rangeYear") },
             { value: "custom", label: t("rangeCustom") },
           ]}
           value={preset}
@@ -268,23 +314,32 @@ export default function StatsPage() {
           <div className="flex flex-col gap-4">
             {/* Headline figures */}
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {/* The mark goes on the headline figures only. Every number on
+                  this screen is the household currency, so repeating it on
+                  each bar row would be wallpaper — but the screen now sits
+                  beside ones showing USD and ARS, and the top line is where
+                  somebody checks which. */}
               <HeadlineStat
                 label={t("total")}
                 value={money(stats.totals.totalCents)}
+                currency={household.currency}
                 meta={t("expenseCount", { count: stats.totals.count })}
               />
               <HeadlineStat
                 label={t("perDay")}
                 value={money(stats.totals.perDayCents)}
+                currency={household.currency}
                 meta={t("quietDays", { count: stats.totals.daysWithoutSpending })}
               />
               <HeadlineStat
                 label={t("average")}
                 value={money(stats.totals.averageCents)}
+                currency={household.currency}
               />
               <HeadlineStat
                 label={t("biggest")}
                 value={money(stats.totals.biggest?.amountCents ?? 0)}
+                currency={household.currency}
                 meta={
                   stats.totals.biggest === null
                     ? undefined
@@ -314,21 +369,37 @@ export default function StatsPage() {
             )}
 
             {/* Day by day */}
-            <StatCard title={t("dailyTitle")} hint={t("dailyHint")}>
-              <DayBars
+            <StatCard
+              title={t("dailyTitle")}
+              hint={dailyMode === "bars" ? t("dailyHint") : t("dailyLineHint")}
+              action={
+                <Segmented<"bars" | "line">
+                  ariaLabel={t("dailyMode")}
+                  options={[
+                    { value: "bars", label: t("dailyBars") },
+                    { value: "line", label: t("dailyLine") },
+                  ]}
+                  value={dailyMode}
+                  onChange={setDailyMode}
+                />
+              }
+            >
+              {dailyMode === "bars" ? (
+                <DayBars
+                  points={stats.days}
+                  labelFor={(date) => formatShortDate(date, locale)}
+                  valueFor={money}
+                />
+              ) : (
+                <DayLine points={stats.days} />
+              )}
+              {/* Which day each column is. Used to be the first and last date
+                  only, which told you the range you already picked and nothing
+                  about the spike in the middle. */}
+              <DayAxis
                 points={stats.days}
                 labelFor={(date) => formatShortDate(date, locale)}
-                valueFor={money}
               />
-              <div className="flex justify-between text-[11px] text-ink-3">
-                <span>{formatShortDate(stats.days[0].date, locale)}</span>
-                <span>
-                  {formatShortDate(
-                    stats.days[stats.days.length - 1].date,
-                    locale,
-                  )}
-                </span>
-              </div>
             </StatCard>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -437,8 +508,11 @@ export default function StatsPage() {
                     <span className="text-[12.5px] text-ink-2">
                       {t("bankCharged")}
                     </span>
-                    <span className="tnum text-[15px] font-bold text-ink">
-                      {formatUsd(stats.checks.usdCents, locale)}
+                    <span className="flex items-baseline gap-1.5">
+                      <span className="tnum text-[15px] font-bold text-ink">
+                        {formatUsd(stats.checks.usdCents, locale)}
+                      </span>
+                      <CurrencyTag currency="USD" />
                     </span>
                   </div>
                   {stats.checks.rate !== null && (

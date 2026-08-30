@@ -31,8 +31,8 @@ import type { CardCharge, CardFeeSettings } from "@/lib/firebase/converters";
 import {
   addCardCharge,
   deleteCardCharge,
-  deleteCardStatement,
   openCardStatement,
+  setCardChargeVerified,
   updateCardCharge,
   updateHouseholdCardFees,
   type CardChargeInput,
@@ -93,7 +93,6 @@ export default function CardsPage() {
   const [chargeDialog, setChargeDialog] = useState<CardCharge | "new" | null>(null);
   const [datesDialog, setDatesDialog] = useState(false);
   const [feesDialog, setFeesDialog] = useState(false);
-  const [confirmDeleteStatement, setConfirmDeleteStatement] = useState(false);
 
   const shown = statements[Math.min(index, Math.max(statements.length - 1, 0))] ?? null;
   const isCurrent = index === 0;
@@ -307,9 +306,14 @@ export default function CardsPage() {
           )}
 
           {isCurrent && (
-            // Both secondary, and small. Closing a statement happens once a
-            // month; a full-width primary button gave a rare, hard-to-undo
-            // action the most prominent spot on the card.
+            // Secondary, and small. Closing a statement happens once a month; a
+            // full-width primary button gave a rare, hard-to-undo action the
+            // most prominent spot on the card.
+            //
+            // Deleting one used to live here and no longer does. A statement is
+            // a window other rows are filed into, so removing it made a month's
+            // charges disappear from every screen at once — and the only reason
+            // to reach for it, a wrong closing date, is what the dialog fixes.
             <div className="flex flex-wrap items-center gap-2.5 border-t border-soft pt-3">
               <button
                 type="button"
@@ -317,25 +321,6 @@ export default function CardsPage() {
                 className="rounded-full border border-line px-3.5 py-2 text-[12.5px] font-semibold text-ink-2"
               >
                 {t("closeAndOpen")}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (confirmDeleteStatement) {
-                    withDb((db) =>
-                      deleteCardStatement(db, household.id, shown.closingDate),
-                    );
-                    setConfirmDeleteStatement(false);
-                  } else {
-                    setConfirmDeleteStatement(true);
-                  }
-                }}
-                className="ml-auto rounded-full border border-line px-3.5 py-2 text-[12.5px] font-semibold"
-                style={{ color: "var(--over)" }}
-              >
-                {confirmDeleteStatement
-                  ? t("confirmDeleteStatement")
-                  : t("deleteStatement")}
               </button>
             </div>
           )}
@@ -361,28 +346,66 @@ export default function CardsPage() {
 
       <div className="flex flex-col gap-2">
         {charges.map((charge) => (
-          <button
+          // A row, not a button: the verify tick has to be its own control, and
+          // a button inside a button is invalid HTML that browsers resolve by
+          // dropping one of them.
+          <div
             key={charge.id}
-            type="button"
-            onClick={() => setChargeDialog(charge)}
-            className="flex items-center gap-3 rounded-[16px] border border-line bg-surface px-4 py-3 text-left"
+            className="flex items-center gap-3 rounded-[16px] border border-line bg-surface px-4 py-3"
           >
-            <span className="flex w-[52px] flex-none justify-center">
-              <CardMark brand={charge.card} size={30} />
-            </span>
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="truncate text-[14px] font-semibold text-ink">
-                {charge.detail !== "" ? charge.detail : CARD_LABELS[charge.card]}
+            <button
+              type="button"
+              onClick={() => setChargeDialog(charge)}
+              className="flex min-w-0 flex-1 items-center gap-3 text-left"
+            >
+              <span className="flex w-[52px] flex-none justify-center">
+                <CardMark brand={charge.card} size={30} />
               </span>
-              <span className="text-[11.5px] text-ink-3">
-                {formatShortDate(charge.date, locale)}
-                {charge.pendingWrite && ` · ${tCommon("pending")}`}
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="truncate text-[14px] font-semibold text-ink">
+                  {charge.detail !== "" ? charge.detail : CARD_LABELS[charge.card]}
+                </span>
+                <span className="text-[11.5px] text-ink-3">
+                  {formatShortDate(charge.date, locale)}
+                  {charge.pendingWrite && ` · ${tCommon("pending")}`}
+                  {/* Only worth saying when it is NOT the default: nearly every
+                      charge is digital, so labelling those would be noise. */}
+                  {!charge.digital && ` · ${t("notDigital")}`}
+                </span>
+              </div>
+              <span className="tnum flex-none text-[15px] font-bold text-ink">
+                {formatUsd(charge.usdCents, locale)}
               </span>
-            </div>
-            <span className="tnum flex-none text-[15px] font-bold text-ink">
-              {formatUsd(charge.usdCents, locale)}
-            </span>
-          </button>
+            </button>
+
+            {/* Checked against the paper statement. Green and filled once it
+                is, hollow and grey until then — the same "did a person confirm
+                this" question the Gastos list asks about the bank's USD. */}
+            <button
+              type="button"
+              aria-label={t("verifyCharge")}
+              aria-pressed={charge.verified}
+              onClick={() =>
+                withDb((db) =>
+                  setCardChargeVerified(
+                    db,
+                    household.id,
+                    charge.id,
+                    !charge.verified,
+                  ),
+                )
+              }
+              className="flex-none rounded-full p-1"
+            >
+              <Icon
+                name={charge.verified ? "check_circle" : "check_box_outline_blank"}
+                size={22}
+                style={{
+                  color: charge.verified ? "var(--good)" : "var(--ink-tertiary)",
+                }}
+              />
+            </button>
+          </div>
         ))}
       </div>
 

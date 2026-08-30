@@ -110,7 +110,9 @@
     "editBankUsd": "Edit the bank's USD",
     "markVerified": "Verify",
     "clearVerification": "Clear verification",
-    "exportUnverifiedConfirm": "{count, plural, one {# expense has no bank USD yet: its USD column will be blank. Export anyway?} other {# expenses have no bank USD yet: their USD columns will be blank. Export anyway?}}"
+    "exportUnverifiedConfirm": "{count, plural, one {# expense has no bank USD yet: its USD column will be blank. Export anyway?} other {# expenses have no bank USD yet: their USD columns will be blank. Export anyway?}}",
+    "groupMonths": "Months",
+    "groupPeriods": "Periods"
   },
   "services": {
     "title": "Services",
@@ -194,7 +196,10 @@
     "pastClosingAnyway": "Add it to this statement anyway",
     "arsRateApiDated": "At the official rate, $ {rate}, from {date}",
     "digital": "Digital service from abroad",
-    "digitalHelp": "Adds IIBB 2% and IVA RG 4240 21%. An app or subscription yes; a shop no."
+    "digitalHelp": "Adds IIBB 2% and IVA RG 4240 21%. An app or subscription yes; a shop no.",
+    "verifyCharge": "Checked against the statement",
+    "notDigital": "not digital",
+    "arsSpend": "Spend in pesos"
   },
   "cardsInbox": {
     "title": "Bank charges",
@@ -210,9 +215,9 @@
   },
   "data": {
     "title": "Data",
-    "subtitle": "Export your expenses or import from a CSV.",
+    "subtitle": "Look at and export the expenses in a range.",
     "exportTitle": "Export",
-    "exportHint": "Pick a range and download your expenses as CSV, PDF or Excel, or send them to Google Drive.",
+    "exportHint": "Exports what you are looking at, in this order",
     "rangeWeek": "This week",
     "rangeCurrent": "Current period",
     "rangePrevious": "Previous period",
@@ -262,7 +267,13 @@
     "acceptUnverified": "I accept that this export contains unverified data",
     "unverifiedNotice": "{count, plural, one {# expense without the bank's USD: its USD cell is blank and the USD total is partial} other {# expenses without the bank's USD: their USD cells are blank and the USD total is partial}}",
     "reasonBadUsd": "Invalid USD",
-    "exportDriveStandalone": "Google can't hand the session back to the installed app. Open gastos.cardozo.dev in the browser to export to Drive (Excel works fine here)."
+    "exportDriveStandalone": "Google can't hand the session back to the installed app. Open gastos.cardozo.dev in the browser to export to Drive (Excel works fine here).",
+    "viewTitle": "What you are looking at",
+    "viewHint": "Pick the range and filter: the table below is exactly what gets exported.",
+    "gridTitle": "Expenses in the range",
+    "gridHint": "Tap a heading to sort.",
+    "searchNote": "Search the note",
+    "personAll": "Everyone"
   },
   "settings": {
     "title": "Settings",
@@ -435,7 +446,13 @@
     "someone": "Someone",
     "periodsTitle": "Period by period",
     "periodsHint": "Share of each period's budget used within this range.",
-    "outsideRange": "outside the range"
+    "outsideRange": "outside the range",
+    "rangeSemester": "6 months",
+    "rangeYear": "Yearly",
+    "dailyMode": "How to draw day by day",
+    "dailyBars": "Bars",
+    "dailyLine": "Line",
+    "dailyLineHint": "The shape of the spending across the range."
   },
   "bankDismissed": {
     "summary": "{count, plural, one {# discarded} other {# discarded}}",

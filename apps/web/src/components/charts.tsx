@@ -11,6 +11,8 @@
 
 import type { ReactNode } from "react";
 
+import { CurrencyTag } from "@/components/ui/marks";
+
 /** One labelled horizontal bar. `fraction` is 0..1 of the widest row. */
 export function BarRow({
   label,
@@ -56,6 +58,20 @@ export function BarRow({
  * in the cards above, and a phone-width axis of 90 dates is unreadable anyway.
  * Every bar carries its own title so a hover (or a screen reader) can name it.
  */
+/**
+ * How much air between the bars.
+ *
+ * A fortnight can afford 3px; a year cannot — 365 bars with a 3px gap need
+ * about 1800px of minimum width, which is not a chart, it is a horizontal
+ * scrollbar. Past a couple of months the gap goes away and the bars become a
+ * dense band, which is the right way to read that much data anyway.
+ */
+function barGap(count: number): number {
+  if (count <= 40) return 3;
+  if (count <= 100) return 1;
+  return 0;
+}
+
 export function DayBars({
   points,
   labelFor,
@@ -70,7 +86,7 @@ export function DayBars({
 }) {
   const max = Math.max(...points.map((p) => p.totalCents), 1);
   return (
-    <div className="flex h-[120px] items-end gap-[3px]">
+    <div className="flex h-[120px] items-end" style={{ gap: barGap(points.length) }}>
       {points.map((p) => {
         const height = (p.totalCents / max) * 100;
         return (
@@ -82,7 +98,7 @@ export function DayBars({
               // A zero day still gets a hairline, so the row reads as a
               // timeline rather than as missing data.
               height: `${Math.max(height, 1.5)}%`,
-              minWidth: 2,
+              minWidth: 1,
               background:
                 p.totalCents === 0
                   ? "var(--track)"
@@ -93,6 +109,95 @@ export function DayBars({
           />
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * The same days as DayBars, drawn as a line instead.
+ *
+ * Bars answer "which day was big"; a line answers "what is the shape of the
+ * month". Neither is better, which is why the screen offers both rather than
+ * picking. Same SVG technique as PaceChart — a 0–100 viewBox stretched with
+ * preserveAspectRatio="none", so it fits any width without being measured.
+ */
+export function DayLine({
+  points,
+}: {
+  points: { date: string; totalCents: number }[];
+}) {
+  if (points.length === 0) return null;
+  const max = Math.max(...points.map((p) => p.totalCents), 1);
+  // A single day has no line to draw, so it sits in the middle of the box
+  // rather than at x=0 where it would look like the start of a missing series.
+  const x = (i: number) =>
+    points.length === 1 ? 50 : (i / (points.length - 1)) * 100;
+  const y = (cents: number) => 100 - (cents / max) * 100;
+  const line = points.map((p, i) => `${x(i)},${y(p.totalCents)}`).join(" ");
+
+  return (
+    <div className="h-[120px] w-full">
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="h-full w-full"
+        aria-hidden
+      >
+        <polygon
+          points={`${x(0)},100 ${line} ${x(points.length - 1)},100`}
+          fill="var(--accent)"
+          opacity="0.14"
+        />
+        <polyline
+          points={line}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    </div>
+  );
+}
+
+/**
+ * The day labels under a day chart.
+ *
+ * One slot per point, in the same flex layout the bars use, so a label always
+ * sits under the day it names — computing positions separately is how axes
+ * drift out of alignment. Only some slots print: a month of 31 labels is
+ * unreadable on a phone, so this thins them to roughly `maxLabels`, always
+ * keeping the first and the last.
+ */
+export function DayAxis({
+  points,
+  labelFor,
+  maxLabels = 8,
+}: {
+  points: { date: string }[];
+  labelFor: (date: string) => string;
+  maxLabels?: number;
+}) {
+  if (points.length === 0) return null;
+  const step = Math.max(1, Math.ceil(points.length / maxLabels));
+  const last = points.length - 1;
+  return (
+    // Same gap as the bars, so a label sits under the day it names.
+    <div className="flex" style={{ gap: barGap(points.length) }} aria-hidden>
+      {points.map((p, i) => (
+        <span
+          key={p.date}
+          className="min-w-0 flex-1 whitespace-nowrap text-center text-[9.5px] leading-tight text-ink-3"
+          style={{ minWidth: 1 }}
+        >
+          {/* The last one always prints, and never on top of its neighbour. */}
+          {i === last || (i % step === 0 && last - i >= step)
+            ? labelFor(p.date)
+            : ""}
+        </span>
+      ))}
     </div>
   );
 }
@@ -219,19 +324,25 @@ export function PaceChart({
 export function StatCard({
   title,
   hint,
+  action,
   children,
 }: {
   title: string;
   hint?: string;
+  /** A control that belongs to this card, e.g. how to draw it. */
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-3 rounded-[18px] border border-line bg-surface px-[18px] py-4">
-      <div className="flex flex-col gap-0.5">
-        <span className="section-label">{title}</span>
-        {hint !== undefined && (
-          <span className="text-[11.5px] text-ink-3">{hint}</span>
-        )}
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex flex-col gap-0.5">
+          <span className="section-label">{title}</span>
+          {hint !== undefined && (
+            <span className="text-[11.5px] text-ink-3">{hint}</span>
+          )}
+        </div>
+        {action}
       </div>
       {children}
     </div>
@@ -242,17 +353,23 @@ export function StatCard({
 export function HeadlineStat({
   label,
   value,
+  currency,
   meta,
 }: {
   label: string;
   value: string;
+  /** Marked next to the figure when given — see CurrencyTag. */
+  currency?: string;
   meta?: string;
 }) {
   return (
     <div className="flex flex-col gap-0.5 rounded-[16px] border border-line bg-surface px-4 py-3">
       <span className="text-[11.5px] font-semibold text-ink-2">{label}</span>
-      <span className="tnum text-[22px] font-bold leading-tight tracking-[-0.02em] text-ink">
-        {value}
+      <span className="flex flex-wrap items-baseline gap-1.5">
+        <span className="tnum text-[22px] font-bold leading-tight tracking-[-0.02em] text-ink">
+          {value}
+        </span>
+        {currency !== undefined && <CurrencyTag currency={currency} />}
       </span>
       {meta !== undefined && (
         <span className="text-[11px] text-ink-3">{meta}</span>

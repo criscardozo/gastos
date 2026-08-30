@@ -692,6 +692,25 @@ export async function openCardStatement(
   );
 }
 
+/**
+ * Tick or untick "checked against the paper statement".
+ *
+ * Its own mutation rather than a field on CardChargeInput: this is a one-tap
+ * action from the list, and routing it through the edit dialog's payload would
+ * make ticking a box rewrite the amount, the date and the card along with it.
+ */
+export async function setCardChargeVerified(
+  db: Firestore,
+  householdId: string,
+  chargeId: string,
+  verified: boolean,
+): Promise<void> {
+  await updateDoc(doc(db, "households", householdId, "cardCharges", chargeId), {
+    verified,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 /** Only the due date can be corrected: the window is what buckets the charges. */
 export async function updateStatementDueDate(
   db: Firestore,

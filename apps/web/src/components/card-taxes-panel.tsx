@@ -13,9 +13,14 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import type { CardFeeSettings } from "@/lib/firebase/converters";
-import { taxLines, totalArsCents, type StatementSpend } from "@/lib/card-taxes";
+import {
+  taxLines,
+  totalArsCents,
+  usdToArsCents,
+  type StatementSpend,
+} from "@/lib/card-taxes";
 import { formatShortDate } from "@/lib/dates";
-import { formatArs } from "@/lib/money";
+import { formatArs, formatUsd } from "@/lib/money";
 import { fetchTodayRate, resolveRate, type RateSource } from "@/lib/usd-rate";
 
 /**
@@ -104,6 +109,26 @@ export function CardTaxesPanel({
         <p className="text-[12.5px] text-ink-3">{t("arsNoRate")}</p>
       ) : (
         <>
+          {/* What the month's purchases are worth in pesos. Above the line and
+              NOT added into the total below it, because the bank bills them in
+              dollars — the peso balance it charges is the taxes alone. Shown
+              because "how many pesos is this month" is the actual question. */}
+          {spend.usdCents > 0 && (
+            <div className="flex items-baseline justify-between gap-3 border-b border-soft pb-3">
+              <span className="flex flex-col">
+                <span className="text-[12.5px] font-semibold text-ink-2">
+                  {t("arsSpend")}
+                </span>
+                <span className="text-[11px] text-ink-3">
+                  {formatUsd(spend.usdCents, locale)}
+                </span>
+              </span>
+              <span className="tnum flex-none text-[15px] font-bold text-ink-2">
+                {formatArs(usdToArsCents(spend.usdCents, rate.rate))}
+              </span>
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             {lines.map((line) => (
               <div key={line.label} className="flex items-baseline justify-between gap-3">

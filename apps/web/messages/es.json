@@ -110,7 +110,9 @@
     "editBankUsd": "Editar el USD del banco",
     "markVerified": "Verificar",
     "clearVerification": "Quitar verificación",
-    "exportUnverifiedConfirm": "{count, plural, one {Hay # gasto sin el USD del banco: su columna USD va a quedar vacía. ¿Exportar igual?} other {Hay # gastos sin el USD del banco: sus columnas USD van a quedar vacías. ¿Exportar igual?}}"
+    "exportUnverifiedConfirm": "{count, plural, one {Hay # gasto sin el USD del banco: su columna USD va a quedar vacía. ¿Exportar igual?} other {Hay # gastos sin el USD del banco: sus columnas USD van a quedar vacías. ¿Exportar igual?}}",
+    "groupMonths": "Meses",
+    "groupPeriods": "Períodos"
   },
   "services": {
     "title": "Servicios",
@@ -194,7 +196,10 @@
     "pastClosingAnyway": "Cargarlo igual en este resumen",
     "arsRateApiDated": "Al dólar oficial $ {rate}, del {date}",
     "digital": "Servicio digital del exterior",
-    "digitalHelp": "Suma IIBB 2% e IVA RG 4240 21%. Una app o suscripción sí; un local, no."
+    "digitalHelp": "Suma IIBB 2% e IVA RG 4240 21%. Una app o suscripción sí; un local, no.",
+    "verifyCharge": "Comprobado contra el resumen",
+    "notDigital": "no digital",
+    "arsSpend": "Consumos en pesos"
   },
   "cardsInbox": {
     "title": "Cargos del banco",
@@ -210,9 +215,9 @@
   },
   "data": {
     "title": "Datos",
-    "subtitle": "Exportá tus gastos o importá desde un CSV.",
+    "subtitle": "Mirá y exportá los gastos de un intervalo.",
     "exportTitle": "Exportar",
-    "exportHint": "Elegí un rango y descargá tus gastos en CSV, PDF o Excel, o mandalos a Google Drive.",
+    "exportHint": "Se exporta lo que estás viendo, en este orden",
     "rangeWeek": "Esta semana",
     "rangeCurrent": "Período actual",
     "rangePrevious": "Período anterior",
@@ -262,7 +267,13 @@
     "acceptUnverified": "Acepto que la exportación tiene datos no verificados",
     "unverifiedNotice": "{count, plural, one {# gasto sin el USD del banco: su columna USD queda vacía y el total en USD es parcial} other {# gastos sin el USD del banco: su columna USD queda vacía y el total en USD es parcial}}",
     "reasonBadUsd": "USD inválido",
-    "exportDriveStandalone": "Google no puede devolver la sesión a la app instalada. Abrí gastos.cardozo.dev en el navegador para exportar a Drive (el Excel sí funciona acá)."
+    "exportDriveStandalone": "Google no puede devolver la sesión a la app instalada. Abrí gastos.cardozo.dev en el navegador para exportar a Drive (el Excel sí funciona acá).",
+    "viewTitle": "Qué estás viendo",
+    "viewHint": "Elegí el intervalo y filtrá: la tabla de abajo es exactamente lo que se exporta.",
+    "gridTitle": "Gastos del intervalo",
+    "gridHint": "Tocá un encabezado para ordenar.",
+    "searchNote": "Buscar en la nota",
+    "personAll": "Todos"
   },
   "settings": {
     "title": "Ajustes",
@@ -435,7 +446,13 @@
     "someone": "Alguien",
     "periodsTitle": "Período a período",
     "periodsHint": "Porcentaje del presupuesto de cada período usado en este rango.",
-    "outsideRange": "fuera del rango"
+    "outsideRange": "fuera del rango",
+    "rangeSemester": "6 meses",
+    "rangeYear": "Anual",
+    "dailyMode": "Cómo dibujar el día a día",
+    "dailyBars": "Barras",
+    "dailyLine": "Línea",
+    "dailyLineHint": "La forma del gasto a lo largo del rango."
   },
   "bankDismissed": {
     "summary": "{count, plural, one {# descartado} other {# descartados}}",

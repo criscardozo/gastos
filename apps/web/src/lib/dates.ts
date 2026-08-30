@@ -48,6 +48,12 @@ export function formatPeriodRange(
   }
   const m1 = monthName(startDate, locale, "short");
   const m2 = monthName(endDate, locale, "short");
+  // Years only when the range crosses one. "1 sep – 31 ago" is a whole year
+  // that reads as a fortnight in the wrong order; every other range is inside
+  // one year, where the day and month already say everything.
+  if (start.year !== end.year) {
+    return `${start.day} ${m1} ${start.year} – ${end.day} ${m2} ${end.year}`;
+  }
   return `${start.day} ${m1} – ${end.day} ${m2}`;
 }
 
@@ -72,6 +78,18 @@ export function formatLongDate(date: string, locale: string): string {
   return locale === "es"
     ? `${weekday} ${day} de ${month}`
     : `${weekday} ${day} ${month}`;
+}
+
+/**
+ * A whole month, named: "agosto 2026" / "August 2026".
+ *
+ * Carries the year always, unlike the day formats: a month is a window somebody
+ * navigates back through, and "agosto" on its own is ambiguous the moment there
+ * is more than one of them in the list.
+ */
+export function formatMonthLabel(date: string, locale: string): string {
+  const month = monthName(date, locale, "long");
+  return `${month} ${date.slice(0, 4)}`;
 }
 
 /** Compact single date: "11 jul". */

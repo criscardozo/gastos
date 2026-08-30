@@ -50,6 +50,7 @@ All JS commands run from the repo root (pnpm workspace):
 - `pnpm dev` — Next.js dev server (`apps/web`).
 - `pnpm typecheck && pnpm lint && pnpm build` — web checks.
 - `pnpm test:web` — vitest, includes the period-logic vector tests.
+- `/datos` is a GRID first: the range's expenses on screen with the export's own columns, sortable and filterable, and every export writes exactly what is on screen in that order. Importing a CSV lives in **Ajustes** (`components/import-expenses.tsx`) — it is the one control on either screen that writes rows.
 - Exports live in `apps/web/src/lib/export/`: `pdf.ts` (jsPDF) and `spreadsheet.ts` (exceljs) render the SAME payload, so Excel/Sheets mirror the PDF. Every export carries both money columns (AUD + the bank's USD, blank when unverified) and a range with unverified expenses is only exported after the consent checkbox is ticked; `drive.ts` uploads the workbook to Drive converted to a Google Sheet (needs the Drive API enabled — see `docs/setup.md`). Both libraries are dynamically imported to stay out of the first-load bundle.
 - `pnpm verify:pwa` — PWA smoke check (service worker + offline cold start). Needs a PRODUCTION build already serving: `pnpm build && pnpm --filter web exec next start -p 3112`.
 - `pnpm test:rules` — Firestore rules tests (spins up the emulator via `firebase emulators:exec`; needs a **JDK 21 or newer** — firebase-tools 15 dropped older ones, and on Java 17 it refuses to start rather than warning).

@@ -148,6 +148,9 @@ export interface CardCharge {
   /** A digital service from abroad, which the bank taxes twice more. Absent on
    * the doc reads as TRUE — see shared/schema.md. */
   digital: boolean;
+  /** Somebody checked this line against the paper statement. Absent ⇒ FALSE:
+   * the opposite default to `digital`, because nobody checked it. */
+  verified: boolean;
   createdBy: string;
   pendingWrite: boolean;
 }
@@ -300,6 +303,7 @@ export const cardChargeConverter = readOnly<CardCharge>((snap) => {
     // `?? true`, not `?? false`: every charge written before this field exists
     // without it, and nearly all of them were digital services.
     digital: (data.digital as boolean | undefined) ?? true,
+    verified: (data.verified as boolean | undefined) ?? false,
     createdBy: (data.createdBy as string) ?? "",
     pendingWrite: snap.metadata.hasPendingWrites,
   };

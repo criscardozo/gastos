@@ -24,6 +24,7 @@ import type {
   PeriodBudget,
 } from "@/lib/firebase/converters";
 import { budgetState, containsDate, daysBetween } from "@/lib/periods";
+import { CurrencyTag } from "@/components/ui/marks";
 import { formatCents, formatCentsCompact } from "@/lib/money";
 import { formatPeriodRange, formatShortDate } from "@/lib/dates";
 import {
@@ -298,6 +299,10 @@ export default function DashboardPage() {
             >
               {formatCents(remaining, household.currency, locale)}
             </span>
+            {/* The one figure on this screen worth naming a currency for: the
+                other screens now show USD and ARS, and "$" alone stopped
+                being unambiguous the day the Tarjetas panel appeared. */}
+            <CurrencyTag currency={household.currency} />
           </div>
           {/* Say where the budget came from when part of it was carried in —
               otherwise "de $1.020" looks like a typo for the usual $900. */}

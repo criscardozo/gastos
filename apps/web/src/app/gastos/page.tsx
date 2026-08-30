@@ -36,8 +36,18 @@ import {
   formatUsd,
   parseAmountToCents,
 } from "@/lib/money";
-import { formatDayHeading, formatPeriodRange, formatShortDate } from "@/lib/dates";
-import { addDays } from "@/lib/periods";
+import {
+  formatDayHeading,
+  formatMonthLabel,
+  formatPeriodRange,
+  formatShortDate,
+} from "@/lib/dates";
+import {
+  addDays,
+  monthRange,
+  recentMonths,
+  type PeriodRange,
+} from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
 
 /* ── Small helpers ─────────────────────────────────────────────────────── */
@@ -210,7 +220,15 @@ export default function ExpensesPage() {
   const { household, periods, currentPeriod, today } = useHousehold();
 
   const [grouped, setGrouped] = useState<"grouped" | "flat">("grouped");
-  const [periodStart, setPeriodStart] = useState<string | null>(null);
+  /**
+   * What the list is showing: a period's `startDate`, or `month:YYYY-MM` for a
+   * calendar month. Null follows the current period, which is the default and
+   * what nearly every visit wants.
+   *
+   * One string rather than two pieces of state because it is one choice — two
+   * would let the screen be in a state where both are set and neither wins.
+   */
+  const [selection, setSelection] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [personFilter, setPersonFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -227,10 +245,17 @@ export default function ExpensesPage() {
 
   const fallbackPeriod: PeriodBudget | null =
     currentPeriod ?? periods[periods.length - 1] ?? null;
-  const selected =
-    (periodStart !== null
-      ? periods.find((p) => p.startDate === periodStart)
-      : undefined) ?? fallbackPeriod;
+  // Calendar months are a window, not a budget: they cross period boundaries on
+  // purpose, so this is a plain range and never a PeriodBudget.
+  const selectedMonth =
+    selection !== null && selection.startsWith("month:")
+      ? monthRange(`${selection.slice(6)}-01`)
+      : null;
+  const selectedPeriod =
+    (selection !== null && selectedMonth === null
+      ? periods.find((p) => p.startDate === selection)
+      : undefined) ?? (selectedMonth === null ? fallbackPeriod : null);
+  const selected: PeriodRange | null = selectedMonth ?? selectedPeriod;
 
   const { expenses } = useExpensesRange(
     household?.id ?? null,
@@ -261,6 +286,13 @@ export default function ExpensesPage() {
         ? addForm.categoryId
         : (categories[0]?.id ?? "other"),
   };
+
+  /** The last six calendar months, newest first — a look-back window, not a
+   * budget. Six because a year of options in a native select is a scroll. */
+  const monthOptions = recentMonths(todayDate, 6).map((m) => ({
+    value: `month:${m.startDate.slice(0, 7)}`,
+    label: formatMonthLabel(m.startDate, locale),
+  }));
 
   const members = household.memberIds
     .map((id) => ({ id, profile: household.memberProfiles[id] }))
@@ -725,20 +757,38 @@ export default function ExpensesPage() {
           <FilterPill>
             <Icon name="calendar_today" size={16} className="text-ink-2" />
             <span className="text-[13px] font-semibold text-ink">
-              {formatPeriodRange(selected.startDate, selected.endDate, locale, "short")}
+              {selectedMonth !== null
+                ? formatMonthLabel(selectedMonth.startDate, locale)
+                : formatPeriodRange(
+                    selected.startDate,
+                    selected.endDate,
+                    locale,
+                    "short",
+                  )}
             </span>
             <Icon name="expand_more" size={16} className="text-ink-3" />
             <select
               aria-label="period"
-              value={selected.startDate}
-              onChange={(e) => setPeriodStart(e.target.value)}
+              value={selection ?? selected.startDate}
+              onChange={(e) => setSelection(e.target.value)}
               className="absolute inset-0 cursor-pointer appearance-none opacity-0"
             >
-              {[...periods].reverse().map((p) => (
-                <option key={p.startDate} value={p.startDate}>
-                  {formatPeriodRange(p.startDate, p.endDate, locale, "short")}
-                </option>
-              ))}
+              {/* Two kinds of window, told apart by their group rather than by
+                  the reader working out that "1 – 31 ago" is not a fortnight. */}
+              <optgroup label={t("groupMonths")}>
+                {monthOptions.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label={t("groupPeriods")}>
+                {[...periods].reverse().map((p) => (
+                  <option key={p.startDate} value={p.startDate}>
+                    {formatPeriodRange(p.startDate, p.endDate, locale, "short")}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </FilterPill>
         )}

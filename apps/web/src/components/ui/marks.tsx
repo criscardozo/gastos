@@ -17,6 +17,7 @@ import type { CardBrand } from "@/lib/statements";
 const FLAGS: Record<string, string> = {
   AUD: "🇦🇺",
   USD: "🇺🇸",
+  ARS: "🇦🇷",
 };
 
 /**

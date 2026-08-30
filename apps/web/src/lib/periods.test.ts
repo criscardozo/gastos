@@ -8,7 +8,10 @@ import {
   containsDate,
   daysBetween,
   extendToFortnight,
+  monthRange,
+  monthsBackRange,
   periodEndDate,
+  recentMonths,
   todayInTimezone,
   type PeriodType,
 } from "./periods";
@@ -210,5 +213,43 @@ describe("money formatting", () => {
     // Amount parsing has its own suite now (money.test.ts), where the
     // locale-dependent cases live.
     expect(parseAmountToCents("12,50", "es")).toBe(1250);
+  });
+});
+
+describe("calendar months", () => {
+  it("bounds a month by its real last day", () => {
+    expect(monthRange("2026-08-30")).toEqual({
+      startDate: "2026-08-01",
+      endDate: "2026-08-31",
+    });
+    expect(monthRange("2026-02-14").endDate).toBe("2026-02-28");
+    // 2028 is a leap year, and the length is computed rather than tabulated.
+    expect(monthRange("2028-02-01").endDate).toBe("2028-02-29");
+    expect(monthRange("2026-04-05").endDate).toBe("2026-04-30");
+  });
+
+  it("walks backwards across a year boundary", () => {
+    // The case a hand-rolled `month - i` gets wrong: month 1 minus 2 is not
+    // month -1, it is November of the year before.
+    const months = recentMonths("2026-01-15", 3);
+    expect(months.map((m) => m.startDate)).toEqual([
+      "2026-01-01",
+      "2025-12-01",
+      "2025-11-01",
+    ]);
+    expect(months[2].endDate).toBe("2025-11-30");
+  });
+
+  it("spans whole months, first day to last", () => {
+    expect(monthsBackRange("2026-08-30", 6)).toEqual({
+      startDate: "2026-03-01",
+      endDate: "2026-08-31",
+    });
+    expect(monthsBackRange("2026-08-30", 12)).toEqual({
+      startDate: "2025-09-01",
+      endDate: "2026-08-31",
+    });
+    // One month back is that month itself, not an empty range.
+    expect(monthsBackRange("2026-08-30", 1)).toEqual(monthRange("2026-08-30"));
   });
 });

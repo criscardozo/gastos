@@ -18,6 +18,7 @@ import { AvatarPair } from "@/components/ui/avatar";
 import { Segmented } from "@/components/ui/segmented";
 import { CardsCard } from "@/components/cards-card";
 import { CategoriesCard } from "@/components/categories-card";
+import { ImportExpenses } from "@/components/import-expenses";
 import { ExtendPeriodDialog } from "@/components/extend-period-dialog";
 import { parseBudgetAmount } from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
@@ -506,6 +507,11 @@ export default function SettingsPage() {
 
       {/* Which four digits are which card — routes the bank's charges */}
       <CardsCard household={household} />
+
+      {/* Importing a CSV. Here rather than on Datos, which is now for reading
+          what is already there: this is the one control on either screen that
+          writes rows, and nothing undoes it in bulk. */}
+      <ImportExpenses />
 
       {/* Household + invite */}
       <div className="flex items-center gap-3.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">

@@ -99,18 +99,21 @@ export default function ServicesPage() {
       {services.length > 0 && (
         <div className="flex flex-col gap-2 rounded-[18px] border border-line bg-surface px-[18px] py-4">
           <span className="section-label">{t("perMonth")}</span>
-          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+          {/* USD first and biggest. Most of this register is billed by the
+              card in dollars, so that is the figure being looked for; the AUD
+              one is what the household pays locally, and reads underneath. */}
+          <div className="flex flex-col gap-1">
             <div className="flex items-baseline gap-2">
               <span className="tnum text-[26px] font-bold tracking-[-0.02em] text-ink">
-                {formatCents(totals.audCents, household.currency, locale)}
-              </span>
-              <CurrencyTag currency="AUD" />
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="tnum text-[18px] font-bold text-ink-2">
                 {formatUsd(totals.usdCents, locale)}
               </span>
               <CurrencyTag currency="USD" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="tnum text-[18px] font-bold text-ink-2">
+                {formatCents(totals.audCents, household.currency, locale)}
+              </span>
+              <CurrencyTag currency="AUD" />
             </div>
           </div>
           <p className="text-[11.5px] text-ink-3">{t("perMonthHint")}</p>
@@ -156,20 +159,20 @@ export default function ServicesPage() {
               </div>
 
               <div className="flex flex-none flex-col items-end gap-0.5">
-                {service.amountAudCents !== null && (
+                {service.amountUsdCents !== null && (
                   <span className="tnum flex items-center gap-1.5 text-[14px] font-bold text-ink">
+                    {formatUsd(service.amountUsdCents, locale)}
+                    <CurrencyTag currency="USD" />
+                  </span>
+                )}
+                {service.amountAudCents !== null && (
+                  <span className="tnum flex items-center gap-1.5 text-[13px] font-semibold text-ink-2">
                     {formatCents(
                       service.amountAudCents,
                       household.currency,
                       locale,
                     )}
                     <CurrencyTag currency="AUD" />
-                  </span>
-                )}
-                {service.amountUsdCents !== null && (
-                  <span className="tnum flex items-center gap-1.5 text-[13px] font-semibold text-ink-2">
-                    {formatUsd(service.amountUsdCents, locale)}
-                    <CurrencyTag currency="USD" />
                   </span>
                 )}
                 <span className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-ink-3">
