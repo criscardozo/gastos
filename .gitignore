@@ -16,7 +16,6 @@ node_modules/
 # Next.js
 apps/web/.next/
 apps/web/out/
-apps/web/.vercel/
 apps/web/next-env.d.ts
 
 # Env files (Firebase client config is public by design, but keep env files local)
@@ -57,3 +56,8 @@ apps/web/tsconfig.tsbuildinfo
 # apps/web would quietly add a second voice nobody chose.
 apps/web/AGENTS.md
 apps/web/CLAUDE.md
+# Vercel's own link + the OIDC token it pulls. The link belongs at the ROOT:
+# the project's Root Directory is apps/web, so a CLI deploy has to upload the
+# whole workspace or pnpm's `catalog:` versions cannot resolve.
+.vercel/
+.env.local

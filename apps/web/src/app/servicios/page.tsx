@@ -25,7 +25,7 @@ import {
   type ServiceInput,
 } from "@/lib/firebase/mutations";
 import { formatCents, formatUsd } from "@/lib/money";
-import { formatShortDateInYear } from "@/lib/dates";
+import { formatMonthLabel, formatShortDateInYear } from "@/lib/dates";
 import {
   compareByDueDate,
   daysUntilDue,
@@ -84,7 +84,16 @@ export default function ServicesPage() {
   return (
     <div className="mx-auto flex w-[660px] max-w-full flex-col gap-3.5">
       <div className="mb-1 flex items-center justify-between gap-3">
-        <h1 className="text-[22px] font-bold text-ink">{t("title")}</h1>
+        <div className="flex items-baseline gap-2.5">
+          <h1 className="text-[22px] font-bold text-ink">{t("title")}</h1>
+          {/* Which month it is. Every row here says "vence el 7" or "en 8
+              días", and both are unreadable without knowing where you are. */}
+          {today !== null && (
+            <span className="text-[13px] font-semibold text-ink-3">
+              {formatMonthLabel(today, locale)}
+            </span>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setEditing("new")}

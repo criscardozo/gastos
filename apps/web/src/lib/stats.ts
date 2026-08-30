@@ -3,6 +3,12 @@
 // and hands it here, which keeps the maths testable and the reads honest.
 //
 // Money stays integer cents throughout; only the formatters divide.
+//
+// Every aggregate carries a USD figure beside its AUD one. It is NOT a
+// conversion — this app converts nothing in the ledger — it is the sum of what
+// the bank actually charged, and it therefore only counts the expenses somebody
+// has verified. That makes it a LOWER BOUND on the same set of rows, always,
+// and the screen has to say so rather than let it read as the total.
 
 import { addDays, daysBetween } from "./periods";
 
@@ -19,11 +25,17 @@ export interface StatExpense {
 
 export interface Totals {
   totalCents: number;
+  /** What the bank charged for the VERIFIED part of the same expenses. */
+  totalUsdCents: number;
+  /** How many of `count` carry a bank USD figure. */
+  verifiedCount: number;
   count: number;
   /** Mean expense, 0 when there are none. */
   averageCents: number;
   /** Total divided by the days in the range (not by the days with spending). */
   perDayCents: number;
+  /** The same division over the bank's USD. */
+  perDayUsdCents: number;
   /** The single largest expense, null when the range is empty. */
   biggest: StatExpense | null;
   /** Days in the range with no expense at all. */
@@ -35,14 +47,18 @@ export function totals(
   range: { startDate: string; endDate: string },
 ): Totals {
   const totalCents = expenses.reduce((sum, e) => sum + e.amountCents, 0);
+  const totalUsdCents = expenses.reduce((sum, e) => sum + (e.usdCents ?? 0), 0);
   const days = Math.max(daysBetween(range.startDate, range.endDate) + 1, 1);
   const withSpending = new Set(expenses.map((e) => e.date)).size;
   return {
     totalCents,
+    totalUsdCents,
+    verifiedCount: expenses.filter((e) => e.usdCents !== null).length,
     count: expenses.length,
     averageCents:
       expenses.length === 0 ? 0 : Math.round(totalCents / expenses.length),
     perDayCents: Math.round(totalCents / days),
+    perDayUsdCents: Math.round(totalUsdCents / days),
     biggest:
       expenses.length === 0
         ? null
@@ -54,6 +70,8 @@ export function totals(
 export interface CategorySlice {
   categoryId: string;
   totalCents: number;
+  /** The bank's USD for the verified part of this category. */
+  totalUsdCents: number;
   count: number;
   /** 0..1 of the range's total. */
   share: number;
@@ -61,11 +79,19 @@ export interface CategorySlice {
 
 /** Spend per category, biggest first. */
 export function byCategory(expenses: readonly StatExpense[]): CategorySlice[] {
-  const map = new Map<string, { totalCents: number; count: number }>();
+  const map = new Map<
+    string,
+    { totalCents: number; totalUsdCents: number; count: number }
+  >();
   for (const e of expenses) {
-    const prev = map.get(e.categoryId) ?? { totalCents: 0, count: 0 };
+    const prev = map.get(e.categoryId) ?? {
+      totalCents: 0,
+      totalUsdCents: 0,
+      count: 0,
+    };
     map.set(e.categoryId, {
       totalCents: prev.totalCents + e.amountCents,
+      totalUsdCents: prev.totalUsdCents + (e.usdCents ?? 0),
       count: prev.count + 1,
     });
   }
@@ -74,6 +100,7 @@ export function byCategory(expenses: readonly StatExpense[]): CategorySlice[] {
     .map(([categoryId, v]) => ({
       categoryId,
       totalCents: v.totalCents,
+      totalUsdCents: v.totalUsdCents,
       count: v.count,
       share: total === 0 ? 0 : v.totalCents / total,
     }))
@@ -121,6 +148,8 @@ export interface WeekdayAverage {
   totalCents: number;
   /** Mean over the number of THAT weekday in the range, not over 7. */
   averageCents: number;
+  /** The same mean over the bank's USD. */
+  averageUsdCents: number;
 }
 
 /** Monday-first weekday index for a "YYYY-MM-DD" calendar date. */
@@ -139,11 +168,15 @@ export function byWeekday(
   range: { startDate: string; endDate: string },
 ): WeekdayAverage[] {
   const totals = new Array<number>(7).fill(0);
+  const usdTotals = new Array<number>(7).fill(0);
   const occurrences = new Array<number>(7).fill(0);
   for (const day of byDay([], range)) {
     occurrences[weekdayIndex(day.date)] += 1;
   }
-  for (const e of expenses) totals[weekdayIndex(e.date)] += e.amountCents;
+  for (const e of expenses) {
+    totals[weekdayIndex(e.date)] += e.amountCents;
+    usdTotals[weekdayIndex(e.date)] += e.usdCents ?? 0;
+  }
   return totals.map((totalCents, weekday) => ({
     weekday,
     totalCents,
@@ -151,6 +184,10 @@ export function byWeekday(
       occurrences[weekday] === 0
         ? 0
         : Math.round(totalCents / occurrences[weekday]),
+    averageUsdCents:
+      occurrences[weekday] === 0
+        ? 0
+        : Math.round(usdTotals[weekday] / occurrences[weekday]),
   }));
 }
 

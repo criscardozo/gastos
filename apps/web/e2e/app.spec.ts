@@ -101,6 +101,14 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   await expect(page.getByText("Café de prueba").first()).toBeVisible();
   await page.getByLabel("verification").selectOption("all");
 
+  // A second expense, in a different category — the grid's category filter
+  // below needs two to have anything to separate.
+  await page.getByLabel("0,00").fill("31,00");
+  await page.getByLabel("Categoría: todas").selectOption("transport");
+  await page.getByLabel("Nota (opcional)").fill("Nafta de prueba");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Nafta de prueba").first()).toBeVisible();
+
   // The same list can be looked at by calendar MONTH, which crosses period
   // boundaries on purpose — a fortnight is the budget, a month is a window.
   const thisMonth = new Intl.DateTimeFormat("en-CA", {
@@ -119,10 +127,10 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   ).toBeVisible();
   await expect(page.getByText("Café de prueba").first()).toBeVisible();
 
-  // Dashboard "Te queda" reflects it: 900,00 − 12,50 = 887,50.
+  // Dashboard "Te queda" reflects both: 900,00 − 12,50 − 31,00 = 856,50.
   await page.getByRole("link", { name: "Inicio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible();
-  await expect(page.getByText("$887,50").first()).toBeVisible();
+  await expect(page.getByText("$856,50").first()).toBeVisible();
 
   // Data page: the grid shows the range, and the export carries the same rows.
   await page.getByRole("link", { name: "Datos", exact: true }).click();
@@ -143,17 +151,29 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
     page.getByRole("columnheader", { name: "Monto" }),
   ).toHaveAttribute("aria-sort", "descending");
 
-  // Filtering the grid narrows what leaves with you: a note nothing matches
-  // empties both, and clearing it brings the row back.
-  await page.getByLabel("Buscar en la nota").fill("nada-coincide");
+  // Filtering happens in the column heading that owns it, and narrows what
+  // leaves with you: another category empties the grid, and the TOTAL follows.
+  await page.getByLabel("Categoría", { exact: true }).selectOption("transport");
   await expect(page.getByText("Café de prueba")).toBeHidden();
-  await page.getByLabel("Buscar en la nota").fill("");
+  await expect(page.getByText("Nafta de prueba")).toBeVisible();
+  // Twice: the row, and the footer total, which follows the filter.
+  await expect(page.getByText("$31,00")).toHaveCount(2);
+  await page.getByLabel("Categoría", { exact: true }).selectOption("all");
   await expect(page.getByText("Café de prueba")).toBeVisible();
+
+  // Exporting is one button with a menu behind it, not four in a row — and the
+  // consent for a range with unverified rows lives in there, with the action it
+  // gates. The Nafta expense has no bank USD, so it is gated right now.
+  await page.getByRole("button", { name: "Exportar" }).click();
+  await expect(page.getByRole("menuitem", { name: "PDF" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "CSV" })).toBeDisabled();
+  await page.getByRole("checkbox").check();
+  await expect(page.getByRole("menuitem", { name: "CSV" })).toBeEnabled();
 
   // Export CSV — a download fires and carries the expense we just added.
   const [download] = await Promise.all([
     page.waitForEvent("download"),
-    page.getByRole("button", { name: "Exportar CSV" }).click(),
+    page.getByRole("menuitem", { name: "CSV" }).click(),
   ]);
   const stream = await download.createReadStream();
   const chunks: Buffer[] = [];

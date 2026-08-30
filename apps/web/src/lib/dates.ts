@@ -20,11 +20,21 @@ function numberLocale(locale: string): string {
   return locale === "es" ? "es-AR" : "en-AU";
 }
 
+/**
+ * The month's name, capitalised.
+ *
+ * Spanish writes months lowercase and `Intl` obeys — "agosto". Every place this
+ * app prints one it is a LABEL (a heading, a pill, a column of dates) rather
+ * than a word in a sentence, and lowercase labels read as unfinished next to
+ * everything around them. English capitalises already, so this only changes the
+ * Spanish side.
+ */
 function monthName(date: string, locale: string, style: "short" | "long"): string {
   const name = new Intl.DateTimeFormat(numberLocale(locale), {
     month: style,
   }).format(toFormatDate(date));
-  return name.replace(/\.$/, "");
+  const trimmed = name.replace(/\.$/, "");
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
 
 /**

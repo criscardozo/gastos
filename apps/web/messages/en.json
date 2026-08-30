@@ -228,8 +228,8 @@
     "summary": "{count, plural, one {# expense} other {# expenses}} · {total}",
     "exportEmpty": "No expenses in this range.",
     "loading": "Loading…",
-    "exportCsv": "Export CSV",
-    "exportPdf": "Export PDF",
+    "exportCsv": "CSV",
+    "exportPdf": "PDF",
     "importTitle": "Import",
     "importHint": "Upload a CSV in the export format (fecha, categoria, nota, monto_aud, plus monto_usd once the bank has charged it).",
     "chooseFile": "Choose CSV file",
@@ -241,7 +241,7 @@
     "colCategory": "Category",
     "colNote": "Note",
     "colPerson": "Person",
-    "colAmount": "Amount",
+    "colAmount": "Amount (AUD)",
     "colStatus": "Status",
     "statusOk": "OK",
     "statusMapped": "→ Other",
@@ -424,7 +424,6 @@
     "expenseCount": "{count, plural, one {# expense} other {# expenses}}",
     "perDay": "Per day",
     "quietDays": "{count, plural, =0 {no quiet days} one {# day without spending} other {# days without spending}}",
-    "average": "Average expense",
     "biggest": "Biggest one",
     "paceTitle": "Pace against the budget",
     "paceHint": "The dashed line is what spending evenly to the end of the period would look like.",
@@ -452,7 +451,8 @@
     "dailyMode": "How to draw day by day",
     "dailyBars": "Bars",
     "dailyLine": "Line",
-    "dailyLineHint": "The shape of the spending across the range."
+    "dailyLineHint": "The shape of the spending across the range.",
+    "perDayInfo": "The range's total divided by every day in it, days with no spending included. Not the average per expense."
   },
   "bankDismissed": {
     "summary": "{count, plural, one {# discarded} other {# discarded}}",

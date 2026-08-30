@@ -22,6 +22,7 @@ import {
   DayBars,
   DayLine,
   HeadlineStat,
+  UsdOverAud,
   PaceChart,
   StatCard,
 } from "@/components/charts";
@@ -88,7 +89,7 @@ export default function StatsPage() {
   // "period" is a fortnight that moves.
   const [preset, setPreset] = useState<RangePreset>("month");
   /** Bars answer "which day was big", the line answers "what shape was it". */
-  const [dailyMode, setDailyMode] = useState<"bars" | "line">("bars");
+  const [dailyMode, setDailyMode] = useState<"bars" | "line">("line");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [state, setState] = useState<{
@@ -195,6 +196,7 @@ export default function StatsPage() {
   if (household === null) return null;
 
   const money = (cents: number) => formatCents(cents, household.currency, locale);
+  const usd = (cents: number) => formatUsd(cents, locale);
   const compact = (cents: number) =>
     formatCentsCompact(cents, household.currency, locale);
   const catLabel = (id: string): string => {
@@ -312,34 +314,45 @@ export default function StatsPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {/* Headline figures */}
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {/* The mark goes on the headline figures only. Every number on
-                  this screen is the household currency, so repeating it on
-                  each bar row would be wallpaper — but the screen now sits
-                  beside ones showing USD and ARS, and the top line is where
-                  somebody checks which. */}
+            {/* Headline figures. Three, not four: "gasto promedio" was the
+                total over the count, which is the least actionable division of
+                the same two numbers already on either side of it. */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <HeadlineStat
                 label={t("total")}
-                value={money(stats.totals.totalCents)}
-                currency={household.currency}
+                value={
+                  <UsdOverAud
+                    size="lg"
+                    usd={usd(stats.totals.totalUsdCents)}
+                    aud={money(stats.totals.totalCents)}
+                    hasUsd={stats.totals.verifiedCount > 0}
+                  />
+                }
                 meta={t("expenseCount", { count: stats.totals.count })}
               />
               <HeadlineStat
                 label={t("perDay")}
-                value={money(stats.totals.perDayCents)}
-                currency={household.currency}
+                info={t("perDayInfo")}
+                value={
+                  <UsdOverAud
+                    size="lg"
+                    usd={usd(stats.totals.perDayUsdCents)}
+                    aud={money(stats.totals.perDayCents)}
+                    hasUsd={stats.totals.verifiedCount > 0}
+                  />
+                }
                 meta={t("quietDays", { count: stats.totals.daysWithoutSpending })}
               />
               <HeadlineStat
-                label={t("average")}
-                value={money(stats.totals.averageCents)}
-                currency={household.currency}
-              />
-              <HeadlineStat
                 label={t("biggest")}
-                value={money(stats.totals.biggest?.amountCents ?? 0)}
-                currency={household.currency}
+                value={
+                  <UsdOverAud
+                    size="lg"
+                    usd={usd(stats.totals.biggest?.usdCents ?? 0)}
+                    aud={money(stats.totals.biggest?.amountCents ?? 0)}
+                    hasUsd={(stats.totals.biggest?.usdCents ?? null) !== null}
+                  />
+                }
                 meta={
                   stats.totals.biggest === null
                     ? undefined
@@ -368,40 +381,6 @@ export default function StatsPage() {
               </StatCard>
             )}
 
-            {/* Day by day */}
-            <StatCard
-              title={t("dailyTitle")}
-              hint={dailyMode === "bars" ? t("dailyHint") : t("dailyLineHint")}
-              action={
-                <Segmented<"bars" | "line">
-                  ariaLabel={t("dailyMode")}
-                  options={[
-                    { value: "bars", label: t("dailyBars") },
-                    { value: "line", label: t("dailyLine") },
-                  ]}
-                  value={dailyMode}
-                  onChange={setDailyMode}
-                />
-              }
-            >
-              {dailyMode === "bars" ? (
-                <DayBars
-                  points={stats.days}
-                  labelFor={(date) => formatShortDate(date, locale)}
-                  valueFor={money}
-                />
-              ) : (
-                <DayLine points={stats.days} />
-              )}
-              {/* Which day each column is. Used to be the first and last date
-                  only, which told you the range you already picked and nothing
-                  about the spike in the middle. */}
-              <DayAxis
-                points={stats.days}
-                labelFor={(date) => formatShortDate(date, locale)}
-              />
-            </StatCard>
-
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {/* Categories */}
               <StatCard title={t("categoriesTitle")}>
@@ -425,7 +404,13 @@ export default function StatsPage() {
                             {catLabel(slice.categoryId)}
                           </>
                         }
-                        value={money(slice.totalCents)}
+                        value={
+                          <UsdOverAud
+                            usd={usd(slice.totalUsdCents)}
+                            aud={money(slice.totalCents)}
+                            hasUsd={slice.totalUsdCents > 0}
+                          />
+                        }
                         meta={`${Math.round(slice.share * 100)}%`}
                         fraction={
                           slice.totalCents /
@@ -439,26 +424,6 @@ export default function StatsPage() {
                       />
                     );
                   })}
-                </div>
-              </StatCard>
-
-              {/* Weekdays */}
-              <StatCard title={t("weekdayTitle")} hint={t("weekdayHint")}>
-                <div className="flex flex-col gap-2.5">
-                  {stats.weekdays.map((day) => (
-                    <BarRow
-                      key={day.weekday}
-                      label={weekdayNames[day.weekday]}
-                      value={money(day.averageCents)}
-                      fraction={
-                        day.averageCents /
-                        Math.max(
-                          ...stats.weekdays.map((d) => d.averageCents),
-                          1,
-                        )
-                      }
-                    />
-                  ))}
                 </div>
               </StatCard>
 
@@ -479,8 +444,12 @@ export default function StatsPage() {
                           {catLabel(e.categoryId)}
                         </span>
                       </div>
-                      <span className="tnum flex-none text-[13px] font-bold text-ink">
-                        {money(e.amountCents)}
+                      <span className="flex-none">
+                        <UsdOverAud
+                          usd={usd(e.usdCents ?? 0)}
+                          aud={money(e.amountCents)}
+                          hasUsd={e.usdCents !== null}
+                        />
                       </span>
                     </div>
                   ))}
@@ -532,6 +501,32 @@ export default function StatsPage() {
                 </div>
               </StatCard>
 
+              {/* Weekdays */}
+              <StatCard title={t("weekdayTitle")} hint={t("weekdayHint")}>
+                <div className="flex flex-col gap-2.5">
+                  {stats.weekdays.map((day) => (
+                    <BarRow
+                      key={day.weekday}
+                      label={weekdayNames[day.weekday]}
+                      value={
+                        <UsdOverAud
+                          usd={usd(day.averageUsdCents)}
+                          aud={money(day.averageCents)}
+                          hasUsd={day.averageUsdCents > 0}
+                        />
+                      }
+                      fraction={
+                        day.averageCents /
+                        Math.max(
+                          ...stats.weekdays.map((d) => d.averageCents),
+                          1,
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+              </StatCard>
+
               {/* Who entered what — only worth a card when both did */}
               {stats.members.length > 1 && (
                 <StatCard title={t("membersTitle")} hint={t("membersHint")}>
@@ -567,6 +562,42 @@ export default function StatsPage() {
                 </StatCard>
               )}
             </div>
+
+            {/* Day by day */}
+            <StatCard
+              title={t("dailyTitle")}
+              hint={dailyMode === "bars" ? t("dailyHint") : t("dailyLineHint")}
+              action={
+                <Segmented<"bars" | "line">
+                  ariaLabel={t("dailyMode")}
+                  // The line leads: over a month or a year it is the shape
+                  // that reads, and bars are the second opinion.
+                  options={[
+                    { value: "line", label: t("dailyLine") },
+                    { value: "bars", label: t("dailyBars") },
+                  ]}
+                  value={dailyMode}
+                  onChange={setDailyMode}
+                />
+              }
+            >
+              {dailyMode === "bars" ? (
+                <DayBars
+                  points={stats.days}
+                  labelFor={(date) => formatShortDate(date, locale)}
+                  valueFor={money}
+                />
+              ) : (
+                <DayLine points={stats.days} />
+              )}
+              {/* Which day each column is. Used to be the first and last date
+                  only, which told you the range you already picked and nothing
+                  about the spike in the middle. */}
+              <DayAxis
+                points={stats.days}
+                labelFor={(date) => formatShortDate(date, locale)}
+              />
+            </StatCard>
 
             {/* Period-over-period, from the periods already loaded */}
             {periods.length > 1 && (

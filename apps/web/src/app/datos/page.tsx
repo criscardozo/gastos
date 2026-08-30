@@ -12,7 +12,7 @@
 // Reads are one-shot and date-bounded (getDocs, not a live listener — this is a
 // page you visit, not one you live in).
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 
@@ -46,7 +46,7 @@ function weekRange(today: string): PeriodRange {
 }
 
 /** Which column the grid is ordered by. */
-type SortKey = "date" | "category" | "note" | "person" | "amount" | "amountUsd";
+type SortKey = "date" | "category" | "note" | "amount" | "amountUsd";
 
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
@@ -64,10 +64,8 @@ export default function DataPage() {
     rows: Expense[];
     loading: boolean;
   }>({ rows: [], loading: false });
-  /** Category ids to include in the export; null = all of them. */
-  const [exportCategories, setExportCategories] = useState<string[] | null>(
-    null,
-  );
+  /** Which category the grid is showing; null = all of them. */
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [exportPhase, setExportPhase] = useState<
     "idle" | "excel" | "drive" | "error" | "driveStandalone"
   >("idle");
@@ -76,8 +74,6 @@ export default function DataPage() {
   /** How the grid is ordered — and therefore how the export is ordered too. */
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortAsc, setSortAsc] = useState(true);
-  const [personFilter, setPersonFilter] = useState("all");
-  const [search, setSearch] = useState("");
 
   /* Localized category list + lookup maps (must be before any early return
      since hooks can't be conditional). */
@@ -156,7 +152,7 @@ export default function DataPage() {
       .catch(() => {
         if (!cancelled) setLoadState({ rows: [], loading: false });
       });
-    setExportCategories(null);
+    setCategoryFilter(null);
     // A new range is a new decision — never carry the consent across.
     setAcceptUnverified(false);
     return () => {
@@ -171,14 +167,10 @@ export default function DataPage() {
   // ONE list: what the grid draws is what every export writes, in the same
   // order. The old page filtered for the file and showed nothing, so the only
   // way to check an export was to open it.
-  const query_ = search.trim().toLowerCase();
-  const filtered = rangeRows
-    // `null` = every category (the default, and what a fresh range resets to).
-    .filter(
-      (e) => exportCategories === null || exportCategories.includes(e.categoryId),
-    )
-    .filter((e) => personFilter === "all" || e.createdBy === personFilter)
-    .filter((e) => query_ === "" || e.note.toLowerCase().includes(query_));
+  // `null` = every category (the default, and what a fresh range resets to).
+  const filtered = rangeRows.filter(
+    (e) => categoryFilter === null || e.categoryId === categoryFilter,
+  );
 
   const compare = (a: Expense, b: Expense): number => {
     switch (sortKey) {
@@ -193,10 +185,6 @@ export default function DataPage() {
         return catLabelOf(a.categoryId).localeCompare(catLabelOf(b.categoryId));
       case "note":
         return a.note.localeCompare(b.note);
-      case "person":
-        return (memberNames[a.createdBy] ?? "").localeCompare(
-          memberNames[b.createdBy] ?? "",
-        );
       default:
         return a.date.localeCompare(b.date);
     }
@@ -221,13 +209,6 @@ export default function DataPage() {
   /** Categories actually present in the loaded range — no point offering to
    * filter by one with nothing in it. */
   const rangeCategoryIds = [...new Set(rangeRows.map((e) => e.categoryId))];
-  const toggleExportCategory = (id: string) => {
-    const current = exportCategories ?? rangeCategoryIds;
-    const next = current.includes(id)
-      ? current.filter((c) => c !== id)
-      : [...current, id];
-    setExportCategories(next);
-  };
   const fileBase =
     range !== null ? `gastos-${range.startDate}_${range.endDate}` : "gastos";
 
@@ -363,216 +344,77 @@ export default function DataPage() {
   };
 
   return (
-    <div className="mx-auto flex w-[720px] max-w-full flex-col gap-3.5">
+    <div className="flex w-full flex-col gap-3.5">
       <div className="mb-1 flex flex-col gap-0.5">
         <h1 className="text-[22px] font-bold text-ink">{t("title")}</h1>
         <p className="text-[13px] text-ink-3">{t("subtitle")}</p>
       </div>
 
-      {/* ── Export card ──────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-3.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-accent-soft">
-            <Icon name="database" size={17} className="text-accent-strong" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[15px] font-bold text-ink">
-              {t("viewTitle")}
-            </span>
-            <span className="text-xs text-ink-3">{t("viewHint")}</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2.5">
-          <span className="section-label">{t("rangeLabel")}</span>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Segmented<RangePreset>
-              ariaLabel={t("rangeLabel")}
-              options={[
-                { value: "week", label: t("rangeWeek") },
-                { value: "current", label: t("rangeCurrent") },
-                { value: "previous", label: t("rangePrevious") },
-                { value: "custom", label: t("rangeCustom") },
-              ]}
-              value={preset}
-              onChange={changePreset}
-            />
-          </div>
-          {preset === "custom" && (
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
-                {t("from")}
-                <input
-                  type="date"
-                  value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
-                  aria-label={t("from")}
-                  className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink outline-none"
-                />
-              </label>
-              <label className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
-                {t("to")}
-                <input
-                  type="date"
-                  value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
-                  aria-label={t("to")}
-                  className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink outline-none"
-                />
-              </label>
-            </div>
-          )}
-        </div>
-
-        {exportPhase === "error" && (
-          <span className="text-[12.5px] font-semibold text-over">
-            {t("exportError")}
-          </span>
-        )}
-        {exportPhase === "driveStandalone" && (
-          <span className="text-[12.5px] font-semibold text-warn-text">
-            {t("exportDriveStandalone")}
-          </span>
-        )}
-
-        {/* Which categories go into the export */}
-        {rangeCategoryIds.length > 0 && (
-          <div className="flex flex-col gap-2 border-t border-soft pt-3.5">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-[13px] font-semibold text-ink-2">
-                {t("categoriesLabel")}
-              </span>
-              <button
-                type="button"
-                onClick={() => setExportCategories(null)}
-                disabled={exportCategories === null}
-                className="text-[12px] font-semibold text-accent-strong disabled:text-ink-3"
-              >
-                {t("categoriesAll")}
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {rangeCategoryIds.map((id) => {
-                const on =
-                  exportCategories === null || exportCategories.includes(id);
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => toggleExportCategory(id)}
-                    className={`rounded-full border px-3 py-1 text-[12.5px] font-semibold ${
-                      on
-                        ? "border-transparent bg-accent-soft text-accent-strong"
-                        : "border-pill bg-surface text-ink-3"
-                    }`}
-                  >
-                    {catLabelOf(id)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Who, and any word in the note. Same filter vocabulary as the
-            Gastos list, because it is the same question asked of the same
-            rows — and every one of them narrows the export too. */}
-        <div className="flex flex-wrap items-center gap-2.5 border-t border-soft pt-3.5">
-          <label className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
-            {t("colPerson")}
-            <select
-              value={personFilter}
-              onChange={(e) => setPersonFilter(e.target.value)}
-              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13px] font-semibold text-ink outline-none"
-            >
-              <option value="all">{t("personAll")}</option>
-              {Object.entries(memberNames).map(([uid, name]) => (
-                <option key={uid} value={uid}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex min-w-[200px] flex-1 items-center gap-1.5 rounded-full border border-pill bg-bg px-3.5 py-2">
-            <Icon name="search" size={16} className="text-ink-3" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("searchNote")}
-              aria-label={t("searchNote")}
-              className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-3"
-            />
-          </div>
-        </div>
-
-        {/* Unverified gate: the range still has expenses the bank has not
-            confirmed, so their USD column will be blank. Exporting anyway is a
-            deliberate act, not a default. */}
-        {unverifiedCount > 0 && !loadState.loading && rows.length > 0 && (
-          <label className="flex items-start gap-2.5 rounded-[14px] border border-warn-bg bg-warn-bg px-3.5 py-3">
-            <input
-              type="checkbox"
-              checked={acceptUnverified}
-              onChange={(e) => setAcceptUnverified(e.target.checked)}
-              className="mt-px h-4 w-4 flex-none accent-[var(--warn-text)]"
-            />
-            <span className="flex flex-col gap-px">
-              <span className="text-[13px] font-bold text-warn-text">
-                {t("acceptUnverified")}
-              </span>
-              <span className="text-[11.5px] font-semibold text-warn-text opacity-80">
-                {t("unverifiedNotice", { count: unverifiedCount })}
-              </span>
-            </span>
-          </label>
-        )}
-
-        {/* Taking it with you. Four small secondary buttons, all the same
-            weight: the file is just a copy of the table below, so none of them
-            is the point of the screen any more — and none is more of an event
-            than the others. Each writes exactly what is on screen, in the
-            order it is on screen. */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-soft pt-3.5">
-          <span className="text-[12px] font-semibold text-ink-3">
-            {t("exportHint")}
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            {(
-              [
-                { key: "csv", label: t("exportCsv"), run: exportCsv },
-                { key: "pdf", label: t("exportPdf"), run: () => void exportPdf() },
-                {
-                  key: "excel",
-                  label: exportPhase === "excel" ? t("exporting") : t("exportExcel"),
-                  run: () => void exportExcel(),
-                  busy: exportPhase === "excel",
-                },
-                {
-                  key: "drive",
-                  label:
-                    exportPhase === "drive" ? t("exportingDrive") : t("exportDrive"),
-                  run: () => void exportDrive(),
-                  busy: exportPhase === "drive",
-                },
-              ] as const
-            ).map((action) => (
-              <button
-                key={action.key}
-                type="button"
-                onClick={action.run}
-                disabled={!canExport || ("busy" in action && action.busy)}
-                className="flex items-center gap-1.5 rounded-full border border-pill bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink-2 disabled:opacity-40"
-              >
-                <Icon name="download" size={14} className="text-ink-3" />
-                {action.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* Range on the left, everything you can do with it on the right.
+          The card that used to be here held four export buttons, category
+          chips, a person select and a note search — all of them ways to
+          describe a file nobody could see. The table below is the file. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Segmented<RangePreset>
+          ariaLabel={t("rangeLabel")}
+          options={[
+            { value: "week", label: t("rangeWeek") },
+            { value: "current", label: t("rangeCurrent") },
+            { value: "previous", label: t("rangePrevious") },
+            { value: "custom", label: t("rangeCustom") },
+          ]}
+          value={preset}
+          onChange={changePreset}
+        />
+        <ExportMenu
+          disabled={!canExport}
+          busy={exportPhase}
+          blocked={exportBlocked}
+          unverifiedCount={unverifiedCount}
+          acceptUnverified={acceptUnverified}
+          onAcceptUnverified={setAcceptUnverified}
+          onCsv={exportCsv}
+          onPdf={() => void exportPdf()}
+          onExcel={() => void exportExcel()}
+          onDrive={() => void exportDrive()}
+        />
       </div>
 
+      {preset === "custom" && (
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
+            {t("from")}
+            <input
+              type="date"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              aria-label={t("from")}
+              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink outline-none"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
+            {t("to")}
+            <input
+              type="date"
+              value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              aria-label={t("to")}
+              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink outline-none"
+            />
+          </label>
+        </div>
+      )}
+
+      {exportPhase === "error" && (
+        <span className="text-[12.5px] font-semibold text-over">
+          {t("exportError")}
+        </span>
+      )}
+      {exportPhase === "driveStandalone" && (
+        <span className="text-[12.5px] font-semibold text-warn-text">
+          {t("exportDriveStandalone")}
+        </span>
+      )}
 
       {/* ── The grid ─────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 rounded-[18px] border border-line bg-surface px-[18px] py-4">
@@ -601,23 +443,59 @@ export default function DataPage() {
                     sortAsc={sortAsc}
                     onSort={onSort}
                   />
-                  <SortHeader
-                    label={t("colCategory")}
-                    columnKey="category"
-                    sortKey={sortKey}
-                    sortAsc={sortAsc}
-                    onSort={onSort}
-                  />
+                  {/* Sorting AND filtering, in the heading that owns the
+                      column — the chips that used to do this lived in another
+                      card, describing rows you could not see. */}
+                  <th className="px-3 py-2 font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onSort("category")}
+                        className={`inline-flex items-center gap-1 ${
+                          sortKey === "category" ? "text-ink" : "text-ink-3"
+                        }`}
+                      >
+                        {t("colCategory")}
+                        <Icon
+                          name={
+                            sortKey === "category" && !sortAsc
+                              ? "keyboard_arrow_down"
+                              : "keyboard_arrow_up"
+                          }
+                          size={14}
+                          className={
+                            sortKey === "category"
+                              ? "text-accent-strong"
+                              : "text-transparent"
+                          }
+                        />
+                      </button>
+                      <select
+                        value={categoryFilter ?? "all"}
+                        aria-label={t("colCategory")}
+                        onChange={(e) =>
+                          setCategoryFilter(
+                            e.target.value === "all" ? null : e.target.value,
+                          )
+                        }
+                        className={`cursor-pointer rounded-[8px] border bg-bg px-1.5 py-0.5 text-[11.5px] font-semibold outline-none ${
+                          categoryFilter === null
+                            ? "border-pill text-ink-3"
+                            : "border-accent text-accent-strong"
+                        }`}
+                      >
+                        <option value="all">{t("categoriesAll")}</option>
+                        {rangeCategoryIds.map((id) => (
+                          <option key={id} value={id}>
+                            {catLabelOf(id)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </th>
                   <SortHeader
                     label={t("colNote")}
                     columnKey="note"
-                    sortKey={sortKey}
-                    sortAsc={sortAsc}
-                    onSort={onSort}
-                  />
-                  <SortHeader
-                    label={t("colPerson")}
-                    columnKey="person"
                     sortKey={sortKey}
                     sortAsc={sortAsc}
                     onSort={onSort}
@@ -652,15 +530,13 @@ export default function DataPage() {
                     <td className="max-w-[220px] truncate px-3 py-2 text-ink-2">
                       {e.note !== "" ? e.note : "—"}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2 text-ink-2">
-                      {memberNames[e.createdBy] ?? "—"}
-                    </td>
-                    <td className="tnum whitespace-nowrap px-3 py-2 text-right font-semibold text-ink">
+                    <td className="tnum whitespace-nowrap px-3 py-2 text-right text-ink-2">
                       {formatCents(e.amountCents, household.currency, locale)}
                     </td>
-                    {/* Blank, not zero, when the bank has not reported it —
-                        exactly what the spreadsheet writes into that cell. */}
-                    <td className="tnum whitespace-nowrap px-3 py-2 text-right text-ink-3">
+                    {/* Bold, and blank rather than zero when the bank has not
+                        reported it — exactly what the spreadsheet writes into
+                        that cell. */}
+                    <td className="tnum whitespace-nowrap px-3 py-2 text-right font-bold text-ink">
                       {e.usdCents !== null ? formatUsd(e.usdCents, locale) : "—"}
                     </td>
                   </tr>
@@ -668,13 +544,13 @@ export default function DataPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t border-line font-bold text-ink">
-                  <td className="px-3 py-2.5" colSpan={4}>
+                  <td className="px-3 py-2.5" colSpan={3}>
                     {t("expensesCount", { count: rows.length })}
                   </td>
-                  <td className="tnum px-3 py-2.5 text-right">
+                  <td className="tnum px-3 py-2.5 text-right font-semibold text-ink-2">
                     {formatCents(total, household.currency, locale)}
                   </td>
-                  <td className="tnum px-3 py-2.5 text-right text-ink-2">
+                  <td className="tnum px-3 py-2.5 text-right">
                     {totalUsd > 0 ? formatUsd(totalUsd, locale) : "—"}
                   </td>
                 </tr>
@@ -683,6 +559,140 @@ export default function DataPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Everything you can do with the rows on screen, behind one button.
+ *
+ * Four formats that all write the SAME payload deserve one control, not four
+ * competing for the top of the page — the choice between them is a detail of
+ * where the file lands, and the interesting decision (the range, the filters)
+ * is made on the table itself.
+ *
+ * The unverified consent lives in here too, with the action it gates: exporting
+ * a range whose USD column is partly blank stays a deliberate act.
+ */
+function ExportMenu({
+  disabled,
+  busy,
+  blocked,
+  unverifiedCount,
+  acceptUnverified,
+  onAcceptUnverified,
+  onCsv,
+  onPdf,
+  onExcel,
+  onDrive,
+}: {
+  disabled: boolean;
+  busy: string;
+  /** True while the unverified consent is still unticked. */
+  blocked: boolean;
+  unverifiedCount: number;
+  acceptUnverified: boolean;
+  onAcceptUnverified: (value: boolean) => void;
+  onCsv: () => void;
+  onPdf: () => void;
+  onExcel: () => void;
+  onDrive: () => void;
+}) {
+  const t = useTranslations("data");
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement | null>(null);
+
+  // Clicking OUTSIDE closes it. Decided by asking the DOM whether the click
+  // landed inside this menu, not by stopping propagation on the way up:
+  // React's synthetic handler runs at its own root, and a native listener on
+  // `document` had already seen the event — which closed the menu the instant
+  // the consent checkbox was ticked, before its own onChange could land.
+  //
+  // Registered only while open, so the app is not carrying a document listener
+  // around for a menu nobody opened.
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (target instanceof Node && root.current?.contains(target) === true) {
+        return;
+      }
+      setOpen(false);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [open]);
+
+  const items = [
+    { key: "csv", label: t("exportCsv"), run: onCsv },
+    { key: "pdf", label: t("exportPdf"), run: onPdf },
+    {
+      key: "excel",
+      label: busy === "excel" ? t("exporting") : t("exportExcel"),
+      run: onExcel,
+    },
+    {
+      key: "drive",
+      label: busy === "drive" ? t("exportingDrive") : t("exportDrive"),
+      run: onDrive,
+    },
+  ];
+
+  return (
+    <div className="relative" ref={root}>
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 rounded-full border border-pill bg-surface px-4 py-2 text-[13px] font-bold text-ink"
+      >
+        <Icon name="download" size={15} className="text-ink-2" />
+        {t("exportTitle")}
+        <Icon name="expand_more" size={16} className="text-ink-3" />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 z-30 mt-1.5 flex w-[260px] flex-col gap-1 rounded-[16px] border border-line bg-surface p-1.5 shadow-[0_12px_30px_rgba(0,0,0,.14)]"
+        >
+          {unverifiedCount > 0 && (
+            <label className="m-0.5 flex items-start gap-2 rounded-[12px] bg-warn-bg px-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={acceptUnverified}
+                onChange={(e) => onAcceptUnverified(e.target.checked)}
+                className="mt-px size-4 flex-none accent-[var(--warn-text)]"
+              />
+              <span className="flex flex-col gap-px">
+                <span className="text-[12px] font-bold text-warn-text">
+                  {t("acceptUnverified")}
+                </span>
+                <span className="text-[11px] font-semibold text-warn-text opacity-80">
+                  {t("unverifiedNotice", { count: unverifiedCount })}
+                </span>
+              </span>
+            </label>
+          )}
+          {items.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              role="menuitem"
+              disabled={disabled || blocked}
+              onClick={() => {
+                item.run();
+                setOpen(false);
+              }}
+              className="flex items-center gap-2 rounded-[11px] px-3 py-2 text-left text-[13px] font-semibold text-ink hover:bg-fill disabled:opacity-40"
+            >
+              <Icon name="download" size={14} className="text-ink-3" />
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
+import { CurrencyTag } from "@/components/ui/marks";
 import type { CardFeeSettings } from "@/lib/firebase/converters";
 import {
   taxLines,
@@ -123,8 +124,11 @@ export function CardTaxesPanel({
                   {formatUsd(spend.usdCents, locale)}
                 </span>
               </span>
-              <span className="tnum flex-none text-[15px] font-bold text-ink-2">
-                {formatArs(usdToArsCents(spend.usdCents, rate.rate))}
+              <span className="flex flex-none items-baseline gap-1.5">
+                <span className="tnum text-[15px] font-bold text-ink-2">
+                  {formatArs(usdToArsCents(spend.usdCents, rate.rate))}
+                </span>
+                <CurrencyTag currency="ARS" />
               </span>
             </div>
           )}
@@ -165,8 +169,13 @@ export function CardTaxesPanel({
                 })}
               </span>
             </span>
-            <span className="tnum flex-none text-[19px] font-bold text-ink">
-              {formatArs(totalArsCents(lines))}
+            {/* Marked, like every other total in the app: this is the one
+                figure on any screen that is neither AUD nor USD. */}
+            <span className="flex flex-none items-baseline gap-1.5">
+              <span className="tnum text-[19px] font-bold text-ink">
+                {formatArs(totalArsCents(lines))}
+              </span>
+              <CurrencyTag currency="ARS" />
             </span>
           </div>
 

@@ -228,8 +228,8 @@
     "summary": "{count, plural, one {# gasto} other {# gastos}} · {total}",
     "exportEmpty": "No hay gastos en este rango.",
     "loading": "Cargando…",
-    "exportCsv": "Exportar CSV",
-    "exportPdf": "Exportar PDF",
+    "exportCsv": "CSV",
+    "exportPdf": "PDF",
     "importTitle": "Importar",
     "importHint": "Subí un CSV con el formato de exportación (fecha, categoria, nota, monto_aud, y monto_usd si el banco ya lo cobró).",
     "chooseFile": "Elegir archivo CSV",
@@ -241,7 +241,7 @@
     "colCategory": "Categoría",
     "colNote": "Nota",
     "colPerson": "Persona",
-    "colAmount": "Monto",
+    "colAmount": "Monto (AUD)",
     "colStatus": "Estado",
     "statusOk": "OK",
     "statusMapped": "→ Otros",
@@ -424,7 +424,6 @@
     "expenseCount": "{count, plural, one {# gasto} other {# gastos}}",
     "perDay": "Por día",
     "quietDays": "{count, plural, =0 {sin días en blanco} one {# día sin gastos} other {# días sin gastos}}",
-    "average": "Gasto promedio",
     "biggest": "El más grande",
     "paceTitle": "Ritmo contra el presupuesto",
     "paceHint": "La línea punteada es lo que daría gastar parejo hasta el final del período.",
@@ -452,7 +451,8 @@
     "dailyMode": "Cómo dibujar el día a día",
     "dailyBars": "Barras",
     "dailyLine": "Línea",
-    "dailyLineHint": "La forma del gasto a lo largo del rango."
+    "dailyLineHint": "La forma del gasto a lo largo del rango.",
+    "perDayInfo": "El total del rango dividido por todos los días que tiene, incluidos los días en que no se gastó nada. No es el promedio por gasto."
   },
   "bankDismissed": {
     "summary": "{count, plural, one {# descartado} other {# descartados}}",

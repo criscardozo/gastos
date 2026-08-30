@@ -14,6 +14,50 @@ import type { ReactNode } from "react";
 import { CurrencyTag } from "@/components/ui/marks";
 
 /** One labelled horizontal bar. `fraction` is 0..1 of the widest row. */
+/**
+ * The bank's USD over the household's AUD, as one figure.
+ *
+ * USD leads everywhere on the Estadísticas screen, but it is NOT a conversion —
+ * it is what the bank actually charged, which exists only for the expenses
+ * somebody verified. So it is always a lower bound on the same rows, and when
+ * NOTHING in the group is verified there is no honest number at all: that shows
+ * an em dash rather than "US$ 0,00", which would read as "spent nothing".
+ */
+export function UsdOverAud({
+  usd,
+  aud,
+  hasUsd,
+  size = "md",
+}: {
+  usd: string;
+  aud: string;
+  /** False when the bank has reported nothing for this group. */
+  hasUsd: boolean;
+  size?: "sm" | "md" | "lg";
+}) {
+  const primary =
+    size === "lg"
+      ? "text-[22px] leading-tight"
+      : size === "md"
+        ? "text-[15px]"
+        : "text-[13px]";
+  const secondary = size === "lg" ? "text-[12.5px]" : "text-[11px]";
+  return (
+    <span className="flex flex-col items-end">
+      <span className="flex items-baseline gap-1.5">
+        <span className={`tnum font-bold tracking-[-0.01em] text-ink ${primary}`}>
+          {hasUsd ? usd : "—"}
+        </span>
+        <CurrencyTag currency="USD" />
+      </span>
+      <span className="flex items-baseline gap-1.5">
+        <span className={`tnum font-semibold text-ink-3 ${secondary}`}>{aud}</span>
+        <CurrencyTag currency="AUD" />
+      </span>
+    </span>
+  );
+}
+
 export function BarRow({
   label,
   value,
@@ -22,7 +66,8 @@ export function BarRow({
   meta,
 }: {
   label: ReactNode;
-  value: string;
+  /** A plain string, or a UsdOverAud pair. */
+  value: ReactNode;
   fraction: number;
   color?: string;
   meta?: string;
@@ -37,7 +82,11 @@ export function BarRow({
           {meta !== undefined && (
             <span className="text-[11px] text-ink-3">{meta}</span>
           )}
-          <span className="tnum text-[13px] font-bold text-ink">{value}</span>
+          {typeof value === "string" ? (
+            <span className="tnum text-[13px] font-bold text-ink">{value}</span>
+          ) : (
+            value
+          )}
         </span>
       </div>
       <div className="h-[7px] overflow-hidden rounded-full bg-track">
@@ -349,28 +398,56 @@ export function StatCard({
   );
 }
 
-/** One of the four headline figures. */
+/**
+ * A small "i" that explains a figure on hover.
+ *
+ * `title` rather than a hand-built tooltip: it works on hover, on keyboard
+ * focus and with a screen reader without a line of JavaScript, and this is one
+ * sentence of explanation rather than a panel. `tabIndex` because a plain span
+ * is not reachable by keyboard, and an explanation only mouse users can get is
+ * half an explanation.
+ */
+function InfoHint({ text }: { text: string }) {
+  return (
+    <span
+      title={text}
+      aria-label={text}
+      role="note"
+      tabIndex={0}
+      className="flex size-[15px] flex-none cursor-help items-center justify-center rounded-full border border-line text-[10px] font-bold text-ink-3"
+    >
+      i
+    </span>
+  );
+}
+
+/** One of the headline figures. */
 export function HeadlineStat({
   label,
   value,
-  currency,
+  info,
   meta,
 }: {
   label: string;
-  value: string;
-  /** Marked next to the figure when given — see CurrencyTag. */
-  currency?: string;
+  /** A plain string, or a UsdOverAud pair. */
+  value: ReactNode;
+  /** Explains what the figure actually measures, on hover and on focus. */
+  info?: string;
   meta?: string;
 }) {
   return (
     <div className="flex flex-col gap-0.5 rounded-[16px] border border-line bg-surface px-4 py-3">
-      <span className="text-[11.5px] font-semibold text-ink-2">{label}</span>
-      <span className="flex flex-wrap items-baseline gap-1.5">
+      <span className="flex items-center gap-1">
+        <span className="text-[11.5px] font-semibold text-ink-2">{label}</span>
+        {info !== undefined && <InfoHint text={info} />}
+      </span>
+      {typeof value === "string" ? (
         <span className="tnum text-[22px] font-bold leading-tight tracking-[-0.02em] text-ink">
           {value}
         </span>
-        {currency !== undefined && <CurrencyTag currency={currency} />}
-      </span>
+      ) : (
+        <span className="flex items-start">{value}</span>
+      )}
       {meta !== undefined && (
         <span className="text-[11px] text-ink-3">{meta}</span>
       )}
