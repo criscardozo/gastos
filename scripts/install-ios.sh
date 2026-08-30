@@ -18,7 +18,11 @@
 #      profile dates without checking the build first reports a renewal that
 #      never happened.
 #   3. A failed build with the profiles moved aside leaves the machine unable to
-#      sign at all, so they go back on any exit path.
+#      sign at all, so they go back on every FAILING exit path — and only those.
+#      Restoring after a success would not restore anything: Xcode mints the new
+#      profiles under new filenames, so the old pair would simply pile up, three
+#      dead files per run. The trap is disarmed the moment the build is known to
+#      have worked. (Measured: 12 profiles before a successful run, 12 after.)
 #
 # Usage: scripts/install-ios.sh [--device <udid>]
 
