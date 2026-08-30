@@ -129,6 +129,10 @@ rules_version = '2';
 //   - detail: string (required, may be empty, ≤ 200)
 //   - card: "visa"|"mastercard" (required)
 //   - usdCents: int (required, 1..10_000_000)
+//   - digital: bool (optional; a digital service from abroad, which the bank
+//     taxes with IIBB + IVA RG 4240 on top of RG 5617. ABSENT MEANS TRUE —
+//     nearly everything on this card is one, and every charge predates the
+//     field. See apps/web/src/lib/card-taxes.ts)
 //   - createdBy: uid string (required, = author on create, immutable)
 //   - createdAt: timestamp (required, server time, immutable)
 //   - updatedAt: timestamp (required, server time)
@@ -616,8 +620,10 @@ service cloud.firestore {
       // ------------------------ cardCharges ------------------------
 
       function isValidCardCharge(data) {
-        return data.keys().hasOnly(['date', 'detail', 'card', 'usdCents', 'createdBy', 'createdAt', 'updatedAt'])
+        return data.keys().hasOnly(['date', 'detail', 'card', 'usdCents', 'digital', 'createdBy', 'createdAt', 'updatedAt'])
           && data.keys().hasAll(['date', 'detail', 'card', 'usdCents', 'createdBy', 'createdAt', 'updatedAt'])
+          // Optional, because every charge written before it exists without it.
+          && (!('digital' in data) || data.digital is bool)
           && isCalendarDate(data.date)
           && data.detail is string && data.detail.size() <= 200
           && data.card in ['visa', 'mastercard']

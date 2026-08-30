@@ -289,8 +289,20 @@ billing currency and nobody types AUD here.
 | `detail` | string | ≤ 200, may be empty |
 | `card` | `"visa"` \| `"mastercard"` | Which card it went on |
 | `usdCents` | int | > 0. Integer cents of USD |
+| `digital` | bool \| absent | A digital service from abroad. **Absent ⇒ true** |
 | `createdBy` | uid | Attribution only |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
+
+**`digital` decides which taxes the charge attracts**, and the bank taxes the two
+classes differently: `DB.RG 5617` (30%) falls on all foreign spend, while
+`IIBB PERCEP-CABA` (2%) and `IVA RG 4240` (21%) fall only on digital services
+from abroad. Verified against a real BBVA statement, which prints both bases:
+US$ 531,49 of spend but only US$ 32,21 — the two ride-share charges — under the
+second one. The Kmart and Temu purchases on the same statement attracted
+neither. The bank decides from how the merchant is registered, so the app cannot
+derive it and has to be told; absent means **true** because nearly every charge
+on this card is a digital service and every existing charge predates the field.
+Only the Tarjetas peso estimate reads it — see `apps/web/src/lib/card-taxes.ts`.
 
 **A charge carries no statement id.** It belongs to the statement whose
 `[startDate, closingDate]` range contains its `date` — the same bucketing rule

@@ -66,6 +66,9 @@ export function CardChargeDialog({
   const [date, setDate] = useState(charge?.date ?? defaultDate);
   const [detail, setDetail] = useState(charge?.detail ?? "");
   const [brand, setBrand] = useState<CardBrand>(charge?.card ?? "visa");
+  // Defaults to on: nearly everything that goes on this card is a digital
+  // service, and the two taxes that depend on it are the ones people forget.
+  const [digital, setDigital] = useState(charge?.digital ?? true);
   const [amount, setAmount] = useState(
     charge !== null ? (charge.usdCents / 100).toFixed(2) : "",
   );
@@ -174,13 +177,32 @@ export function CardChargeDialog({
           </div>
         </div>
 
+        {/* Which taxes it attracts: RG 5617 falls on everything, IIBB and
+            RG 4240 only on digital services from abroad. The bank decides from
+            how the merchant is registered, so it has to be told rather than
+            worked out — a ride-share app is one, a shop is not. */}
+        <label className="flex items-center justify-between gap-3 rounded-xl border border-line bg-bg px-3 py-2.5">
+          <span className="flex flex-col gap-0.5">
+            <span className="text-[13px] font-semibold text-ink">
+              {t("digital")}
+            </span>
+            <span className="text-[11.5px] text-ink-3">{t("digitalHelp")}</span>
+          </span>
+          <input
+            type="checkbox"
+            checked={digital}
+            onChange={(e) => setDigital(e.target.checked)}
+            className="size-[18px] flex-none accent-[var(--accent)]"
+          />
+        </label>
+
         <div className="mt-1 flex items-center gap-2.5">
           <button
             type="button"
             disabled={!valid}
             onClick={() => {
               if (usdCents === null) return;
-              onSave({ date, detail: detail.trim(), card: brand, usdCents });
+              onSave({ date, detail: detail.trim(), card: brand, usdCents, digital });
             }}
             className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white disabled:opacity-40"
           >

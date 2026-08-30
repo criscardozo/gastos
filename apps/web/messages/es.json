@@ -182,7 +182,7 @@
     "arsRateApi": "Al dólar oficial $ {rate}",
     "arsRateManual": "A la cotización cargada a mano: $ {rate}",
     "arsNoRate": "Cargá una cotización del dólar para ver el total en pesos.",
-    "arsCaveat": "No incluye IIBB ni IVA RG 4240: el banco los cobra sólo sobre servicios digitales y la app todavía no sabe cuáles son.",
+    "arsCaveat": "Estimado. IIBB e IVA RG 4240 sólo se cobran sobre los gastos marcados como servicio digital.",
     "arsSettings": "Ajustes en pesos",
     "commission": "Comisión mensual (ARS)",
     "commissionHelp": "El cargo fijo de la cuenta. Su IVA del 21% se calcula solo.",
@@ -192,7 +192,9 @@
     "pastClosingBody": "El cierre fue el {date} y hoy es {today}. Cerrá el resumen y abrí el próximo: este gasto va en el que viene.",
     "pastClosingCta": "Cerrar y abrir el próximo",
     "pastClosingAnyway": "Cargarlo igual en este resumen",
-    "arsRateApiDated": "Al dólar oficial $ {rate}, del {date}"
+    "arsRateApiDated": "Al dólar oficial $ {rate}, del {date}",
+    "digital": "Servicio digital del exterior",
+    "digitalHelp": "Suma IIBB 2% e IVA RG 4240 21%. Una app o suscripción sí; un local, no."
   },
   "cardsInbox": {
     "title": "Cargos del banco",

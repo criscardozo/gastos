@@ -64,7 +64,8 @@ acaba de pedir.
   presupuesto es determinístico y funciona offline.
 
   **La única excepción, acotada a propósito:** la pantalla de Tarjetas estima
-  cuántos *pesos argentinos* va a costar el resumen del mes, y para eso consulta
+  cuántos *pesos argentinos* va a costar el resumen del mes (comisión + IVA, y
+  las percepciones RG 5617, RG 4240 e IIBB), y para eso consulta
   el dólar oficial en [dolarapi.com](https://dolarapi.com) (gratis, sin key,
   CORS abierto). Es una **estimación que se mira**, no un dato que se guarda:
   no toca ningún gasto, no entra en ninguna suma en AUD, y si la API no responde

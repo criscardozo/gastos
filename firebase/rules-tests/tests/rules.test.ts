@@ -1571,6 +1571,21 @@ describe("households/{id}/cardCharges", () => {
     );
   });
 
+  it("takes the digital flag, and only as a boolean", async () => {
+    // Optional because every charge predates it, and the client reads its
+    // absence as true — see shared/schema.md. Two peso tax lines depend on it.
+    await assertSucceeds(
+      setDoc(ref(ALICE, "dig"), cardChargeDoc(ALICE, { digital: true })),
+    );
+    await assertSucceeds(
+      setDoc(ref(ALICE, "shop"), cardChargeDoc(ALICE, { digital: false })),
+    );
+    await assertSucceeds(setDoc(ref(ALICE, "absent"), cardChargeDoc(ALICE)));
+    await assertFails(
+      setDoc(ref(ALICE, "str"), cardChargeDoc(ALICE, { digital: "true" })),
+    );
+  });
+
   it("a charge carries no statement id — nothing to spoof", async () => {
     // Bucketing is by date, so an extra field is not just unused: accepting it
     // would let two clients disagree about which statement a charge is in.

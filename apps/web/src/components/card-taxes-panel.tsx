@@ -13,7 +13,7 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import type { CardFeeSettings } from "@/lib/firebase/converters";
-import { taxLines, totalArsCents } from "@/lib/card-taxes";
+import { taxLines, totalArsCents, type StatementSpend } from "@/lib/card-taxes";
 import { formatShortDate } from "@/lib/dates";
 import { formatArs } from "@/lib/money";
 import { fetchTodayRate, resolveRate, type RateSource } from "@/lib/usd-rate";
@@ -44,13 +44,13 @@ function useUsdArsRate(fallback: number | null): RateSource | null {
 }
 
 export function CardTaxesPanel({
-  usdCents,
+  spend,
   fees,
   locale,
   onEdit,
 }: {
-  /** The statement's total foreign spend. */
-  usdCents: number;
+  /** The statement's foreign spend, and the digital part of it. */
+  spend: StatementSpend;
   fees: CardFeeSettings;
   locale: string;
   onEdit: () => void;
@@ -62,10 +62,10 @@ export function CardTaxesPanel({
     () =>
       rate === null
         ? []
-        : taxLines(usdCents, rate.rate, {
+        : taxLines(spend, rate.rate, {
             commissionArsCents: fees.commissionArsCents,
           }),
-    [usdCents, rate, fees.commissionArsCents],
+    [spend, rate, fees.commissionArsCents],
   );
 
   const rateMessage =
@@ -79,7 +79,7 @@ export function CardTaxesPanel({
   // full of zeroes — or a prompt for a rate — on a household that does not have
   // an Argentine card. Checked on the inputs, not on `lines`, so the panel also
   // stays away while the rate is still unknown.
-  if (usdCents === 0 && fees.commissionArsCents === 0) return null;
+  if (spend.usdCents === 0 && fees.commissionArsCents === 0) return null;
 
   return (
     <div className="flex flex-col gap-3 rounded-[18px] border border-line bg-surface px-[18px] py-4">
@@ -145,9 +145,8 @@ export function CardTaxesPanel({
             </span>
           </div>
 
-          {/* Says what is NOT in the number. Two of the statement's five peso
-              lines are missing on purpose, and a total that quietly omits them
-              would read as the whole bill. */}
+          {/* Says which lines depend on a flag the user sets, because two of
+              the five are only as right as that flag is. */}
           <p className="text-[11px] leading-snug text-ink-3">
             {t("arsCaveat")}
           </p>

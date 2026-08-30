@@ -119,6 +119,23 @@ export function statementTotalUsdCents(
   return charges.reduce((sum, charge) => sum + charge.usdCents, 0);
 }
 
+/**
+ * The part of a statement the bank taxes as digital services from abroad.
+ *
+ * Its own function rather than a filter at the call site because the default
+ * matters: a charge written before the flag existed has no `digital` field, and
+ * the converter reads that as true. Getting it backwards here would quietly
+ * drop two tax lines rather than fail.
+ */
+export function digitalUsdCents(
+  charges: readonly { usdCents: number; digital: boolean }[],
+): number {
+  return charges.reduce(
+    (sum, charge) => (charge.digital ? sum + charge.usdCents : sum),
+    0,
+  );
+}
+
 /** Per-card subtotals, for the breakdown under the statement total. */
 export function totalsByCard(
   charges: readonly { card: string; usdCents: number }[],

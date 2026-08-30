@@ -145,6 +145,9 @@ export interface CardCharge {
   detail: string;
   card: CardBrand;
   usdCents: number;
+  /** A digital service from abroad, which the bank taxes twice more. Absent on
+   * the doc reads as TRUE — see shared/schema.md. */
+  digital: boolean;
   createdBy: string;
   pendingWrite: boolean;
 }
@@ -294,6 +297,9 @@ export const cardChargeConverter = readOnly<CardCharge>((snap) => {
     detail: (data.detail as string | undefined) ?? "",
     card: (data.card as CardBrand) ?? "visa",
     usdCents: data.usdCents as number,
+    // `?? true`, not `?? false`: every charge written before this field exists
+    // without it, and nearly all of them were digital services.
+    digital: (data.digital as boolean | undefined) ?? true,
     createdBy: (data.createdBy as string) ?? "",
     pendingWrite: snap.metadata.hasPendingWrites,
   };

@@ -721,6 +721,8 @@ export interface CardChargeInput {
   card: CardBrand;
   /** Integer cents of USD — the card's own billing currency. */
   usdCents: number;
+  /** Whether the bank will treat this as a digital service from abroad. */
+  digital: boolean;
 }
 
 export async function addCardCharge(
@@ -735,6 +737,7 @@ export async function addCardCharge(
     detail: input.detail,
     card: input.card,
     usdCents: input.usdCents,
+    digital: input.digital,
     createdBy: uid,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -752,6 +755,7 @@ export async function updateCardCharge(
     detail: input.detail,
     card: input.card,
     usdCents: input.usdCents,
+    digital: input.digital,
     updatedAt: serverTimestamp(),
   });
 }
@@ -779,6 +783,7 @@ export async function importBankChargeAsCardCharge(
     detail: input.detail,
     card: input.card,
     usdCents: input.usdCents,
+    digital: input.digital,
     createdBy: uid,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

@@ -41,6 +41,7 @@ import { formatUsd } from "@/lib/money";
 import { formatLongDate, formatShortDate } from "@/lib/dates";
 import {
   CARD_BRANDS,
+  digitalUsdCents,
   isPastClosing,
   nextStatementProposal,
   statementTotalUsdCents,
@@ -105,6 +106,13 @@ export default function CardsPage() {
 
   const total = useMemo(() => statementTotalUsdCents(charges), [charges]);
   const perCard = useMemo(() => totalsByCard(charges), [charges]);
+  // The two peso taxes that fall on digital services need their own subtotal:
+  // RG 5617 taxes everything, IIBB and RG 4240 only this part. Memoised as one
+  // object so the panel's own memo has something stable to compare.
+  const spend = useMemo(
+    () => ({ usdCents: total, digitalUsdCents: digitalUsdCents(charges) }),
+    [total, charges],
+  );
 
   // Only ever true on the OPEN statement: a past one is meant to be past, and
   // saying so about it would be noise on every screen but the current one.
@@ -335,7 +343,7 @@ export default function CardsPage() {
       )}
 
       <CardTaxesPanel
-        usdCents={total}
+        spend={spend}
         fees={household.cardFees}
         locale={locale}
         onEdit={() => setFeesDialog(true)}

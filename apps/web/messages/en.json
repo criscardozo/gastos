@@ -182,7 +182,7 @@
     "arsRateApi": "At the official rate, $ {rate}",
     "arsRateManual": "At the manually entered rate: $ {rate}",
     "arsNoRate": "Enter a dollar rate to see the total in pesos.",
-    "arsCaveat": "Excludes IIBB and IVA RG 4240: the bank charges those on digital services only, and the app cannot tell yet which ones those are.",
+    "arsCaveat": "An estimate. IIBB and IVA RG 4240 apply only to charges marked as a digital service.",
     "arsSettings": "Peso settings",
     "commission": "Monthly fee (ARS)",
     "commissionHelp": "The account's fixed charge. Its 21% IVA is worked out for you.",
@@ -192,7 +192,9 @@
     "pastClosingBody": "It closed on {date} and today is {today}. Close it and open the next one: this charge belongs to that one.",
     "pastClosingCta": "Close and open the next one",
     "pastClosingAnyway": "Add it to this statement anyway",
-    "arsRateApiDated": "At the official rate, $ {rate}, from {date}"
+    "arsRateApiDated": "At the official rate, $ {rate}, from {date}",
+    "digital": "Digital service from abroad",
+    "digitalHelp": "Adds IIBB 2% and IVA RG 4240 21%. An app or subscription yes; a shop no."
   },
   "cardsInbox": {
     "title": "Bank charges",

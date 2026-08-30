@@ -1101,22 +1101,41 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await expect(page.getByRole("dialog").getByRole("alert")).toBeHidden();
   await page.getByLabel("Monto (USD)").fill("100,00");
   await page.getByLabel("Detalle").fill("Steam");
+  // Digital by default — nearly everything on this card is.
+  await expect(page.getByLabel("Servicio digital del exterior")).toBeChecked();
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Steam")).toBeVisible();
 
-  // US$ 100 at 1500 is $150.000, and RG 5617 takes 30% of it.
+  // US$ 100 at 1500 is $150.000. RG 5617 takes 30% of it, and the two
+  // digital-only lines take 21% and 2% of the same base.
   await expect(page.getByText("Impuestos en pesos")).toBeVisible();
   await expect(page.getByText("$ 45.000,00").first()).toBeVisible();
+  await expect(page.getByText("$ 31.500,00").first()).toBeVisible();
+  await expect(page.getByText("$ 3.000,00").first()).toBeVisible();
   await expect(page.getByText("Al dólar oficial $ 1.500")).toBeVisible();
+
+  // A shop is not a digital service: RG 5617 still applies to it, the other two
+  // do not. US$ 50 more makes RG 5617 $67.500 while IIBB and RG 4240 stay put.
+  await page.getByRole("button", { name: "Agregar gasto" }).click();
+  await page.getByLabel("Monto (USD)").fill("50,00");
+  await page.getByLabel("Detalle").fill("Kmart");
+  await page.getByLabel("Servicio digital del exterior").uncheck();
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Kmart")).toBeVisible();
+  await expect(page.getByText("$ 67.500,00").first()).toBeVisible();
+  await expect(page.getByText("$ 31.500,00").first()).toBeVisible();
+  await expect(page.getByText("$ 3.000,00").first()).toBeVisible();
 
   // The monthly fee is typed once; its 21% IVA is worked out.
   await page.getByRole("button", { name: "Ajustes en pesos" }).click();
   await page.getByLabel("Comisión mensual (ARS)").fill("40.413,22");
   await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(page.getByText("$ 40.413,22")).toBeVisible();
+  // `.first()`: each line also prints the base it was computed from, so the
+  // fee's amount appears twice — once as the charge, once inside "21% de ...".
+  await expect(page.getByText("$ 40.413,22").first()).toBeVisible();
   await expect(page.getByText("$ 8.486,78")).toBeVisible();
-  // 40.413,22 + 8.486,78 + 45.000,00
-  await expect(page.getByText("$ 93.900,00")).toBeVisible();
+  // 40.413,22 + 8.486,78 + 3.000,00 + 31.500,00 + 67.500,00
+  await expect(page.getByText("$ 150.900,00")).toBeVisible();
 });
 
 /**

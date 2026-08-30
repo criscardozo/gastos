@@ -4,6 +4,7 @@ import {
   addMonthsKeepingDay,
   containsCharge,
   currentStatement,
+  digitalUsdCents,
   isPastClosing,
   nextStatementProposal,
   statementTotalUsdCents,
@@ -125,6 +126,20 @@ describe("totals", () => {
   it("adds the statement up in USD cents", () => {
     expect(statementTotalUsdCents(charges)).toBe(2500);
     expect(statementTotalUsdCents([])).toBe(0);
+  });
+
+  it("adds up only the digital part", () => {
+    // The two taxes that read this are 23% of it, so a charge landing on the
+    // wrong side of the filter is worth roughly a quarter of itself.
+    expect(
+      digitalUsdCents([
+        { usdCents: 1718, digital: true },
+        { usdCents: 1503, digital: true },
+        { usdCents: 12252, digital: false },
+      ]),
+    ).toBe(3221);
+    expect(digitalUsdCents([{ usdCents: 999, digital: false }])).toBe(0);
+    expect(digitalUsdCents([])).toBe(0);
   });
 
   it("breaks the total down per card", () => {
