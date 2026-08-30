@@ -60,6 +60,14 @@ All JS commands run from the repo root (pnpm workspace):
   directly instead of depending on the app — the app embeds the watchOS app, so
   the old `-scheme GastosDiarios` needed the watchOS platform installed to run a
   unit test. Use `-scheme GastosDiarios` to build or run the app itself.
+- `./scripts/install-ios.sh` — build + **renovación forzada de la firma** +
+  install en el iPhone. Instalar siempre renueva: el perfil del team gratuito se
+  reusa, así que un build normal conserva el vencimiento viejo y cada instalación
+  gasta días del mismo perfil. El script aparta los tres perfiles juntos (app,
+  widget, watch — para que se reemitan alineados), captura el exit code del build
+  ANTES de leer nada (`xcodebuild | grep` devuelve el código de grep, no del
+  build), restaura los perfiles si falla y aborta si la firma emitida dura menos
+  de un día.
 - Deploy rules: `firebase deploy --only firestore:rules,firestore:indexes --config firebase/firebase.json --project qcris-gastos-diarios`.
 - `pnpm backup` dumps the whole project to `backups/` (gitignored). The same script runs weekly on GitHub Actions (`.github/workflows/backup.yml`, Thursdays), keeping the dump as a 90-day artifact — Firestore's managed export needs Blaze.
 - One-time console setup (Firestore db creation, Google provider, Vercel): `docs/setup.md`. Distribution is free-account sideload (7-day signing expiry) until the Apple Developer decision (PLAN Phase 5).
