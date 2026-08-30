@@ -1293,6 +1293,56 @@ describe("households/{id}/periodBudgets", () => {
     );
   });
 
+  // ------------------------ cardFees ------------------------
+
+  it("accepts the card fee settings", async () => {
+    await seedHousehold();
+    await assertSucceeds(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD), {
+        cardFees: { commissionArsCents: 4041322, usdArsRate: 1514.5 },
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // Either field alone, because a household may know the fee before the rate.
+    await assertSucceeds(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD), {
+        cardFees: { commissionArsCents: 4041322 },
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("refuses a fee or a rate that is not one", async () => {
+    // Both multiply into a figure about money, so the shape is worth enforcing
+    // here rather than trusting the one screen that writes them.
+    await seedHousehold();
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD);
+    const bad = [
+      { commissionArsCents: -1 },
+      { commissionArsCents: 4041322.5 },
+      { commissionArsCents: "40413" },
+      { usdArsRate: 0 },
+      { usdArsRate: -1514 },
+      // A rate this far out is a typo, not a devaluation.
+      { usdArsRate: 1000001 },
+      { usdArsRate: "1514" },
+      { commissionArsCents: 1, unexpected: true },
+    ];
+    for (const cardFees of bad) {
+      await assertFails(updateDoc(ref, { cardFees, updatedAt: serverTimestamp() }));
+    }
+  });
+
+  it("a stranger cannot set the card fees", async () => {
+    await seedHousehold();
+    await assertFails(
+      updateDoc(doc(db(env, CAROL), "households", HOUSEHOLD), {
+        cardFees: { commissionArsCents: 4041322 },
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
   it("a household without cards still validates — the field is optional", async () => {
     // Every household predates this field; making it required would reject the
     // next write on all of them.

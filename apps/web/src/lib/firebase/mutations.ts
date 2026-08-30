@@ -384,6 +384,28 @@ export async function updateHouseholdCards(
   });
 }
 
+/**
+ * The ARS settings for card statements: the bank's fixed monthly fee and the
+ * fallback rate. Written whole for the same reason as `cards` — the map has two
+ * keys and a dotted path buys nothing. Member-edit branch of the rules.
+ */
+export async function updateHouseholdCardFees(
+  db: Firestore,
+  householdId: string,
+  fees: { commissionArsCents: number; usdArsRate: number | null },
+): Promise<void> {
+  // The rules type `usdArsRate` as a number when present, so "not configured"
+  // has to be an absent key rather than a null.
+  const cardFees: Record<string, number> = {
+    commissionArsCents: fees.commissionArsCents,
+  };
+  if (fees.usdArsRate !== null) cardFees.usdArsRate = fees.usdArsRate;
+  await updateDoc(doc(db, "households", householdId), {
+    cardFees,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function updateHouseholdCategories(
   db: Firestore,
   householdId: string,

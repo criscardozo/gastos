@@ -18,23 +18,30 @@ import { useTranslations } from "next-intl";
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { CardMark, CARD_LABELS } from "@/components/ui/marks";
-import { CardChargeDialog, StatementDatesDialog } from "@/components/card-dialogs";
+import {
+  CardChargeDialog,
+  CardFeesDialog,
+  StatementDatesDialog,
+} from "@/components/card-dialogs";
+import { CardTaxesPanel } from "@/components/card-taxes-panel";
 import { CardChargesInbox } from "@/components/card-charges-inbox";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { useBankCharges, useCardCharges, useCardStatements } from "@/lib/firebase/hooks";
-import type { CardCharge } from "@/lib/firebase/converters";
+import type { CardCharge, CardFeeSettings } from "@/lib/firebase/converters";
 import {
   addCardCharge,
   deleteCardCharge,
   deleteCardStatement,
   openCardStatement,
   updateCardCharge,
+  updateHouseholdCardFees,
   type CardChargeInput,
 } from "@/lib/firebase/mutations";
 import { formatUsd } from "@/lib/money";
 import { formatLongDate, formatShortDate } from "@/lib/dates";
 import {
   CARD_BRANDS,
+  isPastClosing,
   nextStatementProposal,
   statementTotalUsdCents,
   totalsByCard,
@@ -84,6 +91,7 @@ export default function CardsPage() {
   const [index, setIndex] = useState(0);
   const [chargeDialog, setChargeDialog] = useState<CardCharge | "new" | null>(null);
   const [datesDialog, setDatesDialog] = useState(false);
+  const [feesDialog, setFeesDialog] = useState(false);
   const [confirmDeleteStatement, setConfirmDeleteStatement] = useState(false);
 
   const shown = statements[Math.min(index, Math.max(statements.length - 1, 0))] ?? null;
@@ -97,6 +105,10 @@ export default function CardsPage() {
 
   const total = useMemo(() => statementTotalUsdCents(charges), [charges]);
   const perCard = useMemo(() => totalsByCard(charges), [charges]);
+
+  // Only ever true on the OPEN statement: a past one is meant to be past, and
+  // saying so about it would be noise on every screen but the current one.
+  const pastClosing = isCurrent && isPastClosing(today ?? "", shown);
 
   if (household === null || today === null) return null;
 
@@ -260,6 +272,32 @@ export default function CardsPage() {
             </div>
           </div>
 
+          {pastClosing && shown !== null && (
+            // The charges themselves are filed by date, so a purchase made
+            // after the closing day cannot go on this statement without being
+            // back-dated. Says so where the dates are, and offers the fix.
+            <div
+              className="flex flex-col gap-2 rounded-[12px] bg-warn-bg px-3 py-2.5"
+              role="alert"
+            >
+              <span
+                className="text-[12.5px] font-bold"
+                style={{ color: "var(--warn-text)" }}
+              >
+                {t("pastClosingTitle")}
+              </span>
+              <span
+                className="text-[11.5px] leading-snug"
+                style={{ color: "var(--warn-text)" }}
+              >
+                {t("pastClosingBody", {
+                  date: formatLongDate(shown.closingDate, locale),
+                  today: formatLongDate(today, locale),
+                })}
+              </span>
+            </div>
+          )}
+
           {isCurrent && (
             // Both secondary, and small. Closing a statement happens once a
             // month; a full-width primary button gave a rare, hard-to-undo
@@ -295,6 +333,13 @@ export default function CardsPage() {
           )}
         </div>
       )}
+
+      <CardTaxesPanel
+        usdCents={total}
+        fees={household.cardFees}
+        locale={locale}
+        onEdit={() => setFeesDialog(true)}
+      />
 
       {chargesLoading && charges.length === 0 && (
         <p className="px-1 text-[13px] text-ink-3">{t("loading")}</p>
@@ -342,6 +387,14 @@ export default function CardsPage() {
           // a different window and make it vanish from the screen that just
           // accepted it.
           defaultDate={clampToStatement(today, shown)}
+          // Only when ADDING: editing an old charge on a closed statement is
+          // exactly what the screen is for, and warning there would fire on
+          // every correction anyone ever makes to a past month.
+          pastClosing={
+            pastClosing && chargeDialog === "new" && shown !== null
+              ? { closingDate: shown.closingDate, today }
+              : null
+          }
           locale={locale}
           onSave={saveCharge}
           onDelete={
@@ -355,6 +408,18 @@ export default function CardsPage() {
                 }
           }
           onClose={() => setChargeDialog(null)}
+        />
+      )}
+
+      {feesDialog && (
+        <CardFeesDialog
+          fees={household.cardFees}
+          locale={locale}
+          onSave={(fees: CardFeeSettings) => {
+            withDb((db) => updateHouseholdCardFees(db, household.id, fees));
+            setFeesDialog(false);
+          }}
+          onClose={() => setFeesDialog(false)}
         />
       )}
 

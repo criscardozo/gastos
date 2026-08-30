@@ -998,6 +998,128 @@ test("services and card statements keep their own books", async ({ page }) => {
 });
 
 /**
+ * The peso side of a card statement, and the warning when the month is over.
+ *
+ * The statement is billed in USD but the taxes are charged in ARS, so this
+ * screen estimates them. The rate service is STUBBED here: a test that depends
+ * on what the dollar did today is a test that fails for reasons that have
+ * nothing to do with the code.
+ */
+test("a statement estimates its taxes in pesos, and says when it has closed", async ({
+  page,
+  request,
+}) => {
+  // A fixed quote, in dolarapi's own shape.
+  await page.route("**/dolarapi.com/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        moneda: "USD",
+        casa: "oficial",
+        compra: 1450,
+        venta: 1500,
+        fechaActualizacion: "2026-08-28T18:55:00.000Z",
+      }),
+    }),
+  );
+
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  const email = `e2e-ars-${Date.now()}@test.dev`;
+  await page.evaluate((e) => window.__devSignIn!("ARS Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Tarjetas", exact: true }).click();
+
+  /* ── A statement whose closing date has already gone by ──────────────── */
+
+  // Written straight into Firestore rather than through the dialog: the dialog
+  // refuses to open a statement that closes before its own window starts, which
+  // is correct — statements chain forward and only ever close in the future.
+  // A statement that HAS closed can only be arrived at by time passing, so the
+  // test has to arrive at it the same way, by planting one.
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const householdId = (
+    ((await households.json()).documents as {
+      name: string;
+      fields: { name: { stringValue: string } };
+    }[]).find((d) => d.fields.name.stringValue === "Hogar de ARS") as {
+      name: string;
+    }
+  ).name
+    .split("/")
+    .pop() as string;
+  await request.patch(
+    `${REST}/households/${householdId}/cardStatements/2026-01-27`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          startDate: { stringValue: "2025-12-28" },
+          closingDate: { stringValue: "2026-01-27" },
+          dueDate: { stringValue: "2026-02-07" },
+          createdAt: { timestampValue: new Date().toISOString() },
+          updatedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+
+  // Charges are filed by their own date, so anything bought now belongs to the
+  // NEXT statement — and the screen has to say so instead of silently
+  // back-dating it into a month that is over.
+  await expect(page.getByText("Este resumen ya cerró")).toBeVisible();
+  // And again where the charge is actually being typed.
+  await page.getByRole("button", { name: "Agregar gasto" }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+    "Cerrá el resumen y abrí el próximo",
+  );
+  await page.keyboard.press("Escape");
+
+  /* ── The peso estimate, on an open one ───────────────────────────────── */
+
+  // Closes far enough ahead that today cannot be past it, whenever the suite
+  // happens to run.
+  await page.getByRole("button", { name: "Cerrar y abrir el próximo" }).click();
+  await page.getByLabel("Cierre").fill("2099-12-27");
+  await page.getByLabel("Vencimiento").fill("2100-01-07");
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Cerrar y abrir el próximo" }).click();
+  await page.getByRole("button", { name: "Sí, cerrar y abrir" }).click();
+  await expect(page.getByText("Este resumen ya cerró")).toBeHidden();
+
+  // Nothing spent and no fee configured: no peso panel at all, rather than a
+  // card full of zeroes on a household with no Argentine card.
+  await expect(page.getByText("Impuestos en pesos")).toBeHidden();
+
+  await page.getByRole("button", { name: "Agregar gasto" }).click();
+  // No warning this time: the statement is open and today is inside it.
+  await expect(page.getByRole("dialog").getByRole("alert")).toBeHidden();
+  await page.getByLabel("Monto (USD)").fill("100,00");
+  await page.getByLabel("Detalle").fill("Steam");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Steam")).toBeVisible();
+
+  // US$ 100 at 1500 is $150.000, and RG 5617 takes 30% of it.
+  await expect(page.getByText("Impuestos en pesos")).toBeVisible();
+  await expect(page.getByText("$ 45.000,00").first()).toBeVisible();
+  await expect(page.getByText("Al dólar oficial $ 1.500")).toBeVisible();
+
+  // The monthly fee is typed once; its 21% IVA is worked out.
+  await page.getByRole("button", { name: "Ajustes en pesos" }).click();
+  await page.getByLabel("Comisión mensual (ARS)").fill("40.413,22");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("$ 40.413,22")).toBeVisible();
+  await expect(page.getByText("$ 8.486,78")).toBeVisible();
+  // 40.413,22 + 8.486,78 + 45.000,00
+  await expect(page.getByText("$ 93.900,00")).toBeVisible();
+});
+
+/**
  * Stretching the week under way into a fortnight.
  *
  * The property worth pinning down is that NO expense is touched: one logged in

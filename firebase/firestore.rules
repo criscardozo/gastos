@@ -256,7 +256,7 @@ service cloud.firestore {
     }
 
     function isValidHousehold(data) {
-      return data.keys().hasOnly(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'cards', 'ingestRequestedAt', 'createdAt', 'updatedAt'])
+      return data.keys().hasOnly(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'cards', 'cardFees', 'ingestRequestedAt', 'createdAt', 'updatedAt'])
         && data.keys().hasAll(['name', 'currency', 'timezone', 'defaultBudget', 'memberIds', 'memberProfiles', 'categories', 'createdAt', 'updatedAt'])
         && data.name is string && data.name.size() >= 1 && data.name.size() <= 60
         && data.currency is string && data.currency.matches('^[A-Z]{3}$')
@@ -276,7 +276,28 @@ service cloud.firestore {
         // minutes — which means the AUTHORISATION for a manual run is this
         // write, checked by the rules below, and not a secret in the client.
         // A secret would not be one: the web bundle is public.
-        && (!('ingestRequestedAt' in data) || data.ingestRequestedAt is timestamp);
+        && (!('ingestRequestedAt' in data) || data.ingestRequestedAt is timestamp)
+        // What the card statement adds on top of the purchases, in ARS.
+        //
+        // `commissionArsCents` is the bank's fixed monthly account fee, typed
+        // once because it does not change; `usdArsRate` is the fallback used
+        // when the exchange-rate service cannot be reached. Both optional, so
+        // every household that predates them keeps validating.
+        && (!('cardFees' in data) || isValidCardFees(data.cardFees));
+    }
+
+    function isValidCardFees(fees) {
+      return fees.keys().hasOnly(['commissionArsCents', 'usdArsRate'])
+        && (!('commissionArsCents' in fees)
+            || (fees.commissionArsCents is int
+                && fees.commissionArsCents >= 0
+                && fees.commissionArsCents <= 100000000))
+        // A rate is a positive number, and one this far out is a typo rather
+        // than a devaluation — a wrong one multiplies into a figure about money.
+        && (!('usdArsRate' in fees)
+            || (fees.usdArsRate is number
+                && fees.usdArsRate > 0
+                && fees.usdArsRate <= 1000000));
     }
 
     // Join self-add: a non-member adds ONLY themselves, touching ONLY

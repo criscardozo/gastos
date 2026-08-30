@@ -4,6 +4,7 @@ import {
   addMonthsKeepingDay,
   containsCharge,
   currentStatement,
+  isPastClosing,
   nextStatementProposal,
   statementTotalUsdCents,
   totalsByCard,
@@ -87,6 +88,30 @@ describe("nextStatementProposal", () => {
     expect(next.closingDate).toBe("2026-02-28");
     expect(next.dueDate).toBe("2026-03-08");
     expect(next.dueDate > next.closingDate).toBe(true);
+  });
+});
+
+describe("isPastClosing", () => {
+  const statement = {
+    startDate: "2026-07-28",
+    closingDate: "2026-08-27",
+    dueDate: "2026-09-10",
+  };
+
+  it("is true only after the closing day", () => {
+    expect(isPastClosing("2026-08-28", statement)).toBe(true);
+    expect(isPastClosing("2026-09-30", statement)).toBe(true);
+  });
+
+  it("the closing day itself still belongs to the statement", () => {
+    // The bank's own boundary is inclusive — a purchase on the 27th is on this
+    // statement, which is why the range query uses <= closingDate.
+    expect(isPastClosing("2026-08-27", statement)).toBe(false);
+    expect(isPastClosing("2026-08-01", statement)).toBe(false);
+  });
+
+  it("says nothing when there is no statement to be past", () => {
+    expect(isPastClosing("2026-08-28", null)).toBe(false);
   });
 });
 

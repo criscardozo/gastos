@@ -47,6 +47,17 @@ export interface Household {
   /** Keyed by the card's last four digits — the only identifier the bank gives.
    * Empty until configured, which reads as "route nothing, show everything". */
   cards: HouseholdCards;
+  /** The ARS side of a card statement. Absent fields ⇒ nothing configured. */
+  cardFees: CardFeeSettings;
+}
+
+export interface CardFeeSettings {
+  /** The bank's fixed monthly account fee, in ARS cents. 0 ⇒ not configured,
+   * which hides the fee lines rather than showing them as zero. */
+  commissionArsCents: number;
+  /** Fallback peso-per-dollar rate for when the quote service is unreachable.
+   * null ⇒ no estimate at all, which is better than one at a made-up rate. */
+  usdArsRate: number | null;
 }
 
 export interface PeriodBudget {
@@ -179,8 +190,18 @@ export const householdConverter = readOnly<Household>((snap) => {
     memberProfiles: data.memberProfiles as Record<string, MemberProfile>,
     categories: data.categories as Record<string, CategoryDef>,
     cards: (data.cards as HouseholdCards | undefined) ?? {},
+    cardFees: readCardFees(data.cardFees),
   };
 });
+
+/** Both fields are optional on the doc, so households predating them decode. */
+function readCardFees(raw: unknown): CardFeeSettings {
+  const fees = (raw ?? {}) as Partial<CardFeeSettings>;
+  return {
+    commissionArsCents: fees.commissionArsCents ?? 0,
+    usdArsRate: fees.usdArsRate ?? null,
+  };
+}
 
 export const periodBudgetConverter = readOnly<PeriodBudget>((snap) => {
   // `estimate` matters for confirmedAt: by default a serverTimestamp that the

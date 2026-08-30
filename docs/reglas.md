@@ -59,8 +59,18 @@ acaba de pedir.
 - **La plata es siempre centavos enteros** (`Int` en Swift, `number` en TS).
   Jamás floats ni strings decimales; se formatea recién al mostrar.
 - **AUD es la única moneda que alguien tipea.** El único USD que existe es el
-  que **cobró el banco**, en su propio campo. La app no convierte nada ni llama
-  a ninguna API de cambio.
+  que **cobró el banco**, en su propio campo. **El ledger no convierte nada:**
+  ningún total, presupuesto ni suma pasa por una cotización, y por eso el
+  presupuesto es determinístico y funciona offline.
+
+  **La única excepción, acotada a propósito:** la pantalla de Tarjetas estima
+  cuántos *pesos argentinos* va a costar el resumen del mes, y para eso consulta
+  el dólar oficial en [dolarapi.com](https://dolarapi.com) (gratis, sin key,
+  CORS abierto). Es una **estimación que se mira**, no un dato que se guarda:
+  no toca ningún gasto, no entra en ninguna suma en AUD, y si la API no responde
+  cae a una cotización cargada a mano en el hogar (`cardFees.usdArsRate`). Se usa
+  la cotización **oficial**, no la "tarjeta" — esa ya trae las percepciones
+  adentro y las cobraría dos veces. Ver `apps/web/src/lib/usd-rate.ts`.
 - **Las fechas de gasto son `"YYYY-MM-DD"` en la timezone del hogar**, nunca la
   del dispositivo ni buckets UTC.
 - **Las reglas de Firestore son la única frontera de seguridad.** Cualquier

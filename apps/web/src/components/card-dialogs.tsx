@@ -8,11 +8,14 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import { CardMark } from "@/components/ui/marks";
-import type { CardCharge } from "@/lib/firebase/converters";
+import type { CardCharge, CardFeeSettings } from "@/lib/firebase/converters";
 import type { CardChargeInput } from "@/lib/firebase/mutations";
 import { formatLongDate } from "@/lib/dates";
 import { formatUsd, parseAmountToCents } from "@/lib/money";
 import { CARD_BRANDS, type CardBrand, type StatementRange } from "@/lib/statements";
+
+/** The peso ceiling the security rules enforce on both `cardFees` fields. */
+const ARS_MAX_CENTS = 100_000_000;
 
 const FIELD =
   "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
@@ -36,6 +39,7 @@ function useEscape(onClose: () => void) {
 export function CardChargeDialog({
   charge,
   defaultDate,
+  pastClosing,
   locale,
   onSave,
   onDelete,
@@ -44,6 +48,12 @@ export function CardChargeDialog({
   /** Null when adding. */
   charge: CardCharge | null;
   defaultDate: string;
+  /**
+   * Set when today is already past the statement's closing date, so the charge
+   * is about to be filed under a window it does not belong to. Null the rest of
+   * the time, which is nearly always.
+   */
+  pastClosing: { closingDate: string; today: string } | null;
   locale: string;
   onSave: (input: CardChargeInput) => void;
   onDelete: (() => void) | null;
@@ -84,6 +94,23 @@ export function CardChargeDialog({
             <Icon name="expand_more" size={22} className="text-ink-3" />
           </button>
         </div>
+
+        {pastClosing !== null && (
+          // Says what happened and what to do about it, rather than blocking:
+          // a charge made after the closing date is perfectly real, it just
+          // belongs to the next statement. Both dates are named because the
+          // whole point is that they disagree.
+          <p
+            className="rounded-[12px] bg-warn-bg px-3 py-2.5 text-[12px] leading-snug font-semibold"
+            style={{ color: "var(--warn-text)" }}
+            role="alert"
+          >
+            {t("pastClosingBody", {
+              date: formatLongDate(pastClosing.closingDate, locale),
+              today: formatLongDate(pastClosing.today, locale),
+            })}
+          </p>
+        )}
 
         {/* USD only: this is the card's own billing currency, so there is no
             currency to choose and nothing to convert. */}
@@ -325,6 +352,114 @@ export function StatementDatesDialog({
                 : t("openStatement")}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── The peso side: the bank's fixed fee and a fallback rate ────────────── */
+
+export function CardFeesDialog({
+  fees,
+  locale,
+  onSave,
+  onClose,
+}: {
+  fees: CardFeeSettings;
+  locale: string;
+  onSave: (fees: CardFeeSettings) => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations("cards");
+  const tCommon = useTranslations("expenses");
+  useEscape(onClose);
+
+  const [commission, setCommission] = useState(
+    fees.commissionArsCents > 0 ? (fees.commissionArsCents / 100).toFixed(2) : "",
+  );
+  const [rate, setRate] = useState(
+    fees.usdArsRate !== null ? String(fees.usdArsRate) : "",
+  );
+
+  // Both fields are optional — a household may know the fee before the rate, or
+  // want to clear either — so EMPTY means "not configured". Anything typed has
+  // to parse, though: unparseable input must not fall through to the same
+  // result as an empty box, which would silently wipe the stored value.
+  //
+  // The ledger's ceiling does not apply here: these are pesos, three orders of
+  // magnitude away from an AUD expense. ARS_MAX is what the rules accept.
+  const typedCommission = commission.trim() !== "";
+  const typedRate = rate.trim() !== "";
+  const commissionCents = typedCommission
+    ? parseAmountToCents(commission, locale, ARS_MAX_CENTS)
+    : 0;
+  const rateCents = typedRate
+    ? parseAmountToCents(rate, locale, ARS_MAX_CENTS)
+    : null;
+  const valid =
+    commissionCents !== null && (!typedRate || rateCents !== null);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("arsSettings")}
+        onClick={(event) => event.stopPropagation()}
+        className={SHELL}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-[17px] font-bold text-ink">{t("arsSettings")}</h2>
+          <button type="button" onClick={onClose} aria-label={tCommon("cancel")}>
+            <Icon name="expand_more" size={22} className="text-ink-3" />
+          </button>
+        </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="section-label">{t("commission")}</span>
+          <input
+            autoFocus
+            value={commission}
+            onChange={(e) => setCommission(e.target.value)}
+            inputMode="decimal"
+            placeholder="0,00"
+            className={`${FIELD} tnum`}
+          />
+          <span className="text-[11.5px] text-ink-3">{t("commissionHelp")}</span>
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="section-label">{t("fallbackRate")}</span>
+          <input
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+            inputMode="decimal"
+            placeholder="1514,50"
+            className={`${FIELD} tnum`}
+          />
+          <span className="text-[11.5px] text-ink-3">{t("fallbackRateHelp")}</span>
+        </label>
+
+        <button
+          type="button"
+          disabled={!valid}
+          onClick={() => {
+            if (!valid || commissionCents === null) return;
+            onSave({
+              commissionArsCents: commissionCents,
+              // Parsed as cents to reuse the locale-aware parser, then divided
+              // back: a rate is a plain number, not money.
+              usdArsRate: rateCents === null ? null : rateCents / 100,
+            });
+          }}
+          className="mt-1 rounded-full bg-accent py-3 text-sm font-bold text-white disabled:opacity-40"
+        >
+          {tCommon("save")}
+        </button>
       </div>
     </div>
   );

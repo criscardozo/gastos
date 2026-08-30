@@ -61,6 +61,20 @@ export function formatUsd(cents: number, locale: string): string {
 }
 
 /**
+ * "$ 241.402,75" — Argentine pesos, always in es-AR regardless of the app's
+ * language. A peso figure written with English separators reads as a different
+ * number to the person comparing it against a BBVA statement, and this figure
+ * exists only to be compared against one.
+ */
+export function formatArs(cents: number): string {
+  const formatter = new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `$ ${formatter.format(cents / 100)}`;
+}
+
+/**
  * Parse free-form amount input into integer cents, in the caller's locale.
  *
  * The locale is not decoration: without it the two separators cannot be told
@@ -89,7 +103,17 @@ export function formatUsd(cents: number, locale: string): string {
  */
 export const MAX_AMOUNT_CENTS = 10_000_000;
 
-export function parseAmountToCents(input: string, locale: string): number | null {
+/**
+ * `max` exists for the peso fields on the Tarjetas screen: an ARS figure is
+ * three orders of magnitude larger than an AUD one, so the ledger's ceiling
+ * would refuse a perfectly ordinary bank fee. Every ledger caller leaves it
+ * alone and keeps the limit the security rules enforce.
+ */
+export function parseAmountToCents(
+  input: string,
+  locale: string,
+  max: number = MAX_AMOUNT_CENTS,
+): number | null {
   const raw = input.replace(/[^\d.,-]/g, "").trim();
   if (raw === "") return null;
 
@@ -122,6 +146,6 @@ export function parseAmountToCents(input: string, locale: string): number | null
   const value = Number(normalized);
   if (!Number.isFinite(value) || value <= 0) return null;
   const cents = Math.round(value * 100);
-  if (cents <= 0 || cents > MAX_AMOUNT_CENTS) return null;
+  if (cents <= 0 || cents > max) return null;
   return cents;
 }

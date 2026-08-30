@@ -96,6 +96,22 @@ export function nextStatementProposal(previous: StatementRange): StatementRange 
   };
 }
 
+/**
+ * Whether `today` has already passed the statement's closing date.
+ *
+ * When it has, a charge made today does NOT belong to this statement: charges
+ * are filed by their own date, so the screen would have to date it on the
+ * closing day to keep it visible — filing a September purchase into August.
+ * The honest answer is to close the statement and open the next one, which is
+ * what the warning says.
+ */
+export function isPastClosing(
+  today: string,
+  statement: StatementRange | null,
+): boolean {
+  return statement !== null && today > statement.closingDate;
+}
+
 /** Total of a set of charges, in USD cents. */
 export function statementTotalUsdCents(
   charges: readonly { usdCents: number }[],
