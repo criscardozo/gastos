@@ -156,12 +156,24 @@ acaba de pedir.
   emulador de Firestore usa ese mismo puerto: antes de matar algo ahí, verificar
   qué proceso es.
 - No dejar emuladores ni servidores de dev corriendo al terminar.
-- **Reinstalar NO renueva la firma.** El perfil del team gratuito se **reusa**:
-  el build toma el que ya existe y conserva su vencimiento original, así que
-  reinstalar el día antes no compra nada. Para emitir uno nuevo (7 días
+- **Instalar la app SIEMPRE incluye renovar la firma.** No es una decisión que
+  se tome según cuánto quede: se fuerza, sin preguntar, en cada instalación.
+  Sin eso cada instalación gasta días del mismo perfil hasta que la app deja de
+  abrir — pasó dos veces, una de ellas quedando a 23 horas del vencimiento
+  justo después de instalar.
+- **Reinstalar NO renueva la firma por sí solo.** El perfil del team gratuito se
+  **reusa**: el build toma el que ya existe y conserva su vencimiento original,
+  así que reinstalar el día antes no compra nada. Para emitir uno nuevo (7 días
   completos) hay que **apartar los perfiles** de
   `~/Library/Developer/Xcode/UserData/Provisioning Profiles` y recompilar con
   `-allowProvisioningUpdates`.
+- **Si el build falla, restaurar los perfiles apartados** antes de terminar, o
+  la máquina queda sin poder compilar para dispositivo. Y ojo: cuando falla, el
+  bundle en disco **sigue siendo el anterior**, así que mirar las fechas del
+  `.app` sin leer la salida del build da la renovación por hecha cuando no se
+  emitió nada. Una causa conocida es que Xcode pierda la cuenta de Apple ID al
+  actualizarse (`No Accounts: Add a new account in Accounts settings`), que se
+  arregla en Xcode → Settings → Accounts.
 - **Apartar los tres juntos** (app, widget y watchkitapp), no sólo el de la app.
   Xcode reemite en una sola pasada los que falten, con lo que quedan alineados
   al segundo; el que se emite solo, en otro momento, queda desfasado. Pasó: el
