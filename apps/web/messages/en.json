@@ -137,12 +137,22 @@
     "dueToday": "due today",
     "dueTomorrow": "due tomorrow",
     "dueInDays": "in {days} days",
-    "perMonth": "Per month",
-    "perMonthHint": "The register brought to a monthly figure. It does not touch the budget.",
     "emptyTitle": "No services yet",
     "emptyBody": "Add what you pay every month to keep it at hand.",
     "loading": "Loading…",
-    "confirmDelete": "Sure?"
+    "confirmDelete": "Sure?",
+    "chargedThisMonth": "Charged this month",
+    "chargedCount": "{charged} of {due} services this month",
+    "dueThisMonth": "Due this month",
+    "dueThisMonthHint": "Sum of the services this month charges.",
+    "notThisMonth": "Not charged this month",
+    "notChargedYet": "Not charged yet",
+    "chargedOn": "Charged on {date}",
+    "chargedDifferent": "The expense says {amount}",
+    "useCharged": "Use that amount",
+    "noCategoryTitle": "The Services category is missing",
+    "noCategoryBody": "Expenses in that category link by name to the services here.",
+    "noCategoryCta": "Create it"
   },
   "cards": {
     "title": "Credit Cards",
@@ -273,7 +283,9 @@
     "gridTitle": "Expenses in the range",
     "gridHint": "Tap a heading to sort.",
     "searchNote": "Search the note",
-    "personAll": "Everyone"
+    "personAll": "Everyone",
+    "categoriesSome": "{count} categories",
+    "filterCategory": "Filter by category"
   },
   "settings": {
     "title": "Settings",
@@ -342,6 +354,7 @@
     "home": "Home",
     "health": "Health",
     "entertainment": "Entertainment",
+    "services": "Services",
     "other": "Other",
     "deleted": "Deleted category"
   },

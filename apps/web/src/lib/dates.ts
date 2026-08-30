@@ -29,12 +29,24 @@ function numberLocale(locale: string): string {
  * everything around them. English capitalises already, so this only changes the
  * Spanish side.
  */
+/** Spanish writes both months and weekdays lowercase; these are labels. */
+function capitalise(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 function monthName(date: string, locale: string, style: "short" | "long"): string {
   const name = new Intl.DateTimeFormat(numberLocale(locale), {
     month: style,
   }).format(toFormatDate(date));
-  const trimmed = name.replace(/\.$/, "");
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  return capitalise(name.replace(/\.$/, ""));
+}
+
+function weekdayName(date: string, locale: string): string {
+  return capitalise(
+    new Intl.DateTimeFormat(numberLocale(locale), { weekday: "long" }).format(
+      toFormatDate(date),
+    ),
+  );
 }
 
 /**
@@ -69,20 +81,13 @@ export function formatPeriodRange(
 
 /** Day heading: "sábado 11 jul" (es) / "Saturday 11 Jul" (en). */
 export function formatDayHeading(date: string, locale: string): string {
-  const d = toFormatDate(date);
-  const weekday = new Intl.DateTimeFormat(numberLocale(locale), {
-    weekday: "long",
-  }).format(d);
   const month = monthName(date, locale, "short");
-  return `${weekday} ${parts(date).day} ${month}`;
+  return `${weekdayName(date, locale)} ${parts(date).day} ${month}`;
 }
 
 /** Long single date: "miércoles 1 de julio" (es) / "Wednesday 1 July" (en). */
 export function formatLongDate(date: string, locale: string): string {
-  const d = toFormatDate(date);
-  const weekday = new Intl.DateTimeFormat(numberLocale(locale), {
-    weekday: "long",
-  }).format(d);
+  const weekday = weekdayName(date, locale);
   const month = monthName(date, locale, "long");
   const { day } = parts(date);
   return locale === "es"

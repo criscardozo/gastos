@@ -64,8 +64,14 @@ export default function DataPage() {
     rows: Expense[];
     loading: boolean;
   }>({ rows: [], loading: false });
-  /** Which category the grid is showing; null = all of them. */
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  /**
+   * Which categories the grid is showing; null = all of them.
+   *
+   * Null rather than "every id": a fresh range brings different categories with
+   * it, and a list captured from the previous one would silently hide the new
+   * ones. Null means "whatever is here", which stays true as the range moves.
+   */
+  const [categoryFilter, setCategoryFilter] = useState<string[] | null>(null);
   const [exportPhase, setExportPhase] = useState<
     "idle" | "excel" | "drive" | "error" | "driveStandalone"
   >("idle");
@@ -169,7 +175,7 @@ export default function DataPage() {
   // way to check an export was to open it.
   // `null` = every category (the default, and what a fresh range resets to).
   const filtered = rangeRows.filter(
-    (e) => categoryFilter === null || e.categoryId === categoryFilter,
+    (e) => categoryFilter === null || categoryFilter.includes(e.categoryId),
   );
 
   const compare = (a: Expense, b: Expense): number => {
@@ -470,27 +476,12 @@ export default function DataPage() {
                           }
                         />
                       </button>
-                      <select
-                        value={categoryFilter ?? "all"}
-                        aria-label={t("colCategory")}
-                        onChange={(e) =>
-                          setCategoryFilter(
-                            e.target.value === "all" ? null : e.target.value,
-                          )
-                        }
-                        className={`cursor-pointer rounded-[8px] border bg-bg px-1.5 py-0.5 text-[11.5px] font-semibold outline-none ${
-                          categoryFilter === null
-                            ? "border-pill text-ink-3"
-                            : "border-accent text-accent-strong"
-                        }`}
-                      >
-                        <option value="all">{t("categoriesAll")}</option>
-                        {rangeCategoryIds.map((id) => (
-                          <option key={id} value={id}>
-                            {catLabelOf(id)}
-                          </option>
-                        ))}
-                      </select>
+                      <CategoryFilter
+                        available={rangeCategoryIds}
+                        selected={categoryFilter}
+                        labelOf={catLabelOf}
+                        onChange={setCategoryFilter}
+                      />
                     </div>
                   </th>
                   <SortHeader
@@ -690,6 +681,112 @@ function ExportMenu({
               <Icon name="download" size={14} className="text-ink-3" />
               {item.label}
             </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The category filter that lives in its own column heading.
+ *
+ * Checkboxes rather than a `<select multiple>`: the native one needs
+ * ctrl-clicking to add a second choice, shows its options in a fixed-height box
+ * and has no notion of "all". This is a list you tick.
+ */
+function CategoryFilter({
+  available,
+  selected,
+  labelOf,
+  onChange,
+}: {
+  available: readonly string[];
+  /** null = every category, which is the default and what a new range resets to. */
+  selected: string[] | null;
+  labelOf: (id: string) => string;
+  onChange: (next: string[] | null) => void;
+}) {
+  const t = useTranslations("data");
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (target instanceof Node && root.current?.contains(target) === true) {
+        return;
+      }
+      setOpen(false);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [open]);
+
+  const isOn = (id: string) => selected === null || selected.includes(id);
+
+  const toggle = (id: string) => {
+    // Unticking one from "all" means "all except this one", which is the only
+    // reading that makes the first click do something visible.
+    const current = selected ?? [...available];
+    const next = current.includes(id)
+      ? current.filter((c) => c !== id)
+      : [...current, id];
+    // Back to everything ⇒ back to null, so a new range keeps working.
+    onChange(next.length === available.length ? null : next);
+  };
+
+  const label =
+    selected === null
+      ? t("categoriesAll")
+      : selected.length === 1
+        ? labelOf(selected[0])
+        : t("categoriesSome", { count: selected.length });
+
+  return (
+    <div className="relative inline-block" ref={root}>
+      <button
+        type="button"
+        aria-haspopup="true"
+        aria-expanded={open}
+        // Not "Categoría": the sort control in the same heading is already
+        // called that, and two buttons with one name is a coin toss.
+        aria-label={t("filterCategory")}
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center gap-0.5 rounded-[8px] border bg-bg px-1.5 py-0.5 text-[11.5px] font-semibold ${
+          selected === null
+            ? "border-pill text-ink-3"
+            : "border-accent text-accent-strong"
+        }`}
+      >
+        {label}
+        <Icon name="expand_more" size={13} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 z-30 mt-1 flex w-[200px] flex-col gap-0.5 rounded-[14px] border border-line bg-surface p-1.5 shadow-[0_12px_30px_rgba(0,0,0,.14)]">
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            disabled={selected === null}
+            className="rounded-[10px] px-2.5 py-1.5 text-left text-[12.5px] font-bold text-accent-strong hover:bg-fill disabled:text-ink-3"
+          >
+            {t("categoriesAll")}
+          </button>
+          {available.map((id) => (
+            <label
+              key={id}
+              className="flex cursor-pointer items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-[12.5px] font-semibold text-ink hover:bg-fill"
+            >
+              <input
+                type="checkbox"
+                checked={isOn(id)}
+                onChange={() => toggle(id)}
+                className="size-3.5 flex-none accent-[var(--accent)]"
+              />
+              {labelOf(id)}
+            </label>
           ))}
         </div>
       )}

@@ -3,10 +3,17 @@
 // Servicios: what the household pays every month (or quarter, or year), how
 // much, when it falls due and off which card.
 //
-// A register, not a ledger: nothing here is summed against the weekly budget or
-// shown in Estadísticas. The monthly total at the top is a summary of THIS
-// screen — a yearly bill counted as a twelfth — and deliberately says nothing
-// about the budget.
+// A register of RULES, and a check against what actually happened. The rules —
+// name, amount, how often, which day — live here; the money lives in Gastos
+// like everyone else's, as an expense in the Servicios category whose note is
+// the service's name. This screen links the two by that name and reports the
+// difference, because the expense is what the bank did and the rule is only
+// what we expected.
+//
+// The two figures at the top are about THIS MONTH: what it costs, and how much
+// of it has landed. They replace a "per month" average that counted a yearly
+// bill as a twelfth of itself — arithmetically fine, and impossible to
+// reconcile against any real month, which is the only thing anyone wanted.
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -29,9 +36,16 @@ import { formatMonthLabel, formatShortDateInYear } from "@/lib/dates";
 import {
   compareByDueDate,
   daysUntilDue,
-  monthlyTotals,
+  monthTotals,
   nextDueDate,
+  serviceStatuses,
+  SERVICES_CATEGORY_ID,
+  type ServiceStatus,
 } from "@/lib/services";
+import { monthRange } from "@/lib/periods";
+import { UsdOverAud } from "@/components/charts";
+import { updateHouseholdCategories } from "@/lib/firebase/mutations";
+import { useExpensesRange } from "@/lib/firebase/hooks";
 
 /** "Vence en 6 días" / "Vence hoy" / "Vence mañana". */
 function useDueLabel() {
@@ -59,9 +73,32 @@ export default function ServicesPage() {
     return [...services].sort(compareByDueDate(today));
   }, [services, today]);
 
-  const totals = useMemo(() => monthlyTotals(services), [services]);
+  // This month's expenses, so the register can be checked against the ledger.
+  // Bounded by date like every other query in the app.
+  const month = today === null ? null : monthRange(today);
+  const { expenses } = useExpensesRange(
+    household?.id ?? null,
+    month?.startDate ?? null,
+    month?.endDate ?? null,
+  );
+
+  const statuses = useMemo(
+    () =>
+      today === null
+        ? new Map<string, ServiceStatus>()
+        : serviceStatuses(services, expenses, Number(today.slice(5, 7))),
+    [services, expenses, today],
+  );
+  const totals = useMemo(
+    () => monthTotals(services, statuses),
+    [services, statuses],
+  );
 
   if (household === null) return null;
+
+  /** The category that makes an expense count as paying a service. */
+  const hasServicesCategory =
+    household.categories[SERVICES_CATEGORY_ID] !== undefined;
 
   const withDb = (fn: (db: NonNullable<ReturnType<typeof getFirebaseClient>>["db"]) => Promise<void>) => {
     const fb = getFirebaseClient();
@@ -104,28 +141,78 @@ export default function ServicesPage() {
         </button>
       </div>
 
-      {/* Monthly cost of the whole register, per currency. */}
+      {/* What this month costs, and how much of it has already been charged.
+          Two figures rather than one average: the second is the only one that
+          can be checked against a bank statement. */}
       {services.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-[18px] border border-line bg-surface px-[18px] py-4">
-          <span className="section-label">{t("perMonth")}</span>
-          {/* USD first and biggest. Most of this register is billed by the
-              card in dollars, so that is the figure being looked for; the AUD
-              one is what the household pays locally, and reads underneath. */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-baseline gap-2">
-              <span className="tnum text-[26px] font-bold tracking-[-0.02em] text-ink">
-                {formatUsd(totals.usdCents, locale)}
-              </span>
-              <CurrencyTag currency="USD" />
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="tnum text-[18px] font-bold text-ink-2">
-                {formatCents(totals.audCents, household.currency, locale)}
-              </span>
-              <CurrencyTag currency="AUD" />
-            </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">
+            <span className="section-label">{t("chargedThisMonth")}</span>
+            <span className="flex items-start">
+              <UsdOverAud
+                size="lg"
+                usd={formatUsd(totals.chargedUsdCents, locale)}
+                aud={formatCents(
+                  totals.chargedAudCents,
+                  household.currency,
+                  locale,
+                )}
+                hasUsd={totals.chargedUsdCents > 0}
+              />
+            </span>
+            <span className="text-[11.5px] text-ink-3">
+              {t("chargedCount", {
+                charged: totals.chargedCount,
+                due: totals.dueCount,
+              })}
+            </span>
           </div>
-          <p className="text-[11.5px] text-ink-3">{t("perMonthHint")}</p>
+          <div className="flex flex-col gap-1.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">
+            <span className="section-label">{t("dueThisMonth")}</span>
+            <span className="flex items-start">
+              <UsdOverAud
+                size="lg"
+                usd={formatUsd(totals.dueUsdCents, locale)}
+                aud={formatCents(totals.dueAudCents, household.currency, locale)}
+                hasUsd={totals.dueUsdCents > 0}
+              />
+            </span>
+            <span className="text-[11.5px] text-ink-3">{t("dueThisMonthHint")}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Without the category there is nothing to link against, and every row
+          below would report "pendiente" forever. One button rather than an
+          instruction to go and do it somewhere else. */}
+      {services.length > 0 && !hasServicesCategory && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-line bg-warn-bg px-[18px] py-3.5">
+          <span className="flex flex-col gap-px">
+            <span className="text-[13px] font-bold text-warn-text">
+              {t("noCategoryTitle")}
+            </span>
+            <span className="text-[11.5px] font-semibold text-warn-text opacity-80">
+              {t("noCategoryBody")}
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              withDb((db) =>
+                updateHouseholdCategories(db, household.id, {
+                  [SERVICES_CATEGORY_ID]: {
+                    key: SERVICES_CATEGORY_ID,
+                    icon: "receipt_long",
+                    color: "#0E8F8F",
+                    sortOrder: 7,
+                  },
+                }),
+              )
+            }
+            className="rounded-full bg-accent px-4 py-2 text-[12.5px] font-bold text-white"
+          >
+            {t("noCategoryCta")}
+          </button>
         </div>
       )}
 
@@ -147,48 +234,137 @@ export default function ServicesPage() {
         {sorted.map((service) => {
           const due = today !== null ? nextDueDate(service, today) : null;
           const days = today !== null ? daysUntilDue(service, today) : null;
+          const status = statuses.get(service.id);
+          const charged = status?.charge ?? null;
+          // Only a difference worth a person's attention. Zero means the bill
+          // came in exactly as expected, which needs no words.
+          const off = status?.differenceCents ?? 0;
+
           return (
-            <button
+            // A row, not a button: reconciling the amount is its own action,
+            // and a button inside a button is invalid HTML.
+            <div
               key={service.id}
-              type="button"
-              onClick={() => setEditing(service)}
-              className="flex items-center gap-3 rounded-[18px] border border-line bg-surface px-[18px] py-3.5 text-left"
+              className="flex flex-col gap-2 rounded-[18px] border border-line bg-surface px-[18px] py-3.5"
             >
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="truncate text-[15px] font-bold text-ink">
-                  {service.name}
-                </span>
-                <span className="truncate text-[11.5px] text-ink-3">
-                  {t(`intervals.${service.interval}`)}
-                  {due !== null &&
-                    today !== null &&
-                    ` · ${formatShortDateInYear(due, today, locale)}`}
-                  {days !== null && ` · ${dueLabel(days)}`}
-                </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditing(service)}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                >
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-[15px] font-bold text-ink">
+                      {service.name}
+                    </span>
+                    <span className="truncate text-[11.5px] text-ink-3">
+                      {t(`intervals.${service.interval}`)}
+                      {due !== null &&
+                        today !== null &&
+                        ` · ${formatShortDateInYear(due, today, locale)}`}
+                      {days !== null && ` · ${dueLabel(days)}`}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-none flex-col items-end gap-0.5">
+                    {service.amountUsdCents !== null && (
+                      <span className="tnum flex items-center gap-1.5 text-[14px] font-bold text-ink">
+                        {formatUsd(service.amountUsdCents, locale)}
+                        <CurrencyTag currency="USD" />
+                      </span>
+                    )}
+                    {service.amountAudCents !== null && (
+                      <span className="tnum flex items-center gap-1.5 text-[13px] font-semibold text-ink-2">
+                        {formatCents(
+                          service.amountAudCents,
+                          household.currency,
+                          locale,
+                        )}
+                        <CurrencyTag currency="AUD" />
+                      </span>
+                    )}
+                    <span className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-ink-3">
+                      {t(service.paidWith)}
+                    </span>
+                  </div>
+                </button>
               </div>
 
-              <div className="flex flex-none flex-col items-end gap-0.5">
-                {service.amountUsdCents !== null && (
-                  <span className="tnum flex items-center gap-1.5 text-[14px] font-bold text-ink">
-                    {formatUsd(service.amountUsdCents, locale)}
-                    <CurrencyTag currency="USD" />
-                  </span>
-                )}
-                {service.amountAudCents !== null && (
-                  <span className="tnum flex items-center gap-1.5 text-[13px] font-semibold text-ink-2">
-                    {formatCents(
-                      service.amountAudCents,
-                      household.currency,
-                      locale,
-                    )}
-                    <CurrencyTag currency="AUD" />
-                  </span>
-                )}
-                <span className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-ink-3">
-                  {t(service.paidWith)}
-                </span>
-              </div>
-            </button>
+              {/* Where this month stands. Three states and they are exclusive:
+                  the month does not charge it, it has been charged, or it has
+                  not yet. */}
+              {status !== undefined && (
+                <div className="flex flex-wrap items-center gap-2 border-t border-soft pt-2">
+                  {!status.dueThisMonth ? (
+                    <span className="text-[11.5px] font-semibold text-ink-3">
+                      {t("notThisMonth")}
+                    </span>
+                  ) : charged !== null ? (
+                    <>
+                      <Icon
+                        name="check_circle"
+                        size={15}
+                        style={{ color: "var(--good)" }}
+                      />
+                      <span className="text-[11.5px] font-semibold text-good-text">
+                        {t("chargedOn", {
+                          date: formatShortDateInYear(
+                            charged.date,
+                            today ?? charged.date,
+                            locale,
+                          ),
+                        })}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="info" size={15} className="text-ink-3" />
+                      <span className="text-[11.5px] font-semibold text-ink-3">
+                        {t("notChargedYet")}
+                      </span>
+                    </>
+                  )}
+
+                  {/* The expense is what the bank did; the amount here is only
+                      what we expected. So the fix always runs one way. */}
+                  {charged !== null && off !== 0 && (
+                    <>
+                      <span
+                        className="text-[11.5px] font-semibold"
+                        style={{ color: "var(--warn-text)" }}
+                      >
+                        {t("chargedDifferent", {
+                          amount: formatCents(
+                            charged.amountCents,
+                            household.currency,
+                            locale,
+                          ),
+                        })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          withDb((db) =>
+                            updateService(db, household.id, service.id, {
+                              name: service.name,
+                              amountAudCents: charged.amountCents,
+                              amountUsdCents: service.amountUsdCents,
+                              interval: service.interval,
+                              dueDay: service.dueDay,
+                              anchorMonth: service.anchorMonth,
+                              paidWith: service.paidWith,
+                            }),
+                          )
+                        }
+                        className="ml-auto rounded-full border border-line px-3 py-1 text-[11.5px] font-bold text-ink-2"
+                      >
+                        {t("useCharged")}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

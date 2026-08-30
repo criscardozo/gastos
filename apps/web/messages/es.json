@@ -137,12 +137,22 @@
     "dueToday": "vence hoy",
     "dueTomorrow": "vence mañana",
     "dueInDays": "en {days} días",
-    "perMonth": "Por mes",
-    "perMonthHint": "Los servicios llevados a un mes. No entra en el presupuesto.",
     "emptyTitle": "Todavía no hay servicios",
     "emptyBody": "Agregá lo que pagás todos los meses para tenerlo a mano.",
     "loading": "Cargando…",
-    "confirmDelete": "¿Seguro?"
+    "confirmDelete": "¿Seguro?",
+    "chargedThisMonth": "Cobrado este mes",
+    "chargedCount": "{charged} de {due} servicios del mes",
+    "dueThisMonth": "A pagar este mes",
+    "dueThisMonthHint": "Suma de los servicios que se cobran este mes.",
+    "notThisMonth": "No se paga este mes",
+    "notChargedYet": "Todavía no se cobró",
+    "chargedOn": "Cobrado el {date}",
+    "chargedDifferent": "El gasto dice {amount}",
+    "useCharged": "Usar ese importe",
+    "noCategoryTitle": "Falta la categoría Servicios",
+    "noCategoryBody": "Los gastos de esta categoría se vinculan por nombre con los servicios de acá.",
+    "noCategoryCta": "Crearla"
   },
   "cards": {
     "title": "Tarjetas de Crédito",
@@ -273,7 +283,9 @@
     "gridTitle": "Gastos del intervalo",
     "gridHint": "Tocá un encabezado para ordenar.",
     "searchNote": "Buscar en la nota",
-    "personAll": "Todos"
+    "personAll": "Todos",
+    "categoriesSome": "{count} categorías",
+    "filterCategory": "Filtrar por categoría"
   },
   "settings": {
     "title": "Ajustes",
@@ -342,6 +354,7 @@
     "home": "Hogar",
     "health": "Salud",
     "entertainment": "Ocio",
+    "services": "Servicios",
     "other": "Otros",
     "deleted": "Categoría eliminada"
   },

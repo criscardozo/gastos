@@ -131,26 +131,157 @@ export function compareByDueDate<T extends DueRule & { name: string }>(
   };
 }
 
+/** The category an expense must be in to count as paying a service. */
+export const SERVICES_CATEGORY_ID = "services";
+
+/** Whether this rule falls due in a given 1-based month. */
+export function isDueInMonth(rule: DueRule, month: number): boolean {
+  return isDueMonth(rule, month);
+}
+
 /**
- * What the register adds up to per currency, normalised to a MONTH so that a
- * yearly insurance and a monthly subscription can sit in the same total.
+ * Case- and accent-insensitive comparison key for a name.
  *
- * Deliberately kept apart from anything budget-shaped: this total is a summary
- * of the services screen, never a figure the household budget reads.
+ * The link between a service and the expense that paid it is the NAME, because
+ * that is the only thing a person types twice. "Telefonía" and "telefonia" are
+ * the same bill.
  */
-export function monthlyTotals(
-  services: readonly (DueRule & {
-    amountAudCents?: number | null;
-    amountUsdCents?: number | null;
-  })[],
-): { audCents: number; usdCents: number } {
-  let audCents = 0;
-  let usdCents = 0;
-  for (const service of services) {
-    const months = intervalMonths(service.interval);
-    // Round per service, so the total is the sum of what each row would show.
-    audCents += Math.round((service.amountAudCents ?? 0) / months);
-    usdCents += Math.round((service.amountUsdCents ?? 0) / months);
+export function nameKey(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+export interface ServiceLike extends DueRule {
+  id: string;
+  name: string;
+  amountAudCents?: number | null;
+  amountUsdCents?: number | null;
+}
+
+export interface ChargeLike {
+  id: string;
+  amountCents: number;
+  categoryId: string;
+  note: string;
+  date: string;
+  usdCents?: number | null;
+}
+
+export interface ServiceStatus {
+  /** Falls due in the month being looked at. */
+  dueThisMonth: boolean;
+  /** The expense that paid it this month, when there is one. */
+  charge: ChargeLike | null;
+  /**
+   * The expense disagrees with the amount on file. Null when there is nothing
+   * to compare — no charge yet, or a service quoted only in USD, which an AUD
+   * expense cannot contradict.
+   */
+  differenceCents: number | null;
+}
+
+/**
+ * Which service each of this month's service expenses paid, and whether the
+ * amount on file still matches what was actually charged.
+ *
+ * The link is by NAME within the Servicios category: an expense filed there
+ * whose note matches a service's name is that service's charge for the month.
+ * Nothing is stored on either document — a link that lived in the data would
+ * have to be repaired every time somebody renamed a service or fixed a typo,
+ * and this one simply follows.
+ *
+ * `expenses` must already be limited to the month in question; this does not
+ * filter by date, so the caller decides which month "this month" is.
+ */
+export function serviceStatuses(
+  services: readonly ServiceLike[],
+  expenses: readonly ChargeLike[],
+  month: number,
+): Map<string, ServiceStatus> {
+  const charges = new Map<string, ChargeLike>();
+  for (const expense of expenses) {
+    if (expense.categoryId !== SERVICES_CATEGORY_ID) continue;
+    const key = nameKey(expense.note);
+    if (key === "") continue;
+    // First one wins, by date then id, so two charges for the same service in
+    // one month give a stable answer rather than whichever arrived last.
+    const previous = charges.get(key);
+    if (
+      previous === undefined ||
+      expense.date < previous.date ||
+      (expense.date === previous.date && expense.id < previous.id)
+    ) {
+      charges.set(key, expense);
+    }
   }
-  return { audCents, usdCents };
+
+  const out = new Map<string, ServiceStatus>();
+  for (const service of services) {
+    const charge = charges.get(nameKey(service.name)) ?? null;
+    const expected = service.amountAudCents ?? null;
+    out.set(service.id, {
+      dueThisMonth: isDueMonth(service, month),
+      charge,
+      differenceCents:
+        charge === null || expected === null
+          ? null
+          : charge.amountCents - expected,
+    });
+  }
+  return out;
+}
+
+export interface MonthTotals {
+  /** What the month's services will cost, whether or not they have landed. */
+  dueAudCents: number;
+  dueUsdCents: number;
+  /** What has actually been charged so far, from the expenses. */
+  chargedAudCents: number;
+  chargedUsdCents: number;
+  /** How many of the month's services have been charged, out of how many. */
+  chargedCount: number;
+  dueCount: number;
+}
+
+/**
+ * The two figures the screen leads with: what this month costs, and how much of
+ * it has already been charged.
+ *
+ * Replaces a "per month" average that normalised a yearly bill to a twelfth of
+ * itself. That number was arithmetically fine and answered a question nobody
+ * asks — it could not be reconciled against any month's actual charges, which
+ * is the only thing this screen is for.
+ *
+ * The due side counts the amount ON FILE for services that fall due; the
+ * charged side counts what the expenses say, so a bill that came in higher
+ * makes the two disagree on purpose.
+ */
+export function monthTotals(
+  services: readonly ServiceLike[],
+  statuses: Map<string, ServiceStatus>,
+): MonthTotals {
+  const totals: MonthTotals = {
+    dueAudCents: 0,
+    dueUsdCents: 0,
+    chargedAudCents: 0,
+    chargedUsdCents: 0,
+    chargedCount: 0,
+    dueCount: 0,
+  };
+  for (const service of services) {
+    const status = statuses.get(service.id);
+    if (status === undefined || !status.dueThisMonth) continue;
+    totals.dueCount += 1;
+    totals.dueAudCents += service.amountAudCents ?? 0;
+    totals.dueUsdCents += service.amountUsdCents ?? 0;
+    if (status.charge !== null) {
+      totals.chargedCount += 1;
+      totals.chargedAudCents += status.charge.amountCents;
+      totals.chargedUsdCents += status.charge.usdCents ?? 0;
+    }
+  }
+  return totals;
 }

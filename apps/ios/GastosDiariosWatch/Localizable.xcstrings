@@ -4,6 +4,23 @@
     "$" : {
 
     },
+    "category.services" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Services"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Servicios"
+          }
+        }
+      }
+    },
     "category.coffee" : {
       "extractionState" : "stale",
       "localizations" : {

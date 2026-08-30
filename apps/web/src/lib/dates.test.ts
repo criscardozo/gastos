@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatDayHeading,
+  formatLongDate,
   formatMonthLabel,
   formatPeriodRange,
   formatShortDate,
@@ -36,6 +38,19 @@ describe("formatPeriodRange", () => {
     expect(formatPeriodRange("2026-03-01", "2026-08-31", "es")).not.toMatch(
       /2026/,
     );
+  });
+});
+
+describe("weekday names are capitalised too", () => {
+  it("capitalises the weekday in a day heading", () => {
+    // Same reasoning as the months, and the pair has to agree: "domingo 30 Ago"
+    // reads as a bug rather than as a choice.
+    expect(formatDayHeading("2026-08-30", "es")).toBe("Domingo 30 Ago");
+    expect(formatLongDate("2026-08-30", "es")).toBe("Domingo 30 de Agosto");
+  });
+
+  it("leaves English as it was", () => {
+    expect(formatDayHeading("2026-08-30", "en")).toBe("Sunday 30 Aug");
   });
 });
 

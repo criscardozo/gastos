@@ -153,13 +153,17 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
 
   // Filtering happens in the column heading that owns it, and narrows what
   // leaves with you: another category empties the grid, and the TOTAL follows.
-  await page.getByLabel("Categoría", { exact: true }).selectOption("transport");
+  await page.getByRole("button", { name: "Filtrar por categoría" }).click();
+  await page.getByRole("checkbox", { name: "Súper" }).uncheck();
   await expect(page.getByText("Café de prueba")).toBeHidden();
   await expect(page.getByText("Nafta de prueba")).toBeVisible();
   // Twice: the row, and the footer total, which follows the filter.
   await expect(page.getByText("$31,00")).toHaveCount(2);
-  await page.getByLabel("Categoría", { exact: true }).selectOption("all");
+  // Ticking everything back on is the same as no filter at all.
+  await page.getByRole("button", { name: "Todas" }).click();
   await expect(page.getByText("Café de prueba")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("heading", { name: "Datos" }).click();
 
   // Exporting is one button with a menu behind it, not four in a row — and the
   // consent for a range with unverified rows lives in there, with the action it
@@ -993,13 +997,17 @@ test("services and card statements keep their own books", async ({ page }) => {
   await page.getByRole("button", { name: "Guardar" }).click();
 
   await expect(page.getByText("Netflix")).toBeVisible();
-  // Twice on screen on purpose: once in the row, once in the monthly summary
-  // (a monthly service costs exactly its own amount per month).
+  // Twice on screen on purpose: once in the row, once in this month's total
+  // (a monthly service falls due every month, so it is all of it).
   await expect(page.getByText("$22,99").first()).toBeVisible();
   await expect(page.getByText("US$ 14,99").first()).toBeVisible();
-  // A monthly service costs its own amount per month — the summary is the
-  // register's, and says so rather than pretending to be budget money.
-  await expect(page.getByText("Por mes")).toBeVisible();
+
+  // The two figures the screen leads with. Nothing has been charged yet, so
+  // one is empty and the other is the whole month.
+  await expect(page.getByText("A pagar este mes")).toBeVisible();
+  await expect(page.getByText("Cobrado este mes")).toBeVisible();
+  await expect(page.getByText("0 de 1 servicios del mes")).toBeVisible();
+  await expect(page.getByText("Todavía no se cobró")).toBeVisible();
 
   // A yearly service needs a month to anchor its cycle; a monthly one must not
   // have the field at all, because the rules reject an anchor on it.
@@ -1199,6 +1207,90 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await expect(page.getByText("$ 8.486,78")).toBeVisible();
   // 40.413,22 + 8.486,78 + 3.000,00 + 31.500,00 + 67.500,00
   await expect(page.getByText("$ 150.900,00")).toBeVisible();
+});
+
+/**
+ * A service and the expense that paid it, linked by name.
+ *
+ * The register says what we expect to pay; the ledger says what was actually
+ * charged. The link between them is the service's NAME inside the Servicios
+ * category, and when the two disagree the expense wins — which is the whole
+ * point of the reconcile button.
+ */
+test("a service is reconciled against the expense that paid it", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  const email = `e2e-svc-${Date.now()}@test.dev`;
+  await page.evaluate((e) => window.__devSignIn!("Svc Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  // A monthly service, so it falls due whatever month the suite runs in.
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await page.getByRole("button", { name: "Agregar", exact: true }).click();
+  await page.getByLabel("Nombre").fill("Telefonía");
+  await page.getByLabel("AUD").fill("45,00");
+  await page.getByLabel("Día de vencimiento").fill("10");
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  await expect(page.getByText("Todavía no se cobró")).toBeVisible();
+  await expect(page.getByText("0 de 1 servicios del mes")).toBeVisible();
+
+  // A fresh household is seeded WITH the Servicios category, so there is
+  // nothing to prompt about.
+  await expect(page.getByText("Falta la categoría Servicios")).toBeHidden();
+
+  // Cristian's household predates that category, and every household like it
+  // would report "pendiente" forever with no way to find out why. Take the
+  // category away to stand in for one of those, and the screen offers to
+  // create the thing the link needs.
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const householdId = (
+    ((await households.json()).documents as {
+      name: string;
+      fields: { name: { stringValue: string } };
+    }[]).find((d) => d.fields.name.stringValue === "Hogar de Svc") as {
+      name: string;
+    }
+  ).name
+    .split("/")
+    .pop() as string;
+  // An updateMask naming a field that the body omits deletes exactly that one.
+  await request.patch(
+    `${REST}/households/${householdId}?updateMask.fieldPaths=categories.services`,
+    { headers: admin, data: { fields: {} } },
+  );
+  await expect(page.getByText("Falta la categoría Servicios")).toBeVisible();
+  await page.getByRole("button", { name: "Crearla" }).click();
+  await expect(page.getByText("Falta la categoría Servicios")).toBeHidden();
+
+  // The bill lands in Gastos, in that category, under the service's name —
+  // accents and case included, which the matching has to survive.
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await page.getByLabel("0,00").fill("48,50");
+  await page.getByLabel("Categoría: todas").selectOption("services");
+  await page.getByLabel("Nota (opcional)").fill("telefonia");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("telefonia").first()).toBeVisible();
+
+  // Back on Servicios it is linked, and the disagreement is named: the
+  // register says 45,00, the bank said 48,50.
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await expect(page.getByText(/^Cobrado el/)).toBeVisible();
+  await expect(page.getByText("1 de 1 servicios del mes")).toBeVisible();
+  await expect(page.getByText("El gasto dice $48,50")).toBeVisible();
+  // "Cobrado este mes" follows the EXPENSE, "A pagar" the register.
+  await expect(page.getByText("$48,50").first()).toBeVisible();
+
+  // One tap moves the register onto what actually happened, for next month.
+  await page.getByRole("button", { name: "Usar ese importe" }).click();
+  await expect(page.getByText("El gasto dice $48,50")).toBeHidden();
+  await expect(page.getByText(/^Cobrado el/)).toBeVisible();
 });
 
 /**

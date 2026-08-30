@@ -4,8 +4,11 @@ import {
   compareByDueDate,
   daysUntilDue,
   intervalMonths,
-  monthlyTotals,
+  monthTotals,
+  nameKey,
   nextDueDate,
+  serviceStatuses,
+  type ChargeLike,
   type DueRule,
 } from "./services";
 
@@ -144,21 +147,151 @@ describe("compareByDueDate", () => {
   });
 });
 
-describe("monthlyTotals", () => {
-  it("normalises every interval to a month before adding up", () => {
-    const totals = monthlyTotals([
-      { interval: "monthly", dueDay: 7, amountAudCents: 2299 },
-      { interval: "yearly", dueDay: 1, anchorMonth: 3, amountAudCents: 12000 },
-      { interval: "quarterly", dueDay: 1, anchorMonth: 1, amountUsdCents: 3000 },
-    ]);
-    expect(totals.audCents).toBe(2299 + 1000);
-    expect(totals.usdCents).toBe(1000);
+/* ── Linking a service to the expense that paid it ─────────────────────── */
+
+const netflix = {
+  id: "s1",
+  name: "Netflix",
+  amountAudCents: 2299,
+  amountUsdCents: 1499,
+  interval: "monthly" as const,
+  dueDay: 7,
+};
+const insurance = {
+  id: "s2",
+  name: "Seguro",
+  amountAudCents: 60000,
+  amountUsdCents: null,
+  interval: "quarterly" as const,
+  dueDay: 15,
+  anchorMonth: 3,
+};
+
+function charge(over: Partial<ChargeLike> = {}): ChargeLike {
+  return {
+    id: "e1",
+    amountCents: 2299,
+    categoryId: "services",
+    note: "Netflix",
+    date: "2026-09-07",
+    usdCents: null,
+    ...over,
+  };
+}
+
+describe("nameKey", () => {
+  it("ignores case, accents and surrounding space", () => {
+    // The link is a name typed twice by a person; it has to survive that.
+    expect(nameKey("  Telefonía ")).toBe(nameKey("telefonia"));
+    expect(nameKey("Netflix")).toBe(nameKey("NETFLIX"));
+    expect(nameKey("Luz")).not.toBe(nameKey("Gas"));
+  });
+});
+
+describe("serviceStatuses", () => {
+  it("links an expense to the service whose name it carries", () => {
+    const status = serviceStatuses([netflix], [charge()], 9).get("s1")!;
+    expect(status.charge?.id).toBe("e1");
+    expect(status.differenceCents).toBe(0);
   });
 
-  it("treats a missing amount as nothing, not as a zero row to skip", () => {
-    const totals = monthlyTotals([
-      { interval: "monthly", dueDay: 1, amountUsdCents: 1499 },
-    ]);
-    expect(totals).toEqual({ audCents: 0, usdCents: 1499 });
+  it("ignores expenses outside the Servicios category", () => {
+    // Otherwise a note that happened to say "Netflix" in Ocio would mark the
+    // bill as paid. The category is what makes the note mean something.
+    const status = serviceStatuses(
+      [netflix],
+      [charge({ categoryId: "entertainment" })],
+      9,
+    ).get("s1")!;
+    expect(status.charge).toBeNull();
+  });
+
+  it("reports what the bill actually came to when it differs", () => {
+    // 25,99 charged against 22,99 on file: the expense is the truth, and the
+    // screen offers to move the service to it.
+    const status = serviceStatuses([netflix], [charge({ amountCents: 2599 })], 9)
+      .get("s1")!;
+    expect(status.differenceCents).toBe(300);
+  });
+
+  it("has nothing to compare for a service quoted only in USD", () => {
+    // An AUD expense cannot contradict a USD-only figure, so the honest answer
+    // is null rather than a difference measured against zero.
+    const usdOnly = { ...netflix, amountAudCents: null };
+    const status = serviceStatuses([usdOnly], [charge()], 9).get("s1")!;
+    expect(status.charge?.id).toBe("e1");
+    expect(status.differenceCents).toBeNull();
+  });
+
+  it("knows which services this month even charges", () => {
+    // Quarterly from March: due in September, not in October.
+    expect(serviceStatuses([insurance], [], 9).get("s2")!.dueThisMonth).toBe(true);
+    expect(serviceStatuses([insurance], [], 10).get("s2")!.dueThisMonth).toBe(false);
+    // Monthly is due every month, whatever the anchor says.
+    expect(serviceStatuses([netflix], [], 10).get("s1")!.dueThisMonth).toBe(true);
+  });
+
+  it("picks the same charge every time when a name appears twice", () => {
+    // Two charges in one month is a data problem, not a crash — but the answer
+    // must not depend on the order the query happened to return them in.
+    const charges = [
+      charge({ id: "b", date: "2026-09-20", amountCents: 2599 }),
+      charge({ id: "a", date: "2026-09-07", amountCents: 2299 }),
+    ];
+    expect(serviceStatuses([netflix], charges, 9).get("s1")!.charge?.id).toBe("a");
+    expect(
+      serviceStatuses([netflix], [...charges].reverse(), 9).get("s1")!.charge?.id,
+    ).toBe("a");
+  });
+
+  it("ignores an expense with an empty note", () => {
+    const status = serviceStatuses([netflix], [charge({ note: "  " })], 9).get("s1")!;
+    expect(status.charge).toBeNull();
+  });
+});
+
+describe("monthTotals", () => {
+  const services = [netflix, insurance];
+
+  it("counts only the services this month charges", () => {
+    // October: Netflix yes, the quarterly insurance no. The old "per month"
+    // average put a twelfth of every bill into every month, which is why it
+    // could never be reconciled against a real month.
+    const statuses = serviceStatuses(services, [], 10);
+    const totals = monthTotals(services, statuses);
+    expect(totals.dueCount).toBe(1);
+    expect(totals.dueAudCents).toBe(2299);
+    expect(totals.dueUsdCents).toBe(1499);
+    expect(totals.chargedCount).toBe(0);
+    expect(totals.chargedAudCents).toBe(0);
+  });
+
+  it("adds the quarterly one in its own month", () => {
+    const statuses = serviceStatuses(services, [], 9);
+    const totals = monthTotals(services, statuses);
+    expect(totals.dueCount).toBe(2);
+    expect(totals.dueAudCents).toBe(62299);
+  });
+
+  it("separates what has landed from what the month costs", () => {
+    // Netflix came in at 25,99 rather than 22,99: due says what is on file,
+    // charged says what the bank did, and they disagree on purpose.
+    const charges = [charge({ amountCents: 2599, usdCents: 1700 })];
+    const statuses = serviceStatuses(services, charges, 9);
+    const totals = monthTotals(services, statuses);
+    expect(totals.dueAudCents).toBe(62299);
+    expect(totals.chargedAudCents).toBe(2599);
+    expect(totals.chargedUsdCents).toBe(1700);
+    expect(totals.chargedCount).toBe(1);
+    expect(totals.dueCount).toBe(2);
+  });
+
+  it("does not count a charge for a service that is not due this month", () => {
+    // A quarterly bill paid in the wrong month is somebody's mistake, not a
+    // reason for the month's total to grow.
+    const charges = [charge({ note: "Seguro", amountCents: 60000 })];
+    const totals = monthTotals(services, serviceStatuses(services, charges, 10));
+    expect(totals.chargedAudCents).toBe(0);
+    expect(totals.dueAudCents).toBe(2299);
   });
 });

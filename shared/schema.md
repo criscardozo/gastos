@@ -224,10 +224,21 @@ the window. The clients agree on the cutoff, not on when it is enforced.
 
 ### `households/{householdId}/services/{serviceId}`
 
-A recurring bill — Netflix, the phone, the insurance. A **standalone register**:
-nothing here is summed against the weekly budget, appears in the period totals,
-the statistics or the exports. It answers "what do we pay, how much, and when is
-it due", and that is all.
+A recurring bill — Netflix, the phone, the insurance. A register of **rules**:
+what we pay, how much we expect it to be, and when it falls due. Nothing in this
+collection is summed against the weekly budget, appears in the period totals, the
+statistics or the exports — those all read `expenses`, and so does the money side
+of this one.
+
+**The link to the ledger is the NAME, and it is not stored.** When a service is
+actually charged it is entered in Gastos like any other expense, in the
+`services` category, with the service's name as its note. The Servicios screen
+matches the two on a case- and accent-insensitive comparison of that name, and
+reports the difference between what was expected and what was charged — with the
+expense as the truth, since that is what the bank did. Deliberately derived
+rather than a `serviceId` field on the expense: a stored link would have to be
+repaired every time somebody renamed a service or fixed a typo in a note, and
+this one simply follows. See `apps/web/src/lib/services.ts`.
 
 | Field | Type | Notes |
 |---|---|---|
