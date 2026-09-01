@@ -23,7 +23,7 @@ import {
   CardFeesDialog,
   StatementDatesDialog,
 } from "@/components/card-dialogs";
-import { CardTaxesPanel } from "@/components/card-taxes-panel";
+import { CardTaxes } from "@/components/card-taxes-panel";
 import { CardChargesInbox } from "@/components/card-charges-inbox";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { useBankCharges, useCardCharges, useCardStatements } from "@/lib/firebase/hooks";
@@ -31,6 +31,7 @@ import type { CardCharge, CardFeeSettings } from "@/lib/firebase/converters";
 import {
   addCardCharge,
   deleteCardCharge,
+  moveCardChargesToStatement,
   openCardStatement,
   setCardChargeVerified,
   updateCardCharge,
@@ -108,6 +109,12 @@ export default function CardsPage() {
   // The two peso taxes that fall on digital services need their own subtotal:
   // RG 5617 taxes everything, IIBB and RG 4240 only this part. Memoised as one
   // object so the panel's own memo has something stable to compare.
+  /** Charges nobody ticked off against the paper statement. */
+  const unverified = useMemo(
+    () => charges.filter((charge) => !charge.verified),
+    [charges],
+  );
+
   const spend = useMemo(
     () => ({ usdCents: total, digitalUsdCents: digitalUsdCents(charges) }),
     [total, charges],
@@ -116,6 +123,10 @@ export default function CardsPage() {
   // Only ever true on the OPEN statement: a past one is meant to be past, and
   // saying so about it would be noise on every screen but the current one.
   const pastClosing = isCurrent && isPastClosing(today ?? "", shown);
+  // The same question asked of the OPEN statement rather than the one on
+  // screen, because the bank inbox files into the open one wherever the pager
+  // has been walked back to.
+  const openStatementClosed = isPastClosing(today ?? "", statements[0] ?? null);
 
   if (household === null || today === null) return null;
 
@@ -149,6 +160,8 @@ export default function CardsPage() {
           charges={bankCharges}
           uid={user?.uid ?? null}
           locale={locale}
+          // No statement has ever been opened: there is nowhere to file these.
+          statementClosed
         />
         <div className="flex flex-col items-center gap-2.5 rounded-[18px] border border-line bg-surface px-6 py-10 text-center">
           <Icon name="credit_card" size={30} className="text-ink-3" />
@@ -170,6 +183,7 @@ export default function CardsPage() {
           <StatementDatesDialog
             proposal={proposal}
             closing={null}
+            unverifiedCount={0}
             locale={locale}
             onSave={(range) => {
               withDb((db) => openCardStatement(db, household.id, range));
@@ -204,6 +218,10 @@ export default function CardsPage() {
         charges={bankCharges}
         uid={user?.uid ?? null}
         locale={locale}
+        // Blocked once the open statement's closing date has gone by, whichever
+        // statement the pager happens to be showing: the inbox always files
+        // into the open one, not the one being looked at.
+        statementClosed={openStatementClosed}
       />
 
       {shown !== null && (
@@ -255,6 +273,15 @@ export default function CardsPage() {
                   </span>
                 ),
               )}
+              {/* The peso taxes belong with the statement's other figures: they
+                  are part of what this month costs. The five lines behind the
+                  "i" — they are read once a month, if that. */}
+              <CardTaxes
+                spend={spend}
+                fees={household.cardFees}
+                locale={locale}
+                onEditFees={() => setFeesDialog(true)}
+              />
             </div>
           </div>
 
@@ -327,13 +354,6 @@ export default function CardsPage() {
         </div>
       )}
 
-      <CardTaxesPanel
-        spend={spend}
-        fees={household.cardFees}
-        locale={locale}
-        onEdit={() => setFeesDialog(true)}
-      />
-
       {chargesLoading && charges.length === 0 && (
         <p className="px-1 text-[13px] text-ink-3">{t("loading")}</p>
       )}
@@ -383,7 +403,12 @@ export default function CardsPage() {
                 this" question the Gastos list asks about the bank's USD. */}
             <button
               type="button"
-              aria-label={t("verifyCharge")}
+              // Named after the charge: a screen reader hearing "comprobado
+              // contra el resumen" five times learns nothing about which one
+              // it is on.
+              aria-label={`${t("verifyCharge")} · ${
+                charge.detail !== "" ? charge.detail : CARD_LABELS[charge.card]
+              }`}
               aria-pressed={charge.verified}
               onClick={() =>
                 withDb((db) =>
@@ -458,9 +483,25 @@ export default function CardsPage() {
         <StatementDatesDialog
           proposal={proposal}
           closing={shown}
+          unverifiedCount={unverified.length}
           locale={locale}
-          onSave={(range) => {
+          onSave={(range, moveUnverified) => {
             withDb((db) => openCardStatement(db, household.id, range));
+            // Not chained behind the statement write. A charge is filed by its
+            // own date, so it lands in the new window whether or not the
+            // statement doc has reached the server yet — and awaiting a
+            // Firestore write would freeze this offline, where both are
+            // already applied locally.
+            if (moveUnverified) {
+              withDb((db) =>
+                moveCardChargesToStatement(
+                  db,
+                  household.id,
+                  unverified.map((charge) => charge.id),
+                  range.startDate,
+                ),
+              );
+            }
             setIndex(0);
             setDatesDialog(false);
           }}

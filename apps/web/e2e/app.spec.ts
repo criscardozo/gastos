@@ -1024,18 +1024,35 @@ test("services and card statements keep their own books", async ({ page }) => {
   await page.getByRole("link", { name: "Tarjetas", exact: true }).click();
   await expect(page.getByText("Todavía no hay resúmenes")).toBeVisible();
 
-  // Cristian's real cycle: closes on the 27th, payable by the 7th.
+  // Cristian's real cycle: closes on the 27th, payable by the 7th of the month
+  // after. Derived from TODAY rather than written down — a statement can only
+  // ever be opened into the future, so hard-coded dates make this test start
+  // failing the day the month rolls over rather than the day the code breaks.
+  const sydney = (offsetMonths: number, day: number): string => {
+    const now = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Australia/Sydney",
+    }).format(new Date());
+    const [y, m] = [Number(now.slice(0, 4)), Number(now.slice(5, 7))];
+    const d = new Date(Date.UTC(y, m - 1 + offsetMonths, day));
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "UTC" }).format(d);
+  };
+  // Next month's 27th, so today is always inside the window it opens.
+  const closing1 = sydney(1, 27);
+  const due1 = sydney(2, 7);
+  const closing2 = sydney(2, 27);
+  const due2 = sydney(3, 7);
+
   await page.getByRole("button", { name: "Abrir el primer resumen" }).click();
-  await page.getByLabel("Cierre").fill("2026-08-27");
-  await page.getByLabel("Vencimiento").fill("2026-09-07");
+  await page.getByLabel("Cierre").fill(closing1);
+  await page.getByLabel("Vencimiento").fill(due1);
   await page.getByRole("button", { name: "Abrir resumen" }).click();
   await expect(page.getByText("Resumen actual")).toBeVisible();
 
-  // A charge lands in the statement whose window holds its date.
+  // A charge lands in the statement whose window holds its date. Left on the
+  // default, which the screen has already clamped into that window.
   await page.getByRole("button", { name: "Agregar gasto" }).click();
   await page.getByLabel("Monto (USD)").fill("19,99");
   await page.getByLabel("Detalle").fill("Steam");
-  await page.getByLabel("Fecha").fill("2026-08-11");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Steam")).toBeVisible();
   await expect(page.getByText("US$ 19,99").first()).toBeVisible();
@@ -1044,11 +1061,15 @@ test("services and card statements keep their own books", async ({ page }) => {
   // their day of the month, and the window starts the day after — so no charge
   // can fall between two statements.
   await page.getByRole("button", { name: "Cerrar y abrir el próximo" }).click();
-  await expect(page.getByLabel("Cierre")).toHaveValue("2026-09-27");
-  await expect(page.getByLabel("Vencimiento")).toHaveValue("2026-10-07");
+  await expect(page.getByLabel("Cierre")).toHaveValue(closing2);
+  await expect(page.getByLabel("Vencimiento")).toHaveValue(due2);
+  // Carrying the unchecked charges over is offered and ON by default; untick it
+  // here, because what this test pins down is the property underneath — a
+  // charge sits in the window its DATE falls in, and nothing else moves it.
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("checkbox").uncheck();
   // Closing takes two presses on purpose — it happens once a month and there is
   // no single button that undoes it. The first names the consequence.
-  const dialog = page.getByRole("dialog");
   await dialog.getByRole("button", { name: "Cerrar y abrir el próximo" }).click();
   // Scoped to the dialog: Next's route announcer is a role="alert" too.
   await expect(dialog.getByRole("alert")).toContainText("Se cierra el resumen");
@@ -1140,10 +1161,65 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
     },
   );
 
+  // A charge the bank has reported, on a card the household has configured as
+  // credit — so the inbox offers it with a brand already chosen and the only
+  // thing that can disable its button is the statement being closed.
+  await request.patch(
+    `${REST}/households/${householdId}?updateMask.fieldPaths=cards`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          cards: {
+            mapValue: {
+              fields: {
+                "5678": {
+                  mapValue: {
+                    fields: {
+                      kind: { stringValue: "credit" },
+                      // `brandFor` reads this, not `kind`: without it the
+                      // inbox has no brand to file the charge under and its
+                      // button is disabled for a reason that has nothing to do
+                      // with the statement.
+                      brand: { stringValue: "visa" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  );
+  await request.post(
+    `${REST}/households/${householdId}/bankCharges?documentId=gmail-closed`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          usdCents: { integerValue: "4242" },
+          date: { stringValue: "2026-08-20" },
+          merchant: { stringValue: "TIENDA RARA" },
+          cardLast4: { stringValue: "5678" },
+          importedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+
   // Charges are filed by their own date, so anything bought now belongs to the
   // NEXT statement — and the screen has to say so instead of silently
   // back-dating it into a month that is over.
   await expect(page.getByText("Este resumen ya cerró")).toBeVisible();
+  // Same reason the inbox is frozen: the open statement has closed, so there
+  // is no statement these can honestly go into.
+  await expect(page.getByText("Cerrá el resumen antes de agregar")).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(
+    page.getByRole("button", { name: /Agregar US\$ 42,42/ }),
+  ).toBeDisabled();
   // And again where the charge is actually being typed.
   await page.getByRole("button", { name: "Agregar gasto" }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
@@ -1162,10 +1238,15 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await dialog.getByRole("button", { name: "Cerrar y abrir el próximo" }).click();
   await page.getByRole("button", { name: "Sí, cerrar y abrir" }).click();
   await expect(page.getByText("Este resumen ya cerró")).toBeHidden();
+  await expect(page.getByText("Cerrá el resumen antes de agregar")).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: /Agregar US\$ 42,42/ }),
+  ).toBeEnabled();
 
-  // Nothing spent and no fee configured: no peso panel at all, rather than a
-  // card full of zeroes on a household with no Argentine card.
-  await expect(page.getByText("Impuestos en pesos")).toBeHidden();
+  // Nothing spent and no fee configured: no peso figure at all, rather than a
+  // zero on a household with no Argentine card.
+  const taxes = page.getByRole("button", { name: "Impuestos en pesos" });
+  await expect(taxes).toBeHidden();
 
   await page.getByRole("button", { name: "Agregar gasto" }).click();
   // No warning this time: the statement is open and today is inside it.
@@ -1178,12 +1259,20 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await expect(page.getByText("Steam")).toBeVisible();
 
   // US$ 100 at 1500 is $150.000. RG 5617 takes 30% of it, and the two
-  // digital-only lines take 21% and 2% of the same base.
-  await expect(page.getByText("Impuestos en pesos")).toBeVisible();
-  await expect(page.getByText("$ 45.000,00").first()).toBeVisible();
-  await expect(page.getByText("$ 31.500,00").first()).toBeVisible();
-  await expect(page.getByText("$ 3.000,00").first()).toBeVisible();
-  await expect(page.getByText("Al dólar oficial $ 1.500")).toBeVisible();
+  // digital-only lines take 21% and 2% of the same base: 79.500 in all, which
+  // is the ONE figure the statement card carries.
+  await expect(taxes).toBeVisible();
+  await expect(page.getByText("$ 79.500,00")).toBeVisible();
+
+  // The five lines live behind the "i" — read once a month, if that.
+  await taxes.click();
+  const taxDialog = page.getByRole("dialog");
+  await expect(taxDialog.getByText("$ 45.000,00")).toBeVisible();
+  await expect(taxDialog.getByText("$ 31.500,00")).toBeVisible();
+  await expect(taxDialog.getByText("$ 3.000,00")).toBeVisible();
+  await expect(taxDialog.getByText("Al dólar oficial $ 1.500")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(taxDialog).toHaveCount(0);
 
   // A shop is not a digital service: RG 5617 still applies to it, the other two
   // do not. US$ 50 more makes RG 5617 $67.500 while IIBB and RG 4240 stay put.
@@ -1193,20 +1282,60 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await page.getByLabel("Servicio digital del exterior").uncheck();
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Kmart")).toBeVisible();
-  await expect(page.getByText("$ 67.500,00").first()).toBeVisible();
-  await expect(page.getByText("$ 31.500,00").first()).toBeVisible();
-  await expect(page.getByText("$ 3.000,00").first()).toBeVisible();
+  // 67.500 + 31.500 + 3.000
+  await expect(page.getByText("$ 102.000,00")).toBeVisible();
+  await taxes.click();
+  await expect(taxDialog.getByText("$ 67.500,00")).toBeVisible();
+  await expect(taxDialog.getByText("$ 31.500,00")).toBeVisible();
 
-  // The monthly fee is typed once; its 21% IVA is worked out.
+  // The monthly fee is typed once; its 21% IVA is worked out. Its settings
+  // live in this dialog, beside the numbers they change — so the breakdown is
+  // still open behind the fee form when it saves.
   await page.getByRole("button", { name: "Ajustes en pesos" }).click();
   await page.getByLabel("Comisión mensual (ARS)").fill("40.413,22");
   await page.getByRole("button", { name: "Guardar" }).click();
   // `.first()`: each line also prints the base it was computed from, so the
   // fee's amount appears twice — once as the charge, once inside "21% de ...".
-  await expect(page.getByText("$ 40.413,22").first()).toBeVisible();
-  await expect(page.getByText("$ 8.486,78")).toBeVisible();
-  // 40.413,22 + 8.486,78 + 3.000,00 + 31.500,00 + 67.500,00
+  await expect(taxDialog.getByText("$ 40.413,22").first()).toBeVisible();
+  await expect(taxDialog.getByText("$ 8.486,78")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(taxDialog).toHaveCount(0);
+  // 40.413,22 + 8.486,78 + 3.000,00 + 31.500,00 + 67.500,00, on the card.
   await expect(page.getByText("$ 150.900,00")).toBeVisible();
+
+  /* ── Closing carries the unchecked charges forward ───────────────────── */
+
+  // Steam gets ticked off against the paper bill; Kmart does not. A charge
+  // nobody could find on the statement probably was not on it, so closing
+  // offers to carry it — which re-dates it, that being the only way a charge
+  // moves between statements when it carries no statement id.
+  const steamTick = page.getByRole("button", {
+    name: "Comprobado contra el resumen · Steam",
+  });
+  await steamTick.click();
+  // Wait for the tick to actually take. Closing before the write lands would
+  // carry Steam across too, and the failure would look like a bug in the move.
+  await expect(steamTick).toHaveAttribute("aria-pressed", "true");
+
+  await page.getByRole("button", { name: "Cerrar y abrir el próximo" }).click();
+  await page.getByLabel("Cierre").fill("2100-01-27");
+  await page.getByLabel("Vencimiento").fill("2100-02-07");
+  const closing = page.getByRole("dialog");
+  await expect(closing.getByRole("checkbox")).toBeChecked();
+  await expect(
+    closing.getByText("Pasar el gasto sin comprobar al nuevo resumen"),
+  ).toBeVisible();
+  await closing
+    .getByRole("button", { name: "Cerrar y abrir el próximo" })
+    .click();
+  await page.getByRole("button", { name: "Sí, cerrar y abrir" }).click();
+
+  // The unchecked one came across; the checked one stayed where it was.
+  await expect(page.getByText("Kmart")).toBeVisible();
+  await expect(page.getByText("Steam")).toBeHidden();
+  await page.getByRole("button", { name: "Resumen anterior" }).click();
+  await expect(page.getByText("Steam")).toBeVisible();
+  await expect(page.getByText("Kmart")).toBeHidden();
 });
 
 /**
@@ -1425,10 +1554,18 @@ test("charges are routed by the card they came from", async ({ page, request }) 
   await expect(page.getByText("TIENDA RARA")).toBeVisible();
   await expect(page.getByText("COLES 0831")).toBeHidden();
 
+  // No statement has been opened yet, so there is nowhere to file these: the
+  // add buttons are dead and the screen says why, rather than looking broken.
+  await expect(page.getByText("Cerrá el resumen antes de agregar")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Agregar US$ 19,99 · STEAM" }),
+  ).toBeDisabled();
+
   // Recording one turns it into a card charge and retires the bank charge, so
   // it leaves the inbox for good rather than being offered twice.
   await page.getByRole("button", { name: "Abrir el primer resumen" }).click();
   await page.getByRole("button", { name: "Abrir resumen" }).click();
+  await expect(page.getByText("Cerrá el resumen antes de agregar")).toBeHidden();
   await page.getByRole("button", { name: "Agregar US$ 19,99 · STEAM" }).click();
   // The orphan is still waiting — importing one charge must not retire another.
   await expect(page.getByText("TIENDA RARA")).toBeVisible();

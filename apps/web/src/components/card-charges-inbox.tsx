@@ -36,13 +36,22 @@ export function CardChargesInbox({
   charges,
   uid,
   locale,
+  statementClosed,
 }: {
   household: Household;
   charges: BankChargeDoc[];
   uid: string | null;
   locale: string;
+  /**
+   * Today is past the open statement's closing date, so there is no statement
+   * these charges can honestly go into. Adding is blocked until the next one is
+   * opened — otherwise a September purchase gets filed into a closed August,
+   * back-dated to make it fit.
+   */
+  statementClosed: boolean;
 }) {
   const t = useTranslations("cardsInbox");
+  const tCards = useTranslations("cards");
 
   /** Brand chosen per charge, when the configured one is not enough. */
   const [brands, setBrands] = useState<Record<string, CardBrand>>({});
@@ -74,6 +83,28 @@ export function CardChargesInbox({
           {pending.length > 0 ? t("hint", { count: pending.length }) : t("allClear")}
         </p>
       </div>
+
+      {/* Says WHY the buttons are dead, where the buttons are. A row of
+          disabled controls with no explanation reads as a broken screen. */}
+      {statementClosed && pending.length > 0 && (
+        <div
+          className="flex flex-col gap-px rounded-[12px] bg-warn-bg px-3 py-2.5"
+          role="alert"
+        >
+          <span
+            className="text-[12.5px] font-bold"
+            style={{ color: "var(--warn-text)" }}
+          >
+            {tCards("inboxClosedTitle")}
+          </span>
+          <span
+            className="text-[11.5px] leading-snug"
+            style={{ color: "var(--warn-text)" }}
+          >
+            {tCards("inboxClosedBody")}
+          </span>
+        </div>
+      )}
 
       <div className="divide-y divide-soft">
         {pending.map((charge) => {
@@ -123,7 +154,7 @@ export function CardChargesInbox({
                   aria-label={`${t("add")} ${formatUsd(charge.usdCents, locale)}${
                     charge.merchant !== "" ? ` · ${charge.merchant}` : ""
                   }`}
-                  disabled={brand === null || uid === null}
+                  disabled={brand === null || uid === null || statementClosed}
                   onClick={() => {
                     if (brand === null || uid === null) return;
                     withDb((db) =>

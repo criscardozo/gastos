@@ -236,14 +236,17 @@ export function StatementDatesDialog({
   proposal,
   /** The statement being closed, if any — shown so the window is obvious. */
   closing,
+  /** Charges on it that nobody ticked off against the paper bill. */
+  unverifiedCount,
   locale,
   onSave,
   onClose,
 }: {
   proposal: StatementRange;
   closing: StatementRange | null;
+  unverifiedCount: number;
   locale: string;
-  onSave: (range: StatementRange) => void;
+  onSave: (range: StatementRange, moveUnverified: boolean) => void;
   onClose: () => void;
 }) {
   const t = useTranslations("cards");
@@ -255,6 +258,13 @@ export function StatementDatesDialog({
   /** Second press on the primary action. Only ever true when a statement is
    * actually being closed — see `confirms` below. */
   const [confirming, setConfirming] = useState(false);
+  /**
+   * Carry the unverified charges over. On by default: an unticked charge is one
+   * nobody could find on the paper bill, and the reason is usually that the
+   * bank posted it after the closing date. Leaving it behind puts it in a
+   * statement it was never on.
+   */
+  const [moveUnverified, setMoveUnverified] = useState(true);
 
   // The bill cannot be payable before it closes — the rules refuse it too.
   const ordered = dueDate > closingDate;
@@ -271,7 +281,10 @@ export function StatementDatesDialog({
       setConfirming(true);
       return;
     }
-    onSave({ startDate: proposal.startDate, closingDate, dueDate });
+    onSave(
+      { startDate: proposal.startDate, closingDate, dueDate },
+      moveUnverified && unverifiedCount > 0,
+    );
   };
 
   // Editing the dates after asking makes the question stale — it named a date.
@@ -334,6 +347,30 @@ export function StatementDatesDialog({
           <p className="text-[11.5px] font-semibold" style={{ color: "var(--over)" }}>
             {t("dueAfterClosing")}
           </p>
+        )}
+
+        {/* Only when something is actually being closed, and only when there
+            is something to carry. Says what it does to the data, because it
+            re-dates the charges — there is no statement id to move instead. */}
+        {closing !== null && unverifiedCount > 0 && (
+          <label className="flex items-start gap-2.5 rounded-[14px] border border-line bg-bg px-3.5 py-3">
+            <input
+              type="checkbox"
+              checked={moveUnverified}
+              onChange={(e) => setMoveUnverified(e.target.checked)}
+              className="mt-px size-4 flex-none accent-[var(--accent)]"
+            />
+            <span className="flex flex-col gap-px">
+              <span className="text-[13px] font-bold text-ink">
+                {t("moveUnverified", { count: unverifiedCount })}
+              </span>
+              <span className="text-[11.5px] text-ink-3">
+                {t("moveUnverifiedHint", {
+                  date: formatLongDate(proposal.startDate, locale),
+                })}
+              </span>
+            </span>
+          </label>
         )}
 
         {confirming && closing !== null && (

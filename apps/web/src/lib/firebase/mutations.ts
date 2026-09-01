@@ -711,6 +711,34 @@ export async function setCardChargeVerified(
   });
 }
 
+/**
+ * Move charges into the statement that starts on `startDate`.
+ *
+ * A charge carries no statement id — it belongs to whichever window contains
+ * its date — so moving one means CHANGING ITS DATE, and that is the whole
+ * mechanism. Used when closing a statement: a charge nobody could tick off
+ * against the paper bill probably was not on it, and belongs to the next one.
+ *
+ * One batch: half-moved charges would be split across two statements with no
+ * way to tell which half went where.
+ */
+export async function moveCardChargesToStatement(
+  db: Firestore,
+  householdId: string,
+  chargeIds: readonly string[],
+  startDate: string,
+): Promise<void> {
+  if (chargeIds.length === 0) return;
+  const batch = writeBatch(db);
+  for (const id of chargeIds) {
+    batch.update(doc(db, "households", householdId, "cardCharges", id), {
+      date: startDate,
+      updatedAt: serverTimestamp(),
+    });
+  }
+  await batch.commit();
+}
+
 /** Only the due date can be corrected: the window is what buckets the charges. */
 export async function updateStatementDueDate(
   db: Firestore,

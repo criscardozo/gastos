@@ -209,7 +209,11 @@
     "digitalHelp": "Adds IIBB 2% and IVA RG 4240 21%. An app or subscription yes; a shop no.",
     "verifyCharge": "Checked against the statement",
     "notDigital": "not digital",
-    "arsSpend": "Spend in pesos"
+    "arsSpend": "Spend in pesos",
+    "moveUnverified": "{count, plural, one {Carry the unchecked charge} other {Carry the # unchecked charges}} to the new statement",
+    "moveUnverifiedHint": "Their date moves to {date}, which is what moves them between statements.",
+    "inboxClosedTitle": "Close the statement before adding",
+    "inboxClosedBody": "The current statement has closed: these charges would land in a month that is over."
   },
   "cardsInbox": {
     "title": "Bank charges",

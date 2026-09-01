@@ -209,7 +209,11 @@
     "digitalHelp": "Suma IIBB 2% e IVA RG 4240 21%. Una app o suscripción sí; un local, no.",
     "verifyCharge": "Comprobado contra el resumen",
     "notDigital": "no digital",
-    "arsSpend": "Consumos en pesos"
+    "arsSpend": "Consumos en pesos",
+    "moveUnverified": "{count, plural, one {Pasar el gasto sin comprobar} other {Pasar los # gastos sin comprobar}} al nuevo resumen",
+    "moveUnverifiedHint": "Se les cambia la fecha al {date}, que es lo que los mueve de resumen.",
+    "inboxClosedTitle": "Cerrá el resumen antes de agregar",
+    "inboxClosedBody": "El resumen actual ya cerró: estos cargos entrarían en un mes terminado."
   },
   "cardsInbox": {
     "title": "Cargos del banco",
