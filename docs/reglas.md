@@ -181,6 +181,25 @@ acaba de pedir.
   completos) hay que **apartar los perfiles** de
   `~/Library/Developer/Xcode/UserData/Provisioning Profiles` y recompilar con
   `-allowProvisioningUpdates`.
+- **El fixture se siembra desde AFUERA de la app, nunca desde adentro.**
+  `scripts/seed-emulator.mjs` (`pnpm seed:emulator`) termina antes de que la app
+  arranque, así que no hay escrituras contra un listener vivo. La versión
+  anterior sembraba desde el propio arranque y **rompía justo las dos pantallas
+  que existía para poder probar**: borraba y recreaba diez documentos en las
+  colecciones que Servicios y Tarjetas escuchan, y con el SDK de Firebase 12.x
+  esos listeners no volvían a entregar nada. Costó un revert entero y dos
+  diagnósticos equivocados.
+- **Escribir como admin saltea las reglas, así que un fixture puede dejar
+  documentos que la app no puede tocar más.** El seed escribió `users/{uid}` sin
+  `createdAt`: entró sin chistar, y después la app no podía actualizar su propio
+  perfil nunca más ("Property createdAt is undefined on object"). Un fixture
+  tiene que cumplir las reglas aunque nada lo obligue.
+- **Los dos project id del emulador no son intercambiables.** Firestore guarda
+  bajo el id que pide la app (el real, del `GoogleService-Info.plist`, con un
+  warning de `singleProjectMode`); el emulador de **auth** normaliza todo al
+  proyecto con el que se levantó la suite. Preguntar por el equivocado devuelve
+  "no hay cuentas" para una cuenta que existe — que es la tercera vez en dos
+  días que una sonda mal apuntada contesta un cero creíble.
 - **Un síntoma que aparece junto a un error no lo tiene por causa.** El primer
   cuelgue de Firebase 12.18.0 vino acompañado de `GOAWAY too_many_pings` del
   emulador, y eso se escribió como la causa en el mensaje del revert. La

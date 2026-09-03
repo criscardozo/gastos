@@ -9,45 +9,28 @@ options:
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
-    # HELD AT 11.x, but read the whole note before re-trying 12.x — the first
-    # version of it blamed the wrong thing.
+    # 12.x, the same major the web's JS SDK is on. Two clients talking to one
+    # Firestore is a good reason to keep them on the same generation.
     #
-    # What happens on 12.18.0: Servicios and Tarjetas hang on "Cargando…"
-    # forever, and their snapshot callback never fires at all.
+    # This was reverted once, and the note that replaced it blamed two things
+    # that turned out not to be the cause — gRPC keepalive (reproduced with
+    # zero GOAWAYs) and listener churn (the GOAWAY fired before any per-screen
+    # store existed). What actually broke it was the seeder: DevSeed.swift ran
+    # INSIDE the app at launch and deleted-then-recreated ten documents on the
+    # very collections Servicios and Tarjetas then listened to, and on 12.x
+    # those listeners never delivered again.
     #
-    # What it is NOT. Not the gRPC keepalive: the first failing run also logged
-    # GOAWAY ENHANCE_YOUR_CALM / too_many_pings, that went into the revert
-    # message as the cause, and the next reproduction had ZERO of them and hung
-    # identically. Coincidence, not mechanism. Not the number of concurrent
-    # listeners either — Stock runs six on 12.18.0 with no trouble.
-    #
-    # What it correlates with, over four runs on an erased simulator:
-    #   11.15.0 + DevSeed  -> screens render
-    #   12.18.0 + DevSeed  -> hang (twice)
-    #   12.18.0, no seed   -> screens render
-    #
-    # So the trigger is running DevSeed IN THE SAME SESSION, and DevSeed does
-    # something no real use of this app does: delete-then-recreate ten
-    # documents at launch, on the very collections those screens then listen
-    # to. (The delete is itself a workaround, for `createdAt` being immutable
-    # by rule.) Which means the bump is probably fine and the harness is what
-    # breaks — probably, not verified, and free to leave alone.
-    #
-    # Next attempt starts here, and Stock's setup says where. Their seed is a
-    # Node script that finishes BEFORE the app launches, so it never writes to
-    # a collection the running app is listening to — and they have no trouble
-    # on 12.18.0. Moving this seed out of the app (a script against the
-    # emulator's REST, run before launch) drops the in-app write burst and the
-    # delete-vs-immutable-createdAt workaround in one go, which is a better
-    # fix than teaching DevSeed to overwrite in place. Then re-run 12.18.0
-    # seeded that way; if the screens render, take the bump.
-    from: 11.0.0
+    # Seeding moved out of the app (scripts/seed-emulator.mjs, finishes before
+    # launch) and both screens render on 12.18.0 — statement, four charges, the
+    # five peso lines, and the three service states. Verified by running it, not
+    # by compiling: the 91 Swift tests compile Core/ without Firebase and would
+    # pass either way.
+    from: 12.0.0
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
-    # Reverted with Firebase rather than on its own evidence: 9.2.0 showed no
-    # problem, but the two move together in the Firebase dependency graph and
-    # splitting them would leave an untested pair.
-    from: 8.0.0
+    # Moves with Firebase: the two share a dependency graph, so pinning them to
+    # different generations would leave an untested pair.
+    from: 9.0.0
 
 settings:
   base:

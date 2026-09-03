@@ -13,6 +13,7 @@
     "test:ingest": "pnpm --filter gmail-bank-ingest test",
     "verify:pwa": "pnpm --filter web verify:pwa",
     "emulators": "firebase emulators:start --config firebase/firebase.json --project qcris-gastos-diarios",
+    "seed:emulator": "node scripts/seed-emulator.mjs",
     "backup": "node scripts/backup.mjs"
   },
   "devDependencies": {
