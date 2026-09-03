@@ -181,6 +181,20 @@ acaba de pedir.
   completos) hay que **apartar los perfiles** de
   `~/Library/Developer/Xcode/UserData/Provisioning Profiles` y recompilar con
   `-allowProvisioningUpdates`.
+- **Un major de un SDK se prueba CORRIENDO la app, no compilándola.** Los 91
+  tests Swift compilan `Core/` directo, sin Firebase, así que un SDK nuevo puede
+  pasarlos enteros sin ser ejercitado ni una vez; el build tampoco prueba
+  runtime. Firebase iOS 12.18.0 compiló, pasó los 91 y **cuelga las dos
+  pantallas que abren sus propios listeners** ("Cargando…" para siempre, con
+  `GOAWAY ENHANCE_YOUR_CALM / too_many_pings` del emulador). Se detectó
+  entrando a las pantallas, con el simulador borrado entre corridas para que no
+  hubiera identidad cacheada. La vara es: entrar, que levante el hogar y la
+  lista, y que una escritura vuelva confirmada por el servidor.
+- **Firebase Auth persiste la sesión en el llavero del simulador**, así que una
+  corrida contra un emulador recién vaciado puede arrancar "logueada" con una
+  identidad que el emulador ya no conoce: la app anda, las escrituras quedan en
+  cola local y el servidor no tiene nada. Se ve pidiéndole las cuentas al
+  emulador de auth (0 = no llegó nunca). `xcrun simctl erase` antes de verificar.
 - **En zsh, un glob que no matchea aborta el comando entero.** No expande a
   vacío como en bash: `rm -rf .../Stock-* build-sim build-device` con uno de los
   tres inexistente no borra **ninguno**, y el siguiente comando de la línea

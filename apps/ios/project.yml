@@ -9,13 +9,28 @@ options:
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
-    # 12.x, the same major the web is on (see the catalog in
-    # pnpm-workspace.yaml). Two clients talking to one Firestore is a good
-    # reason to keep the two SDKs on the same generation.
-    from: 12.0.0
+    # HELD AT 11.x. The web is on the 12.x JS SDK and matching majors would be
+    # tidy, but 12.18.0 hangs the two screens that own their own listeners.
+    #
+    # Measured, not guessed — same simulator erased between runs, same seeded
+    # emulator, same navigation:
+    #   11.15.0 → Tarjetas renders the statement and its charges.
+    #   12.18.0 → "Cargando…" forever, and the emulator sends
+    #             GOAWAY ENHANCE_YOUR_CALM / too_many_pings over gRPC.
+    #
+    # AppModel's own listeners keep working on 12.18.0, so it is not "Firestore
+    # is broken": it looks like the extra concurrent listen streams the
+    # Servicios and Tarjetas stores open trip the emulator's keepalive policy.
+    # Which also means it may be emulator-only and fine in production — that is
+    # exactly what has not been established, and the app is where the
+    # household's money lives. Not a bump to take on a maybe.
+    from: 11.0.0
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
-    from: 9.0.0
+    # Reverted with Firebase rather than on its own evidence: 9.2.0 showed no
+    # problem, but the two move together in the Firebase dependency graph and
+    # splitting them would leave an untested pair.
+    from: 8.0.0
 
 settings:
   base:

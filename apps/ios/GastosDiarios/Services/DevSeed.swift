@@ -75,6 +75,15 @@ enum DevSeed {
         }
     }
 
+    /// How many writes are still waiting for the server to answer.
+    ///
+    /// Counted because the alternative was a lie: the first version printed
+    /// "seeded" the moment it had QUEUED everything, which is before anything
+    /// has landed. Firestore applies writes locally first, so a run against an
+    /// emulator it could not reach printed success and showed the data on
+    /// screen with the server holding nothing at all.
+    private static var pending = 0
+
     /// Reports a write the SERVER refused, and nothing else.
     ///
     /// Fire-and-forget with a completion, like every other write in this app.
@@ -83,10 +92,14 @@ enum DevSeed {
     /// that landed perfectly well — which is exactly what the first version of
     /// this did, ten times in a row, while the data sat there in the emulator.
     private static func report(_ what: String) -> (Error?) -> Void {
-        { error in
+        pending += 1
+        return { error in
             if let error {
                 print("[DevSeed] \(what) rejected: \(String(describing: error))")
             }
+            pending -= 1
+            // Only claim success once the SERVER has answered for every one.
+            if pending == 0 { print("[DevSeed] all writes acknowledged") }
         }
     }
 
@@ -98,9 +111,9 @@ enum DevSeed {
         guard requested, firestoreIsLocal else { return }
         let today = PeriodLogic.todayInTimezone(Date(), TimeZone(identifier: "Australia/Sydney")!)
         let household = db.collection("households").document(householdId)
+        print("[DevSeed] seeding household \(householdId)…")
         seedServices(uid: uid, today: today, household: household)
         seedCards(uid: uid, today: today, household: household)
-        print("[DevSeed] seeded household \(householdId)")
     }
 
     // MARK: Servicios
