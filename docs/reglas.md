@@ -181,6 +181,17 @@ acaba de pedir.
   completos) hay que **apartar los perfiles** de
   `~/Library/Developer/Xcode/UserData/Provisioning Profiles` y recompilar con
   `-allowProvisioningUpdates`.
+- **Un síntoma que aparece junto a un error no lo tiene por causa.** El primer
+  cuelgue de Firebase 12.18.0 vino acompañado de `GOAWAY too_many_pings` del
+  emulador, y eso se escribió como la causa en el mensaje del revert. La
+  reproducción siguiente colgó igual con **cero** GOAWAYs. Lo que sí correlaciona
+  en cuatro corridas es correr `DevSeed` en la misma sesión: sin seed, la misma
+  versión anda. Antes de escribir un mecanismo, reproducirlo y ver si el
+  supuesto culpable sigue ahí.
+- **Un listener que descarta su error miente dos veces**: devuelve lista vacía,
+  que en pantalla es igual a "no hay nada", y si el callback nunca corre deja un
+  spinner sin razón. Los tres de Servicios y Tarjetas lo hacían; ahora imprimen.
+  Es lo que permitió descartar que fuera un rechazo de reglas.
 - **Un major de un SDK se prueba CORRIENDO la app, no compilándola.** Los 91
   tests Swift compilan `Core/` directo, sin Firebase, así que un SDK nuevo puede
   pasarlos enteros sin ser ejercitado ni una vez; el build tampoco prueba

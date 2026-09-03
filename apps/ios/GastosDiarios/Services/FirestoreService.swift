@@ -658,6 +658,16 @@ final class FirestoreService {
         try await db.collection("households").document(householdId).updateData(data)
     }
 
+    /// A listen the server refused, said out loud.
+    ///
+    /// These three used to discard the error and hand back an empty list, which
+    /// on screen is indistinguishable from "there is nothing here" — and when
+    /// the callback never fires at all, from "still loading". A screen stuck on
+    /// a spinner with the reason thrown away is the worst of the three.
+    private static func reportListen(_ what: String, _ error: Error) {
+        print("[Firestore] listen \(what) failed: \(String(describing: error))")
+    }
+
     // MARK: - Services
 
     /// The whole register. Unbounded on purpose and safe to be: a service is a
@@ -670,7 +680,8 @@ final class FirestoreService {
         db.collection("households").document(householdId)
             .collection("services")
             .limit(to: 100)
-            .addSnapshotListener { snapshot, _ in
+            .addSnapshotListener { snapshot, error in
+                if let error { Self.reportListen("services", error) }
                 onChange(snapshot?.documents.compactMap { try? $0.data(as: ServiceDoc.self) } ?? [])
             }
     }
@@ -704,7 +715,8 @@ final class FirestoreService {
             .collection("cardStatements")
             .order(by: "closingDate", descending: true)
             .limit(to: 24)
-            .addSnapshotListener { snapshot, _ in
+            .addSnapshotListener { snapshot, error in
+                if let error { Self.reportListen("cardStatements", error) }
                 onChange(snapshot?.documents.compactMap { try? $0.data(as: CardStatement.self) } ?? [])
             }
     }
@@ -721,7 +733,8 @@ final class FirestoreService {
             .collection("cardCharges")
             .whereField("date", isGreaterThanOrEqualTo: startDate)
             .whereField("date", isLessThanOrEqualTo: closingDate)
-            .addSnapshotListener { snapshot, _ in
+            .addSnapshotListener { snapshot, error in
+                if let error { Self.reportListen("cardCharges", error) }
                 onChange(snapshot?.documents.compactMap { try? $0.data(as: CardCharge.self) } ?? [])
             }
     }

@@ -9,21 +9,32 @@ options:
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
-    # HELD AT 11.x. The web is on the 12.x JS SDK and matching majors would be
-    # tidy, but 12.18.0 hangs the two screens that own their own listeners.
+    # HELD AT 11.x, but read the whole note before re-trying 12.x — the first
+    # version of it blamed the wrong thing.
     #
-    # Measured, not guessed — same simulator erased between runs, same seeded
-    # emulator, same navigation:
-    #   11.15.0 → Tarjetas renders the statement and its charges.
-    #   12.18.0 → "Cargando…" forever, and the emulator sends
-    #             GOAWAY ENHANCE_YOUR_CALM / too_many_pings over gRPC.
+    # What happens on 12.18.0: Servicios and Tarjetas hang on "Cargando…"
+    # forever, and their snapshot callback never fires at all.
     #
-    # AppModel's own listeners keep working on 12.18.0, so it is not "Firestore
-    # is broken": it looks like the extra concurrent listen streams the
-    # Servicios and Tarjetas stores open trip the emulator's keepalive policy.
-    # Which also means it may be emulator-only and fine in production — that is
-    # exactly what has not been established, and the app is where the
-    # household's money lives. Not a bump to take on a maybe.
+    # What it is NOT. Not the gRPC keepalive: the first failing run also logged
+    # GOAWAY ENHANCE_YOUR_CALM / too_many_pings, that went into the revert
+    # message as the cause, and the next reproduction had ZERO of them and hung
+    # identically. Coincidence, not mechanism. Not the number of concurrent
+    # listeners either — Stock runs six on 12.18.0 with no trouble.
+    #
+    # What it correlates with, over four runs on an erased simulator:
+    #   11.15.0 + DevSeed  -> screens render
+    #   12.18.0 + DevSeed  -> hang (twice)
+    #   12.18.0, no seed   -> screens render
+    #
+    # So the trigger is running DevSeed IN THE SAME SESSION, and DevSeed does
+    # something no real use of this app does: delete-then-recreate ten
+    # documents at launch, on the very collections those screens then listen
+    # to. (The delete is itself a workaround, for `createdAt` being immutable
+    # by rule.) Which means the bump is probably fine and the harness is what
+    # breaks — probably, not verified, and free to leave alone.
+    #
+    # Next attempt starts here: make DevSeed stop deleting, then re-run
+    # 12.18.0 with the seed. If the screens render, take the bump.
     from: 11.0.0
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
