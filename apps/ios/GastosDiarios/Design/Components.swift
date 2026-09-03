@@ -257,12 +257,19 @@ struct UsdOverAud: View {
                 Text(hasUsd ? MoneyFormatter.usd(usdCents, locale: locale) : "—")
                     .appFont(big ? 21 : 14, .bold)
                     .foregroundStyle(Theme.ink)
+                    // Two of these sit side by side in half a phone's width, so
+                    // "US$ 1.234,56" has to shrink rather than break after the
+                    // currency symbol and read as two figures.
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.55)
                 CurrencyTag(code: "USD")
             }
             HStack(spacing: 5) {
                 Text(MoneyFormatter.aud(audCents, locale: locale))
                     .appFont(big ? 12.5 : 12, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                 CurrencyTag(code: "AUD")
             }
         }

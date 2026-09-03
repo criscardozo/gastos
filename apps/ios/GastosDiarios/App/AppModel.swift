@@ -392,6 +392,7 @@ final class AppModel {
                 self.materializeIfNeeded()
                 self.refreshExpenseListeners()
                 self.publishWidgetSnapshot()
+                self.seedDemoDataIfRequested(householdId: id)
             }
         }
         periodsListener = firestore.listenPeriodBudgets(householdId: id) { [weak self] periods, fromCache in
@@ -889,6 +890,20 @@ final class AppModel {
                 email: "simulador@test.dev"
             )
         }
+    }
+
+    /// Fill an EMULATOR household with a believable month (`-seedDemo`).
+    ///
+    /// Fenced inside DevSeed, which refuses to run unless the app is pointed at
+    /// the emulators AND the project id is a throwaway one. Once per launch:
+    /// the household listener fires on every change, and seeding writes to the
+    /// household, which would otherwise chase its own tail.
+    private var demoSeeded = false
+
+    func seedDemoDataIfRequested(householdId: String) {
+        guard DevSeed.requested, !demoSeeded, let uid else { return }
+        demoSeeded = true
+        DevSeed.run(uid: uid, householdId: householdId, db: Firestore.firestore())
     }
 
     func signInWithGoogle() {

@@ -101,7 +101,7 @@ struct ServicesView: View {
 
     private var monthTotals: some View {
         let totals = store.totals
-        return HStack(spacing: 10) {
+        return HStack(alignment: .top, spacing: 10) {
             Card {
                 VStack(alignment: .leading, spacing: 4) {
                     SectionLabel(text: l10n.t("services.chargedThisMonth"))
@@ -116,7 +116,7 @@ struct ServicesView: View {
                         .appFont(11)
                         .foregroundStyle(Theme.inkTertiary)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
             Card {
                 VStack(alignment: .leading, spacing: 4) {
@@ -132,9 +132,10 @@ struct ServicesView: View {
                         .appFont(11)
                         .foregroundStyle(Theme.inkTertiary)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 
