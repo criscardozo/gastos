@@ -413,5 +413,110 @@
         "expectedAddedDays": null
       }
     ]
+  },
+  "stretchPeriodTo": {
+    "comment": "Buying DAYS, not money: the end date moves out to a chosen date and the budget stays put, which is how the household moves the weekday its budget starts on without throwing away what is left in the week that just ended. Because periods chain from previous.endDate + 1, moving that one date is the whole mechanism. Forward only — days given up would belong to no period, so every expense logged in them would leave every total — and capped at 31 days from startDate, past which the date is a typo. A refusal is expectedEndDate: null.",
+    "maxStretchedDays": 31,
+    "cases": [
+      {
+        "name": "the real case: a week stretched through Sunday so the next one starts Monday",
+        "startDate": "2026-08-28",
+        "endDate": "2026-09-03",
+        "toEndDate": "2026-09-06",
+        "today": "2026-09-04",
+        "expectedEndDate": "2026-09-06",
+        "expectedAddedDays": 3
+      },
+      {
+        "name": "one day is a stretch",
+        "startDate": "2026-08-28",
+        "endDate": "2026-09-03",
+        "toEndDate": "2026-09-04",
+        "today": "2026-09-04",
+        "expectedEndDate": "2026-09-04",
+        "expectedAddedDays": 1
+      },
+      {
+        "name": "crosses a year boundary",
+        "startDate": "2026-12-25",
+        "endDate": "2026-12-31",
+        "toEndDate": "2027-01-03",
+        "today": "2027-01-01",
+        "expectedEndDate": "2027-01-03",
+        "expectedAddedDays": 3
+      },
+      {
+        "name": "spans the start of Sydney DST — calendar days, not wall-clock hours",
+        "startDate": "2026-09-28",
+        "endDate": "2026-10-04",
+        "toEndDate": "2026-10-07",
+        "today": "2026-10-05",
+        "expectedEndDate": "2026-10-07",
+        "expectedAddedDays": 3
+      },
+      {
+        "name": "spans the end of Sydney DST",
+        "startDate": "2026-03-30",
+        "endDate": "2026-04-05",
+        "toEndDate": "2026-04-08",
+        "today": "2026-04-06",
+        "expectedEndDate": "2026-04-08",
+        "expectedAddedDays": 3
+      },
+      {
+        "name": "refuses to shrink: the days given up would hold orphaned expenses",
+        "startDate": "2026-08-28",
+        "endDate": "2026-09-03",
+        "toEndDate": "2026-09-01",
+        "today": "2026-09-04",
+        "expectedEndDate": null,
+        "expectedAddedDays": null
+      },
+      {
+        "name": "refuses the same end date: nothing is being bought",
+        "startDate": "2026-08-28",
+        "endDate": "2026-09-03",
+        "toEndDate": "2026-09-03",
+        "today": "2026-09-04",
+        "expectedEndDate": null,
+        "expectedAddedDays": null
+      },
+      {
+        "name": "refuses to end before today",
+        "startDate": "2026-08-28",
+        "endDate": "2026-09-03",
+        "toEndDate": "2026-09-04",
+        "today": "2026-09-10",
+        "expectedEndDate": null,
+        "expectedAddedDays": null
+      },
+      {
+        "name": "31 days from the start is the last one allowed",
+        "startDate": "2026-08-28",
+        "endDate": "2026-09-03",
+        "toEndDate": "2026-09-27",
+        "today": "2026-09-04",
+        "expectedEndDate": "2026-09-27",
+        "expectedAddedDays": 24
+      },
+      {
+        "name": "32 days is a typo, not a stretch",
+        "startDate": "2026-08-28",
+        "endDate": "2026-09-03",
+        "toEndDate": "2026-09-28",
+        "today": "2026-09-04",
+        "expectedEndDate": null,
+        "expectedAddedDays": null
+      },
+      {
+        "name": "a mistyped year is refused by the same cap",
+        "startDate": "2026-08-28",
+        "endDate": "2026-09-03",
+        "toEndDate": "2027-09-06",
+        "today": "2026-09-04",
+        "expectedEndDate": null,
+        "expectedAddedDays": null
+      }
+    ]
   }
 }

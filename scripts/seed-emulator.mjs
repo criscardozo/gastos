@@ -16,7 +16,15 @@
 //
 // Usage:
 //   1. firebase emulators:start --only auth,firestore \
-//        --config firebase/firebase.json --project demo-gastos-diarios
+//        --config firebase/firebase.json --project qcris-gastos-diarios
+//
+//      The project id MUST be the app's own (the one in its
+//      GoogleService-Info.plist). Start the suite under any other id and the
+//      security rules resolve their `get()` in that other namespace, where no
+//      household exists: `isMember()` then raises an EVALUATION ERROR rather
+//      than returning false, and every subcollection gated by it — periods,
+//      expenses, services, cards — comes back empty with no error at all. The
+//      app looks like a household that has nothing in it. See docs/reglas.md.
 //   2. launch the app once with `-useEmulators -devSignIn` so it creates its
 //      auth account, and leave it on the onboarding screen
 //   3. pnpm seed:emulator
@@ -41,7 +49,7 @@ const AUTH = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "127.0.0.1:9099";
 // it normalises everything to the project the suite was started with. So
 // documents go to the app's id and accounts are read from the emulator's.
 const PROJECT = process.env.SEED_PROJECT_ID ?? "qcris-gastos-diarios";
-const AUTH_PROJECT = process.env.SEED_AUTH_PROJECT_ID ?? "demo-gastos-diarios";
+const AUTH_PROJECT = process.env.SEED_AUTH_PROJECT_ID ?? "qcris-gastos-diarios";
 
 const TZ = "Australia/Sydney";
 
@@ -102,6 +110,25 @@ async function put(path, data) {
   if (!response.ok) {
     throw new Error(`${path}: ${response.status} ${await response.text()}`);
   }
+}
+
+/** Delete one document. Same admin auth, so rules do not apply. */
+async function remove(path) {
+  const response = await fetch(`${docs}/${path}`, {
+    method: "DELETE",
+    headers: admin,
+  });
+  if (!response.ok) {
+    throw new Error(`${path}: ${response.status} ${await response.text()}`);
+  }
+}
+
+/** Ids of the documents in a collection, or [] when there are none. */
+async function ids(collection) {
+  const response = await fetch(`${docs}/${collection}`, { headers: admin });
+  if (!response.ok) return [];
+  const body = await response.json();
+  return (body.documents ?? []).map((d) => d.name.split("/").pop());
 }
 
 /* ── Calendar dates, in the household's timezone ───────────────────────── */
@@ -232,6 +259,62 @@ async function main() {
   // has to satisfy the rules even though nothing forces it to, or it writes
   // documents the app is locked out of.
 
+  /* The start-period screen's own fixture: a period that ENDED yesterday
+     having left money on the table, and a fresh one nobody has answered.
+     Without these two docs the app materializes a single period covering
+     today and the screen has nothing to ask about — so the three answers it
+     offers (repeat, a different amount, stretch the previous one) could not be
+     exercised at all. The previous one is confirmed because that is the real
+     shape: somebody answered it a fortnight ago. */
+  const previousStart = addDays(day, -14);
+  const yesterday = addDays(day, -1);
+  await put(`households/${householdId}/periodBudgets/${previousStart}`, {
+    startDate: previousStart,
+    endDate: yesterday,
+    period: "fortnightly",
+    amountCents: 90000,
+    source: "custom",
+    confirmedAt: now,
+    createdAt: now,
+    updatedAt: now,
+  });
+  await put(`households/${householdId}/periodBudgets/${day}`, {
+    startDate: day,
+    endDate: addDays(day, 13),
+    period: "fortnightly",
+    amountCents: 90000,
+    source: "default",
+    createdAt: now,
+    updatedAt: now,
+  });
+  // Anything else in there is the APP's, not ours, and it has to go.
+  //
+  // The app is listening the whole time this script runs, and the household
+  // above lands before these two periods do — so between the two writes it is
+  // free to materialize a period of its own from the anchor date. That is not
+  // harmless: periods must not overlap, and three ranges covering today make
+  // "the current period" whichever one the sort happened to put last. Which is
+  // exactly what it did on the first run of this fixture, leaving the
+  // start-period screen offering to stretch a period nobody had asked about.
+  // The web's e2e suite learned the same lesson the same way.
+  for (const id of await ids(`households/${householdId}/periodBudgets`)) {
+    if (id !== previousStart && id !== day) {
+      await remove(`households/${householdId}/periodBudgets/${id}`);
+    }
+  }
+
+  // 700,00 of the 900,00 spent, so 200,00 is left to carry or to stretch.
+  await put(`households/${householdId}/expenses/exp-anterior`, {
+    amountCents: 70000,
+    categoryId: "groceries",
+    note: "Del período anterior",
+    date: yesterday,
+    createdBy: uid,
+    verified: false,
+    createdAt: now,
+    updatedAt: now,
+  });
+
   /* Servicios — three bills covering every state the screen can show: one
      charged for exactly what we expected, one charged for MORE (which is what
      puts the reconcile button on screen), one this month does not charge. */
@@ -321,7 +404,7 @@ async function main() {
   });
 
   console.log(`seeded ${householdId} for ${uid} (${PROJECT} @ ${FIRESTORE})`);
-  console.log("  3 servicios · 2 gastos · 1 resumen · 4 cargos");
+  console.log("  2 períodos · 3 servicios · 3 gastos · 1 resumen · 4 cargos");
 }
 
 main().catch((error) => {

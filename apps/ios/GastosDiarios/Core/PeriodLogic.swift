@@ -148,15 +148,19 @@ enum PeriodLogic {
         startDate <= date && date <= endDate
     }
 
-    // MARK: Extending the week under way
+    // MARK: Moving a period's end date
 
     /// The result of stretching a weekly period into a fortnight.
     struct PeriodExtension: Equatable, Sendable {
         /// Where the period now ends, inclusive.
         let endDate: CalendarDate
-        /// How many days it gained — always 7, but stated rather than assumed.
+        /// How many days it gained.
         let addedDays: Int
     }
+
+    /// The most a period may be stretched to, counted from its own start.
+    /// Declared in shared/period-test-vectors.json so both twins read one bound.
+    static let maxStretchedDays = 31
 
     /// Turn the week under way into two weeks, without moving where it started.
     ///
@@ -184,6 +188,50 @@ enum PeriodLogic {
         return PeriodExtension(
             endDate: extended,
             addedDays: daysBetween(endDate, extended)
+        )
+    }
+
+    // MARK: Stretching
+
+    /// Move a period's end date out to `toEndDate`, keeping its budget.
+    ///
+    /// What it is for: changing which weekday the budget starts on, without
+    /// losing what is left of the week under way. Stretching the week that just
+    /// ended through Sunday means its leftover is still spendable on Friday and
+    /// Saturday, and the next period starts on Monday — because materialization
+    /// always chains from the last period's end date plus one.
+    ///
+    /// The AMOUNT does not move. Stretching buys days, not money: the point is
+    /// spending what is already there over a slightly longer stretch. A period
+    /// whose budget grew with its length is `extendToFortnight`, above, which
+    /// is a different decision.
+    ///
+    /// nil when the request makes no sense, and each refusal is a rule worth
+    /// stating:
+    ///   - not later than the current end — that is a shrink, and shrinking
+    ///     would orphan any expense already logged in the days it gave up;
+    ///   - earlier than today — a period cannot end before the day you are
+    ///     asking the question on;
+    ///   - longer than `maxStretchedDays` from its start — at some point this
+    ///     is not a stretched week, it is a mistyped date.
+    ///
+    /// The TS twin is `stretchPeriodTo` in apps/web/src/lib/periods.ts; both
+    /// run the `stretchPeriodTo` cases in shared/period-test-vectors.json.
+    static func stretchPeriodTo(
+        startDate: CalendarDate,
+        endDate: CalendarDate,
+        toEndDate: CalendarDate,
+        today: CalendarDate
+    ) -> PeriodExtension? {
+        guard toEndDate.raw > endDate.raw, toEndDate.raw >= today.raw else {
+            return nil
+        }
+        guard daysBetween(startDate, toEndDate) + 1 <= maxStretchedDays else {
+            return nil
+        }
+        return PeriodExtension(
+            endDate: toEndDate,
+            addedDays: daysBetween(endDate, toEndDate)
         )
     }
 

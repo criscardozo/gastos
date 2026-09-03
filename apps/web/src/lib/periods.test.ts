@@ -11,6 +11,7 @@ import {
   monthRange,
   monthsBackRange,
   periodEndDate,
+  MAX_STRETCHED_DAYS,
   recentMonths,
   stretchPeriodTo,
   todayInTimezone,
@@ -46,6 +47,7 @@ describe("period vectors", () => {
         "todayInTimezone",
         "budgetState",
         "extendToFortnight",
+        "stretchPeriodTo",
       ]),
     );
   });
@@ -59,8 +61,9 @@ describe("period vectors", () => {
       vectors.cascadeMaterialization.cases.length +
       vectors.todayInTimezone.cases.length +
       vectors.budgetState.cases.length +
-      vectors.extendToFortnight.cases.length;
-    expect(counted).toBe(58);
+      vectors.extendToFortnight.cases.length +
+      vectors.stretchPeriodTo.cases.length;
+    expect(counted).toBe(69);
   });
 });
 
@@ -255,42 +258,33 @@ describe("calendar months", () => {
   });
 });
 
-describe("stretchPeriodTo", () => {
-  // Cristian's real case: the week 28 Aug – 3 Sep ended with $55,31 left, and
-  // he wanted those days to run through Sunday the 6th so the next week starts
-  // on Monday the 7th.
-  const week = { startDate: "2026-08-28", endDate: "2026-09-03" };
+describe("stretchPeriodTo (shared vectors)", () => {
+  it.each(vectors.stretchPeriodTo.cases)(
+    "$name",
+    ({ startDate, endDate, toEndDate, today, expectedEndDate, expectedAddedDays }) => {
+      const result = stretchPeriodTo({ startDate, endDate }, toEndDate, today);
+      if (expectedEndDate === null) {
+        expect(result).toBeNull();
+      } else {
+        expect(result).toEqual({
+          endDate: expectedEndDate,
+          addedDays: expectedAddedDays,
+        });
+      }
+    },
+  );
 
-  it("moves the end date out and says by how much", () => {
-    expect(stretchPeriodTo(week, "2026-09-06", "2026-09-04")).toEqual({
-      endDate: "2026-09-06",
-      addedDays: 3,
-    });
-  });
-
-  it("refuses to shrink", () => {
-    // A shorter period would orphan any expense already logged in the days it
-    // gave up — they would fall outside every materialized period.
-    expect(stretchPeriodTo(week, "2026-09-01", "2026-09-04")).toBeNull();
-    expect(stretchPeriodTo(week, "2026-09-03", "2026-09-04")).toBeNull();
-  });
-
-  it("refuses to end before today", () => {
-    // Answering "stretch it to last Tuesday" on a Friday is not a stretch.
-    expect(stretchPeriodTo(week, "2026-09-04", "2026-09-10")).toBeNull();
-  });
-
-  it("refuses a length that is a typo rather than a week", () => {
-    // 31 days from the start is the cap: past that this is a mistyped year.
-    expect(stretchPeriodTo(week, "2026-09-27", "2026-09-04")).toEqual({
-      endDate: "2026-09-27",
-      addedDays: 24,
-    });
-    expect(stretchPeriodTo(week, "2026-09-28", "2026-09-04")).toBeNull();
-    expect(stretchPeriodTo(week, "2027-09-06", "2026-09-04")).toBeNull();
+  it("agrees with the cap the vectors declare", () => {
+    // Both implementations read the bound from the same file, so a change
+    // there has to move both — that is the point of it being in the vectors.
+    expect(MAX_STRETCHED_DAYS).toBe(vectors.stretchPeriodTo.maxStretchedDays);
   });
 
   it("refuses anything that is not a calendar date", () => {
+    // Not expressible as a vector: the Swift twin takes a parsed CalendarDate,
+    // so a malformed string cannot even reach it. On the web it can — the
+    // value comes straight out of an <input type="date">.
+    const week = { startDate: "2026-08-28", endDate: "2026-09-03" };
     expect(stretchPeriodTo(week, "", "2026-09-04")).toBeNull();
     expect(stretchPeriodTo(week, "2026-9-6", "2026-09-04")).toBeNull();
   });

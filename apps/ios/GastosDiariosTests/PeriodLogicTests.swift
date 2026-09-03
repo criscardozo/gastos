@@ -73,6 +73,20 @@ final class PeriodLogicTests: XCTestCase {
             let cases: [Case]
         }
 
+        struct Stretch: Decodable {
+            struct Case: Decodable {
+                let name: String
+                let startDate: String
+                let endDate: String
+                let toEndDate: String
+                let today: String
+                let expectedEndDate: String?
+                let expectedAddedDays: Int?
+            }
+            let maxStretchedDays: Int
+            let cases: [Case]
+        }
+
         let addDays: [AddDays]
         let daysBetween: [DaysBetween]
         let periodEndDate: [PeriodEnd]
@@ -81,6 +95,7 @@ final class PeriodLogicTests: XCTestCase {
         let todayInTimezone: Today
         let budgetState: Budget
         let extendToFortnight: Extend
+        let stretchPeriodTo: Stretch
     }
 
     private static let vectors: Vectors = {
@@ -134,7 +149,7 @@ final class PeriodLogicTests: XCTestCase {
             [
                 "addDays", "daysBetween", "periodEndDate", "containment",
                 "cascadeMaterialization", "todayInTimezone", "budgetState",
-                "extendToFortnight",
+                "extendToFortnight", "stretchPeriodTo",
             ],
             "a group was added to or removed from the vectors: decode it in "
                 + "`Vectors` and run it, or the suite quietly covers less"
@@ -153,7 +168,8 @@ final class PeriodLogicTests: XCTestCase {
             + Self.vectors.todayInTimezone.cases.count
             + Self.vectors.budgetState.cases.count
             + Self.vectors.extendToFortnight.cases.count
-        XCTAssertEqual(counted, 58)
+            + Self.vectors.stretchPeriodTo.cases.count
+        XCTAssertEqual(counted, 69)
     }
 
     // MARK: - Sections
@@ -274,6 +290,74 @@ final class PeriodLogicTests: XCTestCase {
             XCTAssertEqual(result.endDate, date(expectedEnd), vector.name)
             XCTAssertEqual(result.addedDays, vector.expectedAddedDays, vector.name)
         }
+    }
+
+    func testStretchPeriodToVectors() {
+        let cases = Self.vectors.stretchPeriodTo.cases
+        XCTAssertFalse(cases.isEmpty)
+        for vector in cases {
+            let result = PeriodLogic.stretchPeriodTo(
+                startDate: date(vector.startDate),
+                endDate: date(vector.endDate),
+                toEndDate: date(vector.toEndDate),
+                today: date(vector.today)
+            )
+            guard let expectedEnd = vector.expectedEndDate else {
+                XCTAssertNil(result, vector.name)
+                continue
+            }
+            guard let result else {
+                XCTFail("\(vector.name): expected \(expectedEnd), got nil")
+                continue
+            }
+            XCTAssertEqual(result.endDate, date(expectedEnd), vector.name)
+            XCTAssertEqual(result.addedDays, vector.expectedAddedDays, vector.name)
+        }
+    }
+
+    /// Both twins read the bound from the same file, so a change there has to
+    /// move both — which is the point of it living in the vectors.
+    func testTheStretchCapIsTheOneTheVectorsDeclare() {
+        XCTAssertEqual(
+            PeriodLogic.maxStretchedDays,
+            Self.vectors.stretchPeriodTo.maxStretchedDays
+        )
+    }
+
+    /// The point of stretching: the day the NEXT period opens. Materialization
+    /// chains from the last end date plus one, so moving that one date is what
+    /// moves the weekday — nothing else has to change.
+    func testStretchingMovesTheDayTheNextPeriodOpens() {
+        let start = date("2026-08-28")
+        let end = date("2026-09-03")
+        guard let stretched = PeriodLogic.stretchPeriodTo(
+            startDate: start, endDate: end,
+            toEndDate: date("2026-09-06"), today: date("2026-09-04")
+        ) else {
+            XCTFail("a forward stretch must be allowed")
+            return
+        }
+        // Sunday the 6th → the next period starts Monday the 7th.
+        XCTAssertEqual(PeriodLogic.addDays(stretched.endDate, 1), date("2026-09-07"))
+        let next = PeriodLogic.cascadeMaterialization(
+            last: PeriodLogic.PeriodRange(startDate: start, endDate: stretched.endDate),
+            anchorDate: nil,
+            defaultPeriod: .weekly,
+            today: date("2026-09-07")
+        )
+        XCTAssertEqual(next.first?.startDate, date("2026-09-07"))
+        // And nothing is materialized while the stretched period is still on.
+        XCTAssertTrue(PeriodLogic.cascadeMaterialization(
+            last: PeriodLogic.PeriodRange(startDate: start, endDate: stretched.endDate),
+            anchorDate: nil,
+            defaultPeriod: .weekly,
+            today: date("2026-09-04")
+        ).isEmpty)
+        // An expense on the stretched days belongs to it, which is why no
+        // expense doc is touched.
+        XCTAssertTrue(PeriodLogic.containsDate(
+            startDate: start, endDate: stretched.endDate, date: date("2026-09-06")
+        ))
     }
 
     /// The point of the feature: the handover weekday must not move. Cristian's

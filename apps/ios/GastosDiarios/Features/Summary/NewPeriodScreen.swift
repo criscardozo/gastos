@@ -11,6 +11,9 @@ import SwiftUI
 ///     left over (the amount is right there, so "how much was left?" is not a
 ///     separate trip to another screen).
 ///   • Set a different amount for this period alone.
+///   • Stretch the period that just ended a few more days, which is how the
+///     weekday the budget starts on is moved without throwing away what is
+///     still left in it.
 ///
 /// It is also reachable from Settings, for the period already under way. Opened
 /// that way it CAN be closed, because nobody was asked anything.
@@ -21,6 +24,10 @@ struct NewPeriodScreen: View {
 
     @State private var includeRollover = false
     @State private var editingAmount = false
+    @State private var stretching = false
+    /// The date the stretch picker is on. Anchored at midday so the day it
+    /// means is the same one in every timezone offset.
+    @State private var stretchSelection = Date()
     @State private var custom = BudgetEntryAmount()
     /// Leftover of the period before this one; nil until the read lands (or
     /// when there is no previous period to have left anything).
@@ -58,6 +65,7 @@ struct NewPeriodScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.bg.ignoresSafeArea())
         .sheet(isPresented: $editingAmount) { customAmountSheet }
+        .sheet(isPresented: $stretching) { stretchSheet }
         .task {
             guard !loaded else { return }
             loaded = true
@@ -185,6 +193,21 @@ struct NewPeriodScreen: View {
                     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
             .buttonStyle(.plain)
+            if let range = model.stretchEndDateRange {
+                Button {
+                    stretchSelection = instant(of: range.lowerBound)
+                    stretching = true
+                } label: {
+                    Text(l10n.t("newPeriod.stretch.action"))
+                        .appFont(14, .semibold)
+                        .foregroundStyle(Theme.inkSecondary)
+                        .underline()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
             // Only when nobody was asked anything: the automatic prompt has no
             // way out other than answering it.
             if manual {
@@ -194,6 +217,104 @@ struct NewPeriodScreen: View {
                     .padding(.top, 2)
             }
         }
+    }
+
+    // MARK: Stretching
+
+    /// A calendar date as a midday instant in the household timezone — midday
+    /// so the same day is meant whatever the device's offset is.
+    private func instant(of date: CalendarDate) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = model.householdTimeZone
+        let parts = date.raw.split(separator: "-")
+        return calendar.date(from: DateComponents(
+            year: Int(parts[0]), month: Int(parts[1]), day: Int(parts[2]), hour: 12
+        )) ?? Date()
+    }
+
+    /// The date the picker is on, read back in the household timezone — never
+    /// the device's, like every other ledger date in this app.
+    private var stretchPicked: CalendarDate {
+        PeriodLogic.todayInTimezone(stretchSelection, model.householdTimeZone)
+    }
+
+    /// What that date would do, or nil when it would do nothing valid. Same
+    /// arithmetic the web runs, from the same shared vectors.
+    private var stretchResult: PeriodLogic.PeriodExtension? {
+        guard let previous = model.stretchablePreviousPeriod,
+              let start = previous.start, let end = previous.end
+        else { return nil }
+        return PeriodLogic.stretchPeriodTo(
+            startDate: start, endDate: end,
+            toEndDate: stretchPicked, today: model.today
+        )
+    }
+
+    /// Keeping the previous period going a few more days.
+    ///
+    /// The line under the picker is the point of the whole screen: what moves
+    /// is the day the NEXT period opens, and it is one day past whatever is
+    /// selected — so it is stated rather than left to be worked out.
+    private var stretchSheet: some View {
+        VStack(spacing: 14) {
+            Text(l10n.t("newPeriod.stretch.title"))
+                .appFont(19, .bold)
+                .foregroundStyle(Theme.ink)
+                .padding(.top, 22)
+            if let previous = model.stretchablePreviousPeriod,
+               let start = previous.start, let end = previous.end {
+                Text(l10n.t(
+                    "newPeriod.stretch.body",
+                    MoneyFormatter.audCompact(previous.amountCents, locale: l10n.locale),
+                    l10n.periodRangeCompact(start: start, end: end, timeZone: model.householdTimeZone)
+                ))
+                .appFont(13)
+                .foregroundStyle(Theme.inkTertiary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+            }
+            if let range = model.stretchEndDateRange {
+                DatePicker(
+                    "",
+                    selection: $stretchSelection,
+                    in: instant(of: range.lowerBound)...instant(of: range.upperBound),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.graphical)
+                .environment(\.locale, l10n.locale)
+                .environment(\.timeZone, model.householdTimeZone)
+                .tint(Theme.accent)
+            }
+            Text(stretchResult.map { result in
+                l10n.t(
+                    "newPeriod.stretch.result",
+                    l10n.daysCount(result.addedDays),
+                    l10n.longDate(
+                        PeriodLogic.addDays(result.endDate, 1),
+                        timeZone: model.householdTimeZone
+                    )
+                )
+            } ?? " ")
+            .appFont(12.5, .semibold)
+            .foregroundStyle(Theme.inkTertiary)
+            .multilineTextAlignment(.center)
+            .frame(minHeight: 34)
+            PrimaryCTA(
+                title: l10n.t("newPeriod.stretch.confirm"),
+                height: 54,
+                enabled: stretchResult != nil
+            ) {
+                stretching = false
+                model.stretchPreviousPeriod(to: stretchPicked)
+            }
+            Button(l10n.t("common.cancel")) { stretching = false }
+                .appFont(14, .semibold)
+                .foregroundStyle(Theme.inkSecondary)
+                .padding(.bottom, 8)
+        }
+        .padding(.horizontal, 22)
+        .background(Theme.bg.ignoresSafeArea())
+        .presentationDetents([.large])
     }
 
     /// Typing a one-off amount for this period. The keypad is the same one the

@@ -153,6 +153,30 @@ acaba de pedir.
   cada lookup devolvía la clave, y `"days.one"` se ve como un texto. Un `nil`
   al menos es honesto; una clave se cuela hasta la pantalla.
 
+- **El emulador con un `projectId` distinto al de la app rompe todo lo que use
+  `get()` en las reglas — y lo rompe en silencio.** El plist de iOS lleva
+  `qcris-gastos-diarios` incluso apuntando a los emuladores; si la suite se
+  levanta con otro id, Firestore guarda los documentos bajo el que pide la app
+  pero las reglas resuelven su `get()` en el namespace del emulador, donde no
+  hay ningún household. `isMember()` no da `false`: da **error de evaluación**,
+  y en el log del emulador se lee `evaluation error at L491:26 for 'create'`.
+  Para la app eso se ve como un hogar sin períodos: "Quedan $0,00", ninguna
+  pantalla de período nuevo, ningún error. Levantar la suite con
+  `--project qcris-gastos-diarios` (el mismo id del plist) es parte del setup,
+  no un detalle.
+- **El log de runtime del simulador no captura los `print` de la app.** Medida:
+  el archivo que devuelve la herramienta de build tenía una línea, y ni
+  `--console-pty` mostró los reportes de listener. Así que "no apareció ningún
+  error" **no es evidencia de que no hubo error** — hay que ir al
+  `firestore-debug.log` del emulador, que sí dice qué regla falló y en qué
+  línea.
+- **Contra el emulador, un cliente JS puede leer lo que la app no.** Con las
+  mismas reglas, los mismos datos y el mismo uid, una sonda de veinte líneas con
+  `@firebase/rules-unit-testing` leyó el hogar y sus dos períodos, y la app
+  iOS no. Eso es lo que separa "las reglas están mal" de "el entorno está mal"
+  en un paso, y conviene escribirla antes de teorizar sobre la versión del SDK
+  — que fue exactamente el error que se cometió acá, dos veces.
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada

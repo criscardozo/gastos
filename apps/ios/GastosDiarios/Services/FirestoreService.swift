@@ -99,7 +99,13 @@ final class FirestoreService {
         db.collection("households").document(householdId)
             .collection("periodBudgets")
             .order(by: "startDate")
-            .addSnapshotListener(includeMetadataChanges: true) { snapshot, _ in
+            .addSnapshotListener(includeMetadataChanges: true) { snapshot, error in
+                // A denied or failed read here reads EXACTLY like a household
+                // with no periods: no current period, no budget, "Quedan
+                // $0,00", and the start-period screen never asking. Saying so
+                // is the difference between a bug you can chase and one you
+                // cannot — see docs/reglas.md.
+                if let error { Self.reportListen("periodBudgets", error) }
                 // `.estimate` for confirmedAt: by default a serverTimestamp the
                 // server has not acknowledged yet decodes as nil, so the
                 // start-period screen would come straight back after being
@@ -514,6 +520,50 @@ final class FirestoreService {
                 "source": "custom",
                 "updatedAt": FieldValue.serverTimestamp(),
             ])
+    }
+
+    /// Stretch a period out to `toEndDate` and drop the one it swallows.
+    ///
+    /// ONE batch, and that is the whole safety argument. Moving an end date past
+    /// the next period's start leaves two ranges claiming the same days, and an
+    /// expense belongs to whichever range holds its date — so for the moment
+    /// between the two writes, some days would belong to two budgets.
+    /// Committing them together means that moment does not exist.
+    ///
+    /// The amount does not move: stretching buys days, not money. The point is
+    /// spending what is already left over across a few more days so the NEXT
+    /// period can start on a different weekday — materialization always chains
+    /// from the last period's end date plus one.
+    ///
+    /// `dropStartDate` is the freshly materialized, unanswered period being
+    /// replaced. Nothing of value goes with it: it holds no expenses (those live
+    /// in `expenses`, bucketed by date) and no decision (that is what
+    /// `confirmedAt` records, and the rules refuse to delete a period carrying
+    /// one), and the cascade rebuilds the chain from the new end date.
+    ///
+    /// `toEndDate` must come from `PeriodLogic.stretchPeriodTo`: rules have no
+    /// date arithmetic and cannot check it, so the shared vectors are what keep
+    /// this and the web computing the same day.
+    func stretchPeriod(
+        householdId: String,
+        startDate: String,
+        toEndDate: String,
+        dropStartDate: String?
+    ) async throws {
+        let periods = db.collection("households").document(householdId)
+            .collection("periodBudgets")
+        let batch = db.batch()
+        batch.updateData(
+            [
+                "endDate": toEndDate,
+                "updatedAt": FieldValue.serverTimestamp(),
+            ],
+            forDocument: periods.document(startDate)
+        )
+        if let dropStartDate {
+            batch.deleteDocument(periods.document(dropStartDate))
+        }
+        try await batch.commit()
     }
 
     // MARK: - Expenses

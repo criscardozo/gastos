@@ -546,6 +546,74 @@ final class AppModel {
         }
     }
 
+    // MARK: - Stretching the period that just ended
+
+    /// The period the start-period screen would stretch, or nil when there is
+    /// nothing to offer.
+    ///
+    /// Four conditions, each load-bearing:
+    ///   - there IS a period before the current one — it is the thing being
+    ///     stretched, and it holds the money that was left over;
+    ///   - the current period is the last materialized, so nothing sits past
+    ///     the end date about to move;
+    ///   - nobody answered the current period yet, which is also what the
+    ///     rules check before allowing it to be deleted;
+    ///   - both dates parse.
+    var stretchablePreviousPeriod: PeriodBudget? {
+        guard let index = currentPeriodIndex, index > 0,
+              let current = currentPeriod,
+              !current.isConfirmed,
+              index == periods.count - 1
+        else { return nil }
+        let previous = periods[index - 1]
+        guard previous.start != nil, previous.end != nil else { return nil }
+        return previous
+    }
+
+    /// The window of end dates worth offering: from the day after the current
+    /// end (or today, when the period being asked about has been running a
+    /// while) to the cap the shared vectors declare.
+    var stretchEndDateRange: ClosedRange<CalendarDate>? {
+        guard let previous = stretchablePreviousPeriod,
+              let start = previous.start, let end = previous.end
+        else { return nil }
+        let earliest = today > end ? today : PeriodLogic.addDays(end, 1)
+        let latest = PeriodLogic.addDays(start, PeriodLogic.maxStretchedDays - 1)
+        guard earliest <= latest else { return nil }
+        return earliest...latest
+    }
+
+    /// Keep the previous period going until `toEndDate`, and drop the one that
+    /// was starting. The budget is untouched: this buys days, not money.
+    ///
+    /// The date is validated by the same arithmetic the web uses, so a value
+    /// the rules cannot check (they have no date arithmetic) is refused here
+    /// rather than written.
+    func stretchPreviousPeriod(to toEndDate: CalendarDate) {
+        guard let previous = stretchablePreviousPeriod,
+              let current = currentPeriod,
+              let householdId = attachedHouseholdId,
+              let start = previous.start, let end = previous.end,
+              let stretched = PeriodLogic.stretchPeriodTo(
+                  startDate: start, endDate: end,
+                  toEndDate: toEndDate, today: today
+              )
+        else { return }
+        // The question is answered — by being made irrelevant. The period it
+        // was about to ask about is the one going away.
+        UserDefaults.standard.set(previous.startDate, forKey: "seenPeriodStart.\(householdId)")
+        showNewPeriodSheet = false
+        newPeriodPromptIsManual = false
+        write {
+            try await self.firestore.stretchPeriod(
+                householdId: householdId,
+                startDate: previous.startDate,
+                toEndDate: stretched.endDate.raw,
+                dropStartDate: current.startDate
+            )
+        }
+    }
+
     /// Closing the manually-opened screen also counts as "seen".
     func markNewPeriodSeen() {
         guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }
