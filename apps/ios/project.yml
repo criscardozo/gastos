@@ -33,8 +33,14 @@ packages:
     # by rule.) Which means the bump is probably fine and the harness is what
     # breaks — probably, not verified, and free to leave alone.
     #
-    # Next attempt starts here: make DevSeed stop deleting, then re-run
-    # 12.18.0 with the seed. If the screens render, take the bump.
+    # Next attempt starts here, and Stock's setup says where. Their seed is a
+    # Node script that finishes BEFORE the app launches, so it never writes to
+    # a collection the running app is listening to — and they have no trouble
+    # on 12.18.0. Moving this seed out of the app (a script against the
+    # emulator's REST, run before launch) drops the in-app write burst and the
+    # delete-vs-immutable-createdAt workaround in one go, which is a better
+    # fix than teaching DevSeed to overwrite in place. Then re-run 12.18.0
+    # seeded that way; if the screens render, take the bump.
     from: 11.0.0
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS

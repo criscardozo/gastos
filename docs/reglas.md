@@ -191,7 +191,9 @@ acaba de pedir.
 - **Un listener que descarta su error miente dos veces**: devuelve lista vacía,
   que en pantalla es igual a "no hay nada", y si el callback nunca corre deja un
   spinner sin razón. Los tres de Servicios y Tarjetas lo hacían; ahora imprimen.
-  Es lo que permitió descartar que fuera un rechazo de reglas.
+  Es lo que permitió descartar que fuera un rechazo de reglas. La formulación de
+  Stock es la que generaliza las tres trampas de esta sesión: **un fallo que se
+  ve como un dato válido no sólo miente, además impide investigar.**
 - **Un major de un SDK se prueba CORRIENDO la app, no compilándola.** Los 91
   tests Swift compilan `Core/` directo, sin Firebase, así que un SDK nuevo puede
   pasarlos enteros sin ser ejercitado ni una vez; el build tampoco prueba
