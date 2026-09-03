@@ -181,6 +181,16 @@ acaba de pedir.
   completos) hay que **apartar los perfiles** de
   `~/Library/Developer/Xcode/UserData/Provisioning Profiles` y recompilar con
   `-allowProvisioningUpdates`.
+- **En zsh, un glob que no matchea aborta el comando entero.** No expande a
+  vacío como en bash: `rm -rf .../Stock-* build-sim build-device` con uno de los
+  tres inexistente no borra **ninguno**, y el siguiente comando de la línea
+  igual corre. Stock lo vivió limpiando cachés de Xcode: el `rm` nunca corrió,
+  el build falló con 65, y la app **arrancó igual** desde un `.app` de una
+  semana antes — a un paso de dar por verificado un binario anterior al cambio.
+  El remedio de siempre ("borrá DerivedData") tiene esa forma peligrosa. En
+  bash, `shopt -s nullglob`; en zsh, `(N)`; o mejor, no borrar nada:
+  `install-ios.sh` compila en un `mktemp -d` nuevo cada vez, así que no hay
+  caché que limpiar ni bundle viejo que leer.
 - **`xcodebuild ... | grep` devuelve el exit code de GREP, no del build.**
   Medido: un esquema inexistente sale con 65 por su cuenta y con **0** a través
   del pipe. Todo un día de builds "verificados" leyendo texto en vez del
