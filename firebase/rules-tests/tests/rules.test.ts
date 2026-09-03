@@ -934,9 +934,11 @@ describe("households/{id}/periodBudgets", () => {
     await assertFails(
       updateDoc(ref, { rolloverCents: "1000", updatedAt: serverTimestamp() }),
     );
-    // moving the boundaries or the type → never
+    // Pulling a boundary IN, or changing the type → never. Pushing the end
+    // date out is the one exception and has its own branch and tests below
+    // (stretching), because it buys days without touching the money.
     await assertFails(
-      updateDoc(ref, { endDate: "2026-07-20", updatedAt: serverTimestamp() }),
+      updateDoc(ref, { endDate: "2026-07-10", updatedAt: serverTimestamp() }),
     );
     await assertFails(
       updateDoc(ref, { period: "weekly", updatedAt: serverTimestamp() }),
@@ -999,10 +1001,9 @@ describe("households/{id}/periodBudgets", () => {
         updatedAt: serverTimestamp(),
       }),
     );
-    // Moving the end without changing the type, or vice versa.
-    await assertFails(
-      updateDoc(ref, { endDate: "2026-08-20", updatedAt: serverTimestamp() }),
-    );
+    // Becoming a fortnight without the end date moving is incoherent — the
+    // type and the range describe the same fact. (The end date moving on its
+    // own is a different, sanctioned move: see the stretch tests below.)
     await assertFails(
       updateDoc(ref, { period: "fortnightly", updatedAt: serverTimestamp() }),
     );
@@ -1100,7 +1101,39 @@ describe("households/{id}/periodBudgets", () => {
     );
   });
 
-  it("periods are an immutable record — no deletes", async () => {
+  it("a settled period is an immutable record — no deletes", async () => {
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
+        periodBudgetDoc({ confirmedAt: serverTimestamp() }),
+      );
+    });
+    await assertFails(
+      deleteDoc(
+        doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
+      ),
+    );
+  });
+
+  it("a period nobody answered yet can be dropped", async () => {
+    // What the stretch below needs: the freshly materialized period being
+    // swallowed goes away in the same batch. It carries no decision (that is
+    // what confirmedAt records) and holds no expenses — those live in
+    // `expenses`, bucketed by date, and get re-read against the new range.
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
+        periodBudgetDoc(),
+      );
+    });
+    await assertSucceeds(
+      deleteDoc(
+        doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
+      ),
+    );
+  });
+
+  it("an outsider cannot drop a period, answered or not", async () => {
     await seed(env, async (admin) => {
       await setDoc(
         doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
@@ -1109,7 +1142,116 @@ describe("households/{id}/periodBudgets", () => {
     });
     await assertFails(
       deleteDoc(
-        doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
+        doc(db(env, CAROL), "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
+      ),
+    );
+  });
+
+  // ----------------------------- stretching -----------------------------
+  //
+  // Buying days, not money: the end date moves out and the amount stays put.
+  // Cristian's case — a week that ended with $55,31 left, stretched through
+  // Sunday so the next one starts on a Monday.
+
+  it("a member can stretch a period's end date without touching the amount", async () => {
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-08-28");
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-08-28"),
+        periodBudgetDoc({
+          startDate: "2026-08-28",
+          endDate: "2026-09-03",
+          period: "weekly",
+          amountCents: 18386,
+        }),
+      );
+    });
+    await assertSucceeds(
+      updateDoc(ref, { endDate: "2026-09-06", updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it("a stretch only goes forward", async () => {
+    // Backwards would orphan every expense logged in the days given up: an
+    // expense belongs to whichever period's range holds its date, and those
+    // days would then belong to none.
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-08-28");
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-08-28"),
+        periodBudgetDoc({
+          startDate: "2026-08-28",
+          endDate: "2026-09-03",
+          period: "weekly",
+          amountCents: 18386,
+        }),
+      );
+    });
+    await assertFails(
+      updateDoc(ref, { endDate: "2026-09-01", updatedAt: serverTimestamp() }),
+    );
+    // Note what is NOT asserted: re-writing the same end date. That changes
+    // nothing but updatedAt, so it is a no-op the re-budget branch already
+    // permits — refusing it here would be testing the emulator's diff, not a
+    // rule. The client refuses it (stretchPeriodTo) because it is a mistake.
+
+  });
+
+  it("a stretch cannot smuggle in money or a different period type", async () => {
+    // The whole point of a separate branch: growing the budget is what the
+    // week-to-fortnight extend is for, and it has its own conditions.
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-08-28");
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-08-28"),
+        periodBudgetDoc({
+          startDate: "2026-08-28",
+          endDate: "2026-09-03",
+          period: "weekly",
+          amountCents: 18386,
+        }),
+      );
+    });
+    await assertFails(
+      updateDoc(ref, {
+        endDate: "2026-09-06",
+        amountCents: 25000,
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(ref, {
+        endDate: "2026-09-06",
+        period: "fortnightly",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    // startDate is the document id; a payload that disagrees with it is a bug.
+    await assertFails(
+      updateDoc(ref, {
+        endDate: "2026-09-06",
+        startDate: "2026-08-29",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("an outsider cannot stretch anything", async () => {
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-08-28"),
+        periodBudgetDoc({
+          startDate: "2026-08-28",
+          endDate: "2026-09-03",
+          period: "weekly",
+          amountCents: 18386,
+        }),
+      );
+    });
+    await assertFails(
+      updateDoc(
+        doc(db(env, CAROL), "households", HOUSEHOLD, "periodBudgets", "2026-08-28"),
+        { endDate: "2026-09-06", updatedAt: serverTimestamp() },
       ),
     );
   });

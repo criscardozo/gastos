@@ -597,6 +597,166 @@ test("starting a period asks, and carries the leftover", async ({
 });
 
 
+/**
+ * Stretching the period that just ended, which is how the week's START day is
+ * moved without throwing away what is still in it.
+ *
+ * Cristian's real case: a week ended with money left, and he wanted those days
+ * to run through Sunday so the next period would start on a Monday. What has to
+ * hold end to end is that the stretch buys DAYS and not money — the budget is
+ * untouched, the expenses already logged re-bucket into the longer range, and
+ * nothing new is materialized until the stretched period actually ends.
+ */
+test("a period can be stretched so the next one starts later", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-stretch-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Stretch Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const mine = ((await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[]).find((d) => d.fields.name.stringValue === "Hogar de Stretch");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+
+  // Same rewrite as the test above: a period ended yesterday having spent
+  // 700,00 of its 900,00, and today opened a fresh one nobody has answered.
+  const previousStart = sydneyDate(-14);
+  const yesterday = sydneyDate(-1);
+  const today = sydneyDate(0);
+  const stretchedEnd = sydneyDate(2);
+  const clear = async () => {
+    const res = await request.get(
+      `${REST}/households/${householdId}/periodBudgets`,
+      { headers: admin },
+    );
+    for (const doc of (((await res.json()).documents ?? []) as { name: string }[])) {
+      const id = doc.name.split("/").pop() as string;
+      if (id !== previousStart && id !== today) {
+        await request.delete(
+          `${REST}/households/${householdId}/periodBudgets/${id}`,
+          { headers: admin },
+        );
+      }
+    }
+  };
+  const write = async (id: string, fields: Record<string, unknown>) => {
+    const res = await request.patch(
+      `${REST}/households/${householdId}/periodBudgets/${id}`,
+      { headers: admin, data: { fields } },
+    );
+    expect(res.ok()).toBe(true);
+  };
+  await clear();
+  // CONFIRMED, because that is the real shape: the period being stretched is
+  // one somebody answered a fortnight ago. It also proves the rules let a
+  // settled period's end date move — what they refuse is deleting it.
+  await write(previousStart, {
+    startDate: { stringValue: previousStart },
+    endDate: { stringValue: yesterday },
+    period: { stringValue: "fortnightly" },
+    amountCents: { integerValue: "90000" },
+    source: { stringValue: "custom" },
+    confirmedAt: { timestampValue: new Date().toISOString() },
+    createdAt: { timestampValue: new Date().toISOString() },
+    updatedAt: { timestampValue: new Date().toISOString() },
+  });
+  await write(today, {
+    startDate: { stringValue: today },
+    endDate: { stringValue: sydneyDate(13) },
+    period: { stringValue: "fortnightly" },
+    amountCents: { integerValue: "90000" },
+    source: { stringValue: "default" },
+    createdAt: { timestampValue: new Date().toISOString() },
+    updatedAt: { timestampValue: new Date().toISOString() },
+  });
+  const expense = await request.post(
+    `${REST}/households/${householdId}/expenses`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          amountCents: { integerValue: "70000" },
+          categoryId: { stringValue: "groceries" },
+          note: { stringValue: "Antes de estirar" },
+          date: { stringValue: yesterday },
+          createdBy: { stringValue: "seed" },
+          verified: { booleanValue: false },
+          createdAt: { timestampValue: new Date().toISOString() },
+          updatedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+  expect(expense.ok()).toBe(true);
+  await clear();
+
+  await page.evaluate(
+    ([id, start]) => localStorage.setItem(`gd:newPeriodAck:${id}`, start),
+    [householdId, previousStart],
+  );
+  await page.reload();
+  await expect(page.getByText("Repetir presupuesto · $900")).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // The third answer, and what it says out loud: the money it continues on.
+  await page.getByRole("button", { name: "Estirar el presupuesto anterior" }).click();
+  await expect(page.getByText(/Seguís con \$900/)).toBeVisible();
+
+  // Nothing is offered before the date is a real one: the box opens on the
+  // earliest date that is a stretch at all.
+  await expect(page.getByRole("button", { name: /Estirar el período/ })).toBeEnabled();
+  await page.getByLabel("Hasta cuándo").fill(stretchedEnd);
+  // The consequence is stated as the day the NEXT period starts, because that
+  // is the whole point of doing this.
+  await expect(page.getByText(/días más · el próximo período arranca el/)).toBeVisible();
+
+  await page.getByRole("button", { name: /Estirar el período/ }).click();
+
+  // Back on the dashboard, still inside the stretched period — and the money
+  // did not move: 900 budgeted, 700 spent, 200 left.
+  await expect(page.getByText("Te queda")).toBeVisible();
+  await expect(page.getByText("$200,00").first()).toBeVisible();
+
+  // One period, ending on the chosen day. The one that was starting today is
+  // gone, and NOTHING new was materialized: the chain resumes the day after
+  // the stretched period ends, which has not happened yet.
+  await expect
+    .poll(async () => {
+      const res = await request.get(
+        `${REST}/households/${householdId}/periodBudgets`,
+        { headers: admin },
+      );
+      const documents = ((await res.json()).documents ?? []) as {
+        name: string;
+        fields: {
+          endDate: { stringValue: string };
+          amountCents: { integerValue: string };
+        };
+      }[];
+      return documents
+        .map(
+          (d) =>
+            `${d.name.split("/").pop()}..${d.fields.endDate.stringValue}` +
+            `@${d.fields.amountCents.integerValue}`,
+        )
+        .sort()
+        .join(" | ");
+    })
+    .toBe(`${previousStart}..${stretchedEnd}@90000`);
+});
+
+
 test("an expense saved offline does not freeze the form", async ({
   page,
   context,

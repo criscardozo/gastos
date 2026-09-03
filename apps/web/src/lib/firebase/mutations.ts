@@ -300,6 +300,44 @@ export async function extendPeriodToFortnight(
 }
 
 /**
+ * Stretch the last period out to `toEndDate` and drop the one it swallows.
+ *
+ * ONE batch, and that is the whole safety argument. Moving an end date past the
+ * next period's start leaves two ranges claiming the same days, and an expense
+ * belongs to whichever range holds its date — so for the moment between the two
+ * writes, some days would belong to two budgets. Committing them together means
+ * that moment does not exist.
+ *
+ * The amount does not move: stretching buys days, not money. The point is to
+ * spend what is already left over across a few more days so the NEXT period can
+ * start on a different weekday — materialization always chains from the last
+ * period's end date plus one.
+ *
+ * `dropStartDate` is the freshly materialized, unanswered period being replaced.
+ * Nothing of value goes with it: it holds no expenses (those live in `expenses`,
+ * bucketed by date) and no decision (that is what `confirmedAt` records), and
+ * the cascade rebuilds the chain from the new end date.
+ */
+export async function stretchPeriod(
+  db: Firestore,
+  householdId: string,
+  startDate: string,
+  toEndDate: string,
+  dropStartDate: string | null,
+): Promise<void> {
+  const periods = collection(db, "households", householdId, "periodBudgets");
+  const batch = writeBatch(db);
+  batch.update(doc(periods, startDate), {
+    endDate: toEndDate,
+    updatedAt: serverTimestamp(),
+  });
+  if (dropStartDate !== null) {
+    batch.delete(doc(periods, dropStartDate));
+  }
+  await batch.commit();
+}
+
+/**
  * Ask the Gmail ingestion to run now.
  *
  * Two steps, and the ORDER is the security model. The stamp goes in first: only

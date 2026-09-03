@@ -79,8 +79,10 @@ its wording or a new card appears.
 
 One doc per materialized period. **Doc ID = `startDate`** (`YYYY-MM-DD`) → idempotent
 materialization (two clients racing write identical content). Periods chain: each new period
-starts the day after the previous `endDate`. Past periods are an immutable historical record
-of what the budget was (amount + weekly/fortnightly).
+starts the day after the previous `endDate`. A period that was answered
+(`confirmedAt`) is an immutable historical record of what the budget was (amount +
+weekly/fortnightly); one nobody has answered yet can be deleted, which stretching below
+needs.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -112,7 +114,7 @@ Rules of the chain:
   period already settled, every period, forever. Clients ask when the current
   period has no `confirmedAt`; the per-device key survives only to suppress the
   sheet for a period that started before that device ever saw the household.
-- **Extending the week under way** is the ONE exception to that boundary rule.
+- **Extending the week under way** is the FIRST of two exceptions to that boundary rule.
   Mid-period it can become clear that this week has to cover a fortnight, so
   `period` goes `weekly → fortnightly`, `endDate` moves out by 7 days to exactly
   what `startDate + 13` would have been, `amountCents` grows by whatever is being
@@ -140,6 +142,34 @@ Rules of the chain:
   date arithmetic — so they only enforce the shape: weekly → fortnightly, end
   date strictly later, start date and carried-in figure untouched, amount never
   shrinking.
+- **Stretching a period** is the second, and it exists to move which weekday the
+  budget starts on. `endDate` moves out to a chosen date and NOTHING else
+  changes — not `amountCents`, not `period`, not `rolloverCents`. It buys DAYS,
+  not money: the case it was built for is a week that ended with something left
+  over, stretched through Sunday so it gets spent and the next period opens on
+  the Monday. A period whose budget grew with its length would be the extend
+  above, which is a different decision.
+
+  Because periods chain from `previous.endDate + 1`, moving that one date is the
+  whole mechanism — the next period lands on the new weekday with no anchor
+  change and nothing to migrate. As with extending, **no expense is touched**:
+  the days now inside the longer range simply belong to it.
+
+  The period that was about to start is **deleted in the same batch**, and that
+  atomicity is the safety argument: for the instant between the two writes, two
+  ranges would claim the same days. It is safe to delete because it carries no
+  decision (nobody answered it — the rules refuse to delete a period that has
+  `confirmedAt`) and holds no expenses, which live in `expenses` bucketed by
+  date. Materialization then rebuilds the chain from the new `endDate + 1`,
+  which is why nothing new appears until the stretched period actually ends.
+
+  Forward only, and the reason is the same one that makes shrinking impossible
+  everywhere else: days given up would belong to no period at all, so every
+  expense logged in them would vanish from every total. Bounded to 31 days from
+  `startDate`, past which the date is a typo rather than a stretch.
+
+  The arithmetic is `stretchPeriodTo`; the rules enforce only the shape (end
+  date strictly later, everything else identical), exactly as with extending.
 - Changing `defaultBudget` affects only future, not-yet-materialized periods.
 
 ### `households/{householdId}/expenses/{expenseId}`

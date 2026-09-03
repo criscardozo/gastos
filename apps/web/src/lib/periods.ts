@@ -190,6 +190,48 @@ export function extendToFortnight(period: {
   return { endDate, addedDays: daysBetween(period.endDate, endDate) };
 }
 
+/** The most a period may be stretched to, counted from its own start. */
+export const MAX_STRETCHED_DAYS = 31;
+
+/**
+ * Move the last period's end date out to `toEndDate`, keeping its budget.
+ *
+ * What it is for: changing which weekday the budget starts on, without losing
+ * what is left of the week under way. Stretching the week that just ended
+ * through Sunday means its leftover is still spendable on Friday and Saturday,
+ * and the next period starts on Monday — because materialization always chains
+ * from the last period's end date plus one.
+ *
+ * The AMOUNT does not move. Stretching buys days, not money: the point is to
+ * spend what is already there over a slightly longer stretch. A period whose
+ * budget grew with its length would be a different feature.
+ *
+ * Returns null when the request makes no sense, and each refusal is a rule
+ * worth stating:
+ *   - not later than the current end — that is a shrink, and shrinking would
+ *     orphan any expense already logged in the days it gave up;
+ *   - earlier than today — a period cannot end before the day you are asking
+ *     the question on;
+ *   - longer than MAX_STRETCHED_DAYS from its start — at some point this is
+ *     not a stretched week, it is a typo in a date field.
+ */
+export function stretchPeriodTo(
+  period: { startDate: string; endDate: string },
+  toEndDate: string,
+  today: string,
+): PeriodExtension | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(toEndDate)) return null;
+  if (toEndDate <= period.endDate) return null;
+  if (toEndDate < today) return null;
+  if (daysBetween(period.startDate, toEndDate) + 1 > MAX_STRETCHED_DAYS) {
+    return null;
+  }
+  return {
+    endDate: toEndDate,
+    addedDays: daysBetween(period.endDate, toEndDate),
+  };
+}
+
 /**
  * Budget progress state. `over` when spent exceeds the budget, `warning`
  * from 85% of the budget (inclusive), `comfortable` otherwise.

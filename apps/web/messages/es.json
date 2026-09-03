@@ -336,6 +336,13 @@
     "includeLeftover": "Incluir lo que sobró",
     "includeDeficit": "Descontar lo que se pasaron",
     "breakdown": "{base} de siempre + {carried} del período anterior",
+    "stretchAction": "Estirar el presupuesto anterior",
+    "stretchTitle": "Estirar el presupuesto",
+    "stretchBody": "Seguís con {amount} de {range} unos días más, y el período nuevo arranca cuando ese termine.",
+    "stretchUntil": "Hasta cuándo",
+    "stretchResult": "{days, plural, one {# día más} other {# días más}} · el próximo período arranca el {date}",
+    "stretchHint": "Elegí una fecha posterior al {date}.",
+    "stretchConfirm": "Estirar el período",
     "later": "Ahora no",
     "back": "Volver"
   },

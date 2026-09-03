@@ -12,6 +12,7 @@ import {
   monthsBackRange,
   periodEndDate,
   recentMonths,
+  stretchPeriodTo,
   todayInTimezone,
   type PeriodType,
 } from "./periods";
@@ -251,5 +252,46 @@ describe("calendar months", () => {
     });
     // One month back is that month itself, not an empty range.
     expect(monthsBackRange("2026-08-30", 1)).toEqual(monthRange("2026-08-30"));
+  });
+});
+
+describe("stretchPeriodTo", () => {
+  // Cristian's real case: the week 28 Aug – 3 Sep ended with $55,31 left, and
+  // he wanted those days to run through Sunday the 6th so the next week starts
+  // on Monday the 7th.
+  const week = { startDate: "2026-08-28", endDate: "2026-09-03" };
+
+  it("moves the end date out and says by how much", () => {
+    expect(stretchPeriodTo(week, "2026-09-06", "2026-09-04")).toEqual({
+      endDate: "2026-09-06",
+      addedDays: 3,
+    });
+  });
+
+  it("refuses to shrink", () => {
+    // A shorter period would orphan any expense already logged in the days it
+    // gave up — they would fall outside every materialized period.
+    expect(stretchPeriodTo(week, "2026-09-01", "2026-09-04")).toBeNull();
+    expect(stretchPeriodTo(week, "2026-09-03", "2026-09-04")).toBeNull();
+  });
+
+  it("refuses to end before today", () => {
+    // Answering "stretch it to last Tuesday" on a Friday is not a stretch.
+    expect(stretchPeriodTo(week, "2026-09-04", "2026-09-10")).toBeNull();
+  });
+
+  it("refuses a length that is a typo rather than a week", () => {
+    // 31 days from the start is the cap: past that this is a mistyped year.
+    expect(stretchPeriodTo(week, "2026-09-27", "2026-09-04")).toEqual({
+      endDate: "2026-09-27",
+      addedDays: 24,
+    });
+    expect(stretchPeriodTo(week, "2026-09-28", "2026-09-04")).toBeNull();
+    expect(stretchPeriodTo(week, "2027-09-06", "2026-09-04")).toBeNull();
+  });
+
+  it("refuses anything that is not a calendar date", () => {
+    expect(stretchPeriodTo(week, "", "2026-09-04")).toBeNull();
+    expect(stretchPeriodTo(week, "2026-9-6", "2026-09-04")).toBeNull();
   });
 });

@@ -336,6 +336,13 @@
     "includeLeftover": "Include what was left over",
     "includeDeficit": "Carry what was overspent",
     "breakdown": "{base} usual + {carried} carried over",
+    "stretchAction": "Stretch the previous budget",
+    "stretchTitle": "Stretch the budget",
+    "stretchBody": "You keep going on {amount} from {range} for a few more days, and the new period starts when that one ends.",
+    "stretchUntil": "Until when",
+    "stretchResult": "{days, plural, one {# more day} other {# more days}} · the next period starts on {date}",
+    "stretchHint": "Pick a date after {date}.",
+    "stretchConfirm": "Stretch the period",
     "later": "Not now",
     "back": "Back"
   },

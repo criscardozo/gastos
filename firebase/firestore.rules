@@ -81,10 +81,14 @@ rules_version = '2';
 //     from the previous period's leftover; display only
 //   - createdAt: timestamp (required, server time, immutable)
 //   - updatedAt: timestamp (required, server time)
-//   Deletes are DENIED: past periods are an immutable historical record.
-//   startDate never moves. endDate and period move in exactly ONE case: the
-//   week under way being stretched into a fortnight (weekly → fortnightly,
-//   end date strictly later, amount only growing). See the update rule.
+//   Deletes are denied for any period that carries `confirmedAt`: a settled
+//   period is an immutable historical record. An UNCONFIRMED one may be
+//   dropped, which the stretch below needs.
+//   startDate never moves. endDate moves in exactly TWO cases, both forward:
+//   the week under way stretched into a fortnight (weekly → fortnightly, amount
+//   only growing), and a plain stretch to a chosen date that buys days without
+//   touching the amount — used to move which weekday the budget starts on.
+//   See the update rule.
 //
 // Subcollection: households/{id}/services
 // Document ID: random
@@ -528,10 +532,42 @@ service cloud.firestore {
               && request.resource.data.endDate > resource.data.endDate
               && request.resource.data.amountCents >= resource.data.amountCents
               && request.resource.data.source == 'custom')
+            // (d) stretch: buying DAYS, not money. Moves the end date out and
+            //     touches nothing else — not the amount, not the period type,
+            //     not the carried-in figure. That is what makes it different
+            //     from (b), which converts a week into a fortnight and lets the
+            //     budget grow with it.
+            //
+            //     Only forward, for the same reason (b) is: shrinking would
+            //     orphan every expense already logged in the days given up,
+            //     since an expense belongs to whichever period's range holds
+            //     its date and would then belong to none.
+            //
+            //     What the rules cannot check, exactly as for (b): that the new
+            //     end date does not run into the period that follows. Rules
+            //     have no date arithmetic and cannot query the collection. The
+            //     client stretches only the LAST period and deletes the one it
+            //     would swallow, in the same batch — see stretchPeriod in
+            //     mutations.ts and the `stretchPeriodTo` vectors.
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['endDate', 'updatedAt'])
+              && request.resource.data.startDate == resource.data.startDate
+              && request.resource.data.period == resource.data.period
+              && request.resource.data.amountCents == resource.data.amountCents
+              && request.resource.data.endDate > resource.data.endDate)
           );
 
-        // Past periods are an immutable historical record.
-        allow delete: if false;
+        // A period nobody has accepted yet may be dropped; a settled one is an
+        // immutable historical record.
+        //
+        // The one caller is the stretch above: moving the last period's end
+        // date past the start of the period that follows would leave two
+        // ranges claiming the same days, so that freshly materialized and
+        // unanswered period goes in the same batch. Nothing of value is lost —
+        // it holds no expenses (those live in `expenses`, bucketed by date) and
+        // no decision (that is what confirmedAt records), and materialization
+        // recreates the chain from the stretched end date.
+        allow delete: if isMember(householdId)
+          && !('confirmedAt' in resource.data);
       }
 
       // ------------------------ services ------------------------
