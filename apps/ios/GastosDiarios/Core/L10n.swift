@@ -92,6 +92,18 @@ struct L10n {
             .string(from: instant(of: date, in: timeZone))
     }
 
+    /// "Agosto 2026" — a whole month, named, always with its year.
+    ///
+    /// Capitalised: Spanish writes months lowercase and DateFormatter obeys,
+    /// but this is a HEADING rather than a word inside a sentence. The year is
+    /// always there because this labels a window somebody navigates back
+    /// through, where "agosto" alone stops identifying anything.
+    func monthLabel(_ date: CalendarDate, timeZone: TimeZone) -> String {
+        let text = dateFormatter("MMMM yyyy", timeZone: timeZone)
+            .string(from: instant(of: date, in: timeZone))
+        return text.prefix(1).uppercased() + text.dropFirst()
+    }
+
     /// "9 jul" — bare day + short month.
     func dayMonth(_ date: CalendarDate, timeZone: TimeZone) -> String {
         dateFormatter("d MMM", timeZone: timeZone)

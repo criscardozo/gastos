@@ -130,6 +130,19 @@ enum PeriodLogic {
         addDays(startDate, period.lengthInDays - 1)
     }
 
+    /// The calendar month `date` falls in, as an inclusive range.
+    ///
+    /// Calendar months are NOT budget periods — a period is a materialized doc
+    /// with its own budget, a month is just a window to look through. Servicios
+    /// asks "what did this month charge", which is a month, not a fortnight.
+    static func monthRange(containing date: CalendarDate) -> (start: CalendarDate, end: CalendarDate) {
+        let year = Int(date.raw.prefix(4))!
+        let month = Int(date.raw.dropFirst(5).prefix(2))!
+        let first = format(year: year, month: month, day: 1)
+        let length = utcCalendar.range(of: .day, in: .month, for: instant(of: first))!.count
+        return (first, format(year: year, month: month, day: length))
+    }
+
     /// Whether `date` falls inside the inclusive `[startDate, endDate]` range.
     static func containsDate(startDate: CalendarDate, endDate: CalendarDate, date: CalendarDate) -> Bool {
         startDate <= date && date <= endDate

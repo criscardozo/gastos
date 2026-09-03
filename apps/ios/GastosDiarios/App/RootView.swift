@@ -60,7 +60,14 @@ extension AppModel.AppearanceMode {
     }
 }
 
-/// Nuevo gasto / Resumen / Historial / Ajustes.
+/// Nuevo gasto / Resumen / Historial / Más.
+///
+/// Four tabs, and the fourth is a menu. The three that carry the bar are the
+/// ones used every day; Servicios, Tarjetas and Ajustes are consulted about
+/// once a month and would only shrink the targets that matter if they sat
+/// beside them. A hand-built menu rather than SwiftUI's automatic "More" —
+/// that one appears past five tabs, is a plain system table, and cannot be
+/// dressed in this app's own design.
 struct MainTabView: View {
     @Environment(AppModel.self) private var model
 
@@ -83,11 +90,11 @@ struct MainTabView: View {
                     Label(l10n.t("tab.history"), systemImage: "list.bullet.rectangle.fill")
                 }
                 .tag(AppModel.MainTab.history)
-            SettingsView()
+            MoreView()
                 .tabItem {
-                    Label(l10n.t("tab.settings"), systemImage: "gearshape.fill")
+                    Label(l10n.t("tab.more"), systemImage: "ellipsis.circle.fill")
                 }
-                .tag(AppModel.MainTab.settings)
+                .tag(AppModel.MainTab.more)
         }
     }
 }

@@ -46,4 +46,13 @@ enum MoneyFormatter {
     static func usd(_ cents: Int, locale: Locale) -> String {
         formatter(locale: locale, symbol: "US$ ").string(from: decimal(fromCents: cents)) ?? "US$ 0"
     }
+
+    /// "$ 241.402,75" — Argentine pesos, always in es-AR whatever the app's
+    /// language. A peso figure written with English separators reads as a
+    /// different number to the person comparing it against a BBVA statement,
+    /// and this figure exists only to be compared against one.
+    static func ars(_ cents: Int, locale _: Locale) -> String {
+        formatter(locale: Locale(identifier: "es_AR"), symbol: "$ ")
+            .string(from: decimal(fromCents: cents)) ?? "$ 0"
+    }
 }

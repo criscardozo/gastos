@@ -64,6 +64,17 @@ struct HouseholdCard: Codable, Equatable {
     var brand: String?
 }
 
+/// `household.cardFees` — the ARS side of a card statement.
+///
+/// `commissionArsCents` is the bank's fixed monthly account fee, typed once
+/// because it does not change; `usdArsRate` is the fallback used when the
+/// exchange-rate service cannot be reached. Both optional, so every household
+/// that predates them keeps decoding.
+struct CardFees: Codable, Equatable {
+    var commissionArsCents: Int?
+    var usdArsRate: Double?
+}
+
 /// Where a bank charge belongs, given the household's cards.
 enum ChargeRouting {
     case debit
@@ -86,6 +97,9 @@ struct Household: Codable, Identifiable {
     /// identifier the bank's notification emails ever give. Absent until
     /// configured (web: Ajustes → Tarjetas), which reads as "identify nothing".
     var cards: [String: HouseholdCard]?
+    /// The ARS side of a card statement: the bank's fixed monthly fee and the
+    /// fallback rate. Absent until configured on the web's Tarjetas screen.
+    var cardFees: CardFees?
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
 
@@ -224,6 +238,85 @@ struct BankCharge: Codable, Identifiable, Equatable {
     /// The Gmail message id: the document id, and what makes imports
     /// idempotent. Non-optional for the matcher's sake.
     var id: String { docId ?? "" }
+}
+
+/// `households/{id}/services/{serviceId}` — a recurring bill.
+///
+/// A register of RULES: what we pay, how much we expect it to be, and when it
+/// falls due. The MONEY is not here — a charged service is an ordinary expense
+/// in the `services` category whose note is this name, and the link between the
+/// two is that name and is not stored. See ServiceLogic.
+struct ServiceDoc: Codable, Identifiable, Equatable, DueRule {
+    @DocumentID var docId: String?
+    var name: String
+    /// What it costs in AUD. Absent when the provider bills only in USD.
+    var amountAudCents: Int?
+    /// What it costs in USD. The one place a USD figure is typed by hand rather
+    /// than coming from the bank — still not a conversion of the other.
+    var amountUsdCents: Int?
+    var interval: ServiceInterval
+    /// 1...31, the day of the month it is due.
+    var dueDay: Int
+    /// 1...12. Required unless monthly, absent when monthly (every month is a
+    /// due month, so there is nothing to anchor).
+    var anchorMonth: Int?
+    var paidWith: PaidWith
+    var createdBy: String
+    @ServerTimestamp var createdAt: Date?
+    @ServerTimestamp var updatedAt: Date?
+
+    var id: String { docId ?? "" }
+}
+
+/// `households/{id}/cardStatements/{closingDate}` — the closing date IS the
+/// document ID, which makes opening one idempotent and the chain obvious.
+struct CardStatement: Codable, Identifiable, Equatable {
+    @DocumentID var docId: String?
+    var startDate: String
+    var closingDate: String
+    var dueDate: String
+    @ServerTimestamp var createdAt: Date?
+    @ServerTimestamp var updatedAt: Date?
+
+    var id: String { docId ?? closingDate }
+
+    /// The window, as the pure logic wants it.
+    var range: StatementRange? {
+        guard let start = CalendarDate(startDate),
+              let closing = CalendarDate(closingDate),
+              let due = CalendarDate(dueDate)
+        else { return nil }
+        return StatementRange(startDate: start, closingDate: closing, dueDate: due)
+    }
+}
+
+/// `households/{id}/cardCharges/{chargeId}` — one purchase on a credit card,
+/// ALWAYS in USD (the card's own billing currency).
+///
+/// Carries NO statement id: it belongs to the statement whose window contains
+/// its `date`, the same bucketing rule expenses use for periods.
+struct CardCharge: Codable, Identifiable, Equatable {
+    @DocumentID var docId: String?
+    var date: String
+    var detail: String
+    var card: CardBrand
+    /// Integer cents of USD — what the user typed, not the bank's number.
+    var usdCents: Int
+    /// A digital service from abroad, which the bank taxes with IIBB and
+    /// IVA RG 4240 on top of RG 5617. Absent ⇒ TRUE: nearly everything on this
+    /// card is one, and every charge predates the field.
+    var digital: Bool?
+    /// Somebody checked this line against the paper statement. Absent ⇒ FALSE —
+    /// the opposite default to `digital`, and deliberately: it describes
+    /// something a person did, and nobody did it.
+    var verified: Bool?
+    var createdBy: String
+    @ServerTimestamp var createdAt: Date?
+    @ServerTimestamp var updatedAt: Date?
+
+    var id: String { docId ?? "" }
+    var isDigital: Bool { digital ?? true }
+    var isVerified: Bool { verified == true }
 }
 
 /// `invites/{code}` — the code IS the document ID.

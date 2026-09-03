@@ -235,3 +235,56 @@ struct PeriodNavigator: View {
         .overlay(Capsule().strokeBorder(Theme.borderPill, lineWidth: 1))
     }
 }
+
+/// A USD figure over its AUD one.
+///
+/// USD leads on the two screens that came from the web's card side, because
+/// that is the currency the card bills in. It is NOT a conversion — the app
+/// converts nothing in the ledger — so when there is no USD figure at all this
+/// shows an em dash rather than "US$ 0,00", which would read as "costs nothing".
+struct UsdOverAud: View {
+    let usdCents: Int
+    let audCents: Int
+    /// False when there is no USD figure for this thing at all.
+    let hasUsd: Bool
+    let locale: Locale
+    /// Headline size, for the two figures a screen leads with.
+    var big: Bool = false
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            HStack(spacing: 5) {
+                Text(hasUsd ? MoneyFormatter.usd(usdCents, locale: locale) : "—")
+                    .appFont(big ? 21 : 14, .bold)
+                    .foregroundStyle(Theme.ink)
+                CurrencyTag(code: "USD")
+            }
+            HStack(spacing: 5) {
+                Text(MoneyFormatter.aud(audCents, locale: locale))
+                    .appFont(big ? 12.5 : 12, .semibold)
+                    .foregroundStyle(Theme.inkTertiary)
+                CurrencyTag(code: "AUD")
+            }
+        }
+    }
+}
+
+/// "🇦🇺 AUD" — the flag as the eye-catching part, the code as the part that is
+/// still readable when a platform has no flag glyphs.
+struct CurrencyTag: View {
+    let code: String
+
+    private static let flags = ["AUD": "🇦🇺", "USD": "🇺🇸", "ARS": "🇦🇷"]
+
+    var body: some View {
+        HStack(spacing: 2) {
+            if let flag = Self.flags[code] {
+                Text(flag).font(.system(size: 10))
+            }
+            Text(code)
+                .appFont(9.5, .bold)
+                .kerning(9.5 * 0.04)
+                .foregroundStyle(Theme.inkTertiary)
+        }
+    }
+}

@@ -657,4 +657,185 @@ final class FirestoreService {
         }
         try await db.collection("households").document(householdId).updateData(data)
     }
+
+    // MARK: - Services
+
+    /// The whole register. Unbounded on purpose and safe to be: a service is a
+    /// RULE, one per bill the household pays, and there are a dozen of them.
+    /// The money they cost lives in `expenses`, which is bounded like always.
+    func listenServices(
+        householdId: String,
+        onChange: @escaping ([ServiceDoc]) -> Void
+    ) -> ListenerRegistration {
+        db.collection("households").document(householdId)
+            .collection("services")
+            .limit(to: 100)
+            .addSnapshotListener { snapshot, _ in
+                onChange(snapshot?.documents.compactMap { try? $0.data(as: ServiceDoc.self) } ?? [])
+            }
+    }
+
+    /// Move a service onto what was actually charged.
+    ///
+    /// Only the AUD amount: the expense that disagreed with it is in AUD, and
+    /// the USD figure on the service came from the provider rather than from
+    /// this month's bill.
+    func updateServiceAmount(
+        householdId: String,
+        serviceId: String,
+        amountAudCents: Int
+    ) async throws {
+        try await db.collection("households").document(householdId)
+            .collection("services").document(serviceId)
+            .updateData([
+                "amountAudCents": amountAudCents,
+                "updatedAt": FieldValue.serverTimestamp(),
+            ])
+    }
+
+    // MARK: - Card statements
+
+    /// Newest first, so index 0 is the open one.
+    func listenCardStatements(
+        householdId: String,
+        onChange: @escaping ([CardStatement]) -> Void
+    ) -> ListenerRegistration {
+        db.collection("households").document(householdId)
+            .collection("cardStatements")
+            .order(by: "closingDate", descending: true)
+            .limit(to: 24)
+            .addSnapshotListener { snapshot, _ in
+                onChange(snapshot?.documents.compactMap { try? $0.data(as: CardStatement.self) } ?? [])
+            }
+    }
+
+    /// Charges in a statement's window. Bounded by date like every listener
+    /// here — a charge carries no statement id, the window IS the query.
+    func listenCardCharges(
+        householdId: String,
+        startDate: String,
+        closingDate: String,
+        onChange: @escaping ([CardCharge]) -> Void
+    ) -> ListenerRegistration {
+        db.collection("households").document(householdId)
+            .collection("cardCharges")
+            .whereField("date", isGreaterThanOrEqualTo: startDate)
+            .whereField("date", isLessThanOrEqualTo: closingDate)
+            .addSnapshotListener { snapshot, _ in
+                onChange(snapshot?.documents.compactMap { try? $0.data(as: CardCharge.self) } ?? [])
+            }
+    }
+
+    /// Open a statement. The closing date IS the document id, which makes this
+    /// idempotent: opening the same one twice writes the same document.
+    func openCardStatement(householdId: String, range: StatementRange) {
+        db.collection("households").document(householdId)
+            .collection("cardStatements").document(range.closingDate.raw)
+            .setData([
+                "startDate": range.startDate.raw,
+                "closingDate": range.closingDate.raw,
+                "dueDate": range.dueDate.raw,
+                "createdAt": FieldValue.serverTimestamp(),
+                "updatedAt": FieldValue.serverTimestamp(),
+            ], completion: reportingCompletion())
+    }
+
+    func saveCardCharge(
+        householdId: String,
+        uid: String,
+        chargeId: String?,
+        date: String,
+        detail: String,
+        card: CardBrand,
+        usdCents: Int,
+        digital: Bool
+    ) {
+        let collection = db.collection("households").document(householdId).collection("cardCharges")
+        var data: [String: Any] = [
+            "date": date,
+            "detail": detail,
+            "card": card.rawValue,
+            "usdCents": usdCents,
+            "digital": digital,
+            "updatedAt": FieldValue.serverTimestamp(),
+        ]
+        if let chargeId {
+            collection.document(chargeId).updateData(data, completion: reportingCompletion())
+        } else {
+            data["createdBy"] = uid
+            data["verified"] = false
+            data["createdAt"] = FieldValue.serverTimestamp()
+            collection.document().setData(data, completion: reportingCompletion())
+        }
+    }
+
+    /// Tick or untick "checked against the paper statement".
+    func setCardChargeVerified(householdId: String, chargeId: String, verified: Bool) {
+        db.collection("households").document(householdId)
+            .collection("cardCharges").document(chargeId)
+            .updateData([
+                "verified": verified,
+                "updatedAt": FieldValue.serverTimestamp(),
+            ], completion: reportingCompletion())
+    }
+
+    func deleteCardCharge(householdId: String, chargeId: String) {
+        db.collection("households").document(householdId)
+            .collection("cardCharges").document(chargeId)
+            .delete(completion: reportingCompletion())
+    }
+
+    /// Move charges into the statement that starts on `startDate`.
+    ///
+    /// A charge carries no statement id — it belongs to whichever window
+    /// contains its date — so moving one means CHANGING ITS DATE, and that is
+    /// the whole mechanism. One batch: half-moved charges would be split across
+    /// two statements with no way to tell which half went where.
+    func moveCardCharges(
+        householdId: String,
+        chargeIds: [String],
+        toStartDate: String
+    ) {
+        guard !chargeIds.isEmpty else { return }
+        let batch = db.batch()
+        let collection = db.collection("households").document(householdId).collection("cardCharges")
+        for id in chargeIds {
+            batch.updateData([
+                "date": toStartDate,
+                "updatedAt": FieldValue.serverTimestamp(),
+            ], forDocument: collection.document(id))
+        }
+        batch.commit(completion: reportingCompletion())
+    }
+
+    /// Turn one of the bank's charges into a card charge: the statement gains
+    /// the line and the charge leaves the inbox. ONE batch, for the same reason
+    /// `assignBankCharge` is one.
+    func importBankChargeAsCardCharge(
+        householdId: String,
+        uid: String,
+        bankChargeId: String,
+        date: String,
+        detail: String,
+        card: CardBrand,
+        usdCents: Int
+    ) {
+        let household = db.collection("households").document(householdId)
+        let batch = db.batch()
+        batch.setData([
+            "date": date,
+            "detail": detail,
+            "card": card.rawValue,
+            "usdCents": usdCents,
+            // The bank's email does not say whether the merchant is a digital
+            // service, so this takes the default and can be corrected later.
+            "digital": true,
+            "verified": false,
+            "createdBy": uid,
+            "createdAt": FieldValue.serverTimestamp(),
+            "updatedAt": FieldValue.serverTimestamp(),
+        ], forDocument: household.collection("cardCharges").document())
+        batch.deleteDocument(household.collection("bankCharges").document(bankChargeId))
+        batch.commit(completion: reportingCompletion())
+    }
 }

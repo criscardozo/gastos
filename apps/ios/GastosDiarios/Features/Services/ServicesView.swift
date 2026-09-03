@@ -1,0 +1,318 @@
+import FirebaseFirestore
+import SwiftUI
+
+/// Servicios: the register of recurring bills, checked against the ledger.
+///
+/// The rules — name, amount, how often, which day — are the `services`
+/// collection. The MONEY is in `expenses`, like everyone else's: a charged
+/// service is an ordinary expense in the Servicios category whose note is the
+/// service's name. This screen links the two by that name and reports the
+/// difference, because the expense is what the bank did and the rule is only
+/// what we expected.
+///
+/// The two figures at the top are about THIS MONTH: what it costs, and how much
+/// of it has landed.
+///
+/// Read-only on the phone, deliberately. Adding and editing a service is a
+/// once-a-year act done sitting down; what you need in your pocket is whether
+/// the bill came in and whether it came in for what you expected.
+struct ServicesView: View {
+    @Environment(AppModel.self) private var model
+    @State private var store = ServicesStore()
+
+    private var l10n: L10n { model.l10n }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                header
+
+                if store.loading && store.services.isEmpty {
+                    Text(l10n.t("common.loading"))
+                        .appFont(13)
+                        .foregroundStyle(Theme.inkTertiary)
+                } else if store.services.isEmpty {
+                    emptyState
+                } else {
+                    monthTotals
+                    ForEach(store.sorted(today: model.today)) { service in
+                        ServiceRow(
+                            service: service,
+                            status: store.statuses[service.id],
+                            today: model.today,
+                            l10n: l10n,
+                            timeZone: model.householdTimeZone,
+                            onUseCharged: { amount in
+                                store.useChargedAmount(
+                                    service: service,
+                                    amountAudCents: amount,
+                                    householdId: model.household?.id,
+                                    db: model.db
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+            .padding(16)
+        }
+        .background(Theme.bg)
+        .navigationTitle(l10n.t("tab.services"))
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            store.start(
+                householdId: model.household?.id,
+                today: model.today,
+                db: model.db
+            )
+        }
+        .onDisappear { store.stop() }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(l10n.monthLabel(model.today, timeZone: model.householdTimeZone))
+                .appFont(22, .bold)
+                .foregroundStyle(Theme.ink)
+            Text(l10n.t("services.subtitle"))
+                .appFont(12)
+                .foregroundStyle(Theme.inkTertiary)
+        }
+    }
+
+    private var emptyState: some View {
+        Card {
+            VStack(spacing: 6) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 26))
+                    .foregroundStyle(Theme.inkTertiary)
+                Text(l10n.t("services.emptyTitle"))
+                    .appFont(15, .semibold)
+                    .foregroundStyle(Theme.ink)
+                Text(l10n.t("services.emptyBodyPhone"))
+                    .appFont(12.5)
+                    .foregroundStyle(Theme.inkTertiary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+        }
+    }
+
+    private var monthTotals: some View {
+        let totals = store.totals
+        return HStack(spacing: 10) {
+            Card {
+                VStack(alignment: .leading, spacing: 4) {
+                    SectionLabel(text: l10n.t("services.chargedThisMonth"))
+                    UsdOverAud(
+                        usdCents: totals.chargedUsdCents,
+                        audCents: totals.chargedAudCents,
+                        hasUsd: totals.chargedUsdCents > 0,
+                        locale: l10n.locale,
+                        big: true
+                    )
+                    Text(l10n.t("services.chargedCount", totals.chargedCount, totals.dueCount))
+                        .appFont(11)
+                        .foregroundStyle(Theme.inkTertiary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Card {
+                VStack(alignment: .leading, spacing: 4) {
+                    SectionLabel(text: l10n.t("services.dueThisMonth"))
+                    UsdOverAud(
+                        usdCents: totals.dueUsdCents,
+                        audCents: totals.dueAudCents,
+                        hasUsd: totals.dueUsdCents > 0,
+                        locale: l10n.locale,
+                        big: true
+                    )
+                    Text(l10n.t("services.dueThisMonthHint"))
+                        .appFont(11)
+                        .foregroundStyle(Theme.inkTertiary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+}
+
+// MARK: - Row
+
+private struct ServiceRow: View {
+    let service: ServiceDoc
+    let status: ServiceStatus?
+    let today: CalendarDate
+    let l10n: L10n
+    let timeZone: TimeZone
+    let onUseCharged: (Int) -> Void
+
+    var body: some View {
+        Card {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(service.name)
+                            .appFont(15, .bold)
+                            .foregroundStyle(Theme.ink)
+                        Text(subtitle)
+                            .appFont(11.5)
+                            .foregroundStyle(Theme.inkTertiary)
+                    }
+                    Spacer(minLength: 8)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        UsdOverAud(
+                            usdCents: service.amountUsdCents ?? 0,
+                            audCents: service.amountAudCents ?? 0,
+                            hasUsd: service.amountUsdCents != nil,
+                            locale: l10n.locale
+                        )
+                        Text(l10n.t("services.\(service.paidWith.rawValue)"))
+                            .appFont(10, .bold)
+                            .foregroundStyle(Theme.inkTertiary)
+                    }
+                }
+
+                if let status {
+                    Divider().overlay(Theme.separator)
+                    statusLine(status)
+                }
+            }
+        }
+    }
+
+    private var subtitle: String {
+        let due = ServiceLogic.nextDueDate(service, today: today)
+        let days = ServiceLogic.daysUntilDue(service, today: today)
+        return "\(l10n.t("services.intervals.\(service.interval.rawValue)")) · \(l10n.dayMonth(due, timeZone: timeZone)) · \(dueLabel(days))"
+    }
+
+    private func dueLabel(_ days: Int) -> String {
+        if days == 0 { return l10n.t("services.dueToday") }
+        if days == 1 { return l10n.t("services.dueTomorrow") }
+        return l10n.t("services.dueInDays", days)
+    }
+
+    /// Three states, and they are exclusive: the month does not charge this
+    /// one, it has been charged, or it has not yet.
+    @ViewBuilder
+    private func statusLine(_ status: ServiceStatus) -> some View {
+        let off = status.differenceCents ?? 0
+        HStack(spacing: 6) {
+            if !status.dueThisMonth {
+                Text(l10n.t("services.notThisMonth"))
+                    .appFont(11.5, .semibold)
+                    .foregroundStyle(Theme.inkTertiary)
+            } else if let charge = status.charge {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Theme.green)
+                Text(l10n.t("services.chargedOn", l10n.dayMonth(CalendarDate(charge.date) ?? today, timeZone: timeZone)))
+                    .appFont(11.5, .semibold)
+                    .foregroundStyle(Theme.greenText)
+
+                // The expense is what the bank did; the amount on file is only
+                // what we expected. So the fix always runs one way.
+                if off != 0 {
+                    Text(l10n.t(
+                        "services.chargedDifferent",
+                        MoneyFormatter.aud(charge.amountCents, locale: l10n.locale)
+                    ))
+                    .appFont(11.5, .semibold)
+                    .foregroundStyle(Theme.amberText)
+                    Spacer(minLength: 4)
+                    Button {
+                        onUseCharged(charge.amountCents)
+                    } label: {
+                        Text(l10n.t("services.useCharged"))
+                            .appFont(11.5, .bold)
+                            .foregroundStyle(Theme.inkSecondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                Capsule().strokeBorder(Theme.border, lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                Image(systemName: "clock")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.inkTertiary)
+                Text(l10n.t("services.notChargedYet"))
+                    .appFont(11.5, .semibold)
+                    .foregroundStyle(Theme.inkTertiary)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+// MARK: - Store
+
+/// Owns the two listeners this screen needs, for as long as it is on screen.
+@MainActor
+@Observable
+final class ServicesStore {
+    private(set) var services: [ServiceDoc] = []
+    private(set) var monthExpenses: [Expense] = []
+    private(set) var loading = true
+
+    private var serviceListener: ListenerRegistration?
+    private var expenseListener: ListenerRegistration?
+    private var month = 1
+
+    var statuses: [String: ServiceStatus] {
+        ServiceLogic.statuses(services: services, expenses: monthExpenses, month: month)
+    }
+
+    var totals: ServiceMonthTotals {
+        ServiceLogic.monthTotals(services: services, statuses: statuses)
+    }
+
+    func sorted(today: CalendarDate) -> [ServiceDoc] {
+        ServiceLogic.sortedByDueDate(services, today: today)
+    }
+
+    func start(householdId: String?, today: CalendarDate, db: FirestoreService) {
+        guard let householdId, serviceListener == nil else { return }
+        month = Int(today.raw.dropFirst(5).prefix(2)) ?? 1
+        let bounds = PeriodLogic.monthRange(containing: today)
+        serviceListener = db.listenServices(householdId: householdId) { [weak self] docs in
+            self?.services = docs
+            self?.loading = false
+        }
+        // This month's expenses, bounded by date like every query in the app.
+        expenseListener = db.listenExpenses(
+            householdId: householdId,
+            startDate: bounds.start.raw,
+            endDate: bounds.end.raw
+        ) { [weak self] items in
+            self?.monthExpenses = items.map(\.expense)
+        }
+    }
+
+    func stop() {
+        serviceListener?.remove()
+        expenseListener?.remove()
+        serviceListener = nil
+        expenseListener = nil
+    }
+
+    func useChargedAmount(
+        service: ServiceDoc,
+        amountAudCents: Int,
+        householdId: String?,
+        db: FirestoreService
+    ) {
+        guard let householdId else { return }
+        Task {
+            try? await db.updateServiceAmount(
+                householdId: householdId,
+                serviceId: service.id,
+                amountAudCents: amountAudCents
+            )
+        }
+    }
+}

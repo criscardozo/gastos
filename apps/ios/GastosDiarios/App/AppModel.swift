@@ -53,8 +53,12 @@ final class AppModel {
 
     /// Main tab bar selection — settable from outside SwiftUI (App Intent /
     /// URL scheme) so Back Tap → "Registrar gasto" lands on quick entry.
+    ///
+    /// `more` is a menu, not a screen: the three daily destinations keep the
+    /// bar, and everything consulted once a month lives one tap inside it.
+    /// Settings used to be the fourth tab and is now the last row in there.
     enum MainTab: Hashable {
-        case entry, summary, history, settings
+        case entry, summary, history, more
     }
 
     var selectedTab: MainTab = .entry
@@ -104,6 +108,14 @@ final class AppModel {
 
     private let auth = AuthService()
     private let firestore = FirestoreService()
+
+    /// Handed to the screens that own their own listeners.
+    ///
+    /// Servicios and Tarjetas are looked at about once a month, so their data
+    /// is NOT kept live for the app's whole lifetime the way the budget is —
+    /// each screen starts its listeners when it appears and drops them when it
+    /// leaves. On the free tier, a listener nobody is reading is a bill.
+    var db: FirestoreService { firestore }
 
     private var authHandle: AuthStateDidChangeListenerHandle?
     private var userListener: ListenerRegistration?
