@@ -74,17 +74,54 @@ struct MainTabView: View {
     var body: some View {
         @Bindable var model = model
         let l10n = model.l10n
-        TabView(selection: $model.selectedTab) {
-            QuickEntryView()
-                .tabItem {
-                    Label(l10n.t("tab.new"), systemImage: "plus.circle.fill")
+        // The entry "tab" is a button, not a destination.
+        //
+        // Selecting it opens the form as a sheet and leaves the selection
+        // where it was, so loading an expense from Historial puts you back in
+        // Historial. Intercepting the binding does that with the system tab
+        // bar as it is — no hand-built bar, no safe-area or keyboard handling
+        // to reimplement.
+        //
+        // Not while the start-period screen is up: that is a full screen cover
+        // presented from this same view, and SwiftUI drops one of two
+        // presentations asked for at once.
+        let selection = Binding(
+            get: { model.selectedTab },
+            set: { tab in
+                if tab == .entry {
+                    if !model.showNewPeriodSheet { model.showQuickEntry = true }
+                } else {
+                    model.selectedTab = tab
                 }
-                .tag(AppModel.MainTab.entry)
+            }
+        )
+        TabView(selection: selection) {
             SummaryView()
                 .tabItem {
                     Label(l10n.t("tab.summary"), systemImage: "chart.pie.fill")
                 }
                 .tag(AppModel.MainTab.summary)
+            // No view: the binding above intercepts this tag before the
+            // selection ever changes, so nothing here is ever shown. Building
+            // the form here too would give it a second, hidden copy of its own
+            // state.
+            //
+            // The bar draws this one as a FILLED disc with a white plus while
+            // its three neighbours are plain glyphs, so it already reads as an
+            // action rather than a fourth place to go. That is the system's
+            // doing, not ours.
+            //
+            // Handing it a hand-coloured `.alwaysOriginal` symbol instead was
+            // tried and thrown away: the colours passed made no difference to
+            // what appeared (orange and red both came out the same green), so
+            // the code only added a way to be surprised later. Wearing the
+            // app's own accent here would mean giving up the system bar, which
+            // is a bigger trade than the colour is worth.
+            Color.clear
+                .tabItem {
+                    Label(l10n.t("tab.new"), systemImage: "plus.circle.fill")
+                }
+                .tag(AppModel.MainTab.entry)
             HistoryView()
                 .tabItem {
                     Label(l10n.t("tab.history"), systemImage: "list.bullet.rectangle.fill")
@@ -95,6 +132,9 @@ struct MainTabView: View {
                     Label(l10n.t("tab.more"), systemImage: "ellipsis.circle.fill")
                 }
                 .tag(AppModel.MainTab.more)
+        }
+        .sheet(isPresented: $model.showQuickEntry) {
+            QuickEntryView { model.showQuickEntry = false }
         }
     }
 }

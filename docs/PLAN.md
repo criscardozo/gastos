@@ -265,7 +265,7 @@ compra.
 
 | Pieza | Elección |
 |---|---|
-| iOS | SwiftUI, iOS 17+, MVVM con `@Observable`, Firebase iOS SDK vía SPM, persistencia offline de Firestore, String Catalogs. Widget (WidgetKit) + app de Watch |
+| iOS | SwiftUI, iOS 26+, MVVM con `@Observable`, Firebase iOS SDK vía SPM, persistencia offline de Firestore, String Catalogs. Widget (WidgetKit) + app de Watch |
 | Web | Next.js (App Router) + TypeScript, Tailwind CSS, next-intl, Firebase JS SDK (solo cliente, `onSnapshot`). **PWA** instalable (service worker propio en `public/sw.js`). Sin librería de gráficos |
 | Ingesta | Google Apps Script (gratis, del lado de Google, trigger de 15 min) con su propia service account |
 | Datos | Firebase Auth (Google como base) + Cloud Firestore plan Spark; rules + índices versionados en `firebase/` |

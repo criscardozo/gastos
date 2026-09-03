@@ -141,7 +141,11 @@ struct ExpenseFormView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, isEditing ? 18 : 6)
+            // Both cases are sheets now, so both clear the top edge — the 6
+            // that used to be here belonged to a full screen with a safe area
+            // above it. The extra on create leaves room for the drag
+            // indicator, which is also how you cancel.
+            .padding(.top, isEditing ? 18 : 26)
             .padding(.bottom, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // Tap any empty area to dismiss the keyboard (brings the tab bar
@@ -459,6 +463,9 @@ struct ExpenseFormView: View {
             // Let the keyboard go: the entry is done, and leaving the pad up
             // over a blank form reads as "it didn't save".
             focus = nil
+            // Presented as a sheet, this is what closes it. As a plain screen
+            // there is no handler and the reset above is the whole ending.
+            onDone?()
         case .edit(let item):
             if let id = item.expense.id, let date = pickedDate ?? CalendarDate(item.expense.date) {
                 model.updateExpense(
@@ -531,10 +538,18 @@ struct DatePickerSheet: View {
     }
 }
 
-// MARK: - Quick entry tab
+// MARK: - Quick entry
 
+/// The create form, as presented from the tab bar's own button.
+///
+/// `onDone` fires once the expense is saved, which is what closes the sheet
+/// and puts you back on the screen you opened it from.
 struct QuickEntryView: View {
+    var onDone: (() -> Void)?
+
     var body: some View {
-        ExpenseFormView(mode: .create)
+        ExpenseFormView(mode: .create, onDone: onDone)
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
     }
 }

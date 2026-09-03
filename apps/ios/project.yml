@@ -1,7 +1,14 @@
 name: GastosDiarios
 options:
+  # iOS 26, deliberately ahead of what compatibility would suggest.
+  #
+  # This app runs on exactly two phones and both are on 26, so holding the
+  # floor at 17 bought nothing and cost the newer APIs. Cristian's call:
+  # comfort and what the platform offers now, over a compatibility nobody in
+  # this household needs. The watchOS target stays at 10 — the watch is a
+  # separate device and nothing there needs the newer floor.
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "26.0"
   developmentLanguage: es
   createIntermediateGroups: true
   groupSortPosition: top
@@ -35,7 +42,7 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "5.10"
-    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "26.0"
     SWIFT_STRICT_CONCURRENCY: minimal
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     CODE_SIGN_STYLE: Automatic

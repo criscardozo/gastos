@@ -61,7 +61,20 @@ final class AppModel {
         case entry, summary, history, more
     }
 
-    var selectedTab: MainTab = .entry
+    /// The app opens on the summary, not on the entry form.
+    ///
+    /// Loading an expense is now a modal rather than a place you go: whatever
+    /// you were looking at is still there behind it and still there after. So
+    /// the first screen is the one you actually came to read.
+    var selectedTab: MainTab = .summary
+
+    /// Whether the quick-entry form is up as a sheet.
+    ///
+    /// Every way in sets this — the tab bar's own button, Back Tap, Shortcuts,
+    /// the iOS Control, the widget, `gastosdiarios://nuevo`. There is no
+    /// "entry tab" to navigate to any more; `MainTab.entry` survives only as
+    /// the tab bar item that opens this.
+    var showQuickEntry = false
 
     /// Manual appearance override (per-device preference, UserDefaults).
     enum AppearanceMode: String, CaseIterable {
@@ -82,9 +95,14 @@ final class AppModel {
     /// exactly one AppModel (created in GastosDiariosApp.init).
     private(set) static weak var shared: AppModel?
 
-    /// Jump to the quick-entry tab (Back Tap / Shortcuts / gastosdiarios://nuevo).
+    /// Open quick entry over whatever is on screen (Back Tap / Shortcuts /
+    /// the Control / the widget / gastosdiarios://nuevo).
+    ///
+    /// It used to switch tabs, which moved you somewhere you had not asked to
+    /// go and left you there after saving. A sheet returns you to where you
+    /// were, which is the whole point.
     static func requestQuickEntry() {
-        shared?.selectedTab = .entry
+        shared?.showQuickEntry = true
     }
 
     /// Set by `gastosdiarios://cargos`; Historial opens the sheet and clears it.

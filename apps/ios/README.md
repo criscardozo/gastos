@@ -1,6 +1,6 @@
 # Gastos Diarios — iOS
 
-SwiftUI app (iOS 17+, MVVM with `@Observable`) for fast household expense entry.
+SwiftUI app (iOS 26+, MVVM with `@Observable`) for fast household expense entry.
 Talks directly to Firebase (Auth + Firestore) — the Firestore security rules in
 `firebase/firestore.rules` are the only security boundary.
 
