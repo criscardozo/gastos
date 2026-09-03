@@ -17,7 +17,18 @@ catalog:
   # it then meant writing 45 bypass entries into this file. Dependabot brought
   # it in once the quarantine let go, with no bypass. Same rule next time.
   firebase: ^12.18.0
+  # NOT 7.x, and the reason is not caution. TypeScript 7.0.2 passes typecheck,
+  # the 257 web tests and the production build on this codebase — but
+  # `typescript-eslint@8` peers on `typescript >=4.8.4 <6.1.0`, so
+  # `eslint-config-next` fails to LOAD and `pnpm lint` exits 2. Lint is one of
+  # the four checks this project runs, so that is a broken pipeline, not a
+  # warning. Revisit when eslint-config-next ships a typescript-eslint that
+  # knows about 7.
   typescript: ^5.9.3
+  # Pinned to the runtime's major, not to "latest". Node here is v24, and
+  # @types/node 26 would describe APIs this Node does not have — the types
+  # would compile and the program would not. `pnpm outdated` calls this stale;
+  # it is aligned. Move it when the Node version moves.
   '@types/node': ^24.13.3
 allowBuilds:
   '@firebase/util': true
@@ -34,4 +45,9 @@ allowBuilds:
 # affected 8.5.x). Build-time only — kept until Next ships the bump itself.
 overrides:
   postcss: ^8.5.18
+  # jspdf 4.2.1 (latest) pins dompurify 3.4.12, and <=3.4.12 has an XSS:
+  # removing an IN_PLACE hook leaves a detached subtree executable
+  # (GHSA-55q2-fjhq-7xh7). A patch bump upstream of a patch release, so the
+  # API is unchanged; dropped once jspdf ships it itself.
+  dompurify: ^3.4.14
 

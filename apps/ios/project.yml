@@ -9,10 +9,13 @@ options:
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
-    from: 11.0.0
+    # 12.x, the same major the web is on (see the catalog in
+    # pnpm-workspace.yaml). Two clients talking to one Firestore is a good
+    # reason to keep the two SDKs on the same generation.
+    from: 12.0.0
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
-    from: 8.0.0
+    from: 9.0.0
 
 settings:
   base:
