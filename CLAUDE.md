@@ -54,8 +54,17 @@ All JS commands run from the repo root (pnpm workspace):
 - `/datos` is a GRID first: the range's expenses on screen with the export's own columns, sortable and filterable, and every export writes exactly what is on screen in that order. Importing a CSV lives in **Ajustes** (`components/import-expenses.tsx`) — it is the one control on either screen that writes rows.
 - Exports live in `apps/web/src/lib/export/`: `pdf.ts` (jsPDF) and `spreadsheet.ts` (exceljs) render the SAME payload, so Excel/Sheets mirror the PDF. Every export carries both money columns (AUD + the bank's USD, blank when unverified) and a range with unverified expenses is only exported after the consent checkbox is ticked; `drive.ts` uploads the workbook to Drive converted to a Google Sheet (needs the Drive API enabled — see `docs/setup.md`). Both libraries are dynamically imported to stay out of the first-load bundle.
 - `pnpm verify:pwa` — PWA smoke check (service worker + offline cold start). Needs a PRODUCTION build already serving: `pnpm build && pnpm --filter web exec next start -p 3112`.
-- `pnpm test:rules` — Firestore rules tests (spins up the emulator via `firebase emulators:exec`; needs a **JDK 21 or newer** — firebase-tools 15 dropped older ones, and on Java 17 it refuses to start rather than warning).
+- `pnpm test:rules` — Firestore rules tests. Picks a FREE port rather than
+  insisting on 8080 (`firebase/rules-tests/run-tests.mjs`), because on this
+  machine 8080 is often taken by a Docker stack or a leftover emulator and the
+  failure read as a broken test run. Pin one with `FIRESTORE_EMULATOR_PORT`.
+  Needs a **JDK 21 or newer** — firebase-tools 15 dropped older ones, and on
+  Java 17 it refuses to start rather than warning.
 - `pnpm emulators` — local emulator suite (Auth 9099, Firestore 8080, UI 4000).
+  Start it with **`--project qcris-gastos-diarios`** when an app will connect:
+  under any other project id the rules resolve `isMember()`'s `get()` in a
+  namespace with no household, which is an evaluation error, and every
+  subcollection reads back empty with no error at all (`docs/reglas.md`).
 - iOS: `cd apps/ios && xcodegen && open GastosDiarios.xcodeproj`. CLI tests:
   `xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiariosTests -destination 'platform=iOS Simulator,name=<iPhone>'`.
   That scheme builds ONLY the test bundle, which compiles `GastosDiarios/Core`
@@ -71,5 +80,11 @@ All JS commands run from the repo root (pnpm workspace):
   build), restaura los perfiles si falla y aborta si la firma emitida dura menos
   de un día.
 - Deploy rules: `firebase deploy --only firestore:rules,firestore:indexes --config firebase/firebase.json --project qcris-gastos-diarios`.
-- `pnpm backup` dumps the whole project to `backups/` (gitignored). The same script runs weekly on GitHub Actions (`.github/workflows/backup.yml`, Thursdays), keeping the dump as a 90-day artifact — Firestore's managed export needs Blaze.
+- `pnpm backup` dumps the whole project to `backups/` (gitignored), and
+  `pnpm restore <file>` puts one back — into the EMULATOR unless
+  `--production`, because a backup nobody has read back is a hope. The same
+  script runs weekly on GitHub Actions (`.github/workflows/backup.yml`,
+  Thursdays), keeping the dump as a 90-day artifact — Firestore's managed
+  export needs Blaze. That job also runs `scripts/check-rules-drift.mjs`, which
+  fails if the deployed ruleset is not the one in this repo.
 - One-time console setup (Firestore db creation, Google provider, Vercel): `docs/setup.md`. Distribution is free-account sideload (7-day signing expiry) until the Apple Developer decision (PLAN Phase 5).

@@ -1,0 +1,26 @@
+#!/bin/sh
+# The two checks that have actually caught something on the way out.
+#
+# CI went red on three consecutive pushes over a design-system rule — a 17px
+# font size that eight places used and tokens.json did not sanction — and
+# nobody looked at the pipeline until the fourth. Both checks below run offline
+# in seconds; the rest of CI (tests, e2e, emulators) is too slow to be a gate
+# and is what CI is for.
+#
+# Enable once:
+#   git config core.hooksPath .githooks
+#
+# Skip deliberately:
+#   git push --no-verify
+
+set -e
+
+if command -v python3 >/dev/null 2>&1; then
+  printf 'design tokens... '
+  python3 design-system/emit.py --verify >/dev/null
+  printf 'ok\n'
+fi
+
+printf 'typecheck...     '
+pnpm --filter web typecheck >/dev/null
+printf 'ok\n'
