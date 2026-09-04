@@ -50,4 +50,25 @@ overrides:
   # (GHSA-55q2-fjhq-7xh7). A patch bump upstream of a patch release, so the
   # API is unchanged; dropped once jspdf ships it itself.
   dompurify: ^3.4.14
+  # All dev-only, and all reached through firebase-tools / firebase-admin,
+  # which pin them transitively. Each is a patch or minor inside the same
+  # major, so the API is unchanged and the override goes away the moment the
+  # parent ships it itself.
+  #   fast-uri <3.1.6: SSRF and host confusion through IPv6 and percent-encoding
+  #     normalisation (4 advisories, all high).
+  #   qs <6.16.0: array-limit bypass, and a DoS through an attacker-controlled
+  #     isBuffer.
+  #   fast-xml-parser <5.10.1: repeated DOCTYPE declarations reset the entity
+  #     expansion limit.
+  fast-uri: ^3.1.6
+  qs: ^6.16.0
+  fast-xml-parser: ^5.10.1
+  # The ONE that reaches the browser: exceljs 4.4.0 pins uuid 8.3.2, which is
+  # missing a buffer bounds check in v3/v5/v6 when `buf` is passed. exceljs
+  # does `const {v4} = require('uuid')` and calls it with no arguments, so the
+  # vulnerable path is unreachable here — this is scoped to exceljs rather
+  # than global on purpose: firebase-admin and firebase-tools resolve their
+  # own uuid, and dragging their trees across three majors to silence an alert
+  # about code nobody runs would be the more dangerous change.
+  exceljs>uuid: ^11.1.1
 
