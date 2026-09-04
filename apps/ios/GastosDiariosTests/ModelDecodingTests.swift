@@ -59,13 +59,12 @@ final class ModelDecodingTests: XCTestCase {
         let now = Timestamp(date: Date(timeIntervalSince1970: 1_788_000_000))
         fields["createdAt"] = fields["createdAt"] ?? now
         fields["updatedAt"] = fields["updatedAt"] ?? now
-        // confirmedAt IS optional — nil is how a period says nobody has
-        // answered it — but @ServerTimestamp wants the key present either way,
-        // so absence is spelled NSNull here. What this file does not check is
-        // whether the real snapshot path tolerates the field being missing
-        // outright; that needs the emulator, which iOS cannot currently read
-        // (docs/reglas.md, and the open investigation in docs/plan-mejoras.md).
-        fields["confirmedAt"] = fields["confirmedAt"] ?? NSNull()
+        // confirmedAt is NOT added. Its absence is the whole point: it is how
+        // a period says nobody has answered it yet, and the first version of
+        // this file papered over that with an NSNull because @ServerTimestamp
+        // refused the missing key. That refusal was not a fixture artefact —
+        // it WAS the bug, and explaining it away here is what let it survive.
+        // See testAPeriodNobodyAnsweredDecodes.
         return fields
     }
 
@@ -169,6 +168,21 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(period.period, .weekly)
         XCTAssertEqual(period.amountCents, 18386)
         XCTAssertFalse(period.isConfirmed)
+    }
+
+    func testAPeriodNobodyAnsweredDecodes() throws {
+        // The regression this whole file exists for. `confirmedAt` absent
+        // means nobody has answered the start-period screen — the state
+        // EVERY period is in the moment it begins. It used to throw
+        // keyNotFound, so the current period vanished from the list on
+        // iOS and the app showed a household with no budget and no
+        // question. Found by the decode reporting, not by reading code.
+        let period = try decode(PeriodBudget.self, """
+        {"startDate": "2026-08-28", "endDate": "2026-09-03",
+         "period": "weekly", "amountCents": 18386, "source": "custom"}
+        """)
+        XCTAssertFalse(period.isConfirmed)
+        XCTAssertNil(period.confirmedAt)
     }
 
     func testAPeriodMissingABoundaryIsRefused() {

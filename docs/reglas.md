@@ -176,6 +176,30 @@ acaba de pedir.
   iOS no. Eso es lo que separa "las reglas están mal" de "el entorno está mal"
   en un paso, y conviene escribirla antes de teorizar sobre la versión del SDK
   — que fue exactamente el error que se cometió acá, dos veces.
+- **El emulador puede decir "All emulators ready" con uno de los suyos muerto.**
+  Medido: el log traía `Error: An unexpected error has occurred.` **antes** del
+  cartel de listo, la tabla mostraba Authentication en 9099, y no había nada
+  escuchando ese puerto. `wait-on tcp:9099` pasó igual. Eso produjo horas de
+  observaciones contradictorias — "0 cuentas" mientras la app se creía
+  conectada. Antes de investigar nada contra el emulador: matar todo, comprobar
+  con `lsof` que los puertos quedaron libres, levantar UNO y comprobar con
+  `lsof` que los dos puertos escuchan. El cartel no es evidencia.
+- **`@ServerTimestamp` sobre un campo que es opcional POR SIGNIFICADO es un
+  bug.** El wrapper exige que la clave esté presente al decodificar, así que un
+  `confirmedAt` ausente —que es exactamente como un período dice "nadie me
+  contestó"— tiraba `keyNotFound` y el documento desaparecía del listado. En
+  iOS eso significó que **todo período dejaba de existir entre que empezaba y
+  que alguien lo confirmaba**: sin presupuesto, sin pantalla de período nuevo,
+  la app leyéndose como un hogar vacío. `dismissedAt` en BankCharge siempre fue
+  un `Date?` pelado por esta misma razón. El wrapper sirve para ESCRIBIR
+  `FieldValue.serverTimestamp()`; leer un timestamp pendiente como estimación
+  es una opción del snapshot (`data(as:with:.estimate)`), no de la propiedad.
+- **Un test que explica el síntoma en vez de perseguirlo lo entierra.** El test
+  de decodificación se topó con ese `keyNotFound` el mismo día, y se resolvió
+  metiendo un `NSNull` en el fixture con un comentario que decía "esto no
+  comprueba si el camino real tolera el campo ausente". No lo toleraba: era el
+  bug, y el comentario lo dejó pasar. Cuando un test necesita un ajuste para
+  pasar, el ajuste es la pregunta.
 
 ## 8. Secretos
 

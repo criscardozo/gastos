@@ -157,7 +157,22 @@ struct PeriodBudget: Codable, Identifiable, Equatable {
     var rolloverCents: Int?
     /// When somebody in the household answered the start-period screen for
     /// this period. nil ⇒ nobody has, and every client asks.
-    @ServerTimestamp var confirmedAt: Date?
+    ///
+    /// A plain `Date?`, NOT `@ServerTimestamp`, and the difference was a bug
+    /// with teeth: the wrapper's decoding demands the key be present, so a
+    /// period nobody had answered yet — which is spelled by the field being
+    /// ABSENT — threw keyNotFound and vanished from the list. Every period
+    /// disappeared on iOS between starting and being confirmed, taking the
+    /// budget and the start-period screen with it, and the app read as a
+    /// household with nothing in it.
+    ///
+    /// Nothing is lost by dropping the wrapper. It matters for WRITING
+    /// `FieldValue.serverTimestamp()`, and these documents are written through
+    /// explicit dictionaries in FirestoreService. Reading a pending timestamp
+    /// as an estimate is a snapshot-level option (`data(as:with:.estimate)`),
+    /// not a property one — `dismissedAt` on BankCharge has always been a
+    /// plain Date? for the same reason and works.
+    var confirmedAt: Date?
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
 
