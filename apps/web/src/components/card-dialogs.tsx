@@ -90,7 +90,7 @@ export function CardChargeDialog({
         className={SHELL}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-[17px] font-bold text-ink">
+          <h2 className="text-base font-bold text-ink">
             {charge === null ? t("addCharge") : t("editCharge")}
           </h2>
           <button type="button" onClick={onClose} aria-label={tCommon("cancel")}>
@@ -307,7 +307,7 @@ export function StatementDatesDialog({
         className={SHELL}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-[17px] font-bold text-ink">{t("newStatement")}</h2>
+          <h2 className="text-base font-bold text-ink">{t("newStatement")}</h2>
           <button type="button" onClick={onClose} aria-label={tCommon("cancel")}>
             <Icon name="expand_more" size={22} className="text-ink-3" />
           </button>
@@ -472,7 +472,7 @@ export function CardFeesDialog({
         className={SHELL}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-[17px] font-bold text-ink">{t("arsSettings")}</h2>
+          <h2 className="text-base font-bold text-ink">{t("arsSettings")}</h2>
           <button type="button" onClick={onClose} aria-label={tCommon("cancel")}>
             <Icon name="expand_more" size={22} className="text-ink-3" />
           </button>

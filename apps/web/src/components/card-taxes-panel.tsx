@@ -148,7 +148,7 @@ export function CardTaxes({
             className="flex max-h-[92vh] w-full max-w-[440px] flex-col gap-3 overflow-y-auto rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]"
           >
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-[17px] font-bold text-ink">
+              <h2 className="text-base font-bold text-ink">
                 {/* The flag carries the currency: every other figure on this
                     screen is USD, and two amounts side by side need telling
                     apart at a glance rather than by reading the symbol. */}

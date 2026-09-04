@@ -125,7 +125,7 @@ export function ServiceDialog({
         className="flex max-h-[92vh] w-full max-w-[440px] flex-col gap-3.5 overflow-y-auto rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]"
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-[17px] font-bold text-ink">
+          <h2 className="text-base font-bold text-ink">
             {service === null ? t("add") : t("edit")}
           </h2>
           <button type="button" onClick={onClose} aria-label={tCommon("cancel")}>

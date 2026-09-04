@@ -135,7 +135,7 @@ function AppErrorDialog({
         <div className="flex items-start gap-3">
           <Icon name="error" size={22} className="mt-0.5 text-over" />
           <div className="min-w-0">
-            <h2 className="text-[17px] font-bold text-ink">{t("title")}</h2>
+            <h2 className="text-base font-bold text-ink">{t("title")}</h2>
             <p className="mt-1 text-[13px] text-ink-2">{t("body")}</p>
             {/* The raw message. Ugly, and worth it: when this appears at all,
                 a screenshot of it is the whole diagnosis. */}
