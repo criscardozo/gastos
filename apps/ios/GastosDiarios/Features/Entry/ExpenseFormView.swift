@@ -174,6 +174,16 @@ struct ExpenseFormView: View {
             // Raise the native decimal pad on the amount field. A short hop
             // past the current run loop makes the focus reliably bring up the
             // keyboard once the field is in the hierarchy.
+            //
+            // `.task { focus = .amount }` is the modern shape of this and was
+            // tried — then put back, because it could not be VERIFIED. Seeing
+            // the keyboard rise needs the app inside a household, and the
+            // simulator cannot reach the emulator's data right now (the open
+            // investigation in docs/plan-mejoras.md; the auth emulator reports
+            // no accounts while the app believes it is signed in). Quick entry
+            // is the most-used screen in the app, and a keyboard that silently
+            // stops appearing is a far worse outcome than a DispatchQueue call
+            // that produces no warning and works.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                 focus = .amount
             }
@@ -298,7 +308,7 @@ struct ExpenseFormView: View {
             // through the canonical `AmountInput`, so cents/audCents and the
             // recent-amount chips all keep working.
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("$")
+                Text(verbatim: "$")
                     .appFont(30, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
                 TextField("0", text: amountText)

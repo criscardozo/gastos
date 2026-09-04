@@ -1,18 +1,6 @@
 {
   "sourceLanguage": "es",
   "strings": {
-    " · %@ ": {},
-    "$": {},
-    "%@ · %@": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ · %2$@"
-          }
-        }
-      }
-    },
     "Abre la carga rápida de gastos.": {
       "extractionState": "stale",
       "localizations": {
@@ -20,6 +8,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Opens quick expense entry."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre la carga rápida de gastos."
           }
         }
       }
@@ -31,6 +25,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Log expense"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registrar gasto"
           }
         }
       }

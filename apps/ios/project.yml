@@ -212,6 +212,10 @@ targets:
       - path: GastosDiariosTests
       - path: GastosDiarios/Core
       - path: GastosDiarios/Services/SigningExpiryService.swift
+      # Composing one Text out of differently styled runs. In Design/ rather
+      # than Core/ because it imports SwiftUI, and Core is deliberately free of
+      # it — so it is listed here by name instead of arriving with a folder.
+      - path: GastosDiarios/Design/RichText.swift
       # The strings L10n looks up. Compiled into the TEST bundle, which is why
       # L10n resolves its bundle through a type in its own module rather than
       # assuming Bundle.main.

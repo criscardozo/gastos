@@ -15,7 +15,7 @@ struct BudgetAmountEditor: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text("$")
+            Text(verbatim: "$")
                 .appFont(symbolSize, .semibold)
                 .foregroundStyle(Theme.inkTertiary)
             Text(value.input.display(separator: separator))

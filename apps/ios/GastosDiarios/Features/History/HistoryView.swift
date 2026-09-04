@@ -179,15 +179,16 @@ struct HistoryView: View {
 
     private func dayHeader(_ group: DayGroup) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            (
-                Text(dayName(group.date))
-                    .foregroundColor(Theme.ink)
-                    .fontWeight(.bold)
-                + Text(verbatim: " · \(daySubtitle(group.date))")
-                    .foregroundColor(Theme.inkTertiary)
-                    .fontWeight(.medium)
-            )
-            .appFont(13)
+            RichText.text([
+                .init(
+                    dayName(group.date),
+                    color: Theme.ink, font: AppFont.font(13, .bold)
+                ),
+                .init(
+                    " · \(daySubtitle(group.date))",
+                    color: Theme.inkTertiary, font: AppFont.font(13, .medium)
+                ),
+            ])
             Spacer()
             Text(MoneyFormatter.aud(group.totalCents, locale: l10n.locale))
                 .appFont(12.5, .semibold)

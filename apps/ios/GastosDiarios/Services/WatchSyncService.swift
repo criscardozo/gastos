@@ -55,7 +55,7 @@ final class WatchSyncService: NSObject {
         currency: String
     ) {
         #if canImport(WatchConnectivity)
-        var context: [String: Any] = [
+        let context: [String: Any] = [
             Key.remainingCents: remainingCents,
             Key.budgetCents: budgetCents,
             Key.state: state,

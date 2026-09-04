@@ -32,10 +32,20 @@ final class FirestoreService {
 
     /// Completion handler for the fire-and-forget writes: reports a rejection
     /// and ignores success. Used instead of dropping the error on the floor.
-    private func reportingCompletion() -> (Error?) -> Void {
+    ///
+    /// `@Sendable` because that is what the SDK's completion parameter is now.
+    /// Firestore delivers these on the main queue by default, which is where
+    /// this class lives, so the annotation is a promise the code already
+    /// kept — it just had not said so, and twelve call sites warned about it.
+    private func reportingCompletion() -> @Sendable (Error?) -> Void {
         { [weak self] error in
             guard let error else { return }
-            self?.onWriteRejected?(error)
+            // assumeIsolated rather than a Task hop: Firestore delivers these
+            // on the main queue, which is where this class lives, so the hop
+            // would only delay the alert by a turn of the run loop for no gain.
+            // If that ever stops being true this traps loudly instead of
+            // racing quietly, which is the right way round.
+            MainActor.assumeIsolated { self?.onWriteRejected?(error) }
         }
     }
 
@@ -600,7 +610,7 @@ final class FirestoreService {
         // same doc instead of creating a duplicate.
         let collection = db.collection("households").document(householdId).collection("expenses")
         let document = expenseId.map { collection.document($0) } ?? collection.document()
-        var data: [String: Any] = [
+        let data: [String: Any] = [
             "amountCents": amountCents,
             "categoryId": categoryId,
             "note": note,

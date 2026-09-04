@@ -99,27 +99,41 @@ struct SummaryView: View {
             )
 
             HStack {
-                (
-                    Text(l10n.t("summary.spent") + " ")
-                        .foregroundColor(Theme.inkSecondary)
-                    + Text(MoneyFormatter.aud(spentCents, locale: l10n.locale))
-                        .foregroundColor(Theme.ink)
-                        .fontWeight(.bold)
-                    + Text(" " + l10n.t("summary.of", MoneyFormatter.audCompact(budgetCents, locale: l10n.locale)))
-                        .foregroundColor(Theme.inkSecondary)
-                )
-                .appFont(13, .semibold)
+                RichText.text([
+                    .init(
+                        l10n.t("summary.spent") + " ",
+                        color: Theme.inkSecondary, font: AppFont.font(13, .semibold)
+                    ),
+                    .init(
+                        MoneyFormatter.aud(spentCents, locale: l10n.locale),
+                        color: Theme.ink, font: AppFont.font(13, .bold)
+                    ),
+                    .init(
+                        " " + l10n.t(
+                            "summary.of",
+                            MoneyFormatter.audCompact(budgetCents, locale: l10n.locale)
+                        ),
+                        color: Theme.inkSecondary, font: AppFont.font(13, .semibold)
+                    ),
+                ])
                 .monospacedDigit()
                 Spacer()
                 if model.isViewingCurrentPeriod, let end = period.end {
                     let days = max(PeriodLogic.daysBetween(model.today, end) + 1, 0)
-                    (
-                        daysLeftPrefix
-                        + Text(l10n.daysCount(days)).foregroundColor(Theme.ink).fontWeight(.bold)
-                        + daysLeftSuffix
-                    )
-                    .appFont(13, .semibold)
-                    .foregroundStyle(Theme.inkSecondary)
+                    RichText.text([
+                        .init(
+                            daysLeftPrefix,
+                            color: Theme.inkSecondary, font: AppFont.font(13, .semibold)
+                        ),
+                        .init(
+                            l10n.daysCount(days),
+                            color: Theme.ink, font: AppFont.font(13, .bold)
+                        ),
+                        .init(
+                            daysLeftSuffix,
+                            color: Theme.inkSecondary, font: AppFont.font(13, .semibold)
+                        ),
+                    ])
                     .monospacedDigit()
                 }
             }
@@ -144,13 +158,12 @@ struct SummaryView: View {
         )
     }
 
-    private var daysLeftPrefix: Text {
-        Text(verbatim: l10n.language == "es" ? "Quedan " : "")
-    }
-
-    private var daysLeftSuffix: Text {
-        Text(verbatim: l10n.language == "es" ? "" : " left")
-    }
+    // Strings rather than Texts now that the row is composed as one attributed
+    // string. Not catalog keys on purpose: the count sits BETWEEN them, so the
+    // sentence is assembled here rather than being one entry with a
+    // placeholder.
+    private var daysLeftPrefix: String { l10n.language == "es" ? "Quedan " : "" }
+    private var daysLeftSuffix: String { l10n.language == "es" ? "" : " left" }
 
     /// Inset "PRESUPUESTO DEL PERÍODO $900 · Quincenal (por defecto)" row.
     private func budgetInsetRow(_ period: PeriodBudget) -> some View {
@@ -160,16 +173,21 @@ struct SummaryView: View {
                     .appFont(11, .bold)
                     .kerning(11 * 0.05)
                     .foregroundStyle(Theme.inkTertiary)
-                (
-                    Text(MoneyFormatter.audCompact(period.amountCents, locale: l10n.locale))
-                    + Text(" · \(l10n.t("period.\(period.period.rawValue)")) ")
-                    + Text(period.isCustom ? l10n.t("source.custom") : l10n.t("source.default"))
-                        .foregroundColor(Theme.inkTertiary)
-                        .fontWeight(.medium)
-                )
-                .appFont(14.5, .bold)
+                RichText.text([
+                    .init(
+                        MoneyFormatter.audCompact(period.amountCents, locale: l10n.locale),
+                        color: Theme.ink, font: AppFont.font(14.5, .bold)
+                    ),
+                    .init(
+                        " · \(l10n.t("period.\(period.period.rawValue)")) ",
+                        color: Theme.ink, font: AppFont.font(14.5, .bold)
+                    ),
+                    .init(
+                        period.isCustom ? l10n.t("source.custom") : l10n.t("source.default"),
+                        color: Theme.inkTertiary, font: AppFont.font(14.5, .medium)
+                    ),
+                ])
                 .monospacedDigit()
-                .foregroundStyle(Theme.ink)
             }
             Spacer()
             if model.isViewingCurrentPeriod {

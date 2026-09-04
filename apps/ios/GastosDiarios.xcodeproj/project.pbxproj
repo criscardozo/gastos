@@ -48,11 +48,13 @@
 		6F988A6795BF9227AEDA3A80 /* SigningExpiryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F875CB9A4249023372B6A501 /* SigningExpiryTests.swift */; };
 		789F6152666388E18CA30122 /* ExpenseVerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */; };
 		79C3AAF1F72C5A8D5923D2AF /* BankChargeInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */; };
+		7BF9EC6646A0185FAC5D276A /* RichText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FAB94B640D4DFAAF7E6AB91 /* RichText.swift */; };
 		7E5C183155873E3B21BC04CF /* CardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DA4DFB594CEF55E24F86CA7 /* CardsView.swift */; };
 		7FDB5283CC22C18562CD767D /* AmountInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E1BD1553193EC737896A64 /* AmountInput.swift */; };
 		822EFD43241545538E9E07A9 /* SigningExpiryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F2CD9DC403E30E0D49F3C5 /* SigningExpiryService.swift */; };
 		8268094E7E032831B3671199 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C8F75E05B2CB5526FAED626 /* AppModel.swift */; };
 		8352CF5D8B36C1504025D291 /* BudgetAmountEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21D8B26F267E4D4FF49927C /* BudgetAmountEditor.swift */; };
+		88DE7BBBEE32CEB6E5F9384D /* RichTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3064D79EEF48BC7380766319 /* RichTextTests.swift */; };
 		890E700B386E8F21075CE55D /* CardTaxesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF503D57419B16D9EDFC7E9F /* CardTaxesTests.swift */; };
 		8A8E0DFCAC9E165B3E5BE2FD /* WatchEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9E2A69A862D11BA003582B8 /* WatchEntryView.swift */; };
 		8B830BAED6EB824DAF23866F /* WatchSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFD2D6C9571B18B2E78C7040 /* WatchSyncService.swift */; };
@@ -93,6 +95,7 @@
 		EC2434DE5909830DA8DB749F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D3934372BE7A86D42D837236 /* GoogleSignIn */; };
 		ECD72F7F796CCE30319D28CD /* CountLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED06E0D2EF77E0D2F45131F /* CountLabelTests.swift */; };
 		EE4CFF7748B60B6EB4F8A0E7 /* UsdArsRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22E21C719AA1C4BCA834DCA /* UsdArsRate.swift */; };
+		F5A92CB3FE60BBB11026A9CB /* RichText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FAB94B640D4DFAAF7E6AB91 /* RichText.swift */; };
 		F66E126B602E61FCCC04EA5B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A3DE79D792BD15A233F74D /* SettingsView.swift */; };
 		F6C3A5A2215B37A39404FBF6 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1033958EAF0770812248EF2 /* HistoryView.swift */; };
 		FB84BD17683A1D65FE9ED3BF /* BankMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9AE25283BC9E432099A5B3B /* BankMatch.swift */; };
@@ -157,6 +160,7 @@
 		2B3321D9E7495AC37BDC6004 /* GastosDiarios.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GastosDiarios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B6F41CE08795F7FABF2312F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseVerificationTests.swift; sourceTree = "<group>"; };
+		3064D79EEF48BC7380766319 /* RichTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichTextTests.swift; sourceTree = "<group>"; };
 		36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargeInbox.swift; sourceTree = "<group>"; };
 		45E8539DAFA9587CC0291F04 /* CategoriesManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesManagerView.swift; sourceTree = "<group>"; };
 		48BF3AEB1A7B631C490D0F18 /* PiggyMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiggyMark.swift; sourceTree = "<group>"; };
@@ -181,6 +185,7 @@
 		87966E98F3C0C867AE517CE9 /* ExpenseFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseFormView.swift; sourceTree = "<group>"; };
 		88C4CEE8AB2BD7C3B1A50660 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		8A795380C7AD182D04979254 /* bank-match-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "bank-match-vectors.json"; sourceTree = "<group>"; };
+		8FAB94B640D4DFAAF7E6AB91 /* RichText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichText.swift; sourceTree = "<group>"; };
 		94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickEntryIntent.swift; sourceTree = "<group>"; };
 		990596864A5AD40BA5EE4803 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9E73BFFFDD149DEA34FF6D4B /* GastosDiariosWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = GastosDiariosWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -398,6 +403,7 @@
 			children = (
 				A21D8B26F267E4D4FF49927C /* BudgetAmountEditor.swift */,
 				C1C12B6B3B51CC9E2962B1CE /* Components.swift */,
+				8FAB94B640D4DFAAF7E6AB91 /* RichText.swift */,
 				145F6B37DD56D3F48641A9AB /* Theme.swift */,
 			);
 			path = Design;
@@ -414,6 +420,7 @@
 				2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */,
 				E0E1907B1FEAADDF744484A8 /* ModelDecodingTests.swift */,
 				F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */,
+				3064D79EEF48BC7380766319 /* RichTextTests.swift */,
 				0C19C8E5B211D3024BBF75AD /* ServiceLogicTests.swift */,
 				F875CB9A4249023372B6A501 /* SigningExpiryTests.swift */,
 				E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */,
@@ -723,6 +730,7 @@
 				E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */,
 				9ED3E316CDD7541FFB9D1270 /* QuickEntryIntent.swift in Sources */,
 				A5F76507F0CC0B20997205D6 /* ReminderService.swift in Sources */,
+				F5A92CB3FE60BBB11026A9CB /* RichText.swift in Sources */,
 				8DEF436DCA6C18809AB5721A /* RootView.swift in Sources */,
 				37B95BC53A79BC49F96049D3 /* ServiceLogic.swift in Sources */,
 				9ACBC21A3F5C10A608B863F9 /* ServicesView.swift in Sources */,
@@ -758,6 +766,8 @@
 				BAD0594FFEBDF616197DE08A /* MoneyFormatter.swift in Sources */,
 				4CDD97FED70D3E038184719A /* PeriodLogic.swift in Sources */,
 				4A7C9399EB868F5BD37FCEE2 /* PeriodLogicTests.swift in Sources */,
+				7BF9EC6646A0185FAC5D276A /* RichText.swift in Sources */,
+				88DE7BBBEE32CEB6E5F9384D /* RichTextTests.swift in Sources */,
 				5F3AE29199855CCF6FA9311C /* ServiceLogic.swift in Sources */,
 				FDE69E9F97E7D0E95E95B082 /* ServiceLogicTests.swift in Sources */,
 				6008755B5E31D86FA663DC85 /* SigningExpiryService.swift in Sources */,
