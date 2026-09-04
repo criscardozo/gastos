@@ -137,6 +137,9 @@ export default function DataPage() {
   const rangeTo = range?.endDate ?? null;
   useEffect(() => {
     if (householdId === null || rangeFrom === null || rangeTo === null) {
+      // this effect owns a one-shot bounded read; clearing before it starts
+      // is part of that request's lifecycle, not derived state.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoadState({ rows: [], loading: false });
       return;
     }

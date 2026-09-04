@@ -256,6 +256,9 @@ export default function SettingsPage() {
   // server/client hydration mismatch.
   const [theme, setTheme] = useState<ThemePref>("system");
   useEffect(() => {
+    // localStorage is not readable while the shell is prerendered; after
+    // mount is the only place, which is what the comment above already says.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(readStoredTheme());
   }, []);
   const changeTheme = (next: ThemePref) => {
@@ -274,6 +277,9 @@ export default function SettingsPage() {
     if (householdId === null || uid === null || householdFull) return;
     const stored = localStorage.getItem(inviteCodeKey(householdId));
     if (stored !== null) {
+      // reads localStorage, and mints an invite doc when it is empty. Both
+      // are effects; neither can happen in render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInviteCode(stored);
       return;
     }

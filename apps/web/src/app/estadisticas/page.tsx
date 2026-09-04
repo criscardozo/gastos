@@ -145,6 +145,8 @@ export default function StatsPage() {
   const to = range?.endDate ?? null;
   useEffect(() => {
     if (householdId === null || from === null || to === null) {
+      // same one-shot read lifecycle as /datos.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ rows: [], loading: false, failed: false });
       return;
     }

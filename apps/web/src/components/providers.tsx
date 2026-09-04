@@ -186,6 +186,10 @@ export function Providers({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fromCookie = readCookieLocale();
     if (fromCookie !== null) {
+      // document.cookie does not exist while the shell is prerendered, so
+      // reading it in the initialiser would crash the build. After mount is
+      // the only place.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocaleState(fromCookie);
     }
   }, []);
@@ -219,6 +223,10 @@ export function Providers({ children }: { children: ReactNode }) {
   });
   useEffect(() => {
     if (uid === null) {
+      // resetting a subscription's state as its key changes. The listener's
+      // lifetime is the external system here; there is nothing to derive
+      // from.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUserState({ userDoc: null, loading: auth.initializing });
       return;
     }
@@ -261,6 +269,10 @@ export function Providers({ children }: { children: ReactNode }) {
   const storedLanguage = userState.userDoc?.language ?? null;
   useEffect(() => {
     if (storedLanguage !== null && storedLanguage !== locale) {
+      // the household's stored language arrives asynchronously and setLocale
+      // also writes the cookie, which is a side effect and belongs in an
+      // effect.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocale(storedLanguage);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -274,6 +286,9 @@ export function Providers({ children }: { children: ReactNode }) {
   }>({ household: null, loading: true });
   useEffect(() => {
     if (householdId === null) {
+      // same reset as the user listener above: the subscription's key
+      // changed.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHouseholdState({
         household: null,
         loading: uid !== null && userState.loading,
@@ -312,6 +327,8 @@ export function Providers({ children }: { children: ReactNode }) {
   }>({ periods: [], loading: true, fromCache: true });
   useEffect(() => {
     if (householdId === null) {
+      // same reset as the two listeners above.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPeriodState({ periods: [], loading: false, fromCache: true });
       return;
     }
@@ -352,6 +369,9 @@ export function Providers({ children }: { children: ReactNode }) {
   const [today, setToday] = useState<string | null>(null);
   useEffect(() => {
     if (timezone === null) {
+      // today is the clock, which is external by definition: this effect also
+      // owns the interval that keeps it true across midnight.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setToday(null);
       return;
     }
@@ -381,6 +401,9 @@ export function Providers({ children }: { children: ReactNode }) {
   const household = householdState.household;
   useEffect(() => {
     if (householdId === null) {
+      // reads localStorage, which is unavailable during prerender and would
+      // hydrate-mismatch if read in render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAckedStart(undefined);
       return;
     }
@@ -496,6 +519,9 @@ export function Providers({ children }: { children: ReactNode }) {
     if (householdId === null || currentPeriod === null) return;
     if (ackedStart !== null) return; // undefined = not read yet; a value = set
     ackNewPeriod(householdId, currentPeriod.startDate);
+    // mirrors the localStorage write on the line above; the store is the
+    // source of truth and this keeps the copy in step.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAckedStart(currentPeriod.startDate);
   }, [householdId, currentPeriod, ackedStart]);
 

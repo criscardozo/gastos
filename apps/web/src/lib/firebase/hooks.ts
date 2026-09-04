@@ -61,6 +61,10 @@ export function useExpensesRange(
 
   useEffect(() => {
     if (householdId === null || startDate === null || endDate === null) {
+      // resetting a subscription's state as its range changes. The listener's
+      // lifetime is the external system; nothing here can be derived in
+      // render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ expenses: [], loading: false });
       return;
     }
@@ -135,6 +139,10 @@ export function useBankCharges(householdId: string | null): BankChargesState {
 
   useEffect(() => {
     if (householdId === null) {
+      // Resetting a subscription's state as its key changes. The listener's
+      // lifetime is the external system here; there is nothing to derive from
+      // in render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ charges: [], loading: false });
       return;
     }
@@ -203,6 +211,10 @@ export function useServices(householdId: string | null): ServicesState {
 
   useEffect(() => {
     if (householdId === null) {
+      // Resetting a subscription's state as its key changes. The listener's
+      // lifetime is the external system here; there is nothing to derive from
+      // in render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ services: [], loading: false });
       return;
     }
@@ -258,6 +270,10 @@ export function useCardStatements(householdId: string | null): StatementsState {
 
   useEffect(() => {
     if (householdId === null) {
+      // Resetting a subscription's state as its key changes. The listener's
+      // lifetime is the external system here; there is nothing to derive from
+      // in render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ statements: [], loading: false });
       return;
     }
@@ -314,6 +330,10 @@ export function useCardCharges(
 
   useEffect(() => {
     if (householdId === null || startDate === null || closingDate === null) {
+      // Resetting a subscription's state as its key changes. The listener's
+      // lifetime is the external system here; there is nothing to derive from
+      // in render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ charges: [], loading: false });
       return;
     }
@@ -427,6 +447,9 @@ export function useMonthTotal(
 
   useEffect(() => {
     if (householdId === null || range === null) {
+      // This effect owns a one-shot aggregation; clearing before it starts is
+      // part of that request's lifecycle, not derived state.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTotal(null);
       setStatus("loading");
       return;
@@ -535,6 +558,9 @@ export function usePastPeriodTotals(
 
   useEffect(() => {
     if (householdId === null || serialized === "") {
+      // This effect owns a one-shot aggregation; clearing before it starts is
+      // part of that request's lifecycle, not derived state.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTotals({});
       return;
     }
