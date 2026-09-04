@@ -38,6 +38,7 @@ import {
   type PeriodBudget,
   type UserDoc,
 } from "@/lib/firebase/converters";
+import { decoded } from "@/lib/firebase/shape";
 import { ensureUserDoc, materializePeriods } from "@/lib/firebase/mutations";
 import { fetchPeriodSpent } from "@/lib/firebase/hooks";
 import { budgetCategoryIds, allCategoriesCount } from "@/lib/categories";
@@ -347,7 +348,7 @@ export function Providers({ children }: { children: ReactNode }) {
       q,
       { includeMetadataChanges: true },
       (snap) => {
-        const periods = snap.docs.map((d) => d.data()).reverse();
+        const periods = decoded(snap.docs.map((d) => d.data())).reverse();
         setPeriodState({
           periods,
           loading: false,

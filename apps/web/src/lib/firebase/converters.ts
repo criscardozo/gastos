@@ -12,8 +12,26 @@ import {
 import type { CategoryDef } from "../categories";
 import type { PeriodType } from "../periods";
 import type { HouseholdCards } from "../cards";
-import type { PaidWith, ServiceInterval } from "../services";
+// SERVICE_INTERVALS rather than a list spelled out again below: the first
+// attempt at that wrote "annual" where the type says "yearly", and every
+// yearly service would have silently decoded as monthly.
+import {
+  SERVICE_INTERVALS,
+  type PaidWith,
+  type ServiceInterval,
+} from "../services";
 import type { CardBrand } from "../statements";
+import {
+  isCalendarDate,
+  isInt,
+  isMaybeEmptyString,
+  isObject,
+  isOneOf,
+  isPositiveInt,
+  isString,
+  isStringArray,
+  rejectDoc,
+} from "./shape";
 
 export interface UserDoc {
   uid: string;
@@ -161,9 +179,23 @@ export interface Invite {
   createdBy: string;
 }
 
+/**
+ * A read-only converter that is allowed to say no.
+ *
+ * `fromFirestore` returns `T | null`, and null means "this document did not
+ * have the shape it claims" — reported by name, then dropped by the caller.
+ * The alternative, which this used to do, was to cast every field and hand
+ * back an object with `undefined` where a number belongs: that renders as
+ * "$NaN" and sums as NaN, and there is no way to tell it from a real figure
+ * after the fact.
+ *
+ * Dropping rather than throwing, because a throw inside a snapshot callback
+ * takes the whole listener down: one bad document from last year would blank
+ * the entire history instead of hiding itself.
+ */
 function readOnly<T>(
-  fromFirestore: (snap: QueryDocumentSnapshot) => T,
-): FirestoreDataConverter<T> {
+  fromFirestore: (snap: QueryDocumentSnapshot) => T | null,
+): FirestoreDataConverter<T | null> {
   return {
     toFirestore(): DocumentData {
       throw new Error(
@@ -176,36 +208,79 @@ function readOnly<T>(
 
 export const userConverter = readOnly<UserDoc>((snap) => {
   const data = snap.data();
+  // householdId decides whether this person sees the app or onboarding, so a
+  // wrong TYPE there is worth refusing: `42` is truthy and would take them
+  // into households/42, which does not exist.
+  if (data.householdId != null && !isString(data.householdId)) {
+    return rejectDoc(`users/${snap.id}`, "householdId is not a string");
+  }
   return {
     uid: snap.id,
-    displayName: (data.displayName as string) ?? "",
-    householdId: (data.householdId as string | null) ?? null,
-    language: (data.language as "es" | "en" | null) ?? null,
+    displayName: isMaybeEmptyString(data.displayName) ? data.displayName : "",
+    householdId: isString(data.householdId) ? data.householdId : null,
+    language: isOneOf(data.language, ["es", "en"] as const)
+      ? data.language
+      : null,
   };
 });
 
 export const householdConverter = readOnly<Household>((snap) => {
   const data = snap.data();
+  const path = `households/${snap.id}`;
+  // timezone is the one that would fail silently and everywhere: every ledger
+  // date is computed in it, so a missing one buckets expenses by the device's
+  // clock and nothing on screen looks wrong.
+  if (!isString(data.timezone)) return rejectDoc(path, "timezone is missing");
+  if (!isString(data.currency)) return rejectDoc(path, "currency is missing");
+  if (!isStringArray(data.memberIds)) {
+    return rejectDoc(path, "memberIds is not an array of strings");
+  }
+  const budget = data.defaultBudget;
+  if (
+    !isObject(budget) ||
+    !isPositiveInt(budget.amountCents) ||
+    !isOneOf(budget.period, ["weekly", "fortnightly"] as const) ||
+    !isCalendarDate(budget.anchorDate)
+  ) {
+    return rejectDoc(path, "defaultBudget is not a budget");
+  }
   return {
     id: snap.id,
-    name: data.name as string,
-    currency: data.currency as string,
-    timezone: data.timezone as string,
-    defaultBudget: data.defaultBudget as DefaultBudget,
-    memberIds: data.memberIds as string[],
-    memberProfiles: data.memberProfiles as Record<string, MemberProfile>,
-    categories: data.categories as Record<string, CategoryDef>,
-    cards: (data.cards as HouseholdCards | undefined) ?? {},
+    name: isMaybeEmptyString(data.name) ? data.name : "",
+    currency: data.currency,
+    timezone: data.timezone,
+    defaultBudget: {
+      amountCents: budget.amountCents,
+      period: budget.period,
+      anchorDate: budget.anchorDate,
+      ...(budget.rollover === true ? { rollover: true } : {}),
+    },
+    memberIds: data.memberIds,
+    memberProfiles: isObject(data.memberProfiles)
+      ? (data.memberProfiles as Record<string, MemberProfile>)
+      : {},
+    categories: isObject(data.categories)
+      ? (data.categories as Record<string, CategoryDef>)
+      : {},
+    cards: isObject(data.cards) ? (data.cards as HouseholdCards) : {},
     cardFees: readCardFees(data.cardFees),
   };
 });
 
 /** Both fields are optional on the doc, so households predating them decode. */
 function readCardFees(raw: unknown): CardFeeSettings {
-  const fees = (raw ?? {}) as Partial<CardFeeSettings>;
+  if (!isObject(raw)) return { commissionArsCents: 0, usdArsRate: null };
   return {
-    commissionArsCents: fees.commissionArsCents ?? 0,
-    usdArsRate: fees.usdArsRate ?? null,
+    commissionArsCents: isInt(raw.commissionArsCents)
+      ? raw.commissionArsCents
+      : 0,
+    // The one figure in this app that is legitimately fractional, so it is
+    // checked for being finite rather than integer. A NaN here renders every
+    // peso estimate as NaN.
+    usdArsRate:
+      typeof raw.usdArsRate === "number" && Number.isFinite(raw.usdArsRate)
+        ? raw.usdArsRate
+        : null,
   };
 }
 
@@ -215,13 +290,34 @@ export const periodBudgetConverter = readOnly<PeriodBudget>((snap) => {
   // straight back after being answered and stay until the round trip finished.
   // Same reason iOS decodes bankCharges with .estimate.
   const data = snap.data({ serverTimestamps: "estimate" });
+  const path = `periodBudgets/${snap.id}`;
+  // All load-bearing: the two dates decide which period an expense belongs to,
+  // and the amount is what "te queda" is measured against. A period that does
+  // not decode is better absent than present and wrong — absent,
+  // materialization notices the gap; wrong, nothing does.
+  if (!isCalendarDate(data.startDate) || !isCalendarDate(data.endDate)) {
+    return rejectDoc(path, "startDate or endDate is not a calendar date");
+  }
+  if (data.endDate <= data.startDate) {
+    return rejectDoc(path, "endDate is not after startDate");
+  }
+  if (!isPositiveInt(data.amountCents)) {
+    return rejectDoc(path, "amountCents is not a positive integer");
+  }
+  if (!isOneOf(data.period, ["weekly", "fortnightly"] as const)) {
+    return rejectDoc(path, "period is neither weekly nor fortnightly");
+  }
   return {
-    startDate: data.startDate as string,
-    endDate: data.endDate as string,
-    period: data.period as PeriodType,
-    amountCents: data.amountCents as number,
-    source: data.source as "default" | "custom",
-    rolloverCents: (data.rolloverCents as number | undefined) ?? 0,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    period: data.period,
+    amountCents: data.amountCents,
+    // Falls back rather than refusing: source explains where the figure came
+    // from, it does not decide anything.
+    source: isOneOf(data.source, ["default", "custom"] as const)
+      ? data.source
+      : "default",
+    rolloverCents: isInt(data.rolloverCents) ? data.rolloverCents : 0,
     // A boolean: nothing needs the instant, only whether it happened.
     confirmed: data.confirmedAt != null,
   };
@@ -229,15 +325,32 @@ export const periodBudgetConverter = readOnly<PeriodBudget>((snap) => {
 
 export const expenseConverter = readOnly<Expense>((snap) => {
   const data = snap.data();
+  const path = `expenses/${snap.id}`;
+  // The three every total depends on. An expense with a missing amount used to
+  // decode as `undefined`, which turns a period's spend into NaN: one bad
+  // document making the whole budget unreadable, and nothing saying why.
+  if (!isPositiveInt(data.amountCents)) {
+    return rejectDoc(path, "amountCents is not a positive integer");
+  }
+  // Unpadded "2026-9-4" sorts before "2026-10-01" as a string, so a single one
+  // lands in the wrong period for every range query in the app.
+  if (!isCalendarDate(data.date)) {
+    return rejectDoc(path, "date is not a calendar date");
+  }
+  if (!isString(data.categoryId)) {
+    return rejectDoc(path, "categoryId is missing");
+  }
   const expense: Expense = {
     id: snap.id,
-    amountCents: data.amountCents as number,
-    categoryId: data.categoryId as string,
-    note: data.note as string,
-    date: data.date as string,
-    createdBy: data.createdBy as string,
-    usdCents: (data.usdCents as number | undefined) ?? null,
-    verified: (data.verified as boolean | undefined) === true,
+    amountCents: data.amountCents,
+    categoryId: data.categoryId,
+    note: isMaybeEmptyString(data.note) ? data.note : "",
+    date: data.date,
+    createdBy: isString(data.createdBy) ? data.createdBy : "",
+    // Absent is not zero: absent means the bank has not said what it charged,
+    // zero would be a claim that it charged nothing.
+    usdCents: isInt(data.usdCents) ? data.usdCents : null,
+    verified: data.verified === true,
     createdAt: (data.createdAt as Timestamp | null) ?? null,
     updatedAt: (data.updatedAt as Timestamp | null) ?? null,
     pendingWrite: snap.metadata.hasPendingWrites,
@@ -252,68 +365,130 @@ export const bankChargeConverter = readOnly<BankChargeDoc>((snap) => {
   // there looking undismissed until the server answered, so pressing Descartar
   // would appear to do nothing.
   const data = snap.data({ serverTimestamps: "estimate" });
+  const path = `bankCharges/${snap.id}`;
+  // The collection this app does NOT write: an Apps Script does, from whatever
+  // the bank's email looked like that morning. The likeliest shape to drift,
+  // and the one where a charge silently missing its amount would still be
+  // matched to an expense and mark it verified for nothing.
+  if (!isPositiveInt(data.usdCents)) {
+    return rejectDoc(path, "usdCents is not a positive integer");
+  }
+  if (!isCalendarDate(data.date)) {
+    return rejectDoc(path, "date is not a calendar date");
+  }
   const dismissedAt = data.dismissedAt as Timestamp | undefined;
   return {
     id: snap.id,
-    usdCents: data.usdCents as number,
-    date: data.date as string,
-    merchant: (data.merchant as string | undefined) ?? "",
-    cardLast4: (data.cardLast4 as string | undefined) ?? null,
+    usdCents: data.usdCents,
+    date: data.date,
+    merchant: isMaybeEmptyString(data.merchant) ? data.merchant : "",
+    cardLast4: isString(data.cardLast4) ? data.cardLast4 : null,
     dismissedAt: dismissedAt?.toDate() ?? null,
   };
 });
 
 export const serviceConverter = readOnly<ServiceDoc>((snap) => {
   const data = snap.data();
+  // The name is the entire link to the ledger: Servicios finds the expense that
+  // paid a bill by matching it. A nameless service can never be reconciled, so
+  // it is broken rather than incomplete.
+  if (!isString(data.name)) {
+    return rejectDoc(`services/${snap.id}`, "name is missing");
+  }
   return {
     id: snap.id,
-    name: (data.name as string) ?? "",
+    name: data.name,
     // Absent means "not quoted in this currency" — distinct from zero, which
     // the rules reject outright.
-    amountAudCents: (data.amountAudCents as number | undefined) ?? null,
-    amountUsdCents: (data.amountUsdCents as number | undefined) ?? null,
-    interval: (data.interval as ServiceInterval) ?? "monthly",
-    dueDay: (data.dueDay as number | undefined) ?? 1,
-    anchorMonth: (data.anchorMonth as number | undefined) ?? null,
-    paidWith: (data.paidWith as PaidWith) ?? "debit",
-    createdBy: (data.createdBy as string) ?? "",
+    amountAudCents: isPositiveInt(data.amountAudCents)
+      ? data.amountAudCents
+      : null,
+    amountUsdCents: isPositiveInt(data.amountUsdCents)
+      ? data.amountUsdCents
+      : null,
+    interval: isOneOf<ServiceInterval>(data.interval, SERVICE_INTERVALS)
+      ? data.interval
+      : "monthly",
+    // Clamped rather than refused: the day only decides when the bill falls
+    // due, and a service whose name and amount are right is worth keeping even
+    // if somebody typed 45.
+    dueDay:
+      isInt(data.dueDay) && data.dueDay >= 1 && data.dueDay <= 31
+        ? data.dueDay
+        : 1,
+    anchorMonth:
+      isInt(data.anchorMonth) && data.anchorMonth >= 1 && data.anchorMonth <= 12
+        ? data.anchorMonth
+        : null,
+    paidWith: isOneOf<PaidWith>(data.paidWith, ["debit", "credit"] as const)
+      ? data.paidWith
+      : "debit",
+    createdBy: isString(data.createdBy) ? data.createdBy : "",
     pendingWrite: snap.metadata.hasPendingWrites,
   };
 });
 
 export const cardStatementConverter = readOnly<CardStatement>((snap) => {
   const data = snap.data();
+  const path = `cardStatements/${snap.id}`;
+  // Three dates that decide which charges belong to this statement and whether
+  // it has closed. One missing turns the comparison into
+  // `undefined <= "2026-09-04"`, which is false, which reads as "nothing is in
+  // this statement" — a plausible answer and the wrong one.
+  if (!isCalendarDate(snap.id)) {
+    return rejectDoc(path, "the document id is not a calendar date");
+  }
+  if (!isCalendarDate(data.startDate) || !isCalendarDate(data.dueDate)) {
+    return rejectDoc(path, "startDate or dueDate is not a calendar date");
+  }
   return {
-    startDate: data.startDate as string,
+    startDate: data.startDate,
     // The doc id IS the closing date; reading it from the id keeps the two
     // from ever disagreeing.
     closingDate: snap.id,
-    dueDate: data.dueDate as string,
+    dueDate: data.dueDate,
   };
 });
 
 export const cardChargeConverter = readOnly<CardCharge>((snap) => {
   const data = snap.data();
+  const path = `cardCharges/${snap.id}`;
+  // These add up to the statement total and then to the peso estimate with its
+  // three taxes, so one undefined amount makes every figure on Tarjetas NaN.
+  if (!isPositiveInt(data.usdCents)) {
+    return rejectDoc(path, "usdCents is not a positive integer");
+  }
+  if (!isCalendarDate(data.date)) {
+    return rejectDoc(path, "date is not a calendar date");
+  }
   return {
     id: snap.id,
-    date: data.date as string,
-    detail: (data.detail as string | undefined) ?? "",
-    card: (data.card as CardBrand) ?? "visa",
-    usdCents: data.usdCents as number,
+    date: data.date,
+    detail: isMaybeEmptyString(data.detail) ? data.detail : "",
+    card: isOneOf<CardBrand>(data.card, ["visa", "mastercard"] as const)
+      ? data.card
+      : "visa",
+    usdCents: data.usdCents,
     // `?? true`, not `?? false`: every charge written before this field exists
     // without it, and nearly all of them were digital services.
-    digital: (data.digital as boolean | undefined) ?? true,
-    verified: (data.verified as boolean | undefined) ?? false,
-    createdBy: (data.createdBy as string) ?? "",
+    digital: data.digital !== false,
+    verified: data.verified === true,
+    createdBy: isString(data.createdBy) ? data.createdBy : "",
     pendingWrite: snap.metadata.hasPendingWrites,
   };
 });
 
 export const inviteConverter = readOnly<Invite>((snap) => {
   const data = snap.data();
+  // An invite pointing nowhere would send whoever redeems it into
+  // households/undefined. Refusing reads as "that code is not valid", which is
+  // both true and what the join screen already knows how to say.
+  if (!isString(data.householdId)) {
+    return rejectDoc(`invites/${snap.id}`, "householdId is missing");
+  }
   return {
     code: snap.id,
-    householdId: data.householdId as string,
-    createdBy: data.createdBy as string,
+    householdId: data.householdId,
+    createdBy: isString(data.createdBy) ? data.createdBy : "",
   };
 });

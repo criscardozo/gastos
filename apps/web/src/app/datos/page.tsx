@@ -21,6 +21,7 @@ import { Icon } from "@/components/ui/icon";
 import { Segmented } from "@/components/ui/segmented";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { expenseConverter, type Expense } from "@/lib/firebase/converters";
+import { decoded } from "@/lib/firebase/shape";
 import { formatCents, formatUsd } from "@/lib/money";
 import { formatPeriodRange, formatShortDate } from "@/lib/dates";
 import { addDays, type PeriodRange } from "@/lib/periods";
@@ -156,7 +157,10 @@ export default function DataPage() {
     getDocs(q)
       .then((snap) => {
         if (cancelled) return;
-        setLoadState({ rows: snap.docs.map((d) => d.data()), loading: false });
+        setLoadState({
+          rows: decoded(snap.docs.map((d) => d.data())),
+          loading: false,
+        });
       })
       .catch(() => {
         if (!cancelled) setLoadState({ rows: [], loading: false });

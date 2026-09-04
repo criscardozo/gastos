@@ -32,6 +32,7 @@ import {
   type Expense,
   type ServiceDoc,
 } from "./converters";
+import { decoded } from "./shape";
 import type { PeriodRange } from "../periods";
 
 export interface ExpensesState {
@@ -84,7 +85,10 @@ export function useExpensesRange(
       // don't cost reads.
       { includeMetadataChanges: true },
       (snap) => {
-        setState({ expenses: snap.docs.map((d) => d.data()), loading: false });
+        setState({
+          expenses: decoded(snap.docs.map((d) => d.data())),
+          loading: false,
+        });
       },
       // A read that FAILED is not a read that came back empty. This used to
       // set an empty list either way, so a listener error rendered as "nothing
@@ -159,7 +163,7 @@ export function useBankCharges(householdId: string | null): BankChargesState {
     const unsubscribe = onSnapshot(
       q,
       (snap) => {
-        const all = snap.docs.map((d) => d.data());
+        const all = decoded(snap.docs.map((d) => d.data()));
         const { pending, dismissed, expired } = partitionCharges(all, new Date());
         setState({ charges: [...pending, ...dismissed], loading: false });
         for (const charge of expired) {
@@ -229,7 +233,10 @@ export function useServices(householdId: string | null): ServicesState {
       q,
       { includeMetadataChanges: true },
       (snap) => {
-        setState({ services: snap.docs.map((d) => d.data()), loading: false });
+        setState({
+          services: decoded(snap.docs.map((d) => d.data())),
+          loading: false,
+        });
       },
       // A read that FAILED is not a read that came back empty. This used to
       // set an empty list either way, so a listener error rendered as "nothing
@@ -287,7 +294,10 @@ export function useCardStatements(householdId: string | null): StatementsState {
     return onSnapshot(
       q,
       (snap) => {
-        setState({ statements: snap.docs.map((d) => d.data()), loading: false });
+        setState({
+          statements: decoded(snap.docs.map((d) => d.data())),
+          loading: false,
+        });
       },
       // A read that FAILED is not a read that came back empty. This used to
       // set an empty list either way, so a listener error rendered as "nothing
@@ -350,7 +360,10 @@ export function useCardCharges(
       q,
       { includeMetadataChanges: true },
       (snap) => {
-        setState({ charges: snap.docs.map((d) => d.data()), loading: false });
+        setState({
+          charges: decoded(snap.docs.map((d) => d.data())),
+          loading: false,
+        });
       },
       // A read that FAILED is not a read that came back empty. This used to
       // set an empty list either way, so a listener error rendered as "nothing

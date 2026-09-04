@@ -28,6 +28,7 @@ import {
 } from "@/components/charts";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { expenseConverter } from "@/lib/firebase/converters";
+import { decoded } from "@/lib/firebase/shape";
 import { categoryColor } from "@/lib/categories";
 import { formatCents, formatCentsCompact, formatUsd } from "@/lib/money";
 import {
@@ -165,7 +166,7 @@ export default function StatsPage() {
       .then((snap) => {
         if (cancelled) return;
         setState({
-          rows: snap.docs.map((d) => d.data()),
+          rows: decoded(snap.docs.map((d) => d.data())),
           loading: false,
           failed: false,
         });

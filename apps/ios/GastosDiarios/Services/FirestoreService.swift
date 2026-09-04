@@ -73,7 +73,7 @@ final class FirestoreService {
                 onChange(nil)
                 return
             }
-            onChange(try? snapshot.data(as: UserProfile.self))
+            onChange(Self.decode(snapshot, as: UserProfile.self, in: "users/\(uid)"))
         }
     }
 
@@ -86,7 +86,7 @@ final class FirestoreService {
                 onChange(nil)
                 return
             }
-            onChange(try? snapshot.data(as: Household.self))
+            onChange(Self.decode(snapshot, as: Household.self, in: "households/\(id)"))
         }
     }
 
@@ -118,7 +118,10 @@ final class FirestoreService {
                 // start-period screen would come straight back after being
                 // answered and sit there until the round trip finished.
                 let periods = snapshot?.documents.compactMap {
-                    try? $0.data(as: PeriodBudget.self, with: .estimate)
+                    Self.decode(
+                        $0, as: PeriodBudget.self, with: .estimate,
+                        in: "periodBudgets"
+                    )
                 } ?? []
                 onChange(periods, snapshot?.metadata.isFromCache ?? true)
             }
@@ -147,7 +150,9 @@ final class FirestoreService {
                     return
                 }
                 let items: [ExpenseItem] = snapshot.documents.compactMap { doc in
-                    guard let expense = try? doc.data(as: Expense.self) else { return nil }
+                    guard let expense = Self.decode(
+                        doc, as: Expense.self, in: "expenses"
+                    ) else { return nil }
                     return ExpenseItem(expense: expense, hasPendingWrites: doc.metadata.hasPendingWrites)
                 }
                 onChange(items)
@@ -188,12 +193,13 @@ final class FirestoreService {
                 // at the default, a charge would sit there looking undismissed
                 // until the server answered, so Descartar would appear to do
                 // nothing.
+                // Named one by one now rather than counted: "3 of 40 did not
+                // decode" tells you there is a problem, not which charge to go
+                // and look at.
                 let charges = snapshot.documents.compactMap {
-                    try? $0.data(as: BankCharge.self, with: .estimate)
-                }
-                if charges.count != snapshot.documents.count {
-                    Self.log.error(
-                        "bankCharges: \(snapshot.documents.count - charges.count, privacy: .public) of \(snapshot.documents.count, privacy: .public) documents did not decode"
+                    Self.decode(
+                        $0, as: BankCharge.self, with: .estimate,
+                        in: "bankCharges"
                     )
                 }
                 onChange(charges)
@@ -725,6 +731,49 @@ final class FirestoreService {
     /// on screen is indistinguishable from "there is nothing here" — and when
     /// the callback never fires at all, from "still loading". A screen stuck on
     /// a spinner with the reason thrown away is the worst of the three.
+    /// Decode one document of a query, or say which one refused and why.
+    ///
+    /// `try?` here is the quiet half of the same lie the listeners told: a
+    /// document that stops decoding does not error, it simply stops existing,
+    /// and a list one item short looks exactly like a list. The security rules
+    /// refuse a badly shaped write, but three writers get past them — the Apps
+    /// Script that files bank charges, the emulator seed (admin writes bypass
+    /// rules entirely), and older builds of either client.
+    ///
+    /// Dropping the document rather than failing the batch is deliberate: one
+    /// bad row from last year should hide itself, not blank the history.
+    private static func decode<T: Decodable>(
+        _ document: QueryDocumentSnapshot,
+        as type: T.Type,
+        with behaviour: ServerTimestampBehavior = .none,
+        in collection: String
+    ) -> T? {
+        do {
+            return try document.data(as: type, with: behaviour)
+        } catch {
+            log.error(
+                "\(collection, privacy: .public)/\(document.documentID, privacy: .public) did not decode: \(String(describing: error), privacy: .public)"
+            )
+            return nil
+        }
+    }
+
+    /// Same, for a single document rather than a query result.
+    private static func decode<T: Decodable>(
+        _ snapshot: DocumentSnapshot,
+        as type: T.Type,
+        in path: String
+    ) -> T? {
+        do {
+            return try snapshot.data(as: type)
+        } catch {
+            log.error(
+                "\(path, privacy: .public) did not decode: \(String(describing: error), privacy: .public)"
+            )
+            return nil
+        }
+    }
+
     private static func reportListen(_ what: String, _ error: Error) {
         // os.Logger rather than print, for a measured reason: the simulator's
         // runtime log does not capture an app's stdout — not through the build
@@ -749,7 +798,9 @@ final class FirestoreService {
             .limit(to: 100)
             .addSnapshotListener { snapshot, error in
                 if let error { Self.reportListen("services", error) }
-                onChange(snapshot?.documents.compactMap { try? $0.data(as: ServiceDoc.self) } ?? [])
+                onChange(snapshot?.documents.compactMap {
+                    Self.decode($0, as: ServiceDoc.self, in: "services")
+                } ?? [])
             }
     }
 
@@ -784,7 +835,9 @@ final class FirestoreService {
             .limit(to: 24)
             .addSnapshotListener { snapshot, error in
                 if let error { Self.reportListen("cardStatements", error) }
-                onChange(snapshot?.documents.compactMap { try? $0.data(as: CardStatement.self) } ?? [])
+                onChange(snapshot?.documents.compactMap {
+                    Self.decode($0, as: CardStatement.self, in: "cardStatements")
+                } ?? [])
             }
     }
 
@@ -802,7 +855,9 @@ final class FirestoreService {
             .whereField("date", isLessThanOrEqualTo: closingDate)
             .addSnapshotListener { snapshot, error in
                 if let error { Self.reportListen("cardCharges", error) }
-                onChange(snapshot?.documents.compactMap { try? $0.data(as: CardCharge.self) } ?? [])
+                onChange(snapshot?.documents.compactMap {
+                    Self.decode($0, as: CardCharge.self, in: "cardCharges")
+                } ?? [])
             }
     }
 

@@ -120,7 +120,12 @@ export async function joinHousehold(
     doc(db, "invites", code).withConverter(inviteConverter),
   );
   if (!inviteSnap.exists()) throw new Error("invite-not-found");
-  const { householdId } = inviteSnap.data();
+  // A code whose document does not decode is the same answer as a code that
+  // does not exist: it cannot take anyone anywhere, and the join screen already
+  // knows how to say so.
+  const invite = inviteSnap.data();
+  if (invite === null) throw new Error("invite-not-found");
+  const { householdId } = invite;
 
   await updateDoc(doc(db, "households", householdId), {
     memberIds: arrayUnion(uid),
