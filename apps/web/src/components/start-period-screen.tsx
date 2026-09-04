@@ -235,7 +235,7 @@ export function StartPeriodScreen({
                 min={stretchMin}
                 max={stretchMax}
                 onChange={(event) => setStretchTo(event.target.value)}
-                className="h-14 rounded-[18px] border border-line bg-surface px-4 text-[17px] font-semibold text-ink"
+                className="h-14 rounded-[18px] border border-line bg-surface px-4 text-base font-semibold text-ink"
               />
             </label>
             {/* The consequence, spelled out — the point of stretching is the
