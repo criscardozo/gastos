@@ -84,6 +84,42 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  /**
+   * The four headers that cost nothing to be right about.
+   *
+   * Firestore's security rules are the only real boundary in this project —
+   * there is no backend to defend — so these do not protect the data. What
+   * they protect is the browser: a response mislabelled as HTML, a referrer
+   * leaking a path to a third party, the app framed by someone else, a
+   * permission prompt nobody asked for.
+   *
+   * NOT here, on purpose: Content-Security-Policy. Firebase Auth's handler is
+   * proxied through this origin (see rewrites above) and its page runs inline
+   * script; a policy strict enough to be worth having would need a nonce
+   * threaded through a build that is entirely static, and a policy loose
+   * enough to avoid that is decoration. It is worth doing properly one day and
+   * is not worth guessing at today.
+   *
+   * X-Frame-Options does not affect sign-in: the handler is a top-level
+   * navigation (popup or redirect), never an iframe.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
