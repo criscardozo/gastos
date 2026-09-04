@@ -74,16 +74,27 @@ function serialize(value) {
 }
 
 async function main() {
-  const keyPath = resolveCredentials();
-  const serviceAccount = JSON.parse(
-    await import("node:fs").then((fs) => fs.readFileSync(keyPath, "utf8")),
-  );
-  initializeApp({ credential: cert(serviceAccount), projectId: PROJECT_ID });
+  // Pointed at the emulator when FIRESTORE_EMULATOR_HOST is set, which is how
+  // the restore is proven: seed, back up, wipe, restore, compare. A backup
+  // nobody has ever read back is a hope, and the round trip cannot be
+  // rehearsed against production.
+  const emulator = process.env.FIRESTORE_EMULATOR_HOST;
+  const project = process.env.BACKUP_PROJECT_ID ?? PROJECT_ID;
+  if (emulator !== undefined && emulator !== "") {
+    console.log(`reading the EMULATOR at ${emulator} (project "${project}")`);
+    initializeApp({ projectId: project });
+  } else {
+    const keyPath = resolveCredentials();
+    const serviceAccount = JSON.parse(
+      await import("node:fs").then((fs) => fs.readFileSync(keyPath, "utf8")),
+    );
+    initializeApp({ credential: cert(serviceAccount), projectId: PROJECT_ID });
+  }
   const db = getFirestore();
 
   const rootCollections = await db.listCollections();
   const dump = {
-    project: PROJECT_ID,
+    project,
     exportedAt: new Date().toISOString(),
     collections: {},
   };

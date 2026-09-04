@@ -182,6 +182,35 @@ Firestore has no free managed export, so `pnpm backup` dumps the whole project
 The service account is a GCP feature — free on the Spark plan. Timestamps are
 serialized to ISO strings so the JSON round-trips cleanly.
 
+### Putting one back
+
+`pnpm restore <file>` reads a dump. It targets the **emulator** unless told
+otherwise, because rehearsing a restore is the only way to know the backup was
+ever worth taking — and rehearsing it against production is not rehearsing.
+
+```sh
+# 1. The emulator, under the app's OWN project id (this matters — see
+#    docs/reglas.md: started under another one, isMember()'s get() resolves in
+#    a namespace with no household and every subcollection reads back empty).
+firebase emulators:start --only auth,firestore \
+  --config firebase/firebase.json --project qcris-gastos-diarios
+
+# 2. Restore into it and look.
+pnpm restore backups/gastos-diarios-<stamp>.json
+
+# 3. Prove the round trip, which is the actual test: back the emulator up
+#    again and diff the two dumps. They should differ only in exportedAt.
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 pnpm backup
+```
+
+For the real thing, `pnpm restore --production <file>`. It refuses unless the
+dump's own `project` field matches, then asks you to type the project id. It
+**restores, it does not wipe**: documents in the dump are written over what is
+there, and documents that exist today but are not in the dump are left alone.
+
+`pnpm backup` reads the emulator too when `FIRESTORE_EMULATOR_HOST` is set,
+which is what makes step 3 possible.
+
 ### Weekly, without a machine of your own (GitHub Actions)
 
 `.github/workflows/backup.yml` runs the same script every **Thursday morning in

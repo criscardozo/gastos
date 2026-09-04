@@ -14,7 +14,8 @@
     "verify:pwa": "pnpm --filter web verify:pwa",
     "emulators": "firebase emulators:start --config firebase/firebase.json --project qcris-gastos-diarios",
     "seed:emulator": "node scripts/seed-emulator.mjs",
-    "backup": "node scripts/backup.mjs"
+    "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs"
   },
   "devDependencies": {
     "firebase-admin": "^14.3.0"
