@@ -211,6 +211,21 @@ there, and documents that exist today but are not in the dump are left alone.
 `pnpm backup` reads the emulator too when `FIRESTORE_EMULATOR_HOST` is set,
 which is what makes step 3 possible.
 
+### Is the deployed ruleset the one in the repo?
+
+Rules are deployed by hand, and nothing used to check that what Firestore
+enforces is what `main` says. That gap is quiet in the worst way: the rules are
+the only security boundary here, so a fix that was written, merged and never
+deployed reads as done everywhere anyone would look.
+
+```sh
+node scripts/check-rules-drift.mjs   # needs the same service-account key
+```
+
+It prints the serving ruleset and when it was released, or the first line that
+differs and the command to deploy — and exits non-zero, which is how the weekly
+workflow turns a drift into an email.
+
 ### Weekly, without a machine of your own (GitHub Actions)
 
 `.github/workflows/backup.yml` runs the same script every **Thursday morning in

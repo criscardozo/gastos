@@ -54,6 +54,17 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
         run: pnpm backup
 
+      # The rules are the ONLY security boundary in this project, and they are
+      # deployed by hand. A fix that was written, reviewed, merged and never
+      # deployed reads as done in every place anyone would look, so once a week
+      # something asks Firestore what it is actually enforcing. Free: same
+      # runner, same credential, two GETs. A mismatch FAILS the job, which is
+      # what sends the email.
+      - name: Deployed rules still match the repo
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
+        run: node scripts/check-rules-drift.mjs
+
       - name: Stamp the artifact
         id: stamp
         run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
