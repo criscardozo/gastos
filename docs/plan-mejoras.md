@@ -485,10 +485,15 @@ Hecho: C1, C2, I1, I2, W1, W2, V1, V2, V3, B1, B2, P1, P2, P3, R1, R3, D1, X1.
 Pendiente:
 
 - **R2** (los `asyncAfter` de foco): el de `SettingsView` no es un hack sino una
-  duración deliberada de 1,6 s y se queda. El de carga rápida se intentó con
-  `.task` y **se revirtió sin verificar** — ahora que X1 está resuelto y el
-  simulador lee datos, se puede probar de verdad: abrir el sheet y mirar si
-  sube el teclado. Los de `ExtendPeriodSheet` y `VerifyExpenseSheet`, igual.
+  duración deliberada de 1,6 s y se queda. Los otros tres se intentaron con
+  `.task` y **se revirtieron sin verificar**, con la razón escrita al lado del
+  delay. Sigue sin poder comprobarse acá, y ya no por los datos —X1 está
+  resuelto y el simulador los lee— sino porque **abrir esos sheets necesita un
+  toque**: la automatización de UI no está habilitada en este XcodeBuildMCP y
+  `osascript` no tiene permiso de accesibilidad, y el `simctl openurl` que
+  abriría la carga rápida se queda en un diálogo del sistema que tampoco se
+  puede tocar. Lo desbloquea habilitar accesibilidad para la terminal, o
+  probarlo a mano en el simulador.
 - **G1** (partir `AppModel`, 1.336 líneas) y **G2** (partir `gastos/page.tsx`,
   981, y `datos/page.tsx`, 837). Sin features en vuelo, un store o un hook por
   commit, sin cambiar comportamiento.
