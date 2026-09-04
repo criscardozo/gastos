@@ -100,9 +100,17 @@ final class FirestoreService {
         }
     }
 
-    /// Period budgets are a tiny, bounded collection by construction (one doc
-    /// per elapsed week/fortnight), so listening to the whole subcollection is
-    /// safe for the free tier.
+    /// The most recent 26 periods: half a year of weeks, a year of fortnights.
+    ///
+    /// "Tiny by construction" was the old reasoning and it was only true for a
+    /// while — one doc per elapsed week is 52 a year, and an unbounded listener
+    /// pays for every one of them on every open, forever. The number matches
+    /// the web's window so the two clients agree about how much history there
+    /// is; they did not before, and iOS showed every past period it could find
+    /// while the web showed eight.
+    ///
+    /// Newest first so the limit drops the OLDEST, then reversed for the
+    /// ascending order everything downstream expects.
     /// `fromCache` says whether this snapshot is still the local cache rather
     /// than the server's word. Materialization MUST NOT act on a cached one —
     /// see AppModel.materializeIfNeeded. includeMetadataChanges is what makes
@@ -115,7 +123,8 @@ final class FirestoreService {
     ) -> ListenerRegistration {
         db.collection("households").document(householdId)
             .collection("periodBudgets")
-            .order(by: "startDate")
+            .order(by: "startDate", descending: true)
+            .limit(to: 26)
             .addSnapshotListener(includeMetadataChanges: true) { snapshot, error in
                 // A denied or failed read here reads EXACTLY like a household
                 // with no periods: no current period, no budget, "Quedan
@@ -127,13 +136,14 @@ final class FirestoreService {
                 // server has not acknowledged yet decodes as nil, so the
                 // start-period screen would come straight back after being
                 // answered and sit there until the round trip finished.
-                let periods = snapshot?.documents.compactMap {
+                let periods = (snapshot?.documents.compactMap {
                     Self.decode(
                         $0, as: PeriodBudget.self, with: .estimate,
                         in: "periodBudgets"
                     )
-                } ?? []
-                onChange(periods, snapshot?.metadata.isFromCache ?? true)
+                } ?? []).reversed()
+                let ordered = Array(periods)
+                onChange(ordered, snapshot?.metadata.isFromCache ?? true)
             }
     }
 

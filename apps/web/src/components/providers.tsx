@@ -339,7 +339,14 @@ export function Providers({ children }: { children: ReactNode }) {
     const q = query(
       collection(fb.db, "households", householdId, "periodBudgets"),
       orderBy("startDate", "desc"),
-      limit(8),
+      // 26: half a year of weeks, a year of fortnights. The window has to be
+      // bounded — an unbounded one costs one read per period per open, forever
+      // — and it has to be the SAME number on both clients, which it was not:
+      // iOS listened to the whole collection and showed every past period it
+      // found, so the two disagreed about how much history exists. 8 was too
+      // few to be that shared number; it barely covered the six-period trend
+      // right below it.
+      limit(26),
     ).withConverter(periodBudgetConverter);
     // includeMetadataChanges so the cache→server transition arrives even when
     // the documents are identical. Without it that event never fires, and a

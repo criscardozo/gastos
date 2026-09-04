@@ -171,6 +171,14 @@ Rules of the chain:
   The arithmetic is `stretchPeriodTo`; the rules enforce only the shape (end
   date strictly later, everything else identical), exactly as with extending.
 - Changing `defaultBudget` affects only future, not-yet-materialized periods.
+- **Clients listen to the most recent 26 periods, not all of them** — half a
+  year of weeks, a year of fortnights, and the same number on both so they
+  agree about how much history exists. An unbounded listener costs one read per
+  elapsed period on every open, which grows by 52 a year and never shrinks;
+  everything the UI does with the list (the current period, the six-period
+  trend, the past-period rows) fits inside that window. The query is newest
+  first so the limit drops the oldest. Anything wanting the full record has to
+  page it deliberately rather than get it as a side effect of opening the app.
 
 ### `households/{householdId}/expenses/{expenseId}`
 
