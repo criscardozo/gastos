@@ -154,6 +154,7 @@ struct HistoryView: View {
                 deletingItem = nil
             }
         }
+        .newExpenseButton()
     }
 
     // MARK: Pieces

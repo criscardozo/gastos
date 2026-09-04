@@ -58,7 +58,7 @@ final class AppModel {
     /// bar, and everything consulted once a month lives one tap inside it.
     /// Settings used to be the fourth tab and is now the last row in there.
     enum MainTab: Hashable {
-        case entry, summary, history, more
+        case summary, history, cards, services, settings
     }
 
     /// The app opens on the summary, not on the entry form.
@@ -70,10 +70,10 @@ final class AppModel {
 
     /// Whether the quick-entry form is up as a sheet.
     ///
-    /// Every way in sets this — the tab bar's own button, Back Tap, Shortcuts,
-    /// the iOS Control, the widget, `gastosdiarios://nuevo`. There is no
-    /// "entry tab" to navigate to any more; `MainTab.entry` survives only as
-    /// the tab bar item that opens this.
+    /// Every way in sets this — the button on Resumen and Historial, Back Tap,
+    /// Shortcuts, the iOS Control, the widget, `gastosdiarios://nuevo`.
+    /// Loading an expense is an action taken from where you are, not a place
+    /// in the bar.
     var showQuickEntry = false
 
     /// Manual appearance override (per-device preference, UserDefaults).

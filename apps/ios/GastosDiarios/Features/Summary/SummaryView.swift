@@ -51,6 +51,7 @@ struct SummaryView: View {
         }
         // Past-period totals come from one-shot aggregations, not listeners.
         .onAppear { model.refreshPastTotals() }
+        .newExpenseButton()
     }
 
     // MARK: Header
