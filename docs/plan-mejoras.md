@@ -442,52 +442,53 @@ extraídos.
 
 ## X — Investigación abierta
 
-### X1. El simulador de iOS no lee subcolecciones contra el emulador
+### X1. RESUELTO — no era el emulador, era un bug de la app
 
-**Estado al 4/9.** Con `--project qcris-gastos-diarios`, mismas reglas, mismos
-datos y **mismo uid**, una sonda de 20 líneas con `@firebase/rules-unit-testing`
-lee `households/seed-household` **y** sus dos `periodBudgets`; la app iOS
-(Firebase 12.18.0, gRPC) lee el hogar pero **ninguna** subcolección, y el
-emulador loguea en `firebase/rules-tests/firestore-debug.log`:
+**La respuesta.** `PeriodBudget.confirmedAt` llevaba `@ServerTimestamp`, cuyo
+decodificador exige que la clave esté presente. Que esté **ausente** es
+exactamente como un período dice "nadie me contestó todavía", que es el estado
+de todo período apenas empieza. Así que en iOS cada período desaparecía entre
+que arrancaba y que alguien lo confirmaba, y con él el presupuesto, los días
+restantes y la pantalla que hace la pregunta. La app se leía como un hogar
+vacío. Arreglado en `e1ce609`, con un test de regresión.
 
-```
-evaluation error at L491:26 for 'create' @ L491 ... L516:26 for 'update'
-```
+**Lo que costó llegar, que es la parte reutilizable.**
 
-L491/L516 son `allow create/update: if isMember(householdId)` de
-`periodBudgets`; la columna 26 es `isMember`, que hace
-`get(/databases/$(database)/documents/households/$(householdId)).data.memberIds`.
+1. El `evaluation error` en las reglas era una pista real pero de otro momento:
+   venía de correr el emulador con un id de proyecto distinto al del plist.
+   Igualarlos lo hizo desaparecer.
+2. Después vinieron horas de observaciones contradictorias — "0 cuentas" en el
+   emulador de auth mientras la app se creía conectada — porque **el emulador
+   dijo "All emulators ready" con su emulador de auth muerto**: el log traía
+   `Error: An unexpected error has occurred.` antes del cartel, la tabla
+   mostraba Authentication en 9099, y no había nada escuchando. `wait-on` pasó
+   igual. Matar todo, comprobar puertos con `lsof`, levantar uno, comprobar de
+   nuevo.
+3. Con un emulador verificadamente vivo, una sonda con un token **real** del
+   emulador leyó todo. Eso descartó reglas, datos y token.
+4. Lo encontró el **log de la app**: `periodBudgets/2026-09-04 did not decode:
+   Key 'confirmedAt' not found`. Ese reporte no existía a la mañana; lo agregó
+   la tarea V2. Sin él, el síntoma seguía siendo "no hay períodos".
 
-**Descartado (medido, no supuesto):** el id de proyecto (igualarlo saca el
-warning pero no el error), el llavero del simulador (borrado con `simctl
-erase`), Firebase 12 vs 11 (**no** se comparó — es lo primero pendiente),
-datos mal escritos (la sonda JS los lee), `memberIds` sin el uid (está).
-
-**Pasos siguientes, en orden.**
-1. Comparar los tokens: el de `authenticatedContext(uid)` (fake) vs el que
-   emite el Auth emulator a la app. Decodificar ambos (`aud`, `iss`,
-   `firebase.sign_in_provider`) y probar el `get()` con el token real vía REST
-   `runQuery` en `http://127.0.0.1:8080/v1/projects/qcris-gastos-diarios/...`
-   con `Authorization: Bearer <idToken>`. Si REST con el token real falla y la
-   sonda pasa, es el token.
-2. `singleProjectMode: false` en `firebase/firebase.json` y repetir.
-3. Firebase 11.x (cambiar `from:` en `apps/ios/project.yml`, **recordar que el
-   pin de `Package.resolved` lleva `revision` y `version`; editar sólo uno
-   hace que SPM restaure el otro**) y repetir. Si 11 lee y 12 no, es un bug
-   del SDK contra el emulador y se reporta.
-4. Lo que se encuentre va a `docs/reglas.md` §7, junto a lo ya escrito.
-
-**Herramientas.** El log de runtime del simulador **no captura los `print`**
-(medido: una línea). Usá `firestore-debug.log` del emulador y, si hace falta,
-`os.Logger` en la app con `log stream --predicate 'subsystem == "..."'`. No hay
-tap automatizado disponible; `xcrun simctl openurl booted gastosdiarios://nuevo
-| historial | cargos` sirve para navegar sin tocar.
+**Y una trampa que vale más que el bug:** el test de decodificación se topó con
+ese mismo `keyNotFound` horas antes y lo esquivó metiendo un `NSNull` en el
+fixture, con un comentario que admitía no comprobar si el camino real toleraba
+el campo ausente. No lo toleraba. **Cuando un test necesita un ajuste para
+pasar, el ajuste es la pregunta.** Quedó en `docs/reglas.md`.
 
 ---
 
-## Reporte final esperado
+## Estado
 
-Por tarea: qué se cambió, **qué se verificó corriendo y qué no**, conteo de
-tests antes/después, y cualquier decisión que hayas tomado que Cristian deba
-conocer. Si una tarea resultó más grande de lo que este plan dice, frená y
-decilo en vez de recortarla en silencio — escalar el alcance es decisión de él.
+Hecho: C1, C2, I1, I2, W1, W2, V1, V2, V3, B1, B2, P1, P2, P3, R1, R3, D1, X1.
+
+Pendiente:
+
+- **R2** (los `asyncAfter` de foco): el de `SettingsView` no es un hack sino una
+  duración deliberada de 1,6 s y se queda. El de carga rápida se intentó con
+  `.task` y **se revirtió sin verificar** — ahora que X1 está resuelto y el
+  simulador lee datos, se puede probar de verdad: abrir el sheet y mirar si
+  sube el teclado. Los de `ExtendPeriodSheet` y `VerifyExpenseSheet`, igual.
+- **G1** (partir `AppModel`, 1.336 líneas) y **G2** (partir `gastos/page.tsx`,
+  981, y `datos/page.tsx`, 837). Sin features en vuelo, un store o un hook por
+  commit, sin cambiar comportamiento.
