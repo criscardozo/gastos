@@ -22,6 +22,7 @@ import { BankChargesPanel } from "@/components/bank-charges-panel";
 import { ExpenseDetailDialog } from "@/components/expense-detail-dialog";
 import { useBankCharges, useExpensesRange } from "@/lib/firebase/hooks";
 import { getFirebaseClient } from "@/lib/firebase/client";
+import { monthSelection, resolveSelection } from "@/lib/period-selection";
 import {
   addExpense,
   deleteExpense,
@@ -29,7 +30,7 @@ import {
   updateExpense,
   type ExpenseInput,
 } from "@/lib/firebase/mutations";
-import type { Expense, Household, PeriodBudget } from "@/lib/firebase/converters";
+import type { Expense, Household } from "@/lib/firebase/converters";
 import { categoryCircleBg, categoryColor, type CategoryDef } from "@/lib/categories";
 import {
   formatCents,
@@ -44,9 +45,7 @@ import {
 } from "@/lib/dates";
 import {
   addDays,
-  monthRange,
   recentMonths,
-  type PeriodRange,
 } from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
 
@@ -243,19 +242,17 @@ export default function ExpensesPage() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const amountRef = useRef<HTMLInputElement | null>(null);
 
-  const fallbackPeriod: PeriodBudget | null =
-    currentPeriod ?? periods[periods.length - 1] ?? null;
-  // Calendar months are a window, not a budget: they cross period boundaries on
-  // purpose, so this is a plain range and never a PeriodBudget.
-  const selectedMonth =
-    selection !== null && selection.startsWith("month:")
-      ? monthRange(`${selection.slice(6)}-01`)
-      : null;
-  const selectedPeriod =
-    (selection !== null && selectedMonth === null
-      ? periods.find((p) => p.startDate === selection)
-      : undefined) ?? (selectedMonth === null ? fallbackPeriod : null);
-  const selected: PeriodRange | null = selectedMonth ?? selectedPeriod;
+  // Calendar months are a window, not a budget: they cross period boundaries
+  // on purpose, so `selectedPeriod` is null for one and nothing draws a budget
+  // bar off it. See lib/period-selection.ts, where this is tested.
+  // Only the range and which kind it is: this screen lists expenses and never
+  // draws a budget, so the period itself is not needed here even when there is
+  // one. /datos and the dashboard are the ones that want it.
+  const { range: selected, isMonth } = resolveSelection(
+    selection,
+    periods,
+    currentPeriod,
+  );
 
   const { expenses } = useExpensesRange(
     household?.id ?? null,
@@ -290,7 +287,7 @@ export default function ExpensesPage() {
   /** The last six calendar months, newest first — a look-back window, not a
    * budget. Six because a year of options in a native select is a scroll. */
   const monthOptions = recentMonths(todayDate, 6).map((m) => ({
-    value: `month:${m.startDate.slice(0, 7)}`,
+    value: monthSelection(m.startDate),
     label: formatMonthLabel(m.startDate, locale),
   }));
 
@@ -757,8 +754,8 @@ export default function ExpensesPage() {
           <FilterPill>
             <Icon name="calendar_today" size={16} className="text-ink-2" />
             <span className="text-[13px] font-semibold text-ink">
-              {selectedMonth !== null
-                ? formatMonthLabel(selectedMonth.startDate, locale)
+              {isMonth
+                ? formatMonthLabel(selected.startDate, locale)
                 : formatPeriodRange(
                     selected.startDate,
                     selected.endDate,
