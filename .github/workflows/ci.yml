@@ -11,10 +11,25 @@ on:
 # tested locally on a simulator before each change lands (see docs/setup.md).
 # Keep it that way — the whole project runs on $0 of infrastructure.
 
+# One run per branch, and the older one is cancelled.
+#
+# The three jobs below cost about 25 minutes of Linux between them, against an
+# allowance of 2,000 a month shared by every repo in the account. Without this,
+# pushing twice in a minute pays for both — and the first run became worthless
+# the moment the second started. Six pushes in one afternoon spent 7% of the
+# month before this was added.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   web:
     name: Web — typecheck, lint, test, build
     runs-on: ubuntu-latest
+    # A hung emulator or a wedged `next start` would otherwise run for the
+    # 6-hour default: 360 minutes, 18% of the monthly allowance, for one
+    # failure. The longest this job has taken is 10.6 minutes.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -32,6 +47,17 @@ jobs:
       # now, which meant a change to the wording it matches would have surfaced
       # as a charge quietly never arriving.
       - run: pnpm --filter gmail-bank-ingest test
+      # Turbopack reuses this between builds; without it every run compiles the
+      # whole app from cold. Keyed on the lockfile AND the sources, so a cache
+      # is only reused when it can be: restore-keys falls back to the newest
+      # cache for the same lockfile, which is still most of the work.
+      - uses: actions/cache@v6
+        with:
+          path: apps/web/.next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/web/src/**') }}
+          restore-keys: |
+            ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-
+            ${{ runner.os }}-next-
       - run: pnpm --filter web build
       # globals.css and Theme.swift are GENERATED from design-system/tokens.json.
       # Regenerating must be a no-op: if it is not, someone edited a token in one
@@ -59,6 +85,8 @@ jobs:
   e2e:
     name: Web — Playwright E2E (emulators)
     runs-on: ubuntu-latest
+    # Longest observed: 9.7 minutes.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -84,6 +112,8 @@ jobs:
   rules:
     name: Firestore rules — emulator tests
     runs-on: ubuntu-latest
+    # Longest observed: 4.6 minutes.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
