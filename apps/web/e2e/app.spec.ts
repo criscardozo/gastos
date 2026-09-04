@@ -1469,13 +1469,43 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   // nobody could find on the statement probably was not on it, so closing
   // offers to carry it — which re-dates it, that being the only way a charge
   // moves between statements when it carries no statement id.
-  const steamTick = page.getByRole("button", {
-    name: "Comprobado contra el resumen · Steam",
-  });
-  await steamTick.click();
-  // Wait for the tick to actually take. Closing before the write lands would
+  // Ticked in the dialog the closed statement offers, not on the row: the list
+  // is a list now, and reconciling is a once-a-month job that only makes sense
+  // with the bank's paper in hand.
+  //
+  // Ticked through the admin API rather than the UI, and the reason is the
+  // point of this test: ticking now lives in a dialog the screen offers once
+  // the statement has CLOSED, because that is when the bank's paper arrives.
+  // The statement here closes in 2100 on purpose — this test is about the
+  // dates and the taxes — so there is no dialog to open, and the tick is a
+  // fixture rather than the behaviour under test. What IS under test is what
+  // closing does with a charge nobody could find on the paper.
+  const cardCharges = await request.get(
+    `${REST}/households/${householdId}/cardCharges`,
+    { headers: admin },
+  );
+  const steam = (
+    ((await cardCharges.json()).documents ?? []) as {
+      name: string;
+      fields: { detail?: { stringValue: string } };
+    }[]
+  ).find((d) => d.fields.detail?.stringValue === "Steam");
+  expect(steam).toBeDefined();
+  const steamId = (steam as { name: string }).name.split("/").pop() as string;
+  const ticked = await request.patch(
+    `${REST}/households/${householdId}/cardCharges/${steamId}` +
+      `?updateMask.fieldPaths=verified`,
+    {
+      headers: admin,
+      data: { fields: { verified: { booleanValue: true } } },
+    },
+  );
+  expect(ticked.ok()).toBe(true);
+  // Wait for the write to reach the screen: closing before it lands would
   // carry Steam across too, and the failure would look like a bug in the move.
-  await expect(steamTick).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("button", { name: /Pasar 1 gasto|Cerrar y abrir el próximo/ }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Cerrar y abrir el próximo" }).click();
   await page.getByLabel("Cierre").fill("2100-01-27");
@@ -1497,6 +1527,110 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await expect(page.getByText("Steam")).toBeVisible();
   await expect(page.getByText("Kmart")).toBeHidden();
 });
+
+/**
+ * Checking a closed statement off against the paper one the bank sends.
+ *
+ * The tick used to sit on every row of the main list, which put a once-a-month
+ * job in front of you every day. It now lives in a dialog the screen offers
+ * exactly when the statement has closed — because that is when the bank's
+ * paper is in your hand — and once per statement per device, so a prompt
+ * people would learn to dismiss does not appear on every visit.
+ */
+test("a closed statement offers its charges to be checked off, once", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-verify-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Verify Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const householdId = (
+    ((await households.json()).documents as {
+      name: string;
+      fields: { name: { stringValue: string } };
+    }[]).find((d) => d.fields.name.stringValue === "Hogar de Verify") as {
+      name: string;
+    }
+  ).name
+    .split("/")
+    .pop() as string;
+
+  // Planted rather than opened through the dialog: a statement can only BE
+  // closed by time passing, and the dialog refuses to open one in the past.
+  const now = new Date().toISOString();
+  await request.patch(
+    `${REST}/households/${householdId}/cardStatements/2026-01-27`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          startDate: { stringValue: "2025-12-28" },
+          closingDate: { stringValue: "2026-01-27" },
+          dueDate: { stringValue: "2026-02-07" },
+          createdAt: { timestampValue: now },
+          updatedAt: { timestampValue: now },
+        },
+      },
+    },
+  );
+  for (const [id, detail, cents] of [
+    ["chg-a", "STEAM", 1999],
+    ["chg-b", "TEMU", 34243],
+  ] as const) {
+    await request.patch(`${REST}/households/${householdId}/cardCharges/${id}`, {
+      headers: admin,
+      data: {
+        fields: {
+          date: { stringValue: "2026-01-05" },
+          detail: { stringValue: detail },
+          card: { stringValue: "visa" },
+          usdCents: { integerValue: String(cents) },
+          digital: { booleanValue: true },
+          verified: { booleanValue: false },
+          createdBy: { stringValue: "seed" },
+          createdAt: { timestampValue: now },
+          updatedAt: { timestampValue: now },
+        },
+      },
+    });
+  }
+
+  await page.getByRole("link", { name: "Tarjetas", exact: true }).click();
+
+  // It offers ITSELF: the statement closed and two charges are unchecked.
+  const dialog = page.getByRole("dialog", { name: "Comprobar el resumen" });
+  await expect(dialog).toBeVisible({ timeout: 20_000 });
+  await expect(dialog.getByText("0 de 2 comprobados")).toBeVisible();
+
+  // The whole row toggles, not a small target beside it.
+  await dialog.getByRole("button", { name: /STEAM/ }).click();
+  await expect(dialog.getByText("1 de 2 comprobados")).toBeVisible();
+  await dialog.getByRole("button", { name: /TEMU/ }).click();
+  await expect(dialog.getByText("2 de 2 comprobados")).toBeVisible();
+
+  // Everything ticked, so the way out says so.
+  await dialog.getByRole("button", { name: "Listo" }).click();
+  await expect(dialog).toBeHidden();
+
+  // The LIST is just a list. No tick beside a charge — the whole point.
+  await expect(page.getByText("STEAM")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Comprobar contra el resumen/ }),
+  ).toHaveCount(0);
+
+  // And it does not ask again next visit.
+  await page.reload();
+  await expect(page.getByText("STEAM")).toBeVisible({ timeout: 20_000 });
+  await expect(dialog).toBeHidden();
+});
+
 
 /**
  * A service and the expense that paid it, linked by name.

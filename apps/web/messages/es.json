@@ -213,7 +213,14 @@
     "moveUnverified": "{count, plural, one {Pasar el gasto sin comprobar} other {Pasar los # gastos sin comprobar}} al nuevo resumen",
     "moveUnverifiedHint": "Se les cambia la fecha al {date}, que es lo que los mueve de resumen.",
     "inboxClosedTitle": "Cerrá el resumen antes de agregar",
-    "inboxClosedBody": "El resumen actual ya cerró: estos cargos entrarían en un mes terminado."
+    "inboxClosedBody": "El resumen actual ya cerró: estos cargos entrarían en un mes terminado.",
+    "verifyTitle": "Comprobar el resumen",
+    "verifyBody": "Cerró el {date}. Marcá cada cargo contra el resumen que manda el banco.",
+    "verifyProgress": "{verified} de {total} comprobados",
+    "verifyDone": "Listo",
+    "verifyLater": "Sigo después",
+    "verifyOpen": "Comprobar contra el resumen",
+    "verifyPending": "{count, plural, one {Queda 1 cargo sin comprobar} other {Quedan # cargos sin comprobar}}"
   },
   "cardsInbox": {
     "title": "Cargos del banco",

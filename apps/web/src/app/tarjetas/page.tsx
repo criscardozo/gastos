@@ -12,7 +12,7 @@
 // Everything is USD, because that is what the card bills in. This screen never
 // touches the household budget.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
@@ -22,6 +22,7 @@ import {
   CardChargeDialog,
   CardFeesDialog,
   StatementDatesDialog,
+  VerifyStatementDialog,
 } from "@/components/card-dialogs";
 import { CardTaxes } from "@/components/card-taxes-panel";
 import { CardChargesInbox } from "@/components/card-charges-inbox";
@@ -76,6 +77,17 @@ function firstProposal(today: string): StatementRange {
   };
 }
 
+/**
+ * Which statement this device has already offered to reconcile.
+ *
+ * The same shape as the start-period screen's key, for the same reason: having
+ * been shown a dialog is a fact about a browser, not about the household, so
+ * it does not belong on the household document.
+ */
+function verifyOfferKey(householdId: string): string {
+  return `gd:cardVerifyOffer:${householdId}`;
+}
+
 export default function CardsPage() {
   const t = useTranslations("cards");
   const tCommon = useTranslations("expenses");
@@ -94,6 +106,19 @@ export default function CardsPage() {
   const [chargeDialog, setChargeDialog] = useState<CardCharge | "new" | null>(null);
   const [datesDialog, setDatesDialog] = useState(false);
   const [feesDialog, setFeesDialog] = useState(false);
+  /**
+   * The reconcile dialog, and whether this device has already offered it for
+   * this statement.
+   *
+   * Per device on purpose, like the start-period screen's key: "have I been
+   * shown this" is a fact about a browser, not about the household. Undefined
+   * means localStorage has not been read yet — opening the dialog before that
+   * would flash it at somebody who dismissed it yesterday.
+   */
+  const [verifyDialog, setVerifyDialog] = useState(false);
+  const [offeredFor, setOfferedFor] = useState<string | null | undefined>(
+    undefined,
+  );
 
   const shown = statements[Math.min(index, Math.max(statements.length - 1, 0))] ?? null;
   const isCurrent = index === 0;
@@ -127,6 +152,46 @@ export default function CardsPage() {
   // screen, because the bank inbox files into the open one wherever the pager
   // has been walked back to.
   const openStatementClosed = isPastClosing(today ?? "", statements[0] ?? null);
+
+  const householdId = household?.id ?? null;
+  // Read once, after mount: localStorage does not exist while the shell is
+  // prerendered.
+  useEffect(() => {
+    if (householdId === null) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOfferedFor(localStorage.getItem(verifyOfferKey(householdId)));
+  }, [householdId]);
+
+  /**
+   * Offer the reconcile dialog once, when the statement has closed and there
+   * is still something to tick off.
+   *
+   * Fenced three ways. Only the OPEN statement past its closing date, so
+   * walking the pager back to March does not ask about March. Only when
+   * something is actually unverified, because a statement already checked off
+   * has nothing to open. And only once per statement per device — the bank's
+   * paper arrives once, and being asked again every visit is how a useful
+   * prompt becomes one people learn to dismiss.
+   */
+  const closedAwaitingCheck = pastClosing && unverified.length > 0;
+  const closingDate = shown?.closingDate ?? null;
+  useEffect(() => {
+    if (
+      householdId === null ||
+      // undefined = localStorage not read yet. Opening now would flash the
+      // dialog at somebody who dismissed it yesterday.
+      offeredFor === undefined ||
+      !closedAwaitingCheck ||
+      closingDate === null ||
+      offeredFor === closingDate
+    ) {
+      return;
+    }
+    localStorage.setItem(verifyOfferKey(householdId), closingDate);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOfferedFor(closingDate);
+    setVerifyDialog(true);
+  }, [householdId, offeredFor, closedAwaitingCheck, closingDate]);
 
   if (household === null || today === null) return null;
 
@@ -329,6 +394,21 @@ export default function CardsPage() {
                   today: formatLongDate(today, locale),
                 })}
               </span>
+              {/* The way back in. The dialog offers itself once when the
+                  statement closes; after that this is how you finish a job you
+                  put down, and it says how much is left rather than making you
+                  open it to find out. */}
+              {unverified.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setVerifyDialog(true)}
+                  className="mt-0.5 self-start rounded-full bg-surface px-3 py-1.5 text-[12px] font-bold"
+                  style={{ color: "var(--warn-text)" }}
+                >
+                  {t("verifyOpen")} ·{" "}
+                  {t("verifyPending", { count: unverified.length })}
+                </button>
+              )}
             </div>
           )}
 
@@ -397,42 +477,23 @@ export default function CardsPage() {
                 {formatUsd(charge.usdCents, locale)}
               </span>
             </button>
-
-            {/* Checked against the paper statement. Green and filled once it
-                is, hollow and grey until then — the same "did a person confirm
-                this" question the Gastos list asks about the bank's USD. */}
-            <button
-              type="button"
-              // Named after the charge: a screen reader hearing "comprobado
-              // contra el resumen" five times learns nothing about which one
-              // it is on.
-              aria-label={`${t("verifyCharge")} · ${
-                charge.detail !== "" ? charge.detail : CARD_LABELS[charge.card]
-              }`}
-              aria-pressed={charge.verified}
-              onClick={() =>
-                withDb((db) =>
-                  setCardChargeVerified(
-                    db,
-                    household.id,
-                    charge.id,
-                    !charge.verified,
-                  ),
-                )
-              }
-              className="flex-none rounded-full p-1"
-            >
-              <Icon
-                name={charge.verified ? "check_circle" : "check_box_outline_blank"}
-                size={22}
-                style={{
-                  color: charge.verified ? "var(--good)" : "var(--ink-tertiary)",
-                }}
-              />
-            </button>
           </div>
         ))}
       </div>
+
+      {verifyDialog && shown !== null && (
+        <VerifyStatementDialog
+          charges={charges}
+          closingDate={shown.closingDate}
+          locale={locale}
+          onToggle={(charge, verified) =>
+            withDb((db) =>
+              setCardChargeVerified(db, household.id, charge.id, verified),
+            )
+          }
+          onClose={() => setVerifyDialog(false)}
+        />
+      )}
 
       {chargeDialog !== null && (
         <CardChargeDialog

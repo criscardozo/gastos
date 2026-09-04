@@ -213,7 +213,14 @@
     "moveUnverified": "{count, plural, one {Carry the unchecked charge} other {Carry the # unchecked charges}} to the new statement",
     "moveUnverifiedHint": "Their date moves to {date}, which is what moves them between statements.",
     "inboxClosedTitle": "Close the statement before adding",
-    "inboxClosedBody": "The current statement has closed: these charges would land in a month that is over."
+    "inboxClosedBody": "The current statement has closed: these charges would land in a month that is over.",
+    "verifyTitle": "Check off the statement",
+    "verifyBody": "Closed on {date}. Tick each charge against the statement the bank sends.",
+    "verifyProgress": "{verified} of {total} checked",
+    "verifyDone": "Done",
+    "verifyLater": "Finish later",
+    "verifyOpen": "Check against the statement",
+    "verifyPending": "{count, plural, one {1 charge still unchecked} other {# charges still unchecked}}"
   },
   "cardsInbox": {
     "title": "Bank charges",

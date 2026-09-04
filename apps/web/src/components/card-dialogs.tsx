@@ -1,16 +1,17 @@
 "use client";
 
-// The two dialogs the Tarjetas screen needs: one for a charge, one for the
-// dates of a statement.
+// The dialogs the Tarjetas screen needs: one for a charge, one for the dates of
+// a statement, and one for checking a closed statement off against the paper
+// one the bank sends.
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
-import { CardMark } from "@/components/ui/marks";
+import { CardMark, CARD_LABELS } from "@/components/ui/marks";
 import type { CardCharge, CardFeeSettings } from "@/lib/firebase/converters";
 import type { CardChargeInput } from "@/lib/firebase/mutations";
-import { formatLongDate } from "@/lib/dates";
+import { formatLongDate, formatShortDate } from "@/lib/dates";
 import { formatUsd, parseAmountToCents } from "@/lib/money";
 import { CARD_BRANDS, type CardBrand, type StatementRange } from "@/lib/statements";
 
@@ -32,6 +33,132 @@ function useEscape(onClose: () => void) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+}
+
+/* ── Checking a closed statement against the paper one ─────────────────── */
+
+/**
+ * Ticking off each charge, once the statement has closed.
+ *
+ * This used to be a checkbox on every row of the main list, which put a
+ * once-a-month job in front of you every day: the list is for reading what has
+ * been spent, and a column of empty checkboxes beside it reads as a chore
+ * nobody asked for. Reconciling only makes sense when the bank's paper
+ * statement is in your hand, and that only happens after the closing date — so
+ * it lives here, and the screen offers it exactly then.
+ *
+ * Dismissable, unlike the start-period screen. That one guards a decision the
+ * household has to make before the budget means anything; this is a job you
+ * can put down halfway and pick up later, and the count says where you left
+ * off.
+ */
+export function VerifyStatementDialog({
+  charges,
+  closingDate,
+  locale,
+  onToggle,
+  onClose,
+}: {
+  charges: CardCharge[];
+  closingDate: string;
+  locale: string;
+  onToggle: (charge: CardCharge, verified: boolean) => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations("cards");
+  // "expenses", like every other dialog in this file: it is where the app's
+  // save/cancel labels live. There is no `common` namespace — writing one here
+  // would have rendered `common.cancel` on the button.
+  const tCommon = useTranslations("expenses");
+  useEscape(onClose);
+
+  const verified = charges.filter((charge) => charge.verified).length;
+  const done = verified === charges.length;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("verifyTitle")}
+        onClick={(event) => event.stopPropagation()}
+        className={SHELL}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-base font-bold text-ink">{t("verifyTitle")}</h2>
+            <span className="text-[12px] text-ink-3">
+              {t("verifyBody", {
+                date: formatLongDate(closingDate, locale),
+              })}
+            </span>
+          </div>
+          <button type="button" onClick={onClose} aria-label={tCommon("cancel")}>
+            <Icon name="expand_more" size={22} className="text-ink-3" />
+          </button>
+        </div>
+
+        {/* Where you left off. The whole reason this can be closed halfway. */}
+        <span
+          className="tnum self-start rounded-full px-2.5 py-1 text-[11.5px] font-bold"
+          style={{
+            backgroundColor: done ? "var(--good-bg)" : "var(--bg)",
+            color: done ? "var(--good-text)" : "var(--ink-tertiary)",
+          }}
+        >
+          {t("verifyProgress", { verified, total: charges.length })}
+        </span>
+
+        <div className="flex flex-col divide-y divide-soft">
+          {charges.map((charge) => (
+            <button
+              key={charge.id}
+              type="button"
+              // The whole row toggles, not a 22px target beside it: one hand,
+              // one thumb, twelve rows.
+              onClick={() => onToggle(charge, !charge.verified)}
+              aria-pressed={charge.verified}
+              className="flex items-center gap-3 py-2.5 text-left"
+            >
+              <Icon
+                name={charge.verified ? "check_circle" : "check_box_outline_blank"}
+                size={22}
+                style={{
+                  color: charge.verified ? "var(--good)" : "var(--ink-tertiary)",
+                }}
+              />
+              <span className="flex w-[34px] flex-none justify-center">
+                <CardMark brand={charge.card} size={26} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-[13.5px] font-semibold text-ink">
+                  {charge.detail !== "" ? charge.detail : CARD_LABELS[charge.card]}
+                </span>
+                <span className="text-[11px] text-ink-3">
+                  {formatShortDate(charge.date, locale)}
+                </span>
+              </span>
+              <span className="tnum flex-none text-[14px] font-bold text-ink">
+                {formatUsd(charge.usdCents, locale)}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-12 rounded-full bg-accent text-[15px] font-bold text-white"
+        >
+          {done ? t("verifyDone") : t("verifyLater")}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /* ── A charge ──────────────────────────────────────────────────────────── */
