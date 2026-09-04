@@ -301,6 +301,15 @@ final class ServicesStore {
         expenseListener = nil
     }
 
+    /// Move the rule onto what the bank actually charged.
+    ///
+    /// The rejection is REPORTED, not swallowed. This used to be `try? await`,
+    /// which is the one lie this app tries hardest not to tell: Firestore does
+    /// not fail a write for being offline, it queues it — so anything that
+    /// throws here was refused on purpose, and the local cache goes on showing
+    /// the new amount as saved. `onWriteRejected` is the same channel every
+    /// fire-and-forget write in the service already uses, and it raises the
+    /// alert the rest of the app raises.
     func useChargedAmount(
         service: ServiceDoc,
         amountAudCents: Int,
@@ -309,11 +318,15 @@ final class ServicesStore {
     ) {
         guard let householdId else { return }
         Task {
-            try? await db.updateServiceAmount(
-                householdId: householdId,
-                serviceId: service.id,
-                amountAudCents: amountAudCents
-            )
+            do {
+                try await db.updateServiceAmount(
+                    householdId: householdId,
+                    serviceId: service.id,
+                    amountAudCents: amountAudCents
+                )
+            } catch {
+                db.onWriteRejected?(error)
+            }
         }
     }
 }

@@ -63,8 +63,12 @@ final class FirestoreService {
 
     // MARK: - Listeners
 
+    /// A failure here is indistinguishable from "this person has no profile":
+    /// both end at `onChange(nil)`, and one of them sends a signed-in user to
+    /// onboarding. Saying so is the difference.
     func listenUser(uid: String, onChange: @escaping (UserProfile?) -> Void) -> ListenerRegistration {
-        db.collection("users").document(uid).addSnapshotListener { snapshot, _ in
+        db.collection("users").document(uid).addSnapshotListener { snapshot, error in
+            if let error { Self.reportListen("users/\(uid)", error) }
             guard let snapshot, snapshot.exists else {
                 onChange(nil)
                 return
@@ -73,8 +77,11 @@ final class FirestoreService {
         }
     }
 
+    /// Same shape, worse consequence: a denied read of the household reads as
+    /// "you are not in one", which is the screen that offers to create another.
     func listenHousehold(id: String, onChange: @escaping (Household?) -> Void) -> ListenerRegistration {
-        db.collection("households").document(id).addSnapshotListener { snapshot, _ in
+        db.collection("households").document(id).addSnapshotListener { snapshot, error in
+            if let error { Self.reportListen("households/\(id)", error) }
             guard let snapshot, snapshot.exists else {
                 onChange(nil)
                 return
@@ -130,7 +137,11 @@ final class FirestoreService {
             .collection("expenses")
             .whereField("date", isGreaterThanOrEqualTo: startDate)
             .whereField("date", isLessThanOrEqualTo: endDate)
-            .addSnapshotListener(includeMetadataChanges: true) { snapshot, _ in
+            .addSnapshotListener(includeMetadataChanges: true) { snapshot, error in
+                // The worst of the three to lose: an empty list is what a week
+                // with no spending looks like, so a refused read renders as a
+                // perfectly plausible week and nothing anywhere says otherwise.
+                if let error { Self.reportListen("expenses", error) }
                 guard let snapshot else {
                     onChange([])
                     return
@@ -715,7 +726,13 @@ final class FirestoreService {
     /// the callback never fires at all, from "still loading". A screen stuck on
     /// a spinner with the reason thrown away is the worst of the three.
     private static func reportListen(_ what: String, _ error: Error) {
-        print("[Firestore] listen \(what) failed: \(String(describing: error))")
+        // os.Logger rather than print, for a measured reason: the simulator's
+        // runtime log does not capture an app's stdout — not through the build
+        // tooling and not through `simctl launch --console-pty` — so a `print`
+        // here is a report nobody can read. `log stream --predicate 'subsystem
+        // == "dev.cardozo.gastosdiarios"'` shows these. Same channel the bank
+        // charge listener already used.
+        log.error("listen \(what, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
     }
 
     // MARK: - Services
