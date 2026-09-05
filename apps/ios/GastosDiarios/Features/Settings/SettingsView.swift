@@ -104,27 +104,33 @@ struct SettingsView: View {
                     Button {
                         showDefaultAmountSheet = true
                     } label: {
-                        HStack(spacing: 11) {
+                        AdaptiveRow {
                             Text(l10n.t("settings.amount"))
                                 .appFont(14.5, .semibold)
                                 .foregroundStyle(Theme.ink)
-                            Spacer()
-                            Text(MoneyFormatter.aud(model.household?.defaultBudget.amountCents ?? 0, locale: l10n.locale) + " AUD")
-                                .appFont(14.5, .semibold)
-                                .monospacedDigit()
-                                .foregroundStyle(Theme.inkSecondary)
-                            chevron
+                            AdaptiveGap()
+                            // Value and chevron in their own row: when the
+                            // outer one becomes a column the chevron would
+                            // otherwise land alone on a third line, pointing
+                            // at nothing.
+                            HStack(spacing: 11) {
+                                Text(MoneyFormatter.aud(model.household?.defaultBudget.amountCents ?? 0, locale: l10n.locale) + " AUD")
+                                    .appFont(14.5, .semibold)
+                                    .monospacedDigit()
+                                    .foregroundStyle(Theme.inkSecondary)
+                                chevron
+                            }
                         }
                         .padding(.vertical, 13)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     Divider().overlay(Theme.separator)
-                    HStack(spacing: 11) {
+                    AdaptiveRow {
                         Text(l10n.t("settings.period"))
                             .appFont(14.5, .semibold)
                             .foregroundStyle(Theme.ink)
-                        Spacer()
+                        AdaptiveGap()
                         SegmentedPill(
                             options: [
                                 (PeriodType.weekly, l10n.t("period.weekly")),
@@ -135,11 +141,10 @@ struct SettingsView: View {
                                 set: { model.setDefaultBudget(period: $0) }
                             )
                         )
-                        .fixedSize()
                     }
                     .padding(.vertical, 13)
                     Divider().overlay(Theme.separator)
-                    HStack(spacing: 11) {
+                    AdaptiveRow {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(l10n.t("settings.rollover"))
                                 .appFont(14.5, .semibold)
@@ -149,7 +154,7 @@ struct SettingsView: View {
                                 .foregroundStyle(Theme.inkTertiary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        Spacer()
+                        AdaptiveGap()
                         Toggle("", isOn: Binding(
                             get: { model.household?.defaultBudget.rollover == true },
                             set: { model.setRollover($0) }
@@ -179,7 +184,7 @@ struct SettingsView: View {
                 Button {
                     showPeriodBudgetSheet = true
                 } label: {
-                    HStack(spacing: 11) {
+                    AdaptiveRow {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(l10n.t(period.period == .weekly
                                         ? "settings.thisPeriod.budget.weekly"
@@ -190,7 +195,7 @@ struct SettingsView: View {
                                 .appFont(12)
                                 .foregroundStyle(Theme.inkTertiary)
                         }
-                        Spacer()
+                        AdaptiveGap()
                         VStack(alignment: .trailing, spacing: 3) {
                             Text(MoneyFormatter.aud(period.amountCents, locale: l10n.locale))
                                 .appFont(14.5, .bold)
@@ -229,7 +234,7 @@ struct SettingsView: View {
                 } label: {
                     HStack(spacing: 9) {
                         Image(systemName: "flag.checkered")
-                            .font(.system(size: 14, weight: .semibold))
+                            .appFont(14, .semibold)
                         Text(l10n.t(period.period == .weekly
                                     ? "settings.startPeriod.weekly"
                                     : "settings.startPeriod.fortnightly"))
@@ -252,7 +257,7 @@ struct SettingsView: View {
                     } label: {
                         HStack(spacing: 9) {
                             Image(systemName: "calendar.badge.plus")
-                                .font(.system(size: 14, weight: .semibold))
+                                .appFont(14, .semibold)
                             Text(l10n.t("extendPeriod.extend"))
                                 .appFont(14, .bold)
                             Spacer()
@@ -296,13 +301,13 @@ struct SettingsView: View {
                 Card {
                     VStack(spacing: 0) {
                         ForEach(Array(past.enumerated()), id: \.element.startDate) { index, period in
-                            HStack(spacing: 11) {
+                            AdaptiveRow {
                                 if let start = period.start, let end = period.end {
                                     Text(l10n.periodRangeCompact(start: start, end: end, timeZone: model.householdTimeZone))
                                         .appFont(13.5, .semibold)
                                         .foregroundStyle(Theme.ink)
                                 }
-                                Spacer()
+                                AdaptiveGap()
                                 Text("\(l10n.t("period.\(period.period.rawValue)")) · \(MoneyFormatter.audCompact(period.amountCents, locale: l10n.locale))")
                                     .appFont(13)
                                     .monospacedDigit()
@@ -328,11 +333,11 @@ struct SettingsView: View {
                 .padding(.horizontal, 4)
             Card {
                 VStack(spacing: 0) {
-                    HStack(spacing: 11) {
+                    AdaptiveRow {
                         Text(l10n.t("settings.language"))
                             .appFont(14.5, .semibold)
                             .foregroundStyle(Theme.ink)
-                        Spacer()
+                        AdaptiveGap()
                         SegmentedPill(
                             options: [("es", "Español"), ("en", "English")],
                             selection: Binding(
@@ -340,7 +345,6 @@ struct SettingsView: View {
                                 set: { model.setLanguage($0) }
                             )
                         )
-                        .fixedSize()
                     }
                     .padding(.vertical, 13)
                     Divider().overlay(Theme.separator)
@@ -361,11 +365,11 @@ struct SettingsView: View {
 
     /// Manual appearance: Sistema / Claro / Oscuro (per-device preference).
     private var appearanceRow: some View {
-        HStack(spacing: 11) {
+        AdaptiveRow {
             Text(l10n.t("settings.appearance"))
                 .appFont(14.5, .semibold)
                 .foregroundStyle(Theme.ink)
-            Spacer()
+            AdaptiveGap()
             SegmentedPill(
                 options: [
                     (AppModel.AppearanceMode.system, l10n.t("appearance.system")),
@@ -377,7 +381,6 @@ struct SettingsView: View {
                     set: { model.setAppearance($0) }
                 )
             )
-            .fixedSize()
         }
         .padding(.vertical, 13)
     }
@@ -385,7 +388,7 @@ struct SettingsView: View {
     /// Daily reminder toggle + hour picker (local notification, per-device).
     @ViewBuilder
     private var reminderRows: some View {
-        HStack(spacing: 11) {
+        AdaptiveRow {
             VStack(alignment: .leading, spacing: 2) {
                 Text(l10n.t("settings.reminder"))
                     .appFont(14.5, .semibold)
@@ -394,7 +397,7 @@ struct SettingsView: View {
                     .appFont(11.5)
                     .foregroundStyle(Theme.inkTertiary)
             }
-            Spacer()
+            AdaptiveGap()
             Toggle("", isOn: $reminderEnabled)
                 .labelsHidden()
                 .tint(Theme.green)
@@ -402,11 +405,11 @@ struct SettingsView: View {
         .padding(.vertical, 13)
         if reminderEnabled {
             Divider().overlay(Theme.separator)
-            HStack(spacing: 11) {
+            AdaptiveRow {
                 Text(l10n.t("settings.reminder.time"))
                     .appFont(14.5, .semibold)
                     .foregroundStyle(Theme.ink)
-                Spacer()
+                AdaptiveGap()
                 DatePicker("", selection: $reminderTime, displayedComponents: .hourAndMinute)
                     .datePickerStyle(.compact)
                     .labelsHidden()
@@ -421,7 +424,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 SectionLabel(text: l10n.t("settings.categories"))
-                Spacer()
+                AdaptiveGap()
                 Text(l10n.t("categories.count", model.household?.categories.count ?? 0))
                     .appFont(11, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
@@ -446,7 +449,7 @@ struct SettingsView: View {
     /// any actual editing happens.
     private var categoriesRow: some View {
         let preview = Array((model.household?.sortedCategories ?? []).prefix(5))
-        return HStack(spacing: 11) {
+        return AdaptiveRow {
             // A few of them, overlapping, as a hint at what is behind the row.
             HStack(spacing: -6) {
                 ForEach(Array(preview.enumerated()), id: \.element.id) { _, entry in
@@ -457,7 +460,7 @@ struct SettingsView: View {
             Text(l10n.t("categories.edit"))
                 .appFont(14.5, .semibold)
                 .foregroundStyle(Theme.ink)
-            Spacer()
+            AdaptiveGap()
             chevron
         }
         .padding(.vertical, 13)
@@ -509,7 +512,7 @@ struct SettingsView: View {
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                 Image(systemName: "pencil")
-                    .font(.system(size: 11, weight: .semibold))
+                    .appFont(11, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
             }
             .contentShape(Rectangle())
@@ -535,7 +538,7 @@ struct SettingsView: View {
     }
 
     private var inviteCard: some View {
-        HStack(spacing: 10) {
+        AdaptiveRow(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(l10n.t("settings.invite.label").uppercased())
                     .appFont(10.5, .semibold)
@@ -548,7 +551,7 @@ struct SettingsView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
-            Spacer()
+            AdaptiveGap()
             Button {
                 guard let code = model.inviteCode else { return }
                 UIPasteboard.general.string = code
@@ -559,7 +562,7 @@ struct SettingsView: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: copied ? "checkmark" : "doc.on.doc.fill")
-                        .font(.system(size: 12, weight: .bold))
+                        .appFont(12, .bold)
                     Text(l10n.t(copied ? "settings.copied" : "settings.copy"))
                         .appFont(12.5, .bold)
                 }
@@ -591,7 +594,7 @@ struct SettingsView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 15, weight: .medium))
+                    .appFont(15, .medium)
                 Text(l10n.t("settings.signout"))
                     .appFont(14.5, .semibold)
                 Spacer()
@@ -618,11 +621,11 @@ struct SettingsView: View {
                 .padding(.horizontal, 4)
             Card {
                 VStack(spacing: 0) {
-                    HStack(spacing: 11) {
+                    AdaptiveRow {
                         Text(l10n.t("settings.version"))
                             .appFont(14.5, .semibold)
                             .foregroundStyle(Theme.ink)
-                        Spacer()
+                        AdaptiveGap()
                         Text(appVersion)
                             .appFont(14.5, .semibold)
                             .monospacedDigit()
@@ -635,13 +638,13 @@ struct SettingsView: View {
                     }
                     Divider().overlay(Theme.separator)
                     Link(destination: URL(string: "https://gastos.cardozo.dev")!) {
-                        HStack(spacing: 11) {
+                        AdaptiveRow {
                             Text(l10n.t("settings.openWeb"))
                                 .appFont(14.5, .semibold)
                                 .foregroundStyle(Theme.ink)
-                            Spacer()
+                            AdaptiveGap()
                             Image(systemName: "arrow.up.forward.square")
-                                .font(.system(size: 15, weight: .medium))
+                                .appFont(15, .medium)
                                 .foregroundStyle(Theme.inkTertiary)
                         }
                         .padding(.vertical, 13)
@@ -662,7 +665,7 @@ struct SettingsView: View {
         let colour: Color = expired || days <= 1
             ? Theme.redText
             : (days <= 2 ? Theme.accentStrong : Theme.inkSecondary)
-        return HStack(spacing: 11) {
+        return AdaptiveRow {
             VStack(alignment: .leading, spacing: 2) {
                 Text(l10n.t("signing.row.title"))
                     .appFont(14.5, .semibold)
@@ -671,7 +674,7 @@ struct SettingsView: View {
                     .appFont(11.5)
                     .foregroundStyle(Theme.inkTertiary)
             }
-            Spacer()
+            AdaptiveGap()
             Text(
                 expired
                     ? l10n.t("signing.row.expired")
@@ -693,7 +696,7 @@ struct SettingsView: View {
 
     private var chevron: some View {
         Image(systemName: "chevron.right")
-            .font(.system(size: 13, weight: .semibold))
+            .appFont(13, .semibold)
             .foregroundStyle(Theme.inkTertiary.opacity(0.6))
     }
 }

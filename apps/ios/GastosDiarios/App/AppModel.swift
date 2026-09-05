@@ -66,7 +66,37 @@ final class AppModel {
     /// Loading an expense is now a modal rather than a place you go: whatever
     /// you were looking at is still there behind it and still there after. So
     /// the first screen is the one you actually came to read.
-    var selectedTab: MainTab = .summary
+    var selectedTab: MainTab = AppModel.tabFromLaunchArgument ?? .summary
+
+    /// Which tab a debug build was launched onto (`-gd-tab cards`).
+    ///
+    /// Only exists so that a screen behind the tab bar can be photographed at
+    /// an accessibility text size. This machine's simulator automation can
+    /// screenshot and read the accessibility tree but cannot TAP, so without
+    /// this the three tabs past the first two could not be checked at all —
+    /// and "never looked at it" is how the app shipped for months with
+    /// Dynamic Type doing nothing.
+    ///
+    /// DEBUG only: it is not a feature, and a release build has no business
+    /// letting an argument choose its first screen.
+    private static var tabFromLaunchArgument: MainTab? {
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-gd-tab"),
+              index + 1 < arguments.count
+        else { return nil }
+        switch arguments[index + 1] {
+        case "summary": return .summary
+        case "history": return .history
+        case "cards": return .cards
+        case "services": return .services
+        case "settings": return .settings
+        default: return nil
+        }
+        #else
+        return nil
+        #endif
+    }
 
     /// Whether the quick-entry form is up as a sheet.
     ///

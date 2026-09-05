@@ -21,6 +21,7 @@ struct ServicesView: View {
     @State private var store = ServicesStore()
 
     private var l10n: L10n { model.l10n }
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         ScrollView {
@@ -101,7 +102,14 @@ struct ServicesView: View {
 
     private var monthTotals: some View {
         let totals = store.totals
-        return HStack(alignment: .top, spacing: 10) {
+        // Side by side is half a phone each, which at an accessibility size is
+        // not enough for a figure like "US$ 1.234,56" — it came out as an
+        // ellipsis, so the two cards said nothing at all. Stacked, each gets
+        // the full width.
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: 10))
+        return layout {
             Card {
                 VStack(alignment: .leading, spacing: 4) {
                     SectionLabel(text: l10n.t("services.chargedThisMonth"))
@@ -149,10 +157,12 @@ private struct ServiceRow: View {
     let timeZone: TimeZone
     let onUseCharged: (Int) -> Void
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 12) {
+                AdaptiveRow(spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(service.name)
                             .appFont(15, .bold)
@@ -161,8 +171,11 @@ private struct ServiceRow: View {
                             .appFont(11.5)
                             .foregroundStyle(Theme.inkTertiary)
                     }
-                    Spacer(minLength: 8)
-                    VStack(alignment: .trailing, spacing: 2) {
+                    AdaptiveGap()
+                    VStack(
+                        alignment: typeSize.isAccessibilitySize ? .leading : .trailing,
+                        spacing: 2
+                    ) {
                         UsdOverAud(
                             usdCents: service.amountUsdCents ?? 0,
                             audCents: service.amountAudCents ?? 0,
@@ -200,14 +213,16 @@ private struct ServiceRow: View {
     @ViewBuilder
     private func statusLine(_ status: ServiceStatus) -> some View {
         let off = status.differenceCents ?? 0
-        HStack(spacing: 6) {
+        // A symbol, a sentence and sometimes a button: once the text is big
+        // that is more than a line, and the button was the part pushed off.
+        AdaptiveRow(spacing: 6) {
             if !status.dueThisMonth {
                 Text(l10n.t("services.notThisMonth"))
                     .appFont(11.5, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
             } else if let charge = status.charge {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 14))
+                    .appFont(14)
                     .foregroundStyle(Theme.green)
                 Text(l10n.t("services.chargedOn", l10n.dayMonth(CalendarDate(charge.date) ?? today, timeZone: timeZone)))
                     .appFont(11.5, .semibold)
@@ -222,7 +237,7 @@ private struct ServiceRow: View {
                     ))
                     .appFont(11.5, .semibold)
                     .foregroundStyle(Theme.amberText)
-                    Spacer(minLength: 4)
+                    AdaptiveGap()
                     Button {
                         onUseCharged(charge.amountCents)
                     } label: {
@@ -239,7 +254,7 @@ private struct ServiceRow: View {
                 }
             } else {
                 Image(systemName: "clock")
-                    .font(.system(size: 13))
+                    .appFont(13)
                     .foregroundStyle(Theme.inkTertiary)
                 Text(l10n.t("services.notChargedYet"))
                     .appFont(11.5, .semibold)

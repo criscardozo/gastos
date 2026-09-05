@@ -179,11 +179,11 @@ struct HistoryView: View {
     // MARK: Pieces
 
     private var header: some View {
-        HStack {
+        AdaptiveRow {
             Text(l10n.t("tab.history"))
                 .appFont(18, .bold)
                 .foregroundStyle(Theme.ink)
-            Spacer()
+            AdaptiveGap()
             if let period = model.viewedPeriod, let start = period.start, let end = period.end {
                 PeriodNavigator(
                     label: l10n.periodRangeCompact(start: start, end: end, timeZone: model.householdTimeZone),
@@ -323,17 +323,28 @@ struct HistoryView: View {
 
     /// Unverified count (tap to filter) and, when the ingestion has imported
     /// charges nobody has matched yet, a chip that opens them for matching.
+    /// A capsule while the chip is one line, a rounded rectangle once it wraps
+    /// — a capsule around three lines of text is a circle with words in it.
+    private var chipShape: AnyShape {
+        typeSize.isAccessibilitySize
+            ? AnyShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            : AnyShape(Capsule())
+    }
+
     @ViewBuilder
     private var verificationBar: some View {
         if unverifiedCount > 0 || !model.expenseBankCharges.isEmpty {
-            HStack(spacing: 8) {
+            // The two chips sit side by side until neither fits: at an
+            // accessibility size they were two round blobs with their labels
+            // broken mid-word ("verific" over "ar").
+            AdaptiveRow(spacing: 8) {
                 if unverifiedCount > 0 {
                     Button {
                         onlyUnverified.toggle()
                     } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "exclamationmark.circle.fill")
-                                .font(.system(size: 11, weight: .semibold))
+                                .appFont(11, .semibold)
                                 .accessibilityHidden(true)
                             Text(l10n.t("history.unverifiedCount", unverifiedCount))
                                 .appFont(12, .semibold)
@@ -342,7 +353,7 @@ struct HistoryView: View {
                         .padding(.vertical, 5)
                         .background(onlyUnverified ? Theme.accentSoft : Theme.fill)
                         .foregroundStyle(onlyUnverified ? Theme.accentStrong : Theme.inkSecondary)
-                        .clipShape(Capsule())
+                        .clipShape(chipShape)
                     }
                     .buttonStyle(.plain)
                 }
@@ -352,7 +363,7 @@ struct HistoryView: View {
                     } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "creditcard.fill")
-                                .font(.system(size: 11, weight: .semibold))
+                                .appFont(11, .semibold)
                             Text(l10n.bankChargesCount(model.expenseBankCharges.count))
                                 .appFont(12, .semibold)
                         }
@@ -360,7 +371,7 @@ struct HistoryView: View {
                         .padding(.vertical, 5)
                         .background(Theme.amberBg)
                         .foregroundStyle(Theme.amberText)
-                        .clipShape(Capsule())
+                        .clipShape(chipShape)
                     }
                     .buttonStyle(.plain)
                 }

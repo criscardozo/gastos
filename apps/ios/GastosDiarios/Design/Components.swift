@@ -114,8 +114,28 @@ struct SegmentedPill<T: Hashable>: View {
     @Binding var selection: T
     var isEnabled: Bool = true
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
-        HStack(spacing: 0) {
+        // Side by side normally, stacked once the text is big.
+        //
+        // Every caller used to pin this with `.fixedSize()` so the options
+        // could not squash each other. At an accessibility size that is a
+        // demand for more width than the phone has, and a vertical ScrollView
+        // does not clip it — it lays the whole page out wider, so Ajustes came
+        // out with its title cut on BOTH sides and the settings unreadable.
+        // Stacking is what removes the demand; the callers no longer fix the
+        // size at all.
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 3))
+            : AnyLayout(HStackLayout(spacing: 0))
+        // A capsule around a stacked column reads as one long lozenge, so the
+        // shape follows the layout.
+        let shape: AnyShape = typeSize.isAccessibilitySize
+            ? AnyShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            : AnyShape(Capsule())
+
+        layout {
             ForEach(options, id: \.value) { option in
                 let selected = option.value == selection
                 // A Button, not a tap gesture on a Text.
@@ -139,9 +159,9 @@ struct SegmentedPill<T: Hashable>: View {
                                 ? AnyShapeStyle(Theme.surface)
                                 : AnyShapeStyle(Color.clear)
                         )
-                        .clipShape(Capsule())
+                        .clipShape(shape)
                         .shadow(color: selected ? Color(hex: "#241A10", alpha: 0.12) : .clear, radius: 1.5, y: 1)
-                        .contentShape(Capsule())
+                        .contentShape(shape)
                 }
                 .buttonStyle(.plain)
                 .disabled(!isEnabled)
@@ -150,8 +170,43 @@ struct SegmentedPill<T: Hashable>: View {
         }
         .padding(3)
         .background(Theme.fill)
-        .clipShape(Capsule())
+        .clipShape(shape)
         .opacity(isEnabled ? 1 : 0.5)
+    }
+}
+
+/// A settings-style row: label on the left, control on the right — until the
+/// text is big enough that the two cannot share a line.
+///
+/// At an accessibility size the control drops below its label and takes the
+/// full width. Without this, a label and a control on one line either squash
+/// each other into mid-word breaks ("Períod" over "o") or, if the control
+/// refuses to squash, push the whole page wider than the screen.
+struct AdaptiveRow<Content: View>: View {
+    var spacing: CGFloat = 11
+    @ViewBuilder var content: Content
+
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: spacing))
+            : AnyLayout(HStackLayout(spacing: spacing))
+        layout { content }
+    }
+}
+
+/// The `Spacer()` that pushes a row's control to the right — and does nothing,
+/// rather than adding a second gap, once `AdaptiveRow` has become a column.
+///
+/// Top-level rather than nested in `AdaptiveRow` because that one is generic
+/// over its content, and `AdaptiveRow.Gap()` cannot infer a `Content` it has
+/// no use for.
+struct AdaptiveGap: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
     }
 }
 
@@ -270,26 +325,68 @@ struct UsdOverAud: View {
     /// Headline size, for the two figures a screen leads with.
     var big: Bool = false
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
-        VStack(alignment: .trailing, spacing: 1) {
-            HStack(spacing: 5) {
-                Text(hasUsd ? MoneyFormatter.usd(usdCents, locale: locale) : "—")
-                    .appFont(big ? 21 : 14, .bold)
-                    .foregroundStyle(Theme.ink)
-                    // Two of these sit side by side in half a phone's width, so
-                    // "US$ 1.234,56" has to shrink rather than break after the
-                    // currency symbol and read as two figures.
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.55)
-                CurrencyTag(code: "USD")
+        VStack(
+            alignment: typeSize.isAccessibilitySize ? .leading : .trailing,
+            spacing: typeSize.isAccessibilitySize ? 8 : 1
+        ) {
+            figure(
+                MoneyFormatter.usd(usdCents, locale: locale),
+                shown: hasUsd,
+                code: "USD",
+                size: big ? 21 : 14,
+                weight: .bold,
+                colour: Theme.ink,
+                floor: 0.55
+            )
+            figure(
+                MoneyFormatter.aud(audCents, locale: locale),
+                shown: true,
+                code: "AUD",
+                size: big ? 12.5 : 12,
+                weight: .semibold,
+                colour: Theme.inkTertiary,
+                floor: 0.6
+            )
+        }
+    }
+
+    /// One figure and its currency tag: beside each other, or the tag ABOVE.
+    ///
+    /// Two things go wrong when the text is big. The tag is a fixed three
+    /// letters, so beside the figure it is the FIGURE that gets squeezed —
+    /// "US$ 71,49" was rendering as a bare "…", and a card whose whole job is
+    /// one number showed no number. And stacked with the tag underneath, the
+    /// column reads "USD / $ 71,49 / AUD": every tag looks like it labels the
+    /// figure below it, so the AUD total reads as US dollars. Tag first fixes
+    /// both — label, then value, which is the order the rest of the app uses.
+    @ViewBuilder
+    private func figure(
+        _ text: String,
+        shown: Bool,
+        code: String,
+        size: CGFloat,
+        weight: Font.Weight,
+        colour: Color,
+        floor: CGFloat
+    ) -> some View {
+        let amount = Text(shown ? text : "—")
+            .appFont(size, weight)
+            .foregroundStyle(colour)
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 1) {
+                CurrencyTag(code: code)
+                // Free to wrap now that it has the full width to itself.
+                amount.fixedSize(horizontal: false, vertical: true)
             }
+        } else {
             HStack(spacing: 5) {
-                Text(MoneyFormatter.aud(audCents, locale: locale))
-                    .appFont(big ? 12.5 : 12, .semibold)
-                    .foregroundStyle(Theme.inkTertiary)
+                amount
                     .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                CurrencyTag(code: "AUD")
+                    .minimumScaleFactor(floor)
+                CurrencyTag(code: code)
             }
         }
     }
@@ -305,12 +402,20 @@ struct CurrencyTag: View {
     var body: some View {
         HStack(spacing: 2) {
             if let flag = Self.flags[code] {
-                Text(flag).font(.system(size: 10))
+                // Scaled, not a fixed 10pt: a flag that stays the same size
+                // beside a code three times bigger reads as a stray glyph.
+                Text(flag).appFont(10)
             }
             Text(code)
                 .appFont(9.5, .bold)
                 .kerning(9.5 * 0.04)
                 .foregroundStyle(Theme.inkTertiary)
         }
+        // A currency code is three letters and must never break: at an
+        // accessibility size "USD" was coming out as "US" over "D", which
+        // reads as a different currency rather than as a wrapped word. Safe to
+        // pin because the tag is three characters wide, not a phrase.
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
     }
 }

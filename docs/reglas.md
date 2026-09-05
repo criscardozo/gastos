@@ -245,6 +245,20 @@ acaba de pedir.
   esta fuente variable; lo que la mueve es el eje. (Ambas cosas las levantó la
   sesión Stock sobre su copia del mismo archivo.)
 
+- **`.fixedSize()` sin ejes es una promesa de que el texto nunca va a crecer.**
+  Los tres `SegmentedPill` de Ajustes la tenían, para que las opciones no se
+  aplastaran entre sí. Con el texto al máximo eso es pedir más ancho que la
+  pantalla, y un ScrollView vertical no lo recorta: maqueta la página entera más
+  ancha. Ajustes salía con el título cortado de los DOS lados ("ustes") y todo
+  ilegible. Si un control no puede achicarse, tiene que poder apilarse.
+- **Una pantalla que no se puede tocar igual se puede revisar.** La automatización
+  de este simulador saca capturas y lee el árbol de accesibilidad pero **no tiene
+  `tap`**, así que las tres pestañas más allá de las dos primeras nunca se habían
+  mirado con el texto grande. La salida fue un launch argument sólo-DEBUG
+  (`-gd-tab cards`) más `-useEmulators -devSignIn`: una pestaña por lanzamiento,
+  sin tocar nada. "No se puede llegar" era una conclusión que no dejaba trabajo
+  siguiente, que es justo la señal de la que habla la lección de arriba.
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada

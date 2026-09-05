@@ -20,6 +20,7 @@ struct CardsView: View {
     @Environment(AppModel.self) private var model
     @State private var store = CardsStore()
     @State private var showTaxes = false
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     private var l10n: L10n { model.l10n }
 
@@ -104,11 +105,11 @@ struct CardsView: View {
         if let shown = store.shown, let range = shown.range {
             Card {
                 VStack(alignment: .leading, spacing: 12) {
-                    HStack {
+                    AdaptiveRow {
                         SectionLabel(text: l10n.t(
                             store.index == 0 ? "cards.currentStatement" : "cards.pastStatement"
                         ))
-                        Spacer()
+                        AdaptiveGap()
                         PeriodNavigator(
                             label: l10n.dayMonth(range.closingDate, timeZone: model.householdTimeZone),
                             canGoBack: store.index < store.statements.count - 1,
@@ -118,7 +119,7 @@ struct CardsView: View {
                         )
                     }
 
-                    HStack(alignment: .bottom) {
+                    AdaptiveRow {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(MoneyFormatter.usd(store.totalUsdCents, locale: l10n.locale))
                                 .appFont(28, .bold)
@@ -127,11 +128,18 @@ struct CardsView: View {
                                 .appFont(11.5)
                                 .foregroundStyle(Theme.inkTertiary)
                         }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 4) {
+                        AdaptiveGap()
+                        VStack(
+                            alignment: typeSize.isAccessibilitySize ? .leading : .trailing,
+                            spacing: 4
+                        ) {
                             ForEach(CardBrand.allCases, id: \.self) { brand in
                                 if let total = store.totalsByCard[brand] {
-                                    HStack(spacing: 6) {
+                                    // Brand and figure, wrapping together
+                                    // rather than each breaking mid-word:
+                                    // "Mastercard" was coming out as three
+                                    // stacked fragments.
+                                    AdaptiveRow(spacing: 6) {
                                         Text(brand.label)
                                             .appFont(11, .bold)
                                             .foregroundStyle(Theme.inkSecondary)
@@ -149,13 +157,18 @@ struct CardsView: View {
                                 Button {
                                     showTaxes = true
                                 } label: {
-                                    HStack(spacing: 5) {
+                                    // The tag and the "i" drop below the figure
+                                    // when the text is big; sharing the line,
+                                    // they squeezed "$ 90.981" into a "$" with
+                                    // its digits on the next line.
+                                    AdaptiveRow(spacing: 5) {
                                         Text(taxTotalText)
                                             .appFont(13, .semibold)
                                             .foregroundStyle(Theme.inkSecondary)
+                                            .fixedSize(horizontal: false, vertical: true)
                                         CurrencyTag(code: "ARS")
                                         Image(systemName: "info.circle")
-                                            .font(.system(size: 12))
+                                            .appFont(12)
                                             .foregroundStyle(Theme.inkTertiary)
                                     }
                                 }
@@ -167,21 +180,21 @@ struct CardsView: View {
 
                     Divider().overlay(Theme.separator)
 
-                    HStack(alignment: .top) {
+                    AdaptiveRow {
                         VStack(alignment: .leading, spacing: 2) {
                             SectionLabel(text: l10n.t("cards.closingDate"))
                             Text(l10n.dayMonth(range.closingDate, timeZone: model.householdTimeZone))
                                 .appFont(13.5, .bold)
                                 .foregroundStyle(Theme.ink)
                         }
-                        Spacer()
+                        AdaptiveGap()
                         VStack(alignment: .leading, spacing: 2) {
                             SectionLabel(text: l10n.t("cards.dueDate"))
                             Text(l10n.dayMonth(range.dueDate, timeZone: model.householdTimeZone))
                                 .appFont(13.5, .bold)
                                 .foregroundStyle(Theme.ink)
                         }
-                        Spacer()
+                        AdaptiveGap()
                     }
 
                     // Charges are filed by their own date, so a purchase made
@@ -228,23 +241,32 @@ private struct ChargeRow: View {
     let timeZone: TimeZone
     let onToggleVerified: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
         Card {
-            HStack(spacing: 12) {
+            AdaptiveRow(spacing: 12) {
                 Text(charge.card.label)
                     .appFont(10, .bold)
                     .foregroundStyle(Theme.inkSecondary)
-                    .frame(width: 62, alignment: .leading)
+                    // A 62pt column fits "Mastercard" at the designed size and
+                    // shreds it into three stacked fragments at an
+                    // accessibility one, so the column only exists while the
+                    // row is a row.
+                    .frame(
+                        width: typeSize.isAccessibilitySize ? nil : 62,
+                        alignment: .leading
+                    )
                 VStack(alignment: .leading, spacing: 2) {
                     Text(charge.detail.isEmpty ? charge.card.label : charge.detail)
                         .appFont(14, .semibold)
                         .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
+                        .lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
                     Text(subtitle)
                         .appFont(11.5)
                         .foregroundStyle(Theme.inkTertiary)
                 }
-                Spacer(minLength: 6)
+                AdaptiveGap()
                 Text(MoneyFormatter.usd(charge.usdCents, locale: l10n.locale))
                     .appFont(15, .bold)
                     .foregroundStyle(Theme.ink)
@@ -281,6 +303,7 @@ private struct CardTaxesSheet: View {
     let commissionArsCents: Int
     let l10n: L10n
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         NavigationStack {
@@ -295,7 +318,7 @@ private struct CardTaxesSheet: View {
                         )
                         spendRow(rate: rate)
                         ForEach(lines) { line in
-                            HStack(alignment: .firstTextBaseline) {
+                            AdaptiveRow {
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(line.label)
                                         .appFont(13)
@@ -304,14 +327,14 @@ private struct CardTaxesSheet: View {
                                         .appFont(11)
                                         .foregroundStyle(Theme.inkTertiary)
                                 }
-                                Spacer()
+                                AdaptiveGap()
                                 Text(MoneyFormatter.ars(line.arsCents, locale: l10n.locale))
                                     .appFont(13.5, .semibold)
                                     .foregroundStyle(Theme.ink)
                             }
                         }
                         Divider().overlay(Theme.separator)
-                        HStack(alignment: .firstTextBaseline) {
+                        AdaptiveRow {
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(l10n.t("cards.arsTotal"))
                                     .appFont(12.5, .semibold)
@@ -320,8 +343,8 @@ private struct CardTaxesSheet: View {
                                     .appFont(11)
                                     .foregroundStyle(Theme.inkTertiary)
                             }
-                            Spacer()
-                            HStack(spacing: 5) {
+                            AdaptiveGap()
+                            AdaptiveRow(spacing: 5) {
                                 Text(MoneyFormatter.ars(CardTaxes.total(lines), locale: l10n.locale))
                                     .appFont(19, .bold)
                                     .foregroundStyle(Theme.ink)
