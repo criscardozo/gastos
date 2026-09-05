@@ -16,7 +16,10 @@ import { PiggyMark } from "@/components/brand";
 function LoadingScreen() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-bg">
-      <div className="flex h-[64px] w-[64px] animate-pulse items-center justify-center rounded-[20px] bg-accent shadow-[0_12px_28px_rgba(255,92,57,.35)]">
+      {/* The pulse stops for anyone who asked for less motion. This is the
+          loading mark — the screen shown on EVERY cold start — which makes it
+          the worst possible place for an animation that ignores the setting. */}
+      <div className="flex h-[64px] w-[64px] animate-pulse items-center justify-center rounded-[20px] bg-accent shadow-[0_12px_28px_rgba(255,92,57,.35)] motion-reduce:animate-none">
         <PiggyMark size={44} variant="cream" />
       </div>
     </div>

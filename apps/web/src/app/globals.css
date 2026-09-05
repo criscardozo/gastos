@@ -215,6 +215,27 @@ body {
   }
 }
 
+/* Kill the double-tap zoom without killing the pinch.
+ *
+ * The viewport used to say `maximumScale: 1`, which stopped an accidental
+ * double-tap zoom mid-entry — and took two-finger zoom with it, for everyone.
+ * `touch-action: manipulation` is the narrow version: the browser stops
+ * waiting to see whether a tap is the first of a double, which also makes
+ * every one of these feel a beat quicker, and pinch is untouched.
+ *
+ * Only things that are TAPPED. Not the page, where a double-tap zoom on a
+ * figure is a perfectly reasonable thing to want. */
+@layer base {
+  button,
+  a,
+  summary,
+  [role="button"],
+  [role="checkbox"],
+  [role="tab"] {
+    touch-action: manipulation;
+  }
+}
+
 /* Touch devices only: never let a field render below 16px.
  *
  * Unlayered ON PURPOSE — this one has to outrank the `text-*` utilities, which

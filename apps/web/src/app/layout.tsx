@@ -33,9 +33,13 @@ export const viewport: Viewport = {
   // Extend under the notch and the home indicator; every edge the content
   // must avoid is then handled explicitly via env(safe-area-inset-*).
   viewportFit: "cover",
-  // The app is a fixed-height shell — zooming just breaks the layout, and an
-  // accidental double-tap zoom during quick entry is pure friction.
-  maximumScale: 1,
+  // `maximumScale: 1` used to live here, and the reasoning was half right: an
+  // accidental double-tap zoom during quick entry IS pure friction. But the
+  // price was pinch-to-zoom for everybody, which is the one gesture somebody
+  // who cannot read a 12px label depends on — and the browser is entitled to
+  // ignore the cap anyway. The narrow tool is `touch-action: manipulation` on
+  // the things that get double-tapped (globals.css): it kills the double-tap
+  // and leaves the pinch.
 };
 
 export default function RootLayout({

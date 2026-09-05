@@ -118,24 +118,34 @@ struct SegmentedPill<T: Hashable>: View {
         HStack(spacing: 0) {
             ForEach(options, id: \.value) { option in
                 let selected = option.value == selection
-                Text(option.label)
-                    .appFont(12.5, selected ? .bold : .semibold)
-                    .foregroundStyle(selected ? Theme.ink : Theme.inkSecondary)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 12)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        selected
-                            ? AnyShapeStyle(Theme.surface)
-                            : AnyShapeStyle(Color.clear)
-                    )
-                    .clipShape(Capsule())
-                    .shadow(color: selected ? Color(hex: "#241A10", alpha: 0.12) : .clear, radius: 1.5, y: 1)
-                    .contentShape(Capsule())
-                    .onTapGesture {
-                        guard isEnabled else { return }
-                        withAnimation(.easeInOut(duration: 0.15)) { selection = option.value }
-                    }
+                // A Button, not a tap gesture on a Text.
+                //
+                // `onTapGesture` on a shape is INVISIBLE to VoiceOver: there is
+                // nothing to focus and nothing to activate, so a control that
+                // works perfectly by touch simply does not exist for anyone
+                // navigating by voice. A Button is what makes it exist, and
+                // `.isSelected` is what says which one is on.
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) { selection = option.value }
+                } label: {
+                    Text(option.label)
+                        .appFont(12.5, selected ? .bold : .semibold)
+                        .foregroundStyle(selected ? Theme.ink : Theme.inkSecondary)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            selected
+                                ? AnyShapeStyle(Theme.surface)
+                                : AnyShapeStyle(Color.clear)
+                        )
+                        .clipShape(Capsule())
+                        .shadow(color: selected ? Color(hex: "#241A10", alpha: 0.12) : .clear, radius: 1.5, y: 1)
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(!isEnabled)
+                .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
             }
         }
         .padding(3)
@@ -161,6 +171,11 @@ struct CategoryCircle: View {
                 Image(systemName: SeedCategories.sfSymbol(forMaterialIcon: category.icon))
                     .font(.system(size: size * 0.42, weight: .medium))
                     .foregroundStyle(Theme.categoryColor(id: categoryId, lightHex: category.color))
+                    // Decorative. The category's NAME is beside it as text
+                    // everywhere this appears, and without this VoiceOver reads
+                    // the raw symbol: the runtime tree had two buttons called
+                    // "doc.plaintext.fill".
+                    .accessibilityHidden(true)
             )
             .overlay(
                 Circle().strokeBorder(selected ? Theme.ink : .clear, lineWidth: 2.5)
@@ -211,7 +226,11 @@ struct PeriodNavigator: View {
         HStack(spacing: 2) {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 13, weight: .semibold))
+                    // appFont, not a fixed system size: a symbol beside text
+                    // that grows and does not grow with it becomes a smaller
+                    // and smaller target exactly for the person who turned the
+                    // text up.
+                    .appFont(13, .semibold)
                     .foregroundStyle(canGoBack ? Theme.inkSecondary : Theme.inkTertiary.opacity(0.5))
                     .padding(4)
             }
@@ -222,7 +241,7 @@ struct PeriodNavigator: View {
                 .padding(.horizontal, 4)
             Button(action: onForward) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
+                    .appFont(13, .semibold)
                     .foregroundStyle(canGoForward ? Theme.inkSecondary : Theme.inkTertiary.opacity(0.5))
                     .padding(4)
             }

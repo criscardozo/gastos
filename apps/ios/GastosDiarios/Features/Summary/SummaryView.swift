@@ -4,6 +4,10 @@ import SwiftUI
 /// breakdown, member split and the record of previous periods.
 struct SummaryView: View {
     @Environment(AppModel.self) private var model
+    /// Rows that cannot share their width at the accessibility sizes stack
+    /// instead. Read here rather than guessed from the point size: it is the
+    /// system's own answer to "is the text big now".
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var showAdjustSheet = false
 
     private var l10n: L10n { model.l10n }
@@ -57,19 +61,41 @@ struct SummaryView: View {
     // MARK: Header
 
     private var header: some View {
-        HStack {
-            Text(l10n.t("tab.summary"))
-                .appFont(18, .bold)
-                .foregroundStyle(Theme.ink)
-            Spacer()
-            if let period, let start = period.start, let end = period.end {
-                PeriodNavigator(
-                    label: l10n.periodRange(start: start, end: end, timeZone: model.householdTimeZone),
-                    canGoBack: (model.viewedPeriodIndex ?? 0) > 0,
-                    canGoForward: (model.viewedPeriodIndex ?? 0) < model.periods.count - 1,
-                    onBack: { model.navigatePeriod(by: -1) },
-                    onForward: { model.navigatePeriod(by: 1) }
-                )
+        // Side by side normally; stacked once the text is big enough that the
+        // two cannot share a row. Sharing it at an accessibility size left the
+        // date range about a third of the screen wide, so "5 – 18 de
+        // septiembre" wrapped mid-word and spilled outside its own capsule.
+        //
+        // Reflow rather than truncate: the range is the label that says WHICH
+        // period everything below belongs to, and an ellipsis there is worse
+        // than a second line.
+        let navigator = period.flatMap { period -> PeriodNavigator? in
+            guard let start = period.start, let end = period.end else { return nil }
+            return PeriodNavigator(
+                label: l10n.periodRange(start: start, end: end, timeZone: model.householdTimeZone),
+                canGoBack: (model.viewedPeriodIndex ?? 0) > 0,
+                canGoForward: (model.viewedPeriodIndex ?? 0) < model.periods.count - 1,
+                onBack: { model.navigatePeriod(by: -1) },
+                onForward: { model.navigatePeriod(by: 1) }
+            )
+        }
+        let title = Text(l10n.t("tab.summary"))
+            .appFont(18, .bold)
+            .foregroundStyle(Theme.ink)
+
+        return Group {
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) {
+                    title
+                    navigator
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                HStack {
+                    title
+                    Spacer()
+                    navigator
+                }
             }
         }
     }

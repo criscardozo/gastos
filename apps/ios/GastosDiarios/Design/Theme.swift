@@ -137,22 +137,74 @@ enum Theme {
 // MARK: - Outfit font
 
 enum AppFont {
-    private static func name(for weight: Font.Weight) -> String {
-        switch weight {
-        case .bold, .heavy, .black: return "Outfit-Bold"
-        case .semibold, .medium: return "Outfit-SemiBold"
-        default: return "Outfit-Regular"
+    /// The FAMILY, not a named instance.
+    ///
+    /// Outfit-Variable.ttf is a variable font: its name table says family
+    /// "Outfit Thin", postScript "Outfit-Thin", typographic family "Outfit".
+    /// iOS registers the typographic family and the default instance — it does
+    /// NOT register "Outfit-Regular", "Outfit-SemiBold" or "Outfit-Bold", which
+    /// is what this used to ask for. All three came back nil, so `available`
+    /// was false and every label in the app fell through to the system rounded
+    /// face. The app has never rendered in Outfit.
+    ///
+    /// Asking for the family and setting the weight with `.weight(_:)` is what
+    /// a variable font is for: the weight axis is interpolated rather than
+    /// picked from a file that does not exist.
+    private static let family = "Outfit"
+
+    private static let available: Bool = UIFont(name: family, size: 12) != nil
+
+    /// Which of Apple's text styles a size grows WITH.
+    ///
+    /// `relativeTo:` needs one, and the choice decides the growth curve, not
+    /// the starting size — at the default Dynamic Type setting it renders the
+    /// same number that was measured by hand, so the design does not move.
+    ///
+    /// `floor` on purpose: it makes a half-point pair (11 and 11.5, 14 and
+    /// 14.5) share an anchor. Two labels on the same row growing at different
+    /// rates is how a row comes apart at the larger settings.
+    private static func style(for size: CGFloat) -> Font.TextStyle {
+        switch floor(size) {
+        case ..<12: return .caption2
+        case ..<13: return .caption
+        case ..<14: return .footnote
+        case ..<16: return .subheadline
+        case ..<17: return .callout
+        case ..<20: return .body
+        case ..<24: return .title2
+        case ..<30: return .title
+        default: return .largeTitle
         }
     }
 
-    private static let available: Bool = UIFont(name: "Outfit-Regular", size: 12) != nil
+    private static func uiStyle(_ style: Font.TextStyle) -> UIFont.TextStyle {
+        switch style {
+        case .caption2: return .caption2
+        case .caption: return .caption1
+        case .footnote: return .footnote
+        case .subheadline: return .subheadline
+        case .callout: return .callout
+        case .body: return .body
+        case .title2: return .title2
+        case .title: return .title1
+        default: return .largeTitle
+        }
+    }
 
     /// Outfit at the given size/weight, falling back to system rounded.
+    ///
+    /// Both branches SCALE with Dynamic Type. The fallback used to be a fixed
+    /// size, and that is what hid the bug above: with the font silently
+    /// missing, turning "Larger Text" to the maximum changed nothing on
+    /// screen, which reads exactly like a design that was meant to be fixed.
     static func font(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        let style = style(for: size)
         guard available else {
-            return .system(size: size, weight: weight, design: .rounded)
+            let scaled = UIFontMetrics(forTextStyle: uiStyle(style))
+                .scaledValue(for: size)
+            return .system(size: scaled, weight: weight, design: .rounded)
         }
-        return .custom(name(for: weight), fixedSize: size)
+        return .custom(family, size: size, relativeTo: style).weight(weight)
     }
 }
 

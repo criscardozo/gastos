@@ -58,6 +58,22 @@ struct HistoryView: View {
                                 row(item)
                                     .contentShape(Rectangle())
                                     .onTapGesture { detailItem = item }
+                                    // ONE element for the row, not a trait on
+                                    // the container.
+                                    //
+                                    // `.accessibilityAddTraits(.isButton)` on
+                                    // its own propagates to every child, and
+                                    // the runtime tree showed what that costs:
+                                    // the category icon became a *button*
+                                    // called "doc.plaintext.fill", beside two
+                                    // more buttons for the note and the
+                                    // category. `.combine` merges the row's
+                                    // text into one label instead, which is
+                                    // also how it reads out loud — an amount,
+                                    // a note and a category, once.
+                                    .accessibilityElement(children: .combine)
+                                    .accessibilityAddTraits(.isButton)
+                                    .accessibilityAction { detailItem = item }
                                     .listRowBackground(Theme.surface)
                                     .listRowSeparatorTint(Theme.separator)
                                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -268,6 +284,8 @@ struct HistoryView: View {
                           ? "checkmark.circle.fill"
                           : "exclamationmark.circle.fill")
                         .font(.system(size: 10.5, weight: .semibold))
+                        // The text next to it says the same thing.
+                        .accessibilityHidden(true)
                     Text(expense.isVerified
                          ? MoneyFormatter.usd(expense.usdCents ?? 0, locale: l10n.locale)
                          : l10n.t("history.unverified"))
@@ -293,6 +311,7 @@ struct HistoryView: View {
                         HStack(spacing: 5) {
                             Image(systemName: "exclamationmark.circle.fill")
                                 .font(.system(size: 11, weight: .semibold))
+                                .accessibilityHidden(true)
                             Text(l10n.t("history.unverifiedCount", unverifiedCount))
                                 .appFont(12, .semibold)
                         }

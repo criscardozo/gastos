@@ -1208,6 +1208,40 @@
         }
       }
     },
+    "categoryManager.colorOption": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colour %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color %@"
+          }
+        }
+      }
+    },
+    "categoryManager.iconOption": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ícono %@"
+          }
+        }
+      }
+    },
     "common.cancel": {
       "extractionState": "stale",
       "localizations": {

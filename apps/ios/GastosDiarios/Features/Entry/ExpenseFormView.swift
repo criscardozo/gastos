@@ -415,25 +415,32 @@ struct ExpenseFormView: View {
             HStack(spacing: 10) {
                 ForEach(model.household?.sortedCategories ?? [], id: \.id) { entry in
                     let selected = entry.id == selectedCategoryId
-                    VStack(spacing: 6) {
-                        CategoryCircle(
-                            categoryId: entry.id,
-                            category: entry.category,
-                            size: 50,
-                            selected: selected
-                        )
-                        Text(l10n.categoryName(entry.category))
-                            .appFont(11.5, .semibold)
-                            .foregroundStyle(selected ? Theme.ink : Theme.inkSecondary)
-                            .lineLimit(1)
-                    }
-                    .frame(minWidth: 62)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
+                    // The most-pressed control in the app, and until now a
+                    // shape with a tap gesture — which VoiceOver cannot focus
+                    // or activate. The name was already on screen; a Button is
+                    // what lets a screen reader reach it.
+                    Button {
                         withAnimation(.snappy(duration: 0.15)) {
                             selectedCategoryId = entry.id
                         }
+                    } label: {
+                        VStack(spacing: 6) {
+                            CategoryCircle(
+                                categoryId: entry.id,
+                                category: entry.category,
+                                size: 50,
+                                selected: selected
+                            )
+                            Text(l10n.categoryName(entry.category))
+                                .appFont(11.5, .semibold)
+                                .foregroundStyle(selected ? Theme.ink : Theme.inkSecondary)
+                                .lineLimit(1)
+                        }
+                        .frame(minWidth: 62)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
                 }
             }
             .padding(.horizontal, 20)

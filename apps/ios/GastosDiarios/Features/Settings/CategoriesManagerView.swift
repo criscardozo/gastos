@@ -238,17 +238,25 @@ struct AddCategorySheet: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: 10) {
                 ForEach(SeedCategories.seedColorOptions, id: \.self) { hex in
                     let selected = hex.caseInsensitiveCompare(colorHex) == .orderedSame
-                    Circle()
-                        .fill(Color(hex: hex))
-                        .frame(width: 32, height: 32)
-                        .overlay(
-                            Circle().strokeBorder(selected ? Theme.ink : .clear, lineWidth: 2.5)
-                                .padding(-3)
-                        )
-                        .contentShape(Circle())
-                        .onTapGesture {
-                            withAnimation(.snappy(duration: 0.15)) { colorHex = hex }
-                        }
+                    // Buttons, not shapes with a tap gesture: a coloured circle
+                    // that VoiceOver cannot focus is a control that does not
+                    // exist for anyone using it. Named the way the web names
+                    // the same swatches, so both clients say the same thing.
+                    Button {
+                        withAnimation(.snappy(duration: 0.15)) { colorHex = hex }
+                    } label: {
+                        Circle()
+                            .fill(Color(hex: hex))
+                            .frame(width: 32, height: 32)
+                            .overlay(
+                                Circle().strokeBorder(selected ? Theme.ink : .clear, lineWidth: 2.5)
+                                    .padding(-3)
+                            )
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(l10n.t("categoryManager.colorOption", hex))
+                    .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
                 }
             }
         }
@@ -260,21 +268,25 @@ struct AddCategorySheet: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 10) {
                 ForEach(SeedCategories.curatedIcons, id: \.material) { icon in
                     let selected = icon.material == materialIcon
-                    Circle()
-                        .fill(selected ? Color(hex: colorHex, alpha: 0.16) : Theme.fill)
-                        .frame(width: 44, height: 44)
-                        .overlay(
-                            Image(systemName: icon.sfSymbol)
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundStyle(selected ? Color(hex: colorHex) : Theme.inkSecondary)
-                        )
-                        .overlay(
-                            Circle().strokeBorder(selected ? Theme.ink : .clear, lineWidth: 2.5)
-                        )
-                        .contentShape(Circle())
-                        .onTapGesture {
-                            withAnimation(.snappy(duration: 0.15)) { materialIcon = icon.material }
-                        }
+                    Button {
+                        withAnimation(.snappy(duration: 0.15)) { materialIcon = icon.material }
+                    } label: {
+                        Circle()
+                            .fill(selected ? Color(hex: colorHex, alpha: 0.16) : Theme.fill)
+                            .frame(width: 44, height: 44)
+                            .overlay(
+                                Image(systemName: icon.sfSymbol)
+                                    .appFont(18, .medium)
+                                    .foregroundStyle(selected ? Color(hex: colorHex) : Theme.inkSecondary)
+                            )
+                            .overlay(
+                                Circle().strokeBorder(selected ? Theme.ink : .clear, lineWidth: 2.5)
+                            )
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(l10n.t("categoryManager.iconOption", icon.material))
+                    .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
                 }
             }
         }
