@@ -1727,6 +1727,7 @@ test("a service is reconciled against the expense that paid it", async ({
  */
 test("a week can be stretched into a fortnight, and swallows the days after it", async ({
   page,
+  request,
 }) => {
   await page.goto("/");
   await page.waitForFunction(() => typeof window.__devSignIn === "function");
@@ -1739,6 +1740,42 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
   await page.getByRole("tab", { name: "Semanal" }).click();
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  // The next week, ALREADY materialized. Normally it does not exist yet —
+  // periods are created lazily, on the day they begin — but it does whenever
+  // the extension happens after it appeared, and that is the case this test is
+  // here for: leaving it behind gives 8 of those days two budgets at once.
+  // That is not hypothetical. It is what the production household carried for
+  // three weeks: a fortnight 7–20 August beside the week 14–20.
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const householdId = (
+    ((await households.json()).documents as {
+      name: string;
+      fields: { name: { stringValue: string } };
+    }[]).find((d) => d.fields.name.stringValue === "Hogar de Extend") as {
+      name: string;
+    }
+  ).name
+    .split("/")
+    .pop() as string;
+  const swallowedStart = sydneyDate(7);
+  await request.patch(
+    `${REST}/households/${householdId}/periodBudgets/${swallowedStart}`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          startDate: { stringValue: swallowedStart },
+          endDate: { stringValue: sydneyDate(13) },
+          period: { stringValue: "weekly" },
+          amountCents: { integerValue: "90000" },
+          source: { stringValue: "default" },
+          createdAt: { timestampValue: new Date().toISOString() },
+          updatedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
 
   await page.getByRole("link", { name: "Ajustes", exact: true }).click();
   await page.getByRole("button", { name: "Extender a 2 semanas" }).click();
@@ -1758,6 +1795,24 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
   await expect(page.getByText("Iniciar la quincena")).toBeVisible();
   // The budget grew by exactly what was added.
   await expect(page.getByText("$1.800,00").first()).toBeVisible();
+
+  // And the week it ran over is GONE, in the same write. Two periods claiming
+  // the same days is not a cosmetic problem: an expense belongs to whichever
+  // one the client's search returns first, and the clients search differently
+  // — the web takes the first match, iOS the last — so they would disagree
+  // about the budget for that week.
+  await expect
+    .poll(async () => {
+      const res = await request.get(
+        `${REST}/households/${householdId}/periodBudgets`,
+        { headers: admin },
+      );
+      return (((await res.json()).documents ?? []) as { name: string }[])
+        .map((d) => d.name.split("/").pop())
+        .sort()
+        .join(",");
+    })
+    .toBe(sydneyDate(0));
 });
 
 /**

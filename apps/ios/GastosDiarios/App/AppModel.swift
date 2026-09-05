@@ -554,12 +554,20 @@ final class AppModel {
               addedCents > 0
         else { return }
         let total = current.amountCents + addedCents
+        // Whatever the longer week now runs over. Usually nothing — the next
+        // period is materialized lazily and normally does not exist yet — but
+        // if the extension happens after it appeared, leaving it there gives
+        // those days two budgets at once.
+        let swallowed = periods.first {
+            $0.startDate > current.startDate && $0.startDate <= endDate.raw
+        }
         write {
             try await self.firestore.extendPeriodToFortnight(
                 householdId: householdId,
                 startDate: current.startDate,
                 endDate: endDate.raw,
-                amountCents: total
+                amountCents: total,
+                swallowedStartDate: swallowed?.startDate
             )
         }
     }

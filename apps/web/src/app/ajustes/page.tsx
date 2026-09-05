@@ -246,7 +246,7 @@ export default function SettingsPage() {
   const tAuth = useTranslations("auth");
   const { locale, setLocale } = useLocale();
   const { user } = useAuth();
-  const { household, currentPeriod, openStartPeriod } = useHousehold();
+  const { household, periods, currentPeriod, openStartPeriod } = useHousehold();
 
   const [copied, setCopied] = useState(false);
   const [extending, setExtending] = useState(false);
@@ -563,6 +563,14 @@ export default function SettingsPage() {
           locale={locale}
           defaultAmountCents={household.defaultBudget.amountCents}
           onConfirm={(endDate, newTotalCents) => {
+            // Whatever the longer week now runs over. Usually nothing — the
+            // next period is materialized lazily and normally does not exist
+            // yet — but if the extension happens after it appeared, leaving it
+            // there gives those days two budgets at once.
+            const swallowed = periods.find(
+              (p) =>
+                p.startDate > currentPeriod.startDate && p.startDate <= endDate,
+            );
             withDb((db) =>
               extendPeriodToFortnight(
                 db,
@@ -570,6 +578,7 @@ export default function SettingsPage() {
                 currentPeriod.startDate,
                 endDate,
                 newTotalCents,
+                swallowed?.startDate ?? null,
               ),
             );
             setExtending(false);

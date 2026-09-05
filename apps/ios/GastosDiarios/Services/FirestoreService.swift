@@ -541,22 +541,42 @@ final class FirestoreService {
     /// `endDate` must come from `PeriodLogic.extendToFortnight`: rules have no
     /// date arithmetic and cannot check it, so the shared vectors are what keep
     /// this and the web computing the same day.
+    /// `swallowedStartDate` is the period the new end date runs over, when one
+    /// has already been materialized, and it goes in the SAME batch. Without it
+    /// this left two periods claiming the same days — and it did, for three
+    /// weeks: a fortnight 7–20 August beside the week 14–20 created before the
+    /// extension. An expense in those days then belongs to whichever period the
+    /// client's search returns first, and the two clients search differently
+    /// (iOS takes the last match, the web the first), so they disagreed about
+    /// the budget for that week. Deletes were forbidden by the rules when this
+    /// was written, which is why it shipped one-sided.
     func extendPeriodToFortnight(
         householdId: String,
         startDate: String,
         endDate: String,
-        amountCents: Int
+        amountCents: Int,
+        swallowedStartDate: String?
     ) async throws {
-        try await db.collection("households").document(householdId)
-            .collection("periodBudgets").document(startDate)
-            .updateData([
+        let periods = db.collection("households").document(householdId)
+            .collection("periodBudgets")
+        let batch = db.batch()
+        batch.updateData(
+            [
                 "period": PeriodType.fortnightly.rawValue,
                 "endDate": endDate,
                 "amountCents": amountCents,
                 // Whatever it was, the amount is no longer the default template.
                 "source": "custom",
                 "updatedAt": FieldValue.serverTimestamp(),
-            ])
+            ],
+            forDocument: periods.document(startDate)
+        )
+        // Only ever a period nobody has answered: the rules refuse to delete
+        // one carrying confirmedAt, and the caller only offers the next along.
+        if let swallowedStartDate {
+            batch.deleteDocument(periods.document(swallowedStartDate))
+        }
+        try await batch.commit()
     }
 
     /// Stretch a period out to `toEndDate` and drop the one it swallows.

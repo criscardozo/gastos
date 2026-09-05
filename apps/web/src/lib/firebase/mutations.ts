@@ -283,6 +283,16 @@ export async function confirmPeriod(
  * `endDate` must come from `extendToFortnight` — the rules have no date
  * arithmetic and cannot check it, so the shared vectors are what keep both
  * clients computing the same day.
+ *
+ * `swallowedStartDate` is the period the new end date runs over, when one has
+ * already been materialized, and it goes in the SAME batch. Without that this
+ * left two periods claiming the same days — and it did, for three weeks: a
+ * fortnight 7–20 August beside the week 14–20 that had been created before the
+ * extension. An expense in those days then belongs to whichever period the
+ * client's search happens to return first, and the two clients search
+ * differently (the web takes the first match, iOS the last), so they disagreed
+ * about the budget for that week. Deletes were forbidden by the rules when
+ * this was written, which is why it shipped one-sided.
  */
 export async function extendPeriodToFortnight(
   db: Firestore,
@@ -290,9 +300,12 @@ export async function extendPeriodToFortnight(
   startDate: string,
   endDate: string,
   amountCents: number,
+  swallowedStartDate: string | null,
 ): Promise<void> {
-  await updateDoc(
-    doc(db, "households", householdId, "periodBudgets", startDate),
+  const periods = collection(db, "households", householdId, "periodBudgets");
+  const batch = writeBatch(db);
+  batch.update(
+    doc(periods, startDate),
     {
       period: "fortnightly",
       endDate,
@@ -302,6 +315,12 @@ export async function extendPeriodToFortnight(
       updatedAt: serverTimestamp(),
     },
   );
+  // Only ever a period nobody has answered: the rules refuse to delete one
+  // carrying confirmedAt, and the caller only offers up the next one along.
+  if (swallowedStartDate !== null) {
+    batch.delete(doc(periods, swallowedStartDate));
+  }
+  await batch.commit();
 }
 
 /**
