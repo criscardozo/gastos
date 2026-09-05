@@ -169,7 +169,7 @@ final class PeriodLogicTests: XCTestCase {
             + Self.vectors.budgetState.cases.count
             + Self.vectors.extendToFortnight.cases.count
             + Self.vectors.stretchPeriodTo.cases.count
-        XCTAssertEqual(counted, 69)
+        XCTAssertEqual(counted, 72)
     }
 
     // MARK: - Sections

@@ -259,6 +259,23 @@ acaba de pedir.
   sin tocar nada. "No se puede llegar" era una conclusión que no dejaba trabajo
   siguiente, que es justo la señal de la que habla la lección de arriba.
 
+- **Un caso puede pasar por el guard equivocado.** El vector "refuses the same
+  end date" de `stretchPeriodTo` traía `toEndDate: 2026-09-03` con
+  `today: 2026-09-04`: lo rechazaba el guard SIGUIENTE ("termina antes de hoy"),
+  así que el guard que le da nombre nunca corría y se podía borrar sin que nada
+  cayera. Un caso con el nombre correcto y el resultado correcto puede no estar
+  probando lo que dice. La forma de saberlo es romper el guard y ver si el caso
+  se entera.
+- **Mutar de a una dice qué cubren de verdad los vectores compartidos.** Sobre
+  24 condiciones de `periods.ts` y `bank-match.ts`, seis sólo las agarraban los
+  vectores (o sea que no son redundantes con los tests dedicados) y **once no
+  las agarraba nadie**, ni siquiera la suite entera de las dos plataformas. De
+  esas once, tres no eran huecos: dos bordes que sólo difieren en la igualdad
+  exacta de un `Double`, y el filtro `verified` de `learnRate`, que es un
+  **mutante equivalente** porque `isValidVerification` en las reglas ya garantiza
+  que si hay `usdCents` entonces `verified == true`. Antes de reportar un hueco,
+  conviene preguntarse si algo fuera del código lo está sosteniendo.
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada

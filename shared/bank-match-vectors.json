@@ -15,39 +15,75 @@
     {
       "name": "nothing verified yet",
       "expenses": [
-        { "amountCents": 6390, "usdCents": null, "verified": false },
-        { "amountCents": 1250, "usdCents": null, "verified": false }
+        {
+          "amountCents": 6390,
+          "usdCents": null,
+          "verified": false
+        },
+        {
+          "amountCents": 1250,
+          "usdCents": null,
+          "verified": false
+        }
       ],
       "expected": null
     },
     {
       "name": "one verified pair",
       "expenses": [
-        { "amountCents": 10000, "usdCents": 7123, "verified": true }
+        {
+          "amountCents": 10000,
+          "usdCents": 7123,
+          "verified": true
+        }
       ],
       "expected": 0.7123
     },
     {
       "name": "median, so a mistyped pair cannot drag it",
       "expenses": [
-        { "amountCents": 10000, "usdCents": 7120, "verified": true },
-        { "amountCents": 20000, "usdCents": 14240, "verified": true },
-        { "amountCents": 10000, "usdCents": 712, "verified": true }
+        {
+          "amountCents": 10000,
+          "usdCents": 7120,
+          "verified": true
+        },
+        {
+          "amountCents": 20000,
+          "usdCents": 14240,
+          "verified": true
+        },
+        {
+          "amountCents": 10000,
+          "usdCents": 712,
+          "verified": true
+        }
       ],
       "expected": 0.712
     },
     {
       "name": "even count averages the middle two",
       "expenses": [
-        { "amountCents": 10000, "usdCents": 7000, "verified": true },
-        { "amountCents": 10000, "usdCents": 7200, "verified": true }
+        {
+          "amountCents": 10000,
+          "usdCents": 7000,
+          "verified": true
+        },
+        {
+          "amountCents": 10000,
+          "usdCents": 7200,
+          "verified": true
+        }
       ],
       "expected": 0.71
     },
     {
       "name": "a flag with no figure behind it is not a pair",
       "expenses": [
-        { "amountCents": 10000, "usdCents": null, "verified": true }
+        {
+          "amountCents": 10000,
+          "usdCents": null,
+          "verified": true
+        }
       ],
       "expected": null
     }
@@ -57,128 +93,403 @@
       "name": "the rate alone identifies the expense, with no merchant help",
       "referenceRate": 0.7123,
       "charges": [
-        { "id": "c1", "usdCents": 4552, "date": "2026-08-03", "merchant": "" }
+        {
+          "id": "c1",
+          "usdCents": 4552,
+          "date": "2026-08-03",
+          "merchant": ""
+        }
       ],
       "expenses": [
-        { "id": "right", "amountCents": 6390, "date": "2026-08-03", "note": "", "verified": false },
-        { "id": "wrong", "amountCents": 1250, "date": "2026-08-03", "note": "", "verified": false }
+        {
+          "id": "right",
+          "amountCents": 6390,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        },
+        {
+          "id": "wrong",
+          "amountCents": 1250,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        }
       ],
-      "expected": { "c1": "right" }
+      "expected": {
+        "c1": "right"
+      }
     },
     {
       "name": "the merchant breaks a tie between two similar amounts",
       "referenceRate": 0.7123,
       "charges": [
-        { "id": "c1", "usdCents": 4552, "date": "2026-08-03", "merchant": "COLES 0831" }
+        {
+          "id": "c1",
+          "usdCents": 4552,
+          "date": "2026-08-03",
+          "merchant": "COLES 0831"
+        }
       ],
       "expenses": [
-        { "id": "coles", "amountCents": 6390, "date": "2026-08-03", "note": "Coles", "verified": false },
-        { "id": "tren", "amountCents": 6400, "date": "2026-08-03", "note": "Tren a Bondi", "verified": false }
+        {
+          "id": "coles",
+          "amountCents": 6390,
+          "date": "2026-08-03",
+          "note": "Coles",
+          "verified": false
+        },
+        {
+          "id": "tren",
+          "amountCents": 6400,
+          "date": "2026-08-03",
+          "note": "Tren a Bondi",
+          "verified": false
+        }
       ],
-      "expected": { "c1": "coles" }
+      "expected": {
+        "c1": "coles"
+      }
     },
     {
       "name": "a charge looks a few days back",
       "referenceRate": 0.7123,
       "charges": [
-        { "id": "c1", "usdCents": 4552, "date": "2026-08-06", "merchant": "" }
+        {
+          "id": "c1",
+          "usdCents": 4552,
+          "date": "2026-08-06",
+          "merchant": ""
+        }
       ],
       "expenses": [
-        { "id": "e1", "amountCents": 6390, "date": "2026-08-03", "note": "", "verified": false }
+        {
+          "id": "e1",
+          "amountCents": 6390,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        }
       ],
-      "expected": { "c1": "e1" }
+      "expected": {
+        "c1": "e1"
+      }
     },
     {
       "name": "but not further than three days",
       "referenceRate": 0.7123,
       "charges": [
-        { "id": "c1", "usdCents": 4552, "date": "2026-08-07", "merchant": "" }
+        {
+          "id": "c1",
+          "usdCents": 4552,
+          "date": "2026-08-07",
+          "merchant": ""
+        }
       ],
       "expenses": [
-        { "id": "e1", "amountCents": 6390, "date": "2026-08-03", "note": "", "verified": false }
+        {
+          "id": "e1",
+          "amountCents": 6390,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        }
       ],
-      "expected": { "c1": null }
+      "expected": {
+        "c1": null
+      }
     },
     {
       "name": "an already-verified expense is never touched again",
       "referenceRate": 0.7123,
       "charges": [
-        { "id": "c1", "usdCents": 4552, "date": "2026-08-03", "merchant": "COLES 0831" }
+        {
+          "id": "c1",
+          "usdCents": 4552,
+          "date": "2026-08-03",
+          "merchant": "COLES 0831"
+        }
       ],
       "expenses": [
-        { "id": "done", "amountCents": 6390, "date": "2026-08-03", "note": "Coles", "verified": true }
+        {
+          "id": "done",
+          "amountCents": 6390,
+          "date": "2026-08-03",
+          "note": "Coles",
+          "verified": true
+        }
       ],
-      "expected": { "c1": null }
+      "expected": {
+        "c1": null
+      }
     },
     {
       "name": "a rate nowhere near the learned one is refused",
       "referenceRate": 0.7123,
       "charges": [
-        { "id": "c1", "usdCents": 4552, "date": "2026-08-03", "merchant": "" }
+        {
+          "id": "c1",
+          "usdCents": 4552,
+          "date": "2026-08-03",
+          "merchant": ""
+        }
       ],
       "expenses": [
-        { "id": "e1", "amountCents": 1200, "date": "2026-08-03", "note": "", "verified": false }
+        {
+          "id": "e1",
+          "amountCents": 1200,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        }
       ],
-      "expected": { "c1": null }
+      "expected": {
+        "c1": null
+      }
     },
     {
       "name": "with nothing learned yet, a plausible ratio is accepted",
       "referenceRate": null,
       "charges": [
-        { "id": "c1", "usdCents": 4552, "date": "2026-08-03", "merchant": "" }
+        {
+          "id": "c1",
+          "usdCents": 4552,
+          "date": "2026-08-03",
+          "merchant": ""
+        }
       ],
       "expenses": [
-        { "id": "e1", "amountCents": 6390, "date": "2026-08-03", "note": "", "verified": false }
+        {
+          "id": "e1",
+          "amountCents": 6390,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        }
       ],
-      "expected": { "c1": "e1" }
+      "expected": {
+        "c1": "e1"
+      }
     },
     {
       "name": "with nothing learned yet, an implausible ratio still is not",
       "referenceRate": null,
       "charges": [
-        { "id": "c1", "usdCents": 4552, "date": "2026-08-03", "merchant": "" }
+        {
+          "id": "c1",
+          "usdCents": 4552,
+          "date": "2026-08-03",
+          "merchant": ""
+        }
       ],
       "expenses": [
-        { "id": "e1", "amountCents": 50000, "date": "2026-08-03", "note": "", "verified": false }
+        {
+          "id": "e1",
+          "amountCents": 50000,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        }
       ],
-      "expected": { "c1": null }
+      "expected": {
+        "c1": null
+      }
     },
     {
       "name": "one expense cannot answer for two charges",
       "referenceRate": 0.7123,
       "charges": [
-        { "id": "c1", "usdCents": 4552, "date": "2026-08-03", "merchant": "COLES 0831" },
-        { "id": "c2", "usdCents": 4552, "date": "2026-08-03", "merchant": "COLES 0831" }
+        {
+          "id": "c1",
+          "usdCents": 4552,
+          "date": "2026-08-03",
+          "merchant": "COLES 0831"
+        },
+        {
+          "id": "c2",
+          "usdCents": 4552,
+          "date": "2026-08-03",
+          "merchant": "COLES 0831"
+        }
       ],
       "expenses": [
-        { "id": "only", "amountCents": 6390, "date": "2026-08-03", "note": "Coles", "verified": false }
+        {
+          "id": "only",
+          "amountCents": 6390,
+          "date": "2026-08-03",
+          "note": "Coles",
+          "verified": false
+        }
       ],
-      "expected": { "c1": "only", "c2": null }
+      "expected": {
+        "c1": "only",
+        "c2": null
+      }
     },
     {
       "name": "two charges land on the two expenses they belong to",
       "referenceRate": 0.7123,
       "charges": [
-        { "id": "big", "usdCents": 4552, "date": "2026-08-03", "merchant": "COLES 0831" },
-        { "id": "small", "usdCents": 890, "date": "2026-08-03", "merchant": "OPAL TOP UP" }
+        {
+          "id": "big",
+          "usdCents": 4552,
+          "date": "2026-08-03",
+          "merchant": "COLES 0831"
+        },
+        {
+          "id": "small",
+          "usdCents": 890,
+          "date": "2026-08-03",
+          "merchant": "OPAL TOP UP"
+        }
       ],
       "expenses": [
-        { "id": "coles", "amountCents": 6390, "date": "2026-08-03", "note": "Coles", "verified": false },
-        { "id": "opal", "amountCents": 1250, "date": "2026-08-03", "note": "Opal", "verified": false }
+        {
+          "id": "coles",
+          "amountCents": 6390,
+          "date": "2026-08-03",
+          "note": "Coles",
+          "verified": false
+        },
+        {
+          "id": "opal",
+          "amountCents": 1250,
+          "date": "2026-08-03",
+          "note": "Opal",
+          "verified": false
+        }
       ],
-      "expected": { "big": "coles", "small": "opal" }
+      "expected": {
+        "big": "coles",
+        "small": "opal"
+      }
     },
     {
       "name": "the merchant match survives accents and case",
       "referenceRate": 0.7123,
       "charges": [
-        { "id": "c1", "usdCents": 1495, "date": "2026-08-03", "merchant": "FARMACIA 12" }
+        {
+          "id": "c1",
+          "usdCents": 1495,
+          "date": "2026-08-03",
+          "merchant": "FARMACIA 12"
+        }
       ],
       "expenses": [
-        { "id": "farmacia", "amountCents": 2100, "date": "2026-08-03", "note": "Farmacía", "verified": false },
-        { "id": "otro", "amountCents": 2090, "date": "2026-08-03", "note": "Kiosco", "verified": false }
+        {
+          "id": "farmacia",
+          "amountCents": 2100,
+          "date": "2026-08-03",
+          "note": "Farmacía",
+          "verified": false
+        },
+        {
+          "id": "otro",
+          "amountCents": 2090,
+          "date": "2026-08-03",
+          "note": "Kiosco",
+          "verified": false
+        }
       ],
-      "expected": { "c1": "farmacia" }
+      "expected": {
+        "c1": "farmacia"
+      }
+    },
+    {
+      "name": "one day apart still matches — the decay from the same day is gentle",
+      "referenceRate": 0.7,
+      "charges": [
+        {
+          "id": "c1",
+          "usdCents": 7392,
+          "date": "2026-08-04",
+          "merchant": ""
+        }
+      ],
+      "expenses": [
+        {
+          "id": "e1",
+          "amountCents": 10000,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        }
+      ],
+      "expected": {
+        "c1": "e1"
+      }
+    },
+    {
+      "name": "a pair just under the floor is no suggestion at all",
+      "referenceRate": 0.7,
+      "charges": [
+        {
+          "id": "c1",
+          "usdCents": 7385,
+          "date": "2026-08-05",
+          "merchant": ""
+        }
+      ],
+      "expenses": [
+        {
+          "id": "e1",
+          "amountCents": 10000,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        }
+      ],
+      "expected": {
+        "c1": null
+      }
+    },
+    {
+      "name": "a short merchant inside a longer note is a full merchant hit",
+      "referenceRate": 0.7,
+      "charges": [
+        {
+          "id": "c1",
+          "usdCents": 7630,
+          "date": "2026-08-03",
+          "merchant": "COLES"
+        }
+      ],
+      "expenses": [
+        {
+          "id": "e1",
+          "amountCents": 10000,
+          "date": "2026-08-03",
+          "note": "Coles fruta semanal",
+          "verified": false
+        }
+      ],
+      "expected": {
+        "c1": "e1"
+      }
+    },
+    {
+      "name": "a two-letter word in common is not a merchant match",
+      "referenceRate": 0.7,
+      "charges": [
+        {
+          "id": "c1",
+          "usdCents": 7560,
+          "date": "2026-08-03",
+          "merchant": "TREN DE BONDI"
+        }
+      ],
+      "expenses": [
+        {
+          "id": "e1",
+          "amountCents": 10000,
+          "date": "2026-08-03",
+          "note": "Cafe de la esquina",
+          "verified": false
+        }
+      ],
+      "expected": {
+        "c1": null
+      }
     }
   ]
 }

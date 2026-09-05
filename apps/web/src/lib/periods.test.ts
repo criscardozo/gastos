@@ -63,7 +63,7 @@ describe("period vectors", () => {
       vectors.budgetState.cases.length +
       vectors.extendToFortnight.cases.length +
       vectors.stretchPeriodTo.cases.length;
-    expect(counted).toBe(69);
+    expect(counted).toBe(72);
   });
 });
 

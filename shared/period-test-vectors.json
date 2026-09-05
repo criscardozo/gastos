@@ -254,6 +254,44 @@
             "endDate": "2026-10-11"
           }
         ]
+      },
+      {
+        "name": "today IS the last day of the last period -> still nothing",
+        "last": {
+          "startDate": "2026-07-01",
+          "endDate": "2026-07-14"
+        },
+        "defaultPeriod": "fortnightly",
+        "today": "2026-07-14",
+        "expected": []
+      },
+      {
+        "name": "today IS the last day of the period being created -> just that one",
+        "last": {
+          "startDate": "2026-07-01",
+          "endDate": "2026-07-14"
+        },
+        "defaultPeriod": "fortnightly",
+        "today": "2026-07-28",
+        "expected": [
+          {
+            "startDate": "2026-07-15",
+            "endDate": "2026-07-28"
+          }
+        ]
+      },
+      {
+        "name": "the anchor IS today -> the first period starts now",
+        "last": null,
+        "anchorDate": "2026-07-01",
+        "defaultPeriod": "fortnightly",
+        "today": "2026-07-01",
+        "expected": [
+          {
+            "startDate": "2026-07-01",
+            "endDate": "2026-07-14"
+          }
+        ]
       }
     ]
   },
@@ -477,7 +515,7 @@
         "startDate": "2026-08-28",
         "endDate": "2026-09-03",
         "toEndDate": "2026-09-03",
-        "today": "2026-09-04",
+        "today": "2026-09-01",
         "expectedEndDate": null,
         "expectedAddedDays": null
       },
