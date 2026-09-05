@@ -15,7 +15,8 @@
     "emulators": "firebase emulators:start --config firebase/firebase.json --project qcris-gastos-diarios",
     "seed:emulator": "node scripts/seed-emulator.mjs",
     "backup": "node scripts/backup.mjs",
-    "restore": "node scripts/restore.mjs"
+    "restore": "node scripts/restore.mjs",
+    "periods:check": "node scripts/check-periods.mjs"
   },
   "devDependencies": {
     "firebase-admin": "^14.3.0"

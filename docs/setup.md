@@ -211,6 +211,24 @@ there, and documents that exist today but are not in the dump are left alone.
 `pnpm backup` reads the emulator too when `FIRESTORE_EMULATOR_HOST` is set,
 which is what makes step 3 possible.
 
+### Do the periods still form one clean chain?
+
+```sh
+pnpm periods:check          # report only
+pnpm periods:check --fix    # delete the redundant ones
+```
+
+Periods are supposed to tile the calendar: each starts the day after the
+previous ends, none overlaps. Two claiming the same days is not cosmetic — an
+expense belongs to whichever the client's search returns first, and the clients
+search differently (the web takes the first match, iOS the last), so the two
+apps disagree about which budget those days count against.
+
+`--fix` only ever deletes a period that is BOTH unanswered — no `confirmedAt`,
+the same condition the security rules enforce — and entirely covered by
+another. Gaps and partial overlaps are reported and left alone: which one is
+right depends on what somebody meant to do.
+
 ### Is the deployed ruleset the one in the repo?
 
 Rules are deployed by hand, and nothing used to check that what Firestore
