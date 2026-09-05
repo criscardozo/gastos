@@ -106,9 +106,17 @@ struct OnboardingView: View {
                 Text(l10n.t("onboarding.google"))
                     .appFont(15.5, .bold)
                     .foregroundStyle(Theme.ink)
+                    // Wraps rather than truncates. At the accessibility text
+                    // sizes this read "Continuar con Go…" — on the FIRST screen
+                    // anyone sees, and the only button on it.
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            // minHeight, not height: a pill with a fixed height cannot hold
+            // text that grew, so the text is what gave way.
+            .padding(.vertical, 8)
+            .frame(minHeight: 56)
             .background(Theme.surface)
             .clipShape(Capsule())
             .overlay(Capsule().strokeBorder(Theme.ink.opacity(0.12), lineWidth: 1))

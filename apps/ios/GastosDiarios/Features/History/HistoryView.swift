@@ -4,6 +4,9 @@ import SwiftUI
 /// attribution avatars, the offline "pendiente" chip and swipe edit/delete.
 struct HistoryView: View {
     @Environment(AppModel.self) private var model
+    /// Rows that cannot hold their shape at the accessibility sizes give way
+    /// deliberately rather than by truncating.
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var editingItem: ExpenseItem?
     @State private var deletingItem: ExpenseItem?
     @State private var verifyingItem: ExpenseItem?
@@ -232,7 +235,17 @@ struct HistoryView: View {
     private func row(_ item: ExpenseItem) -> some View {
         // Deleted categories fall back to the gray "Otros" placeholder.
         let category = model.household?.categories[item.expense.categoryId] ?? .missing
-        return HStack(spacing: 11) {
+        // Beside each other normally; the amount drops below the name once the
+        // text is big.
+        //
+        // Sharing the row at an accessibility size left the name about half the
+        // screen, and a single long word — "Telefonía" — is wider than that, so
+        // it came apart as "Telefoní / a". Splitting a word is not a line
+        // break; giving the name the full width is what actually fixes it.
+        let layout: AnyLayout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+            : AnyLayout(HStackLayout(spacing: 11))
+        return layout {
             CategoryCircle(categoryId: item.expense.categoryId, category: category, size: 38)
             VStack(alignment: .leading, spacing: 1) {
                 Text(item.expense.note.isEmpty
@@ -240,7 +253,11 @@ struct HistoryView: View {
                      : item.expense.note)
                     .appFont(14.5, .semibold)
                     .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
+                    // One line normally — the list is meant to be scanned —
+                    // but two once the text is big, because at the
+                    // accessibility sizes one line meant "Telefon…" and the
+                    // note is the whole reason a row is recognisable.
+                    .lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
                 HStack(spacing: 5) {
                     if !item.expense.note.isEmpty {
                         Text(l10n.categoryName(category))
@@ -258,11 +275,12 @@ struct HistoryView: View {
                     }
                 }
             }
-            Spacer()
+            if !typeSize.isAccessibilitySize { Spacer() }
             // Who added it lives in the detail sheet — on a two-person ledger
             // the avatar was repeated down the whole list saying very little.
             amountLabel(item)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 2)
     }
 
@@ -271,7 +289,7 @@ struct HistoryView: View {
     /// charge can be typed in without hunting for a swipe.
     private func amountLabel(_ item: ExpenseItem) -> some View {
         let expense = item.expense
-        return VStack(alignment: .trailing, spacing: 1) {
+        return VStack(alignment: typeSize.isAccessibilitySize ? .leading : .trailing, spacing: 1) {
             Text(MoneyFormatter.aud(expense.amountCents, locale: l10n.locale))
                 .appFont(14.5, .bold)
                 .monospacedDigit()
@@ -291,6 +309,11 @@ struct HistoryView: View {
                          : l10n.t("history.unverified"))
                         .appFont(11.5, .semibold)
                         .monospacedDigit()
+                        // Never squeezed narrower than the word it holds. Left
+                        // to the HStack it was compressed until it broke mid
+                        // word — "Sin verifica / r" — which is not a line
+                        // break, it is a word coming apart.
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .foregroundStyle(expense.isVerified ? Theme.greenText : Theme.amberText)
             }
