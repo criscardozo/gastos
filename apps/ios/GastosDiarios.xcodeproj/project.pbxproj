@@ -10,6 +10,7 @@
 		06CE1F0D1CB52AFD497DCEE6 /* WatchSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1B3142A37042E43AF35EC1 /* WatchSupport.swift */; };
 		11C3DF0A5473FBAE652B047B /* bank-match-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 8A795380C7AD182D04979254 /* bank-match-vectors.json */; };
 		1331895649B5F9CF8C93401D /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E33FD8DDEB4A07F1B2A435 /* L10n.swift */; };
+		15AA1CB724446599FF29B4E1 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */; };
 		1D715F394294FC39E44D5552 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */; };
 		1F4703215A63555016DC9CC6 /* GastosDiariosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F2E45F4FFC8505622F84485F /* GastosDiariosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1F9BA58700725716F9D218B6 /* ExpenseDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770FE80DDDE76F46C9859BB8 /* ExpenseDetailSheet.swift */; };
@@ -97,6 +98,7 @@
 		EC2434DE5909830DA8DB749F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D3934372BE7A86D42D837236 /* GoogleSignIn */; };
 		ECD72F7F796CCE30319D28CD /* CountLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED06E0D2EF77E0D2F45131F /* CountLabelTests.swift */; };
 		EE4CFF7748B60B6EB4F8A0E7 /* UsdArsRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22E21C719AA1C4BCA834DCA /* UsdArsRate.swift */; };
+		F3A0540CE996F01682F6D020 /* FontScalingPathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A61FD1D9C51B26E68C12816E /* FontScalingPathTests.swift */; };
 		F5A92CB3FE60BBB11026A9CB /* RichText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FAB94B640D4DFAAF7E6AB91 /* RichText.swift */; };
 		F66E126B602E61FCCC04EA5B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A3DE79D792BD15A233F74D /* SettingsView.swift */; };
 		F6C3A5A2215B37A39404FBF6 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1033958EAF0770812248EF2 /* HistoryView.swift */; };
@@ -196,6 +198,7 @@
 		A21D8B26F267E4D4FF49927C /* BudgetAmountEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetAmountEditor.swift; sourceTree = "<group>"; };
 		A22E21C719AA1C4BCA834DCA /* UsdArsRate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsdArsRate.swift; sourceTree = "<group>"; };
 		A287043194DBE706C3F695D1 /* BudgetWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetWidget.swift; sourceTree = "<group>"; };
+		A61FD1D9C51B26E68C12816E /* FontScalingPathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontScalingPathTests.swift; sourceTree = "<group>"; };
 		ACDCA9AC2534434D541C748E /* GastosDiariosWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GastosDiariosWidget.entitlements; sourceTree = "<group>"; };
 		B2DE59304825CBC116B66700 /* categories.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = categories.json; sourceTree = "<group>"; };
 		B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Outfit-Variable.ttf"; sourceTree = "<group>"; };
@@ -422,6 +425,7 @@
 				CF503D57419B16D9EDFC7E9F /* CardTaxesTests.swift */,
 				5ED06E0D2EF77E0D2F45131F /* CountLabelTests.swift */,
 				2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */,
+				A61FD1D9C51B26E68C12816E /* FontScalingPathTests.swift */,
 				E0E1907B1FEAADDF744484A8 /* ModelDecodingTests.swift */,
 				F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */,
 				3064D79EEF48BC7380766319 /* RichTextTests.swift */,
@@ -664,6 +668,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1D715F394294FC39E44D5552 /* Localizable.xcstrings in Resources */,
+				15AA1CB724446599FF29B4E1 /* Outfit-Variable.ttf in Resources */,
 				11C3DF0A5473FBAE652B047B /* bank-match-vectors.json in Resources */,
 				63968EB55472433519654B79 /* categories.json in Resources */,
 				9F9E15C2ABBF4A7A747FDC1E /* period-test-vectors.json in Resources */,
@@ -765,6 +770,7 @@
 				890E700B386E8F21075CE55D /* CardTaxesTests.swift in Sources */,
 				ECD72F7F796CCE30319D28CD /* CountLabelTests.swift in Sources */,
 				789F6152666388E18CA30122 /* ExpenseVerificationTests.swift in Sources */,
+				F3A0540CE996F01682F6D020 /* FontScalingPathTests.swift in Sources */,
 				1331895649B5F9CF8C93401D /* L10n.swift in Sources */,
 				3210FA34CD44CCE793592DE3 /* ModelDecodingTests.swift in Sources */,
 				DAA68B4CBEDC600E9A6BE6DC /* Models.swift in Sources */,

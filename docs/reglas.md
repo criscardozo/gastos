@@ -200,6 +200,23 @@ acaba de pedir.
   comprueba si el camino real tolera el campo ausente". No lo toleraba: era el
   bug, y el comentario lo dejó pasar. Cuando un test necesita un ajuste para
   pasar, el ajuste es la pregunta.
+- **Un test puede medir la función correcta y aun así ser sobre el camino
+  equivocado.** `AppFontTests` mide `UIFontMetrics.scaledValue`, que cuantiza a
+  tercios de punto (11,5 → 11,666), y de ahí salió escrito que los tamaños de
+  medio punto rendereaban 1/6 pt más grandes. Pero `scaledValue` es el camino
+  del fallback y de los símbolos: un label con `.custom(_:size:relativeTo:)`
+  escala la FUENTE, y ese camino cuantiza a punto ENTERO (11,5 → 12). Medio
+  punto, el triple, sobre los ~92 tamaños de medio punto de la escala. El test
+  no se equivocaba en la aritmética, se equivocaba de camino — y lo tapaba que
+  el bundle de tests no tenía la fuente, así que `AppFont.available` era false
+  y todo medía el fallback sin decirlo. Si el target de test no carga los mismos
+  recursos que la app, mide otra app.
+- **"El test sigue fallando" no es lo mismo que "el test sigue denegando".** Al
+  verificar si el tope de `categories` era lo que rechazaba un mapa de 31, se
+  subió el tope a 41 y el test volvió a fallar — leído de apuro como "entonces
+  no era el tope". Era al revés: fallaba en `assertFails` porque el write ahora
+  PASABA, que es exactamente la prueba de que el tope era el que denegaba. Leer
+  el mensaje, no el color.
 
 ## 8. Secretos
 

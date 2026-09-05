@@ -238,6 +238,13 @@ targets:
       # SeedCategories decodes this at runtime.
       - path: ../../shared/categories.json
         buildPhase: resources
+      # The real font, so the scaling tests measure the path the app actually
+      # takes (`.custom(_:relativeTo:)`) with the face it actually renders.
+      # A test bundle has no UIAppFonts, so the tests register it at runtime;
+      # without it `AppFont.available` is false here and every scaling test
+      # silently measures the FALLBACK instead.
+      - path: GastosDiarios/Resources/Fonts/Outfit-Variable.ttf
+        buildPhase: resources
       # Shared cross-platform test vectors (Swift + TS must both pass).
       - path: ../../shared/period-test-vectors.json
         buildPhase: resources

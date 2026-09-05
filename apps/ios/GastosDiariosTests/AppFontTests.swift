@@ -82,16 +82,20 @@ final class AppFontTests: XCTestCase {
         }
     }
 
-    /// The half-point sizes are NOT untouched, and by exactly how much.
+    /// The half-point sizes are NOT untouched, and by exactly how much — ON
+    /// THIS PATH, which is the fallback face's, not the one the app renders.
     ///
-    /// `UIFontMetrics` quantises to thirds of a point, so 11.5 comes back as
-    /// 11.666… — every half-point step in the scale renders 1/6 pt larger than
-    /// designed. That is half a pixel at 3x and invisible, but it was found by
-    /// this test on its first run and it contradicts what the commit
-    /// introducing `relativeTo:` claimed ("renders exactly the same number").
-    /// Written down as an equality rather than hidden under a tolerance: a
-    /// fudge factor big enough to swallow this would also swallow a real
-    /// regression.
+    /// `scaledValue` quantises to thirds of a point, so 11.5 comes back 11.666…
+    /// The commit that introduced `relativeTo:` claimed it "renders exactly the
+    /// same number"; that was wrong, and the first version of this test said the
+    /// drift was 1/6 pt — also wrong for the text you actually see, because
+    /// `.custom(_:size:relativeTo:)` scales the FONT and that path quantises to
+    /// whole points (11.5 → 12). `FontScalingPathTests` measures both and holds
+    /// the real figure. What is pinned here is only the number a symbol or the
+    /// system-font fallback gets.
+    ///
+    /// Written as an equality rather than hidden under a tolerance: a fudge
+    /// factor big enough to swallow this would also swallow a real regression.
     func testHalfPointSizesLandOnTheNearestThirdOfAPoint() {
         for size in [CGFloat(11.5), 12.5, 13.5, 14.5] {
             XCTAssertEqual(
