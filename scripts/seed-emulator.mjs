@@ -351,7 +351,15 @@ async function main() {
       amountCents: cents,
       categoryId: "services",
       note,
-      date: addDays(monthStart(day), 2),
+      // TODAY, not early in the month.
+      //
+      // Both things that read these need it. Servicios asks "was this bill
+      // charged this month", and today is always in this month. The bank
+      // charges sheet only holds the CURRENT period's expenses in memory, and
+      // early in a period a date from the 3rd falls in the previous one — so
+      // the suggestions had nothing to match against and the screen said
+      // "nothing left to verify" beside three charges.
+      date: day,
       createdBy: uid,
       verified: false,
       createdAt: now,
@@ -378,7 +386,7 @@ async function main() {
     await put(`households/${householdId}/bankCharges/${id}`, {
       // ~0.65 of the expense it belongs to; the odd one out gets its own.
       usdCents: Math.round(audCents * 0.65),
-      date: expenseId === null ? day : addDays(monthStart(day), 2),
+      date: day,
       merchant,
       importedAt: now,
     });
