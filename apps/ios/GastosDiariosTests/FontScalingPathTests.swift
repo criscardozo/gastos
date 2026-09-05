@@ -1,4 +1,3 @@
-import CoreText
 import SwiftUI
 import UIKit
 import XCTest
@@ -14,18 +13,7 @@ import XCTest
 final class FontScalingPathTests: XCTestCase {
     override class func setUp() {
         super.setUp()
-        registerTheFont()
-    }
-
-    /// A test bundle has no `UIAppFonts`, so the face has to be registered by
-    /// hand or `UIFont(name: "Outfit", …)` returns nil and every measurement
-    /// below quietly becomes a measurement of the SYSTEM font.
-    private static func registerTheFont() {
-        guard UIFont(name: "Outfit", size: 12) == nil else { return }
-        guard let url = Bundle(for: FontScalingPathTests.self)
-            .url(forResource: "Outfit-Variable", withExtension: "ttf")
-        else { return }
-        CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        TestFonts.register()
     }
 
     private func traits(_ category: UIContentSizeCategory) -> UITraitCollection {

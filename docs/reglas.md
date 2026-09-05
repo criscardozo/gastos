@@ -216,7 +216,18 @@ acaba de pedir.
   subió el tope a 41 y el test volvió a fallar — leído de apuro como "entonces
   no era el tope". Era al revés: fallaba en `assertFails` porque el write ahora
   PASABA, que es exactamente la prueba de que el tope era el que denegaba. Leer
-  el mensaje, no el color.
+  el mensaje, no el color. El detector que sirve exige `error:` en la MISMA
+  línea (`grep -E "\.swift:[0-9]+: error:"`), y se corre primero contra el árbol
+  limpio exigiendo cero: un patrón que matchea las líneas de ejecución del test
+  devuelve todos los tests del archivo y parece que muerden todos.
+- **El default del eje `wght` de Outfit-Variable.ttf es 100, o sea Thin.** Por eso
+  las instancias registradas se llaman `Outfit-Thin_*`. Hoy la familia pelada
+  resuelve a la cara Regular, pero es el riesgo vivo del archivo: si alguna vez
+  cayera en su default, toda la app saldría capilar — y "el texto se puso finito"
+  es de las cosas que se le echan la culpa al diseño y no a la fuente.
+  `FontLoadingTests` lo fija. El trait `.weight` de `UIFontDescriptor` **no toca**
+  esta fuente variable; lo que la mueve es el eje. (Ambas cosas las levantó la
+  sesión Stock sobre su copia del mismo archivo.)
 
 ## 8. Secretos
 

@@ -47,6 +47,7 @@
 		680E4B8C6F5A7FE48B79B090 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 03D045921BA5FA8C21C1F897 /* Assets.xcassets */; };
 		6946D942898FFB0E720BE6A8 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F2F3CF0DA3B43BF2B52F6274 /* Localizable.xcstrings */; };
 		6C5BE67620D8309FBFC6AA29 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */; };
+		6EE16FA45AC592A83DFE63DC /* FontLoadingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42DC61E9383304A6425AED4B /* FontLoadingTests.swift */; };
 		6F988A6795BF9227AEDA3A80 /* SigningExpiryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F875CB9A4249023372B6A501 /* SigningExpiryTests.swift */; };
 		789F6152666388E18CA30122 /* ExpenseVerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */; };
 		79C3AAF1F72C5A8D5923D2AF /* BankChargeInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */; };
@@ -98,6 +99,7 @@
 		EC2434DE5909830DA8DB749F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D3934372BE7A86D42D837236 /* GoogleSignIn */; };
 		ECD72F7F796CCE30319D28CD /* CountLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED06E0D2EF77E0D2F45131F /* CountLabelTests.swift */; };
 		EE4CFF7748B60B6EB4F8A0E7 /* UsdArsRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22E21C719AA1C4BCA834DCA /* UsdArsRate.swift */; };
+		EEEE6564202BE0F9AD5DD14F /* TestFonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09FAD06B6AC51C9258BE8127 /* TestFonts.swift */; };
 		F3A0540CE996F01682F6D020 /* FontScalingPathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A61FD1D9C51B26E68C12816E /* FontScalingPathTests.swift */; };
 		F5A92CB3FE60BBB11026A9CB /* RichText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FAB94B640D4DFAAF7E6AB91 /* RichText.swift */; };
 		F66E126B602E61FCCC04EA5B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A3DE79D792BD15A233F74D /* SettingsView.swift */; };
@@ -154,6 +156,7 @@
 		021A158506471604F1680607 /* BankChargeInboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargeInboxTests.swift; sourceTree = "<group>"; };
 		0384CFCE02C836FE68B8468C /* ServicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesView.swift; sourceTree = "<group>"; };
 		03D045921BA5FA8C21C1F897 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		09FAD06B6AC51C9258BE8127 /* TestFonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFonts.swift; sourceTree = "<group>"; };
 		0C19C8E5B211D3024BBF75AD /* ServiceLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLogicTests.swift; sourceTree = "<group>"; };
 		1410A3F6EF345165785F0EB9 /* NewExpenseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewExpenseButton.swift; sourceTree = "<group>"; };
 		145F6B37DD56D3F48641A9AB /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -167,6 +170,7 @@
 		2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseVerificationTests.swift; sourceTree = "<group>"; };
 		3064D79EEF48BC7380766319 /* RichTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichTextTests.swift; sourceTree = "<group>"; };
 		36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargeInbox.swift; sourceTree = "<group>"; };
+		42DC61E9383304A6425AED4B /* FontLoadingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontLoadingTests.swift; sourceTree = "<group>"; };
 		45E8539DAFA9587CC0291F04 /* CategoriesManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesManagerView.swift; sourceTree = "<group>"; };
 		48BF3AEB1A7B631C490D0F18 /* PiggyMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiggyMark.swift; sourceTree = "<group>"; };
 		4D2312BF519B44947A6A995D /* GastosDiariosWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosDiariosWidgetBundle.swift; sourceTree = "<group>"; };
@@ -425,6 +429,7 @@
 				CF503D57419B16D9EDFC7E9F /* CardTaxesTests.swift */,
 				5ED06E0D2EF77E0D2F45131F /* CountLabelTests.swift */,
 				2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */,
+				42DC61E9383304A6425AED4B /* FontLoadingTests.swift */,
 				A61FD1D9C51B26E68C12816E /* FontScalingPathTests.swift */,
 				E0E1907B1FEAADDF744484A8 /* ModelDecodingTests.swift */,
 				F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */,
@@ -432,6 +437,7 @@
 				0C19C8E5B211D3024BBF75AD /* ServiceLogicTests.swift */,
 				F875CB9A4249023372B6A501 /* SigningExpiryTests.swift */,
 				E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */,
+				09FAD06B6AC51C9258BE8127 /* TestFonts.swift */,
 			);
 			path = GastosDiariosTests;
 			sourceTree = "<group>";
@@ -770,6 +776,7 @@
 				890E700B386E8F21075CE55D /* CardTaxesTests.swift in Sources */,
 				ECD72F7F796CCE30319D28CD /* CountLabelTests.swift in Sources */,
 				789F6152666388E18CA30122 /* ExpenseVerificationTests.swift in Sources */,
+				6EE16FA45AC592A83DFE63DC /* FontLoadingTests.swift in Sources */,
 				F3A0540CE996F01682F6D020 /* FontScalingPathTests.swift in Sources */,
 				1331895649B5F9CF8C93401D /* L10n.swift in Sources */,
 				3210FA34CD44CCE793592DE3 /* ModelDecodingTests.swift in Sources */,
@@ -785,6 +792,7 @@
 				6F988A6795BF9227AEDA3A80 /* SigningExpiryTests.swift in Sources */,
 				9CFA81C8752C64844F91ACAA /* Suggestions.swift in Sources */,
 				358B81D7BBDE72EE00BB04A4 /* SuggestionsTests.swift in Sources */,
+				EEEE6564202BE0F9AD5DD14F /* TestFonts.swift in Sources */,
 				305EAFC930274F18C79F0DF8 /* Theme.swift in Sources */,
 				4C0A22109A11E18556E2E5CE /* UsdArsRate.swift in Sources */,
 			);
