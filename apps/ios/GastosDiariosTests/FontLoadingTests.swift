@@ -13,6 +13,19 @@ final class FontLoadingTests: XCTestCase {
         TestFonts.register()
     }
 
+    /// The `.ttf` reached the test bundle at all.
+    ///
+    /// Separated from the resolution test on purpose: dropping the font from
+    /// `project.yml`'s test resources and the face failing to load both read as
+    /// "Outfit is not available", and being told the second when the first
+    /// happened sends you into Core Text instead of into a build phase.
+    func testTheFontFileIsInTheTestBundle() {
+        XCTAssertNotEqual(
+            TestFonts.register(), .resourceMissing,
+            "Outfit-Variable.ttf is not a resource of the test target — check project.yml"
+        )
+    }
+
     /// The name the app actually asks for resolves.
     func testTheFamilyNameResolves() {
         XCTAssertNotNil(

@@ -219,7 +219,23 @@ acaba de pedir.
   el mensaje, no el color. El detector que sirve exige `error:` en la MISMA
   línea (`grep -E "\.swift:[0-9]+: error:"`), y se corre primero contra el árbol
   limpio exigiendo cero: un patrón que matchea las líneas de ejecución del test
-  devuelve todos los tests del archivo y parece que muerden todos.
+  devuelve todos los tests del archivo y parece que muerden todos. Y el criterio
+  de aceptación del detector no es que encuentre las fallas, es que **no marque
+  las que no corresponden**: si una mutación tumba todos los tests del archivo,
+  el detector está mirando ejecuciones.
+- **Dos causas distintas no pueden llegar como el mismo síntoma.** "El `.ttf` no
+  se copió al bundle" y "la fuente no resuelve" terminan los dos en *Outfit no
+  está disponible*, y que te reporten el segundo cuando pasó el primero te manda
+  a leer `CTFontManager` en vez de una build phase. `TestFonts.register()`
+  devuelve cuál de las dos fue.
+- **Antes de concluir "es un límite de la plataforma", leer el mensaje entero.**
+  El emulador de reglas dice `evaluation error at L138:24` — con línea y columna.
+  Concluir que el motor no puede algo teniendo ese número sin haberlo seguido es
+  cerrar la puerta con el dato en la mano.
+- **La señal de que una conclusión merece revisarse es que no deja trabajo
+  siguiente.** Una medición que prueba algo deja un test que mantener; una que
+  dice "esto no se puede probar" no deja nada, y por eso nadie la vuelve a tocar.
+  (De la sesión Stock, retractando la suya.)
 - **El default del eje `wght` de Outfit-Variable.ttf es 100, o sea Thin.** Por eso
   las instancias registradas se llaman `Outfit-Thin_*`. Hoy la familia pelada
   resuelve a la cara Regular, pero es el riesgo vivo del archivo: si alguna vez
