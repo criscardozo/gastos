@@ -163,7 +163,11 @@ enum AppFont {
     /// `floor` on purpose: it makes a half-point pair (11 and 11.5, 14 and
     /// 14.5) share an anchor. Two labels on the same row growing at different
     /// rates is how a row comes apart at the larger settings.
-    private static func style(for size: CGFloat) -> Font.TextStyle {
+    /// Internal, not private, so a test can hold the rule below to account:
+    /// the anchor must depend only on `floor(size)`, which is what keeps a
+    /// half-point pair growing together. A comment says that for the sizes
+    /// somebody already wrote; a test says it for the ones they have not.
+    static func style(for size: CGFloat) -> Font.TextStyle {
         switch floor(size) {
         case ..<12: return .caption2
         case ..<13: return .caption
@@ -200,11 +204,26 @@ enum AppFont {
     static func font(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
         let style = style(for: size)
         guard available else {
-            let scaled = UIFontMetrics(forTextStyle: uiStyle(style))
-                .scaledValue(for: size)
-            return .system(size: scaled, weight: weight, design: .rounded)
+            return .system(size: scaled(size), weight: weight, design: .rounded)
         }
         return .custom(family, size: size, relativeTo: style).weight(weight)
+    }
+
+    /// `size`, grown by whatever Dynamic Type setting applies.
+    ///
+    /// `traits` exists for tests, and the reason is worth stating: without it
+    /// `scaledValue(for:)` reads the CONTENT SIZE OF THE DEVICE, so a test
+    /// asserting "at the default setting this is still 11" passes or fails
+    /// depending on what the simulator was left on by the last experiment. It
+    /// is a pure-looking function that is really reading the environment —
+    /// the same trap as `TimeZone.current` in a date test. Pass `.large` for
+    /// "does not grow" and an accessibility size for "does".
+    static func scaled(
+        _ size: CGFloat,
+        compatibleWith traits: UITraitCollection? = nil
+    ) -> CGFloat {
+        UIFontMetrics(forTextStyle: uiStyle(style(for: size)))
+            .scaledValue(for: size, compatibleWith: traits)
     }
 }
 

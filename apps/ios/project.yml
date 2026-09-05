@@ -226,6 +226,10 @@ targets:
       # than Core/ because it imports SwiftUI, and Core is deliberately free of
       # it — so it is listed here by name instead of arriving with a folder.
       - path: GastosDiarios/Design/RichText.swift
+      # AppFont's size→text-style mapping and its Dynamic Type scaling. In the
+      # app target's Design/ rather than Core/ because it imports SwiftUI, so
+      # it is listed by name like RichText above.
+      - path: GastosDiarios/Design/Theme.swift
       # The strings L10n looks up. Compiled into the TEST bundle, which is why
       # L10n resolves its bundle through a type in its own module rather than
       # assuming Bundle.main.

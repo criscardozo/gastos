@@ -335,6 +335,58 @@ describe("households/{id} — create & member access", () => {
     );
   });
 
+  /**
+   * The caps nothing in the app can reach.
+   *
+   * Every one of these is a bound no screen can violate — nobody types a
+   * 31st category, and the profiles map is written by code that only ever puts
+   * two people in it. That is exactly why they need a test: their removal
+   * would be invisible, and this is the ONE document every listener in both
+   * apps holds open, so an unbounded map here is read by everything, forever,
+   * on every launch.
+   *
+   * Found by taking each cap out and seeing whether anything complained. These
+   * five did not.
+   */
+  it("caps the maps on the household document", async () => {
+    await seedHousehold();
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD);
+
+    // 30 categories is the documented maximum.
+    const categories = (n: number) =>
+      Object.fromEntries(
+        Array.from({ length: n }, (_, i) => [
+          `c${i}`,
+          { key: "groceries", icon: "shopping_basket", color: "#2A6FDB", sortOrder: i },
+        ]),
+      );
+    await assertFails(
+      updateDoc(ref, { categories: categories(31), updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(
+      updateDoc(ref, { categories: categories(30), updatedAt: serverTimestamp() }),
+    );
+    // ...and never empty: a household with no categories cannot file an
+    // expense, and every screen that groups by one would have nothing to say.
+    await assertFails(
+      updateDoc(ref, { categories: {}, updatedAt: serverTimestamp() }),
+    );
+
+    // A household is two people. The profiles map is display data for the
+    // roster, so a third entry is either a bug or somebody widening the
+    // household past what the join rule allows.
+    await assertFails(
+      updateDoc(ref, {
+        memberProfiles: {
+          [ALICE]: { displayName: "Cristian", color: "#2A6FDB" },
+          [BOB]: { displayName: "Natalia", color: "#E4572E" },
+          [CAROL]: { displayName: "Un tercero", color: "#111111" },
+        },
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
   it("a member can edit settings but not the roster", async () => {
     await seedHousehold(true);
     const ref = doc(db(env, ALICE), "households", HOUSEHOLD);
@@ -1101,6 +1153,43 @@ describe("households/{id}/periodBudgets", () => {
     );
   });
 
+  it("bounds the carried-in figure, in both directions", async () => {
+    // Signed on purpose — an overspent period carries its deficit forward — so
+    // it is the one money field with a floor as well as a ceiling, and neither
+    // had a test. Nothing in either app can produce a figure this size; that is
+    // what makes the bound invisible if it goes.
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", "2026-07-01"),
+        periodBudgetDoc(),
+      );
+    });
+    const ref = doc(
+      db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-07-01",
+    );
+    for (const rolloverCents of [100000001, -100000001]) {
+      await assertFails(
+        updateDoc(ref, {
+          amountCents: 90000,
+          rolloverCents,
+          source: "custom",
+          updatedAt: serverTimestamp(),
+        }),
+      );
+    }
+    // The documented edges still pass.
+    for (const rolloverCents of [100000000, -100000000]) {
+      await assertSucceeds(
+        updateDoc(ref, {
+          amountCents: 90000,
+          rolloverCents,
+          source: "custom",
+          updatedAt: serverTimestamp(),
+        }),
+      );
+    }
+  });
+
   it("a settled period is an immutable record — no deletes", async () => {
     await seed(env, async (admin) => {
       await setDoc(
@@ -1506,6 +1595,21 @@ describe("households/{id}/services", () => {
 
   const ref = (uid: string, id = "svc-1") =>
     doc(db(env, uid), "households", HOUSEHOLD, "services", id);
+
+  it("caps a service name and a category id", async () => {
+    // Neither is reachable from a screen — the fields have their own limits —
+    // so both bounds would vanish silently. The service NAME is the whole link
+    // to the ledger (Servicios finds the expense that paid a bill by matching
+    // it), and an 81-character name is a name nobody typed.
+    await assertFails(setDoc(ref(ALICE), serviceDoc(ALICE, { name: "x".repeat(81) })));
+    await assertSucceeds(setDoc(ref(ALICE), serviceDoc(ALICE, { name: "x".repeat(80) })));
+    await assertFails(
+      setDoc(
+        doc(db(env, ALICE), "households", HOUSEHOLD, "expenses", "e-long-cat"),
+        expenseDoc(ALICE, { categoryId: "x".repeat(41) }),
+      ),
+    );
+  });
 
   it("either member can add, edit and delete a service", async () => {
     await assertSucceeds(setDoc(ref(ALICE), serviceDoc(ALICE)));

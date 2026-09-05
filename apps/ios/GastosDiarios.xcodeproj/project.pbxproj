@@ -18,6 +18,7 @@
 		287317EE4CCAB473C7B3B0DD /* PiggyMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BF3AEB1A7B631C490D0F18 /* PiggyMark.swift */; };
 		2CC4BB92F1CB68711C723A14 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 7BDAA615B344F7D33E02779C /* GoogleSignInSwift */; };
 		2CD243C91826F313B2AF2ECE /* AmountInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E1BD1553193EC737896A64 /* AmountInput.swift */; };
+		305EAFC930274F18C79F0DF8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 145F6B37DD56D3F48641A9AB /* Theme.swift */; };
 		3210FA34CD44CCE793592DE3 /* ModelDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0E1907B1FEAADDF744484A8 /* ModelDecodingTests.swift */; };
 		32D758F427368025E2807228 /* NewExpenseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1410A3F6EF345165785F0EB9 /* NewExpenseButton.swift */; };
 		358B81D7BBDE72EE00BB04A4 /* SuggestionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */; };
@@ -58,6 +59,7 @@
 		890E700B386E8F21075CE55D /* CardTaxesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF503D57419B16D9EDFC7E9F /* CardTaxesTests.swift */; };
 		8A8E0DFCAC9E165B3E5BE2FD /* WatchEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9E2A69A862D11BA003582B8 /* WatchEntryView.swift */; };
 		8B830BAED6EB824DAF23866F /* WatchSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFD2D6C9571B18B2E78C7040 /* WatchSyncService.swift */; };
+		8C6F9B33AC582A6CDF3E1C94 /* AppFontTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 011B93491030F22220C8A23C /* AppFontTests.swift */; };
 		8DEF436DCA6C18809AB5721A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */; };
 		91BDD122169747015D348B67 /* VerifyExpenseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DBD83BF0FBE89C5BB0805F6 /* VerifyExpenseSheet.swift */; };
 		93121744B6DC03F3CEEEE2FC /* BudgetEntryAmountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6FA9B2E125EE5FF221B75FE /* BudgetEntryAmountTests.swift */; };
@@ -146,6 +148,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		011B93491030F22220C8A23C /* AppFontTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFontTests.swift; sourceTree = "<group>"; };
 		021A158506471604F1680607 /* BankChargeInboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargeInboxTests.swift; sourceTree = "<group>"; };
 		0384CFCE02C836FE68B8468C /* ServicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesView.swift; sourceTree = "<group>"; };
 		03D045921BA5FA8C21C1F897 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -412,6 +415,7 @@
 		9F17DAD116300D340E9287E1 /* GastosDiariosTests */ = {
 			isa = PBXGroup;
 			children = (
+				011B93491030F22220C8A23C /* AppFontTests.swift */,
 				021A158506471604F1680607 /* BankChargeInboxTests.swift */,
 				D087ED99498939948DFCD72D /* BankMatchTests.swift */,
 				C6FA9B2E125EE5FF221B75FE /* BudgetEntryAmountTests.swift */,
@@ -751,6 +755,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2CD243C91826F313B2AF2ECE /* AmountInput.swift in Sources */,
+				8C6F9B33AC582A6CDF3E1C94 /* AppFontTests.swift in Sources */,
 				79C3AAF1F72C5A8D5923D2AF /* BankChargeInbox.swift in Sources */,
 				CB8092081896A331FD25750E /* BankChargeInboxTests.swift in Sources */,
 				FB84BD17683A1D65FE9ED3BF /* BankMatch.swift in Sources */,
@@ -774,6 +779,7 @@
 				6F988A6795BF9227AEDA3A80 /* SigningExpiryTests.swift in Sources */,
 				9CFA81C8752C64844F91ACAA /* Suggestions.swift in Sources */,
 				358B81D7BBDE72EE00BB04A4 /* SuggestionsTests.swift in Sources */,
+				305EAFC930274F18C79F0DF8 /* Theme.swift in Sources */,
 				4C0A22109A11E18556E2E5CE /* UsdArsRate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
