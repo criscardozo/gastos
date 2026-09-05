@@ -99,6 +99,16 @@ targets:
         # secret: the endpoint does nothing without a fresh request stamped on
         # the household, which only a member can write.
         GDIngestURL: $(GD_INGEST_URL)
+        # Wallet, so the entry form can offer to open it.
+        #
+        # `shoebox` is Wallet's URL scheme. It is not documented by Apple, and
+        # declaring it here is what lets `canOpenURL` answer honestly — which
+        # is the point: the button is only shown when the scheme really can be
+        # opened, so a wrong guess hides the button instead of leaving a dead
+        # one. (Never a concern for review: this app is sideloaded on a free
+        # team and does not go near the App Store.)
+        LSApplicationQueriesSchemes:
+          - shoebox
         CFBundleURLTypes:
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:

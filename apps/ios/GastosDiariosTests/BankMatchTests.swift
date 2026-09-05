@@ -87,6 +87,46 @@ final class BankMatchTests: XCTestCase {
         return charge
     }
 
+    // MARK: What the sheet's bulk confirm has to work with
+
+    /// The seed fixture, matched.
+    ///
+    /// The charges sheet grew a "confirm every guess at once" button, and it
+    /// only appears from TWO guesses up — with one, the card's own button is
+    /// right there. So the fixture in scripts/seed-emulator.mjs is shaped to
+    /// produce exactly two suggestions and one charge with no candidate, and
+    /// this pins that: change the seed's amounts or dates and the button it was
+    /// built to exercise quietly stops appearing.
+    ///
+    /// The seed writes each charge at ~0.65 of an unverified expense on the
+    /// same day, which is inside the band the matcher accepts when nothing has
+    /// been learned yet, and one charge that belongs to nothing.
+    func testTheSeedFixtureProducesTwoGuessesAndOneWithout() {
+        let expenses = [
+            expense(id: "exp-netflix", amountCents: 2_299, date: "2026-09-03", note: "Netflix"),
+            expense(id: "exp-telefonia", amountCents: 4_850, date: "2026-09-03", note: "Telefonía"),
+        ]
+        let charges = [
+            charge(id: "gmail-1", usdCents: 1_494, date: "2026-09-03", merchant: "NETFLIX.COM"),
+            charge(id: "gmail-2", usdCents: 3_153, date: "2026-09-03", merchant: "TELEFONICA"),
+            charge(id: "gmail-3", usdCents: 6_435, date: "2026-09-03", merchant: "UNA COMPRA SUELTA"),
+        ]
+        let suggestions = BankMatch.suggestMatches(
+            charges: charges, expenses: expenses, referenceRate: nil
+        )
+        let guessed = suggestions.filter { $0.expenseId != nil }
+        XCTAssertEqual(guessed.count, 2, "the bulk confirm needs two to appear at all")
+        XCTAssertEqual(
+            suggestions.first { $0.chargeId == "gmail-1" }?.expenseId, "exp-netflix"
+        )
+        XCTAssertEqual(
+            suggestions.first { $0.chargeId == "gmail-2" }?.expenseId, "exp-telefonia"
+        )
+        // And the odd one out stays a question for a person: a bulk action that
+        // guessed at this too would be the one thing nobody wants it to do.
+        XCTAssertNil(suggestions.first { $0.chargeId == "gmail-3" }?.expenseId)
+    }
+
     // MARK: The vectors
 
     /// The same guard as the period vectors: a group added to the file that no

@@ -154,6 +154,74 @@
         }
       }
     },
+    "bank.confirmAll": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm all %lld guesses"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmar los %lld supuestos"
+          }
+        }
+      }
+    },
+    "bank.confirmAllBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld charges get assigned to the expenses the app guessed, and leave this list. This cannot be undone."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se asignan %lld cargos a los gastos que la app supone, y los cargos desaparecen de esta lista. No se puede deshacer."
+          }
+        }
+      }
+    },
+    "bank.confirmAllGo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yes, confirm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sí, confirmar"
+          }
+        }
+      }
+    },
+    "bank.confirmAllTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm all of them?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Confirmar todos?"
+          }
+        }
+      }
+    },
     "bank.discard": {
       "extractionState": "manual",
       "localizations": {
@@ -1578,6 +1646,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nota (opcional)"
+          }
+        }
+      }
+    },
+    "entry.openWallet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Wallet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir Wallet"
           }
         }
       }

@@ -359,6 +359,31 @@ async function main() {
     });
   }
 
+  /* The bank's pending charges — the one collection neither app writes (an
+     Apps Script does, from the bank's notification emails) and the only screen
+     with no fixture until now.
+
+     Deliberately shaped so the matcher has something to say: each charge sits
+     on the SAME day as an unverified expense and at ~0.65 USD per AUD, which
+     is inside the plausible band BankMatch accepts when no rate has been
+     learned yet. The third has no counterpart at all, so the sheet shows what
+     "no candidate" looks like beside two real suggestions — and the bulk
+     confirm, which only appears from two, has exactly two to work on. */
+  const bankCharges = [
+    ["gmail-1", "exp-netflix", 2299, "NETFLIX.COM"],
+    ["gmail-2", "exp-telefonia", 4850, "TELEFONICA"],
+    ["gmail-3", null, 9900, "UNA COMPRA SUELTA"],
+  ];
+  for (const [id, expenseId, audCents, merchant] of bankCharges) {
+    await put(`households/${householdId}/bankCharges/${id}`, {
+      // ~0.65 of the expense it belongs to; the odd one out gets its own.
+      usdCents: Math.round(audCents * 0.65),
+      date: expenseId === null ? day : addDays(monthStart(day), 2),
+      merchant,
+      importedAt: now,
+    });
+  }
+
   /* Tarjetas — an open statement with four charges, three digital and one not,
      so the peso breakdown has both of its bases to show, and one already ticked
      off against the paper bill. */
@@ -404,7 +429,7 @@ async function main() {
   });
 
   console.log(`seeded ${householdId} for ${uid} (${PROJECT} @ ${FIRESTORE})`);
-  console.log("  2 períodos · 3 servicios · 3 gastos · 1 resumen · 4 cargos");
+  console.log("  2 períodos · 3 servicios · 3 gastos · 3 cargos del banco · 1 resumen · 4 cargos de tarjeta");
 }
 
 main().catch((error) => {

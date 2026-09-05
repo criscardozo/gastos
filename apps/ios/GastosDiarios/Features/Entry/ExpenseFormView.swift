@@ -230,6 +230,9 @@ struct ExpenseFormView: View {
                 .appFont(18, .bold)
                 .foregroundStyle(Theme.ink)
             Spacer()
+            if !isEditing, Self.walletURL != nil {
+                walletButton
+            }
             if isEditing {
                 Button(l10n.t("common.cancel")) { onDone?() }
                     .appFont(14, .semibold)
@@ -239,6 +242,40 @@ struct ExpenseFormView: View {
             }
         }
         .padding(.bottom, 4)
+    }
+
+    /// Wallet, if this device can open it.
+    ///
+    /// `shoebox` is Wallet's scheme and Apple does not document it, so the URL
+    /// is resolved through `canOpenURL` (declared in LSApplicationQueriesSchemes)
+    /// and the button simply does not exist when the answer is no. A wrong
+    /// guess therefore costs a missing button rather than a dead one — and the
+    /// simulator, where Wallet is not installed, is one of the noes.
+    ///
+    /// Here because paying by card and logging the expense are the same moment:
+    /// the card comes out, then the amount goes in. Opening Wallet leaves this
+    /// sheet exactly as it is, so coming back finds the half-typed amount still
+    /// there.
+    private static let walletURL: URL? = {
+        guard let url = URL(string: "shoebox://"),
+              UIApplication.shared.canOpenURL(url)
+        else { return nil }
+        return url
+    }()
+
+    private var walletButton: some View {
+        Button {
+            if let url = Self.walletURL { UIApplication.shared.open(url) }
+        } label: {
+            Image(systemName: "wallet.bifold.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.inkSecondary)
+                .frame(width: 34, height: 30)
+                .background(Theme.fill)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(l10n.t("entry.openWallet"))
     }
 
     /// "Quedan $287,60" pill colored by budget state, sized to content so it

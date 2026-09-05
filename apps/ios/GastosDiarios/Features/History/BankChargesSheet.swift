@@ -18,6 +18,9 @@ struct BankChargesSheet: View {
     @State private var choice: [String: String] = [:]
     /// Collapsed by default: the discarded list is a safety net, not the job.
     @State private var showDismissed = false
+    /// Asking before confirming every guess at once. Assigning DELETES the
+    /// charge, so a bulk mistake cannot be walked back the way a dismissal can.
+    @State private var confirmingAll = false
 
     private var l10n: L10n { model.l10n }
 
@@ -31,6 +34,15 @@ struct BankChargesSheet: View {
                 }
             }
             .background(Theme.bg.ignoresSafeArea())
+            .alert(
+                l10n.t("bank.confirmAllTitle"),
+                isPresented: $confirmingAll
+            ) {
+                Button(l10n.t("common.cancel"), role: .cancel) {}
+                Button(l10n.t("bank.confirmAllGo")) { confirmAll() }
+            } message: {
+                Text(l10n.t("bank.confirmAllBody", pendingGuesses.count))
+            }
             .navigationTitle(l10n.t("bank.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -60,6 +72,64 @@ struct BankChargesSheet: View {
         }
     }
 
+    // MARK: Confirming every guess at once
+
+    /// Charge → expense for every card that currently HAS an answer on it.
+    ///
+    /// Exactly what is on screen, including anything picked by hand: this is
+    /// the same set of taps in one press, not a second opinion with a rule of
+    /// its own. A charge whose picker is empty — no candidate scored above
+    /// BankMatch.minScore, or it was cleared deliberately — is not in here and
+    /// is left for a person to answer.
+    private var pendingGuesses: [(charge: BankCharge, expenseId: String)] {
+        model.bankChargeSuggestions.compactMap { suggestion in
+            guard
+                let charge = model.expenseBankCharges
+                    .first(where: { $0.id == suggestion.chargeId }),
+                let expenseId = choice[charge.id] ?? suggestion.expenseId,
+                !expenseId.isEmpty
+            else { return nil }
+            return (charge, expenseId)
+        }
+    }
+
+    /// One press for the lot.
+    ///
+    /// Shown from TWO up. With a single charge the card's own button is right
+    /// there and a second way to press it is noise.
+    @ViewBuilder
+    private var confirmAllButton: some View {
+        let guesses = pendingGuesses
+        if guesses.count >= 2 {
+            Button {
+                confirmingAll = true
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(l10n.t("bank.confirmAll", guesses.count))
+                        .appFont(13.5, .bold)
+                }
+                .foregroundStyle(Theme.accentStrong)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(Theme.accentSoft)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func confirmAll() {
+        let guesses = pendingGuesses
+        guard !guesses.isEmpty else { return }
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        for guess in guesses {
+            model.assignBankCharge(guess.charge, to: guess.expenseId)
+            choice[guess.charge.id] = nil
+        }
+    }
+
     // MARK: Pieces
 
     private var list: some View {
@@ -76,6 +146,12 @@ struct BankChargesSheet: View {
                     .appFont(12)
                     .foregroundStyle(Theme.inkTertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // Above the cards, because it acts on all of them — and
+                    // NOT in the toolbar beside Listo, for the same reason the
+                    // ingest button is not: a press that cannot be undone does
+                    // not belong next to the one that dismisses the screen.
+                    confirmAllButton
                 }
 
                 ForEach(model.bankChargeSuggestions, id: \.chargeId) { suggestion in
