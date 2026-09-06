@@ -15,6 +15,7 @@
 		1D8B6B03A09E6BE1DFF05C1E /* Limits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDB6C0C73CFD2C722DCEF1F /* Limits.swift */; };
 		1F4703215A63555016DC9CC6 /* GastosDiariosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F2E45F4FFC8505622F84485F /* GastosDiariosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1F9BA58700725716F9D218B6 /* ExpenseDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770FE80DDDE76F46C9859BB8 /* ExpenseDetailSheet.swift */; };
+		24F97EE6D6D69ADFB1D44C5F /* RecurringRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF028A0AD8AB1D00020A299 /* RecurringRulesTests.swift */; };
 		274C430DD6B23B4F19C0A5E5 /* WatchConnectivityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA2FE7D38ADF32A88459CF /* WatchConnectivityModel.swift */; };
 		27FA6C49E3337B31FEF5AB05 /* BankMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9AE25283BC9E432099A5B3B /* BankMatch.swift */; };
 		287317EE4CCAB473C7B3B0DD /* PiggyMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BF3AEB1A7B631C490D0F18 /* PiggyMark.swift */; };
@@ -68,6 +69,7 @@
 		91BDD122169747015D348B67 /* VerifyExpenseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DBD83BF0FBE89C5BB0805F6 /* VerifyExpenseSheet.swift */; };
 		93121744B6DC03F3CEEEE2FC /* BudgetEntryAmountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6FA9B2E125EE5FF221B75FE /* BudgetEntryAmountTests.swift */; };
 		93D1A5BEC5F8DD031294522A /* QuickEntryIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */; };
+		94D0008C14941DBC5CDC122E /* recurring-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 9D805A7EDD9455FF75FC1287 /* recurring-vectors.json */; };
 		98CF0F503439808C29ADD186 /* MoneyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */; };
 		9AB064ED54CA05C3CAA73F45 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F53CD2A73A681E6F361C7C16 /* Localizable.xcstrings */; };
 		9ACBC21A3F5C10A608B863F9 /* ServicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0384CFCE02C836FE68B8468C /* ServicesView.swift */; };
@@ -93,11 +95,13 @@
 		CB8092081896A331FD25750E /* BankChargeInboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021A158506471604F1680607 /* BankChargeInboxTests.swift */; };
 		D1D835112EBEB73ADD5E788C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB86DA59B8D86AC1BE949A16 /* Assets.xcassets */; };
 		DAA68B4CBEDC600E9A6BE6DC /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23612A2AE85E20827C54AF6A /* Models.swift */; };
+		DE01295F885C424B8E8F19B0 /* RecurringRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9735A9E9F67E32D74132AF3A /* RecurringRules.swift */; };
 		DE0A407EE44F47EB6A2BAECE /* CardLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2608C215296384372DBC7254 /* CardLogic.swift */; };
 		DE10CA45FBC616EAE3F58B0E /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 899B0F90EA1747BB99A5B325 /* FirebaseAuth */; };
 		E0BCA48607F739A48666E584 /* BankChargeInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */; };
 		E2B11B14C6758B571316975F /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = B2DE59304825CBC116B66700 /* categories.json */; };
 		E3369B40B60E8E9F1C03A0CF /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = B2DE59304825CBC116B66700 /* categories.json */; };
+		E4509C563E7BE9E33D0AEF1C /* RecurringRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9735A9E9F67E32D74132AF3A /* RecurringRules.swift */; };
 		E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */; };
 		E5DC5BAF309E5A07BDACCC7F /* BankChargesSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641417306B9A3971B3910276 /* BankChargesSheet.swift */; };
 		E9A36DFB46064CBB78CB3148 /* NewPeriodScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7176FBEFF6274765EDCC3CCD /* NewPeriodScreen.swift */; };
@@ -204,7 +208,9 @@
 		8CDB6C0C73CFD2C722DCEF1F /* Limits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Limits.swift; sourceTree = "<group>"; };
 		8FAB94B640D4DFAAF7E6AB91 /* RichText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichText.swift; sourceTree = "<group>"; };
 		94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickEntryIntent.swift; sourceTree = "<group>"; };
+		9735A9E9F67E32D74132AF3A /* RecurringRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRules.swift; sourceTree = "<group>"; };
 		990596864A5AD40BA5EE4803 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		9D805A7EDD9455FF75FC1287 /* recurring-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "recurring-vectors.json"; sourceTree = "<group>"; };
 		9E73BFFFDD149DEA34FF6D4B /* GastosDiariosWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = GastosDiariosWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		9EC5D52EACCD6C3040982EE4 /* WidgetTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetTheme.swift; sourceTree = "<group>"; };
 		A21D8B26F267E4D4FF49927C /* BudgetAmountEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetAmountEditor.swift; sourceTree = "<group>"; };
@@ -229,6 +235,7 @@
 		D1033958EAF0770812248EF2 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		D4DB54625B627DD9D2F40F3D /* BudgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetSnapshot.swift; sourceTree = "<group>"; };
 		D97F66821E44E31296A3C8CB /* ExtendPeriodSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtendPeriodSheet.swift; sourceTree = "<group>"; };
+		DBF028A0AD8AB1D00020A299 /* RecurringRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRulesTests.swift; sourceTree = "<group>"; };
 		E0E1907B1FEAADDF744484A8 /* ModelDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDecodingTests.swift; sourceTree = "<group>"; };
 		E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestionsTests.swift; sourceTree = "<group>"; };
 		E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogic.swift; sourceTree = "<group>"; };
@@ -290,6 +297,7 @@
 				23612A2AE85E20827C54AF6A /* Models.swift */,
 				552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */,
 				E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */,
+				9735A9E9F67E32D74132AF3A /* RecurringRules.swift */,
 				EC4FAF487BC8764A80C6DDD9 /* ServiceLogic.swift */,
 				F33893831374AFF5EE633D25 /* Suggestions.swift */,
 				A22E21C719AA1C4BCA834DCA /* UsdArsRate.swift */,
@@ -303,6 +311,7 @@
 				8A795380C7AD182D04979254 /* bank-match-vectors.json */,
 				B2DE59304825CBC116B66700 /* categories.json */,
 				C61FCF0E69A7236D256390A7 /* period-test-vectors.json */,
+				9D805A7EDD9455FF75FC1287 /* recurring-vectors.json */,
 			);
 			path = shared;
 			sourceTree = "<group>";
@@ -446,6 +455,7 @@
 				09F971BEC734CD729969A346 /* LimitsTests.swift */,
 				E0E1907B1FEAADDF744484A8 /* ModelDecodingTests.swift */,
 				F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */,
+				DBF028A0AD8AB1D00020A299 /* RecurringRulesTests.swift */,
 				3064D79EEF48BC7380766319 /* RichTextTests.swift */,
 				0C19C8E5B211D3024BBF75AD /* ServiceLogicTests.swift */,
 				F875CB9A4249023372B6A501 /* SigningExpiryTests.swift */,
@@ -635,6 +645,7 @@
 						ProvisioningStyle = Automatic;
 					};
 					CA80E83009431AB805515F6A = {
+						DevelopmentTeam = FA737M2U79;
 						ProvisioningStyle = Automatic;
 					};
 					FDC38A1B3C147B9B2FB09856 = {
@@ -690,6 +701,7 @@
 				11C3DF0A5473FBAE652B047B /* bank-match-vectors.json in Resources */,
 				63968EB55472433519654B79 /* categories.json in Resources */,
 				9F9E15C2ABBF4A7A747FDC1E /* period-test-vectors.json in Resources */,
+				94D0008C14941DBC5CDC122E /* recurring-vectors.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -759,6 +771,7 @@
 				5E46E4B94AD5C7F23B172691 /* OnboardingView.swift in Sources */,
 				E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */,
 				9ED3E316CDD7541FFB9D1270 /* QuickEntryIntent.swift in Sources */,
+				E4509C563E7BE9E33D0AEF1C /* RecurringRules.swift in Sources */,
 				A5F76507F0CC0B20997205D6 /* ReminderService.swift in Sources */,
 				F5A92CB3FE60BBB11026A9CB /* RichText.swift in Sources */,
 				8DEF436DCA6C18809AB5721A /* RootView.swift in Sources */,
@@ -801,6 +814,8 @@
 				BAD0594FFEBDF616197DE08A /* MoneyFormatter.swift in Sources */,
 				4CDD97FED70D3E038184719A /* PeriodLogic.swift in Sources */,
 				4A7C9399EB868F5BD37FCEE2 /* PeriodLogicTests.swift in Sources */,
+				DE01295F885C424B8E8F19B0 /* RecurringRules.swift in Sources */,
+				24F97EE6D6D69ADFB1D44C5F /* RecurringRulesTests.swift in Sources */,
 				7BF9EC6646A0185FAC5D276A /* RichText.swift in Sources */,
 				88DE7BBBEE32CEB6E5F9384D /* RichTextTests.swift in Sources */,
 				5F3AE29199855CCF6FA9311C /* ServiceLogic.swift in Sources */,
@@ -995,7 +1010,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FA737M2U79;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GastosDiariosWatch/Info.plist;
 				MARKETING_VERSION = 1.0.0;
@@ -1110,7 +1124,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FA737M2U79;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GastosDiariosWatch/Info.plist;
 				MARKETING_VERSION = 1.0.0;

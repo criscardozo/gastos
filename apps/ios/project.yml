@@ -249,6 +249,7 @@ targets:
       - path: ../../shared/period-test-vectors.json
         buildPhase: resources
       - path: ../../shared/bank-match-vectors.json
+      - path: ../../shared/recurring-vectors.json
         buildPhase: resources
     settings:
       base:
