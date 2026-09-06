@@ -672,9 +672,22 @@ export default function ExpensesPage() {
               startVerify(e);
             }}
             title={e.verified ? t("editBankUsd") : t("addBankUsd")}
+            /* Named by its expense, because there is one of these per row.
+               Without the note and the amount every button in the grid reads
+               "Sin verificar — Cargar el USD del banco", identical however
+               many rows there are: on screen the row says which one, and to
+               anyone navigating by voice, nothing does. The iOS history row
+               was fixed for this months-old reason (children: .combine) and
+               the web twin never was. The e2e spec had to reach this button by
+               filtering on its row's text, which is the same defect showing up
+               as a test that cannot name what it is clicking. */
             aria-label={`${e.verified ? t("verified") : t("unverified")} — ${
               e.verified ? t("editBankUsd") : t("addBankUsd")
-            }`}
+            } — ${e.note !== "" ? e.note : catLabel}, ${formatCents(
+              e.amountCents,
+              household.currency,
+              locale,
+            )}`}
             className="flex items-center gap-1"
             style={{ color: e.verified ? "var(--good-text)" : "var(--warn-text)" }}
           >

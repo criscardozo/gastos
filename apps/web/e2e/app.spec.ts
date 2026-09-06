@@ -1786,7 +1786,18 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
   await expect(page.getByText("$1.800,00")).toBeVisible();
 
   // One press is not enough: this cannot be undone.
-  await page.getByRole("button", { name: "Extender a 2 semanas" }).last().click();
+  // Scoped to the dialog rather than `.last()`.
+  //
+  // Two buttons carry this name while the dialog is open: the offer on the
+  // page behind it, and this one. `aria-modal` already tells assistive tech to
+  // ignore the first, so the app is right and only Playwright sees both —
+  // saying `within the dialog` is the same scoping the app declares, and it
+  // fails loudly if the confirm button ever leaves the dialog, where `.last()`
+  // would quietly click whatever ended up last.
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Extender a 2 semanas" })
+    .click();
   await expect(page.getByText(/no se puede deshacer/)).toBeVisible();
   await page.getByRole("button", { name: "Sí, extender el período" }).click();
 

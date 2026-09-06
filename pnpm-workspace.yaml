@@ -71,4 +71,25 @@ overrides:
   # own uuid, and dragging their trees across three majors to silence an alert
   # about code nobody runs would be the more dangerous change.
   exceljs>uuid: ^11.1.1
+  # Three alerts are DISMISSED rather than overridden, on 6/9/2026. Each needs
+  # a jump of one or two majors inside firebase-tools' or firebase-admin's own
+  # tree, which is the thing this block deliberately does not do — every
+  # override above is a patch or minor inside the same major, so the API is
+  # unchanged and it disappears when the parent ships it. Dragging a dependency
+  # of a dependency across a major to silence a dev-only alert is the more
+  # dangerous change, and it breaks `pnpm test:rules` and `pnpm backup` when it
+  # goes wrong.
+  #   uuid 9.0.1 (not_used): the advisory is v3/v5/v6 called WITH a buf
+  #     argument. The only consumer is gaxios, whose built source contains one
+  #     call, `(0, uuid_1.v4)`, and no buf. The uuid that reaches the BROWSER is
+  #     the exceljs one, pinned above.
+  #   @opentelemetry/core 1.30.1 (tolerable_risk): unbounded allocation in W3C
+  #     Baggage propagation. Nothing here propagates baggage — there is no
+  #     server to trace.
+  #   stream-json 1.9.1 (tolerable_risk): quadratic filters on crafted nested
+  #     JSON. The only JSON it parses is this household's own Firestore export,
+  #     written by our own backup script. Worst case is our own backup running
+  #     slow.
+  # If any parent ever ships a same-major fix, delete the dismissal and put the
+  # override here instead.
 

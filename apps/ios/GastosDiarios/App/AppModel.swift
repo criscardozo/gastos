@@ -44,6 +44,16 @@ final class AppModel {
     /// True when the start-period screen was opened by hand from Settings
     /// rather than by a period starting — only then may it be closed.
     private(set) var newPeriodPromptIsManual = false
+
+    /// How the periods logic sets the flag above from its own file.
+    ///
+    /// `private(set)` is file-scoped, so moving that logic out would otherwise
+    /// mean opening the setter to the whole module — and then a view could
+    /// assign it by accident, which is the failure the annotation exists to
+    /// stop. A named method cannot be typed by accident.
+    func setNewPeriodPrompt(manual: Bool) {
+        newPeriodPromptIsManual = manual
+    }
     var authError: String?
     var isSigningIn = false
     /// A write the server REFUSED, in the user's words. Never set by being
@@ -155,7 +165,12 @@ final class AppModel {
     // MARK: Services & listeners
 
     private let auth = AuthService()
-    private let firestore = FirestoreService()
+    // Internal rather than private, because the periods logic lives in
+    // AppModel+Periods.swift and Swift's `private` is file-scoped. These are
+    // the model's own bookkeeping — nothing outside AppModel has a reason to
+    // read them, and none of them is part of what a view observes. The state
+    // a view DOES read keeps its `private(set)`.
+    let firestore = FirestoreService()
 
     /// Handed to the screens that own their own listeners.
     ///
@@ -176,149 +191,22 @@ final class AppModel {
     private var viewedExpensesListener: ListenerRegistration?
     private var currentListenerRange: (String, String)?
     private var viewedListenerRange: (String, String)?
-    private var materializing = false
+    var materializing = false
     /// Whether `periods` still comes from the offline cache. Materialization
     /// waits for the server, because a stale end date now means a wrong answer.
-    private var periodsFromCache = true
+    var periodsFromCache = true
     private var creatingProfile = false
-
-    // MARK: Derived
-
-    var l10n: L10n { L10n.resolve(userLanguage: userProfile?.language) }
-
-    var householdTimeZone: TimeZone {
-        household?.timeZone ?? TimeZone(identifier: "Australia/Sydney")!
-    }
-
-    var today: CalendarDate {
-        PeriodLogic.todayInTimezone(Date(), householdTimeZone)
-    }
-
-    var currentPeriod: PeriodBudget? {
-        periods.last(where: { $0.contains(today) })
-    }
-
-    var currentPeriodIndex: Int? {
-        guard let current = currentPeriod else { return nil }
-        return periods.firstIndex(where: { $0.startDate == current.startDate })
-    }
-
-    var viewedPeriod: PeriodBudget? {
-        guard let index = viewedPeriodIndex, periods.indices.contains(index) else {
-            return currentPeriod
-        }
-        return periods[index]
-    }
-
-    var isViewingCurrentPeriod: Bool {
-        viewedPeriod?.startDate == currentPeriod?.startDate
-    }
-
-    /// Ids of the categories that count towards the budget, or nil when they
-    /// all do (the common case — no filter, no composite index needed).
-    var budgetCategoryIds: [String]? {
-        guard let categories = household?.categories else { return nil }
-        guard categories.values.contains(where: { !$0.isBudgeted }) else { return nil }
-        return categories.filter { $0.value.isBudgeted }.map(\.key)
-    }
-
-    /// True when the expense's category counts against the budget. A deleted
-    /// category (no entry left) still counts — its spending really happened.
-    func countsToBudget(_ expense: Expense) -> Bool {
-        household?.categories[expense.categoryId]?.isBudgeted ?? true
-    }
-
-    /// Spending that actually consumes the current period's budget. Excluded
-    /// categories stay in the lists and totals below, just not in this figure.
-    var currentSpentCents: Int {
-        currentExpenses
-            .filter { countsToBudget($0.expense) }
-            .reduce(0) { $0 + $1.expense.amountCents }
-    }
-
-    var currentRemainingCents: Int {
-        (currentPeriod?.amountCents ?? 0) - currentSpentCents
-    }
-
-    var viewedSpentCents: Int {
-        viewedExpenses
-            .filter { countsToBudget($0.expense) }
-            .reduce(0) { $0 + $1.expense.amountCents }
-    }
-
-    /// Everything spent in the viewed period, including excluded categories —
-    /// used for the breakdown's proportions, not for the budget.
-    var viewedTotalSpentCents: Int {
-        viewedExpenses.reduce(0) { $0 + $1.expense.amountCents }
-    }
-
-    var currentBudgetState: BudgetState {
-        PeriodLogic.budgetState(
-            spentCents: currentSpentCents,
-            budgetCents: currentPeriod?.amountCents ?? 0
-        )
-    }
-
-    /// Expenses available for quick-entry suggestions — derived ONLY from what
-    /// is already loaded in memory (current + viewed period), so it never adds
-    /// an unbounded listener or extra reads. Deduped by document id.
-    var suggestionExpenses: [Expense] {
-        var seen = Set<String>()
-        var result: [Expense] = []
-        for item in currentExpenses + viewedExpenses {
-            guard let id = item.expense.id else { continue }
-            if seen.insert(id).inserted {
-                result.append(item.expense)
-            }
-        }
-        return result
-    }
-
-    var members: [(uid: String, profile: MemberProfile)] {
-        guard let household else { return [] }
-        return household.memberIds.compactMap { uid in
-            household.memberProfiles[uid].map { (uid: uid, profile: $0) }
-        }
-    }
-
-    /// First and last day of the month containing `today`, in the household
-    /// timezone — a month rarely lines up with a weekly/fortnightly period.
-    var currentMonthRange: (start: CalendarDate, end: CalendarDate)? {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = householdTimeZone
-        let parts = today.raw.split(separator: "-")
-        guard parts.count == 3, let year = Int(parts[0]), let month = Int(parts[1]),
-              let first = calendar.date(from: DateComponents(year: year, month: month, day: 1)),
-              let lastDay = calendar.range(of: .day, in: .month, for: first)?.count,
-              let start = CalendarDate(String(format: "%04d-%02d-01", year, month)),
-              let end = CalendarDate(String(format: "%04d-%02d-%02d", year, month, lastDay))
-        else { return nil }
-        return (start, end)
-    }
-
-    /// True when the running period began before this month started, so part
-    /// of its spending sits outside the month figure.
-    var currentPeriodCrossesMonth: Bool {
-        guard let monthStart = currentMonthRange?.start,
-              let periodStart = currentPeriod?.start
-        else { return false }
-        return periodStart < monthStart
-    }
-
-    /// Past periods (before the current one), most recent first.
-    var pastPeriods: [PeriodBudget] {
-        guard let currentStart = currentPeriod?.startDate else {
-            return periods.reversed()
-        }
-        return periods.filter { $0.startDate < currentStart }.reversed()
-    }
 
     // MARK: Writes
 
     /// Runs a Firestore write and surfaces a rejection instead of dropping it.
     /// Callers stay synchronous — awaiting a write would freeze the UI until
     /// the server answered, which is the whole reason these are fire-and-forget.
-    private func write(_ operation: @escaping () async throws -> Void) {
+    // Internal for the same reason as the flags above. Worth knowing: while
+    // this was private, a call from another file resolved to C's `write(2)`
+    // instead of failing on visibility — the error read "trailing closure
+    // passed to parameter of type 'Int32'", which says nothing about access.
+    func write(_ operation: @escaping () async throws -> Void) {
         Task { await self.awaitWrite(operation) }
     }
 
@@ -416,7 +304,7 @@ final class AppModel {
         }
     }
 
-    private var attachedHouseholdId: String?
+    var attachedHouseholdId: String?
 
     private func attachHousehold(id: String) {
         guard attachedHouseholdId != id else { return }
@@ -456,260 +344,6 @@ final class AppModel {
             self.loadPastTotals()
             self.loadMonthTotal()
             self.publishWidgetSnapshot()
-        }
-    }
-
-    // MARK: Period materialization
-
-    private func materializeIfNeeded() {
-        // NEVER materialize from the offline cache. A period's endDate used to
-        // be immutable, so a stale copy chained to the same answer as a fresh
-        // one — extending a week into a fortnight ended that. Opening on a cache
-        // written before an extension, this saw the OLD end date, decided the
-        // period was over, and wrote a phantom period overlapping the real one:
-        // a 2026-08-14 week inside a fortnight running to 2026-08-20, which is
-        // what put the new-period sheet on screen mid-fortnight. The security
-        // rules cannot catch it — that create is perfectly well formed — so the
-        // guard belongs here.
-        guard !periodsFromCache,
-              !materializing,
-              let household,
-              let householdId = household.id ?? attachedHouseholdId,
-              let anchor = CalendarDate(household.defaultBudget.anchorDate)
-        else { return }
-
-        let last: PeriodLogic.PeriodRange? = periods.last.flatMap { period in
-            guard let start = period.start, let end = period.end else { return nil }
-            return PeriodLogic.PeriodRange(startDate: start, endDate: end)
-        }
-        let missing = PeriodLogic.cascadeMaterialization(
-            last: last,
-            anchorDate: anchor,
-            defaultPeriod: household.defaultBudget.period,
-            today: today
-        )
-        guard !missing.isEmpty else { return }
-        materializing = true
-        let type = household.defaultBudget.period
-        let amount = household.defaultBudget.amountCents
-        let wantsRollover = household.defaultBudget.rollover == true
-        let previous = periods.last
-        let categoryIds = budgetCategoryIds
-        Task {
-            // With rollover on, the period that just ended hands over whatever
-            // was left (or the deficit). One server-side sum ⇒ one read.
-            var carried = 0
-            if wantsRollover, let previous {
-                let spent = await firestore.fetchSpentCents(
-                    householdId: householdId,
-                    startDate: previous.startDate,
-                    endDate: previous.endDate,
-                    categoryIds: categoryIds
-                )
-                if let spent { carried = previous.amountCents - spent }
-            }
-            await firestore.materializePeriods(
-                householdId: householdId,
-                periods: missing,
-                periodType: type,
-                amountCents: amount,
-                rolloverCents: carried
-            )
-            self.materializing = false
-        }
-    }
-
-    /// "New period" sheet: first open inside a period nobody has answered for.
-    ///
-    /// `isConfirmed` lives on the period doc, so answering on any device settles
-    /// it on all of them. It used to be decided by `source == "default"` plus
-    /// this local key, and both halves were wrong: accepting the offered amount
-    /// writes no change (so `source` stays "default"), and the key is per
-    /// device — confirming here left the web asking again, every period.
-    ///
-    /// The key survives for one job: a period that started before this device
-    /// ever saw the household is not a question worth asking.
-    private func checkNewPeriodPrompt() {
-        guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }
-        let key = "seenPeriodStart.\(householdId)"
-        let seen = UserDefaults.standard.string(forKey: key)
-        guard seen != current.startDate else { return }
-        if seen == nil {
-            // First launch with this household (e.g. right after onboarding or
-            // joining): don't prompt, just mark as seen.
-            UserDefaults.standard.set(current.startDate, forKey: key)
-            return
-        }
-        if current.isConfirmed {
-            UserDefaults.standard.set(current.startDate, forKey: key)
-        } else {
-            // A period actually starting: no way out but answering it.
-            newPeriodPromptIsManual = false
-            showNewPeriodSheet = true
-        }
-    }
-
-    /// Re-open the start-period screen for the period already under way, for
-    /// when it was answered by accident (or nobody was around when it opened).
-    func openNewPeriodPrompt() {
-        guard currentPeriod != nil else { return }
-        newPeriodPromptIsManual = true
-        showNewPeriodSheet = true
-    }
-
-    // MARK: - Extending the week under way
-
-    /// Where the period under way would end if it were stretched to two weeks,
-    /// or nil when there is nothing to stretch (it is already a fortnight).
-    /// Drives whether the button is even offered.
-    var extendedEndDate: CalendarDate? {
-        guard let current = currentPeriod,
-              let start = CalendarDate(current.startDate),
-              let end = CalendarDate(current.endDate)
-        else { return nil }
-        return PeriodLogic.extendToFortnight(
-            startDate: start, endDate: end, period: current.period
-        )?.endDate
-    }
-
-    /// Turn the week under way into a fortnight, adding `addedCents` to its
-    /// budget. ONE-WAY: nothing here or in the security rules walks it back.
-    ///
-    /// `rolloverCents` is deliberately untouched — it records what was carried
-    /// IN at the start of the period, which this does not change.
-    func extendCurrentPeriod(addedCents: Int) {
-        guard let current = currentPeriod,
-              let householdId = attachedHouseholdId,
-              let endDate = extendedEndDate,
-              addedCents > 0
-        else { return }
-        let total = current.amountCents + addedCents
-        // Whatever the longer week now runs over. Usually nothing — the next
-        // period is materialized lazily and normally does not exist yet — but
-        // if the extension happens after it appeared, leaving it there gives
-        // those days two budgets at once.
-        let swallowed = periods.first {
-            $0.startDate > current.startDate && $0.startDate <= endDate.raw
-        }
-        write {
-            try await self.firestore.extendPeriodToFortnight(
-                householdId: householdId,
-                startDate: current.startDate,
-                endDate: endDate.raw,
-                amountCents: total,
-                swallowedStartDate: swallowed?.startDate
-            )
-        }
-    }
-
-    // MARK: - Stretching the period that just ended
-
-    /// The period the start-period screen would stretch, or nil when there is
-    /// nothing to offer.
-    ///
-    /// Four conditions, each load-bearing:
-    ///   - there IS a period before the current one — it is the thing being
-    ///     stretched, and it holds the money that was left over;
-    ///   - the current period is the last materialized, so nothing sits past
-    ///     the end date about to move;
-    ///   - nobody answered the current period yet, which is also what the
-    ///     rules check before allowing it to be deleted;
-    ///   - both dates parse.
-    var stretchablePreviousPeriod: PeriodBudget? {
-        guard let index = currentPeriodIndex, index > 0,
-              let current = currentPeriod,
-              !current.isConfirmed,
-              index == periods.count - 1
-        else { return nil }
-        let previous = periods[index - 1]
-        guard previous.start != nil, previous.end != nil else { return nil }
-        return previous
-    }
-
-    /// The window of end dates worth offering: from the day after the current
-    /// end (or today, when the period being asked about has been running a
-    /// while) to the cap the shared vectors declare.
-    var stretchEndDateRange: ClosedRange<CalendarDate>? {
-        guard let previous = stretchablePreviousPeriod,
-              let start = previous.start, let end = previous.end
-        else { return nil }
-        let earliest = today > end ? today : PeriodLogic.addDays(end, 1)
-        let latest = PeriodLogic.addDays(start, PeriodLogic.maxStretchedDays - 1)
-        guard earliest <= latest else { return nil }
-        return earliest...latest
-    }
-
-    /// Keep the previous period going until `toEndDate`, and drop the one that
-    /// was starting. The budget is untouched: this buys days, not money.
-    ///
-    /// The date is validated by the same arithmetic the web uses, so a value
-    /// the rules cannot check (they have no date arithmetic) is refused here
-    /// rather than written.
-    func stretchPreviousPeriod(to toEndDate: CalendarDate) {
-        guard let previous = stretchablePreviousPeriod,
-              let current = currentPeriod,
-              let householdId = attachedHouseholdId,
-              let start = previous.start, let end = previous.end,
-              let stretched = PeriodLogic.stretchPeriodTo(
-                  startDate: start, endDate: end,
-                  toEndDate: toEndDate, today: today
-              )
-        else { return }
-        // The question is answered — by being made irrelevant. The period it
-        // was about to ask about is the one going away.
-        UserDefaults.standard.set(previous.startDate, forKey: "seenPeriodStart.\(householdId)")
-        showNewPeriodSheet = false
-        newPeriodPromptIsManual = false
-        write {
-            try await self.firestore.stretchPeriod(
-                householdId: householdId,
-                startDate: previous.startDate,
-                toEndDate: stretched.endDate.raw,
-                dropStartDate: current.startDate
-            )
-        }
-    }
-
-    /// Closing the manually-opened screen also counts as "seen".
-    func markNewPeriodSeen() {
-        guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }
-        UserDefaults.standard.set(current.startDate, forKey: "seenPeriodStart.\(householdId)")
-        showNewPeriodSheet = false
-        newPeriodPromptIsManual = false
-    }
-
-    /// Answer the start-period screen. `rolloverCents` is how much of
-    /// `amountCents` was carried in from the period before — recorded next to
-    /// the figure so the dashboard can explain a budget that looks unusual.
-    func confirmNewPeriod(amountCents: Int, rolloverCents: Int) {
-        guard let current = currentPeriod, let householdId = attachedHouseholdId,
-              amountCents > 0
-        else { return }
-        UserDefaults.standard.set(current.startDate, forKey: "seenPeriodStart.\(householdId)")
-        showNewPeriodSheet = false
-        newPeriodPromptIsManual = false
-        // Two shapes, and the difference is not cosmetic. Changing the amount
-        // re-budgets AND confirms in one write; accepting what was offered
-        // changes no figure, so it writes only the confirmation — which this
-        // used to skip entirely, leaving the answer in this phone's
-        // UserDefaults and every other client still asking.
-        if amountCents != current.amountCents
-            || rolloverCents != (current.rolloverCents ?? 0) {
-            write {
-                try await self.firestore.updatePeriodBudget(
-                    householdId: householdId,
-                    startDate: current.startDate,
-                    amountCents: amountCents,
-                    rolloverCents: rolloverCents
-                )
-            }
-        } else if !current.isConfirmed {
-            write {
-                try await self.firestore.confirmPeriod(
-                    householdId: householdId,
-                    startDate: current.startDate
-                )
-            }
         }
     }
 
