@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   DISMISS_WINDOW_HOURS,
@@ -21,8 +23,34 @@ function charge(id: string, dismissedAt: Date | null) {
 
 describe("the window", () => {
   it("is the 48 hours both clients agree on", () => {
-    // The Swift twin hard-codes the same number; if this changes, that does.
     expect(DISMISS_WINDOW_HOURS).toBe(48);
+  });
+
+  it("is the number the iOS app hard-codes, read from its source", () => {
+    // Read rather than asserted twice.
+    //
+    // Both sides used to pin 48 independently, under a comment saying "the
+    // Swift twin hard-codes the same number; if this changes, that does" —
+    // which is a hope, not a mechanism. Move the window to 72 here and this
+    // suite tells you to update the literal; do that, and Swift still says 48
+    // with both suites green and the two clients disagreeing about when a
+    // dismissed charge stops being recoverable.
+    //
+    // This pair is the one place it matters, because unlike the period
+    // arithmetic and the matcher it shares no JSON vectors — nothing else
+    // couples the two numbers. Same trick `categories.test.ts` uses for the
+    // category cap, which is where the idea came from.
+    const swift = readFileSync(
+      join(
+        import.meta.dirname,
+        "../../../ios/GastosDiarios/Core/BankChargeInbox.swift",
+      ),
+      "utf8",
+    );
+    const match = swift.match(/static let dismissWindowHours: Double = (\d+)/);
+    expect(match, "dismissWindowHours not found in BankChargeInbox.swift")
+      .not.toBeNull();
+    expect(Number(match![1])).toBe(DISMISS_WINDOW_HOURS);
   });
 });
 

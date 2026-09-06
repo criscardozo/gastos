@@ -276,6 +276,19 @@ acaba de pedir.
   que si hay `usdCents` entonces `verified == true`. Antes de reportar un hueco,
   conviene preguntarse si algo fuera del código lo está sosteniendo.
 
+- **"El gemelo hace lo mismo" es una esperanza hasta que algo lo verifica.** El
+  tope de categorías está acoplado de verdad: `categories.test.ts` **lee**
+  `Models.swift` y compara el número. La ventana de 48 horas para recuperar un
+  cargo descartado estaba fijada dos veces por separado bajo un comentario que
+  decía "si esto cambia, aquello cambia" — moverla en TS hacía fallar el test de
+  TS, se actualizaba el literal, y Swift seguía en 48 con las dos suites en verde
+  y los dos clientes en desacuerdo. Es la única constante compartida que no está
+  cubierta por vectores, así que era la única sin red. Si un comentario dice
+  "igual que en la otra plataforma", hay que ir a mirar que la otra plataforma lo
+  tenga. (De la sesión Stock, que encontró la misma asimetría al revés: una
+  guardia de conteo que existía sólo en iOS con un comentario que la describía
+  como si estuviera en las dos.)
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada
