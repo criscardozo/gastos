@@ -76,6 +76,14 @@ export function learnRate(
   expenses: readonly (MatchableExpense & { usdCents: number | null })[],
 ): number | null {
   const rates = expenses
+  // The `verified` filter is redundant, and deliberately kept.
+  //
+  // A mutation that removes it kills no test on either platform, which reads
+  // as a coverage gap and is not one: `isValidVerification` in the rules makes
+  // `usdCents` present imply `verified == true`, so an unverified expense
+  // cannot carry a USD figure and the compactMap below would drop it anyway.
+  // An equivalent mutant, noted here rather than only in the commit that found
+  // it, because here is where the next person to mutate this line will look.
     .filter((e) => e.verified && e.usdCents !== null && e.amountCents > 0)
     .map((e) => (e.usdCents as number) / e.amountCents)
     .sort((a, b) => a - b);

@@ -46,6 +46,14 @@ enum BankMatch {
     /// median of usd/aud over every pair already known. nil until there is one.
     static func learnRate(_ expenses: [Expense]) -> Double? {
         let rates = expenses
+        // The `isVerified` filter is redundant, and deliberately kept.
+        //
+        // A mutation that removes it kills no test on either platform, which
+        // reads as a coverage gap and is not one: `isValidVerification` in the
+        // rules makes `usdCents` present imply `verified == true`, so an
+        // unverified expense cannot carry a USD figure and the compactMap below
+        // would drop it anyway. An equivalent mutant, noted here rather than
+        // only in the commit that found it.
             .filter { $0.isVerified && $0.amountCents > 0 }
             .compactMap { expense -> Double? in
                 guard let usd = expense.usdCents else { return nil }
