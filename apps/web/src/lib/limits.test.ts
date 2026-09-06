@@ -94,7 +94,11 @@ describe("the ceiling on a note", () => {
     // to see, because neither file mentions the other.
     for (const path of [
       "apps/web/src/app/nuevo/page.tsx",
-      "apps/web/src/app/gastos/page.tsx",
+      // The edit form's fields, which used to sit at the top of
+      // gastos/page.tsx and moved here when that file was split. This test
+      // caught the move — which is the point of naming the file rather than
+      // grepping the whole tree.
+      "apps/web/src/app/gastos/pieces.tsx",
     ]) {
       expect(read(path), path).toContain("maxLength={MAX_NOTE_CHARACTERS}");
     }
