@@ -106,6 +106,22 @@ export function periodBudgetDoc(overrides: Record<string, unknown> = {}) {
 }
 
 /** Valid `services/{id}` payload — monthly, so it carries no anchorMonth. */
+export function recurringRuleDoc(
+  createdBy: string,
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    pattern: "Opal*",
+    categoryId: "transport",
+    note: "Opal",
+    amountAudCents: 1500,
+    createdBy,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  };
+}
+
 export function serviceDoc(
   createdBy: string,
   overrides: Record<string, unknown> = {},

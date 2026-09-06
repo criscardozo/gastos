@@ -28,6 +28,7 @@ import {
   expenseDoc,
   householdDoc,
   periodBudgetDoc,
+  recurringRuleDoc,
   seed,
   serviceDoc,
   statementDoc,
@@ -1845,6 +1846,103 @@ describe("households/{id}/cardCharges", () => {
     await assertSucceeds(setDoc(ref(ALICE), cardChargeDoc(ALICE)));
     await assertFails(
       updateDoc(ref(BOB), { createdBy: BOB, updatedAt: serverTimestamp() }),
+    );
+  });
+});
+
+describe("recurringRules — the patterns that file a charge on their own", () => {
+  beforeEach(async () => {
+    await seed(env, async (admin) => {
+      await setDoc(doc(admin, "households", HOUSEHOLD), householdDoc(ALICE));
+    });
+  });
+
+  const ref = () =>
+    doc(db(env, ALICE), "households", HOUSEHOLD, "recurringRules", "r1");
+
+  it("a member writes one, and a stranger cannot read it", async () => {
+    await assertSucceeds(setDoc(ref(), recurringRuleDoc(ALICE)));
+    await assertFails(
+      getDoc(doc(db(env, CAROL), "households", HOUSEHOLD, "recurringRules", "r1")),
+    );
+  });
+
+  it("refuses a pattern that would claim every charge that ever arrives", async () => {
+    // The one outcome a rule must never have. The clients refuse it too; this
+    // is what makes it true of the data rather than of the screens.
+    await assertFails(setDoc(ref(), recurringRuleDoc(ALICE, { pattern: "" })));
+  });
+
+  it("caps the pattern, the note and the category", async () => {
+    await assertFails(
+      setDoc(ref(), recurringRuleDoc(ALICE, { pattern: "x".repeat(81) })),
+    );
+    await assertFails(
+      setDoc(ref(), recurringRuleDoc(ALICE, { note: "x".repeat(201) })),
+    );
+    await assertFails(
+      setDoc(ref(), recurringRuleDoc(ALICE, { categoryId: "x".repeat(41) })),
+    );
+  });
+
+  it("lets the amount be ABSENT, because that is the rule saying ask me", async () => {
+    await assertSucceeds(
+      setDoc(ref(), without(recurringRuleDoc(ALICE), "amountAudCents")),
+    );
+  });
+
+  it("...but not zero or negative, which would file a free expense", async () => {
+    await assertFails(
+      setDoc(ref(), recurringRuleDoc(ALICE, { amountAudCents: 0 })),
+    );
+    await assertFails(
+      setDoc(ref(), recurringRuleDoc(ALICE, { amountAudCents: -1 })),
+    );
+  });
+
+  it("holds the amount to the same ceiling as an expense", async () => {
+    await assertFails(
+      setDoc(ref(), recurringRuleDoc(ALICE, { amountAudCents: 10000001 })),
+    );
+  });
+
+  it("refuses a field nobody asked for", async () => {
+    await assertFails(
+      setDoc(ref(), recurringRuleDoc(ALICE, { enabled: true })),
+    );
+  });
+
+  it("keeps createdBy and createdAt across an edit", async () => {
+    await assertSucceeds(setDoc(ref(), recurringRuleDoc(ALICE)));
+    await assertFails(
+      setDoc(ref(), recurringRuleDoc(BOB, { pattern: "Coles*" })),
+    );
+  });
+});
+
+describe("an expense a rule filed on its own", () => {
+  beforeEach(async () => {
+    await seed(env, async (admin) => {
+      await setDoc(doc(admin, "households", HOUSEHOLD), householdDoc(ALICE));
+    });
+  });
+
+  const ref = () => doc(db(env, ALICE), "households", HOUSEHOLD, "expenses", "e1");
+
+  it("may name the rule that filed it", async () => {
+    await assertSucceeds(
+      setDoc(ref(), expenseDoc(ALICE, { autoRuleId: "r1" })),
+    );
+  });
+
+  it("...and a typed one simply has no such field", async () => {
+    await assertSucceeds(setDoc(ref(), expenseDoc(ALICE)));
+  });
+
+  it("refuses an empty or oversized rule id", async () => {
+    await assertFails(setDoc(ref(), expenseDoc(ALICE, { autoRuleId: "" })));
+    await assertFails(
+      setDoc(ref(), expenseDoc(ALICE, { autoRuleId: "x".repeat(61) })),
     );
   });
 });

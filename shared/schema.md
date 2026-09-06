@@ -260,6 +260,53 @@ in whichever client opens the screen. If neither app is opened the odd expired
 charge lingers — invisible either way, since every reader hides anything past
 the window. The clients agree on the cutoff, not on when it is enforced.
 
+### `households/{householdId}/recurringRules/{ruleId}`
+
+A merchant pattern the household recognises, and what to file it as when the
+bank reports it. **Not the same thing as `services`, and the difference is what
+triggers them.** A service is SCHEDULED — Netflix on the 7th, the insurance
+every quarter — and its screen asks "has this month's arrived?". A rule here is
+not scheduled at all: an Opal top-up happens when it happens, and what fires it
+is the charge landing. Neither collection can answer the other's question, which
+is why this is not a field on `services`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `pattern` | string | 1..80. What to look for in `bankCharges.merchant`, e.g. `"Opal*"` |
+| `categoryId` | string | 1..40. Required — an expense cannot exist without one, so a rule that could not name a category could never file anything |
+| `note` | string | 1..200. What the filed expense's note says |
+| `amountAudCents` | int \| **absent** | > 0, ≤ 10_000_000. **Absent is meaningful**: it is the rule saying "ask me". A rule with an amount files the expense on its own; one without can only annotate the charge until somebody answers |
+| `createdBy` / `createdAt` / `updatedAt` | | as everywhere else |
+
+**How a pattern matches.** Folded the same way the bank matcher folds a merchant
+— lowercase, accents stripped. With no `*` it matches as a **substring**,
+because that is how a person writes one: typing `Opal` to catch
+`OPAL AUCKLAND ST` is the obvious intent. A `*` is what tightens it — `Opal*`
+anchors the start, `*TOPUP` the end, `A*B` both. It is **not** a regular
+expression: every other character is literal, so a merchant with a `+` or a `.`
+can be matched by typing it. An empty pattern, or one made only of stars,
+matches **nothing** — left to the general rule it would claim every charge that
+ever arrives, and both the clients and the rules refuse it. Implemented twice
+(`apps/web/src/lib/recurring.ts`, `apps/ios/.../RecurringRules.swift`), both
+against `shared/recurring-vectors.json`.
+
+**Where it runs.** On the CLIENT, next time one opens — there is no server (Cloud
+Functions need the paid plan). That is not a compromise: "tell me next time I
+come in" is exactly when a client is running.
+
+**What filing one does**, in a single batch so the two halves cannot separate:
+create the expense with `autoRuleId` set to the rule, and set `dismissedAt` on
+the charge. The charge is not deleted, which is what makes the 48-hour undo
+possible — it is the SAME recoverable-dismissal window a member gets when they
+discard a charge by hand (`lib/bank-charges.ts`), and it expires by the same
+sweep. Undo inside the window deletes the expense and clears `dismissedAt`, and
+the charge is pending again. After it, the sweep removes the charge and the
+expense is an ordinary one.
+
+**Two clients, one charge.** Both may be open when a charge arrives, so the
+expense id is derived from the charge id rather than generated: two clients
+racing write the same document instead of two.
+
 ### `households/{householdId}/services/{serviceId}`
 
 A recurring bill — Netflix, the phone, the insurance. A register of **rules**:

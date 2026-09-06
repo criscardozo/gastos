@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "comment": "Cross-platform vectors for recurring-expense rules: does a bank charge's merchant match a rule's pattern? Both implementations (TS: apps/web/src/lib/recurring.ts; Swift: RecurringRules.swift) MUST pass every case. Folding is the same as the bank matcher's: lowercase, accents stripped. A pattern with NO '*' matches as a SUBSTRING, which is how a person writes one; a pattern WITH '*' is anchored, which is how you tighten it when the substring is too loose.",
+  "matches": {
+    "comment": "pattern x merchant -> does it match",
+    "cases": [
+      { "name": "a bare pattern is a substring, so it finds the merchant's own wording", "pattern": "Opal", "merchant": "OPAL AUCKLAND ST", "expected": true },
+      { "name": "and it is case-insensitive in both directions", "pattern": "OPAL", "merchant": "opal auckland st", "expected": true },
+      { "name": "accents fold, because the bank does not spell them", "pattern": "Café", "merchant": "CAFE MARTINEZ", "expected": true },
+      { "name": "and fold the other way too", "pattern": "Cafe", "merchant": "CAFÉ MARTÍNEZ", "expected": true },
+      { "name": "a substring that is not there does not match", "pattern": "Opal", "merchant": "COLES 0831", "expected": false },
+      { "name": "trailing star anchors the start: Opal* is what the user wrote", "pattern": "Opal*", "merchant": "OPAL AUCKLAND ST", "expected": true },
+      { "name": "...and that anchor is what makes it refuse a mid-word hit", "pattern": "Opal*", "merchant": "TRANSPORT OPAL TOPUP", "expected": false },
+      { "name": "leading star anchors the end", "pattern": "*TOPUP", "merchant": "TRANSPORT OPAL TOPUP", "expected": true },
+      { "name": "a star in the middle spans whatever is between", "pattern": "OPAL*ST", "merchant": "OPAL AUCKLAND ST", "expected": true },
+      { "name": "a star matches nothing at all, so the exact word still passes", "pattern": "OPAL*", "merchant": "OPAL", "expected": true },
+      { "name": "two stars, both anchors gone: back to a substring", "pattern": "*AUCKLAND*", "merchant": "OPAL AUCKLAND ST", "expected": true },
+      { "name": "digits are part of the merchant and can be matched", "pattern": "COLES 0831", "merchant": "COLES 0831", "expected": true },
+      { "name": "spaces inside a pattern are literal", "pattern": "OPAL AUCKLAND", "merchant": "OPALAUCKLAND", "expected": false },
+      { "name": "surrounding whitespace is trimmed, because it is a typo not an intent", "pattern": "  Opal  ", "merchant": "OPAL AUCKLAND ST", "expected": true },
+      { "name": "an empty pattern matches NOTHING — it would otherwise claim every charge", "pattern": "", "merchant": "OPAL AUCKLAND ST", "expected": false },
+      { "name": "a pattern of only stars matches nothing, for the same reason", "pattern": "***", "merchant": "OPAL AUCKLAND ST", "expected": false },
+      { "name": "an empty merchant is matched by nothing", "pattern": "Opal", "merchant": "", "expected": false },
+      { "name": "regex characters are literal: a rule is not a regular expression", "pattern": "A+B", "merchant": "A+B STORE", "expected": true },
+      { "name": "...and a dot is a dot", "pattern": "ST.GEORGE", "merchant": "STXGEORGE", "expected": false }
+    ]
+  },
+  "firstMatch": {
+    "comment": "When several rules match one charge, which one wins. Ordered by how specific the pattern is (longer wins), then by pattern so it is deterministic on both platforms — never by document id, which the two clients cannot agree on.",
+    "cases": [
+      {
+        "name": "the more specific pattern wins over the looser one",
+        "patterns": ["Opal", "OPAL AUCKLAND"],
+        "merchant": "OPAL AUCKLAND ST",
+        "expected": "OPAL AUCKLAND"
+      },
+      {
+        "name": "same length, so the alphabet decides and both clients agree",
+        "patterns": ["OPAL B", "OPAL A"],
+        "merchant": "OPAL A OPAL B",
+        "expected": "OPAL A"
+      },
+      {
+        "name": "nothing matches, nothing is chosen",
+        "patterns": ["Opal", "Coles"],
+        "merchant": "WOOLWORTHS 1234",
+        "expected": null
+      }
+    ]
+  }
+}

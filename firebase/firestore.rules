@@ -375,8 +375,13 @@ service cloud.firestore {
 
       // ------------------------ expenses ------------------------
 
+      // `autoRuleId` marks an expense a recurring rule filed on its own, and
+      // names the rule that did it. Stored rather than derived, because after
+      // the fact nothing else can tell an automatic entry from a typed one —
+      // and that is exactly what the row has to say before somebody trusts a
+      // figure they never entered. It is also what the undo reads.
       function isValidExpense(data) {
-        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt', 'usdCents', 'verified'])
+        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt', 'usdCents', 'verified', 'autoRuleId'])
           && data.keys().hasAll(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt'])
           && data.amountCents is int
           && data.amountCents > 0 && data.amountCents <= 10000000
@@ -387,6 +392,9 @@ service cloud.firestore {
           // amountCents is the household currency (AUD) — the only currency
           // anyone types.
           && data.createdBy is string
+          && (!('autoRuleId' in data)
+              || (data.autoRuleId is string
+                  && data.autoRuleId.size() >= 1 && data.autoRuleId.size() <= 60))
           && isValidVerification(data);
       }
 
@@ -614,6 +622,54 @@ service cloud.firestore {
 
         allow update: if isMember(householdId)
           && isValidService(request.resource.data)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        allow delete: if isMember(householdId);
+      }
+
+      // ------------------------ recurringRules ------------------------
+
+      // A merchant pattern the household recognises, and what to file it as
+      // when the bank reports it. Distinct from `services`, which is the
+      // SCHEDULED half — a service is due on a date, a rule here fires when a
+      // charge lands and never otherwise.
+      //
+      // `amountAudCents` absent is meaningful, not missing: it is the rule
+      // saying "ask me". A rule that carries the amount files the expense on
+      // its own; one that does not can only annotate the charge until somebody
+      // answers. So absent has to be a legal state, and the client cannot be
+      // allowed to invent a zero in its place.
+      function isValidRecurringRule(data) {
+        return data.keys().hasOnly(['pattern', 'categoryId', 'note', 'amountAudCents', 'createdBy', 'createdAt', 'updatedAt'])
+          && data.keys().hasAll(['pattern', 'categoryId', 'note', 'createdBy', 'createdAt', 'updatedAt'])
+          && data.pattern is string
+          // Never empty: a pattern that matches everything would file every
+          // charge that ever arrives, which is the one outcome a rule must not
+          // have. The clients refuse it too; this is what makes it true.
+          && data.pattern.size() >= 1 && data.pattern.size() <= 80
+          && data.categoryId is string
+          && data.categoryId.size() >= 1 && data.categoryId.size() <= 40
+          && data.note is string && data.note.size() >= 1 && data.note.size() <= 200
+          && (!('amountAudCents' in data)
+              || (data.amountAudCents is int
+                  && data.amountAudCents > 0
+                  && data.amountAudCents <= 10000000))
+          && data.createdBy is string;
+      }
+
+      match /recurringRules/{ruleId} {
+        allow read: if isMember(householdId);
+
+        allow create: if isMember(householdId)
+          && isValidRecurringRule(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid
+          && isServerTimestamp(request.resource.data.createdAt)
+          && isServerTimestamp(request.resource.data.updatedAt);
+
+        allow update: if isMember(householdId)
+          && isValidRecurringRule(request.resource.data)
           && request.resource.data.createdBy == resource.data.createdBy
           && request.resource.data.createdAt == resource.data.createdAt
           && isServerTimestamp(request.resource.data.updatedAt);

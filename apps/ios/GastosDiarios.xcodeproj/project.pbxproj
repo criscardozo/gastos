@@ -635,7 +635,6 @@
 						ProvisioningStyle = Automatic;
 					};
 					CA80E83009431AB805515F6A = {
-						DevelopmentTeam = FA737M2U79;
 						ProvisioningStyle = Automatic;
 					};
 					FDC38A1B3C147B9B2FB09856 = {
@@ -996,6 +995,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FA737M2U79;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GastosDiariosWatch/Info.plist;
 				MARKETING_VERSION = 1.0.0;
@@ -1110,6 +1110,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FA737M2U79;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GastosDiariosWatch/Info.plist;
 				MARKETING_VERSION = 1.0.0;
