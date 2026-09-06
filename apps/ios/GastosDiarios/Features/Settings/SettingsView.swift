@@ -8,6 +8,8 @@ struct SettingsView: View {
     @State private var showPeriodBudgetSheet = false
     @State private var showExtendPeriodSheet = false
     @State private var showCategoriesManager = false
+    @State private var editingRule: RecurringRuleDoc?
+    @State private var addingRule = false
     @State private var copied = false
     @State private var renamingHousehold = false
     @State private var householdNameDraft = ""
@@ -39,6 +41,7 @@ struct SettingsView: View {
                 logSection
                 preferencesSection
                 categoriesSection
+                recurringSection
                 householdSection
                 signOutRow
                 aboutSection
@@ -56,6 +59,12 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showCategoriesManager) {
             CategoriesManagerView()
+        }
+        .sheet(isPresented: $addingRule) {
+            RecurringRuleSheet(rule: nil)
+        }
+        .sheet(item: $editingRule) { rule in
+            RecurringRuleSheet(rule: rule)
         }
         .onAppear { model.ensureInviteCode() }
         .task {
@@ -168,6 +177,70 @@ struct SettingsView: View {
             Text(l10n.t("settings.default.foot"))
                 .appFont(12)
                 .foregroundStyle(Theme.inkTertiary)
+                .padding(.horizontal, 4)
+                .padding(.bottom, 10)
+        }
+    }
+
+    // MARK: Recurring rules
+
+    /// Here rather than beside Servicios because it is not a bill: nothing in
+    /// this list is due on a date and nothing about it is summed. It is a set
+    /// of instructions for what to do when the bank reports something we know.
+    private var recurringSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AdaptiveRow {
+                SectionLabel(text: l10n.t("recurring.title"))
+                AdaptiveGap()
+                Button(l10n.t("recurring.add")) { addingRule = true }
+                    .appFont(11.5, .bold)
+                    .foregroundStyle(Theme.accentStrong)
+            }
+            .padding(.horizontal, 4)
+
+            Card {
+                VStack(spacing: 0) {
+                    if model.recurringRules.isEmpty {
+                        Text(l10n.t("recurring.empty"))
+                            .appFont(13)
+                            .foregroundStyle(Theme.inkTertiary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 13)
+                    } else {
+                        ForEach(Array(model.recurringRules.enumerated()), id: \.element.id) { index, rule in
+                            if index > 0 { Divider().overlay(Theme.separator) }
+                            Button {
+                                editingRule = rule
+                            } label: {
+                                AdaptiveRow {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(rule.pattern)
+                                            .appFont(14.5, .semibold)
+                                            .foregroundStyle(Theme.ink)
+                                        Text(rule.note)
+                                            .appFont(11.5)
+                                            .foregroundStyle(Theme.inkTertiary)
+                                    }
+                                    AdaptiveGap()
+                                    Text(rule.amountAudCents.map {
+                                        MoneyFormatter.aud($0, locale: l10n.locale)
+                                    } ?? l10n.t("recurring.amountAsk"))
+                                        .appFont(13.5, .semibold)
+                                        .monospacedDigit()
+                                        .foregroundStyle(Theme.inkSecondary)
+                                }
+                                .padding(.vertical, 13)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            Text(l10n.t("recurring.subtitle"))
+                .appFont(12)
+                .foregroundStyle(Theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 4)
                 .padding(.bottom, 10)
         }

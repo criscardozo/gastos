@@ -844,6 +844,166 @@ final class FirestoreService {
             }
     }
 
+    // MARK: - Recurring rules
+
+    /// Enough patterns for a household that files by hand anyway, and bounded
+    /// like every other listener because the free tier is part of the design.
+    func listenRecurringRules(
+        householdId: String,
+        onChange: @escaping ([RecurringRuleDoc]) -> Void
+    ) -> ListenerRegistration {
+        db.collection("households").document(householdId)
+            .collection("recurringRules")
+            .limit(to: 50)
+            .addSnapshotListener { snapshot, error in
+                if let error { Self.reportListen("recurringRules", error) }
+                onChange(snapshot?.documents.compactMap {
+                    Self.decode($0, as: RecurringRuleDoc.self, in: "recurringRules")
+                } ?? [])
+            }
+    }
+
+    /// The fields a rule writes, with the amount ABSENT rather than zero when
+    /// the rule is the "ask me" kind — the rules refuse a zero exactly so the
+    /// two states cannot be confused in the data.
+    private func recurringFields(
+        pattern: String,
+        categoryId: String,
+        note: String,
+        amountAudCents: Int?
+    ) -> [String: Any] {
+        var fields: [String: Any] = [
+            "pattern": pattern.trimmingCharacters(in: .whitespacesAndNewlines),
+            "categoryId": categoryId,
+            "note": note.trimmingCharacters(in: .whitespacesAndNewlines),
+            "updatedAt": FieldValue.serverTimestamp(),
+        ]
+        if let amountAudCents { fields["amountAudCents"] = amountAudCents }
+        return fields
+    }
+
+    func addRecurringRule(
+        householdId: String,
+        uid: String,
+        pattern: String,
+        categoryId: String,
+        note: String,
+        amountAudCents: Int?
+    ) async throws {
+        var fields = recurringFields(
+            pattern: pattern, categoryId: categoryId,
+            note: note, amountAudCents: amountAudCents
+        )
+        fields["createdBy"] = uid
+        fields["createdAt"] = FieldValue.serverTimestamp()
+        try await db.collection("households").document(householdId)
+            .collection("recurringRules").addDocument(data: fields)
+    }
+
+    func updateRecurringRule(
+        householdId: String,
+        ruleId: String,
+        pattern: String,
+        categoryId: String,
+        note: String,
+        amountAudCents: Int?
+    ) async throws {
+        var fields = recurringFields(
+            pattern: pattern, categoryId: categoryId,
+            note: note, amountAudCents: amountAudCents
+        )
+        // Clearing the amount must REMOVE the field, not write a zero: the
+        // rules accept an int or nothing, and "ask me" is the absence.
+        if amountAudCents == nil { fields["amountAudCents"] = FieldValue.delete() }
+        try await db.collection("households").document(householdId)
+            .collection("recurringRules").document(ruleId).updateData(fields)
+    }
+
+    func deleteRecurringRule(householdId: String, ruleId: String) async throws {
+        try await db.collection("households").document(householdId)
+            .collection("recurringRules").document(ruleId).delete()
+    }
+
+    /// The expense id a charge always files under.
+    ///
+    /// Derived rather than generated because both clients may be open when a
+    /// charge arrives and both will match it against the same rule. Racing on a
+    /// deterministic id writes the same document twice; racing on a generated
+    /// one writes the expense twice, and the second is indistinguishable from a
+    /// real duplicate.
+    static func autoExpenseId(chargeId: String) -> String {
+        String("auto_\(chargeId)".prefix(1500))
+    }
+
+    /// The charge an auto-filed expense came from, or nil.
+    static func chargeId(fromAutoExpense expenseId: String) -> String? {
+        expenseId.hasPrefix("auto_") ? String(expenseId.dropFirst(5)) : nil
+    }
+
+    /// File a charge as an expense, because a rule recognised it.
+    ///
+    /// One batch: an expense without the charge dismissed would be filed again
+    /// on the next open, and a charge dismissed without the expense would lose
+    /// the money silently. The charge is DISMISSED rather than deleted, which
+    /// is what makes the 48-hour undo possible — the same recoverable window a
+    /// member gets discarding one by hand, expiring by the same sweep.
+    func fileRecurringExpense(
+        householdId: String,
+        uid: String,
+        charge: BankCharge,
+        rule: RecurringRuleDoc,
+        amountAudCents: Int
+    ) async throws {
+        // `id` is the document id or "" — a charge without one is not in
+        // Firestore, so there is nothing to dismiss and nothing to file.
+        let chargeId = charge.id
+        guard !chargeId.isEmpty else { return }
+        let household = db.collection("households").document(householdId)
+        let batch = db.batch()
+        batch.setData(
+            [
+                "amountCents": amountAudCents,
+                "categoryId": rule.categoryId,
+                "note": rule.note,
+                // The charge's own date, already in the household timezone.
+                // Never today's: a charge that arrives on Monday for a Saturday
+                // purchase belongs to Saturday's period.
+                "date": charge.date,
+                "createdBy": uid,
+                // What the bank actually charged, so the pairing is the
+                // verification.
+                "usdCents": charge.usdCents,
+                "verified": true,
+                "autoRuleId": rule.id,
+                "createdAt": FieldValue.serverTimestamp(),
+                "updatedAt": FieldValue.serverTimestamp(),
+            ],
+            forDocument: household.collection("expenses")
+                .document(Self.autoExpenseId(chargeId: chargeId))
+        )
+        batch.updateData(
+            ["dismissedAt": FieldValue.serverTimestamp()],
+            forDocument: household.collection("bankCharges").document(chargeId)
+        )
+        try await batch.commit()
+    }
+
+    /// Take back an expense a rule filed, and put its charge back in the list.
+    func undoRecurringExpense(
+        householdId: String,
+        expenseId: String,
+        chargeId: String
+    ) async throws {
+        let household = db.collection("households").document(householdId)
+        let batch = db.batch()
+        batch.deleteDocument(household.collection("expenses").document(expenseId))
+        batch.updateData(
+            ["dismissedAt": FieldValue.delete()],
+            forDocument: household.collection("bankCharges").document(chargeId)
+        )
+        try await batch.commit()
+    }
+
     /// Move a service onto what was actually charged.
     ///
     /// Only the AUD amount: the expense that disagreed with it is in AUD, and

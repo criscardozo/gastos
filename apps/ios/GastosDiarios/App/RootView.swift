@@ -24,6 +24,26 @@ struct RootView: View {
                     .fullScreenCover(isPresented: $model.showNewPeriodSheet) {
                         NewPeriodScreen(manual: model.newPeriodPromptIsManual)
                     }
+                    // On MainTabView, NOT on the Group that wraps the switch.
+                    //
+                    // Attached out there the state flipped correctly and
+                    // nothing ever came up: a `.sheet` on a Group whose content
+                    // is a switch has no stable host to present from, and it
+                    // fails silently rather than complaining. Cost an hour, and
+                    // the symptom was an expense filed with no word about it.
+                    //
+                    // A sheet rather than a cover on purpose: unlike a period
+                    // starting, this may be postponed. What it has not filed
+                    // stays pending and keeps showing in Historial, so swiping
+                    // it away answers nothing.
+                    .sheet(isPresented: $model.showRecurringPrompt) {
+                        RecurringPromptSheet(filedCount: model.recurringFiledCount)
+                    }
+                    // Keyed on both listeners, because they do not answer
+                    // together — see recurringInputsReady.
+                    .task(id: model.recurringInputsReady) {
+                        await model.runRecurringRulesIfNeeded()
+                    }
             }
         }
         .tint(Theme.accent)

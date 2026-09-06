@@ -217,11 +217,22 @@ struct Expense: Codable, Identifiable, Equatable {
     /// Whether `usdCents` is known. Absent ⇒ false (expenses that predate the
     /// field, and ones an older build created). See shared/schema.md.
     var verified: Bool?
+    /// The recurring rule that filed this on its own; absent when a person
+    /// typed it.
+    ///
+    /// A plain optional and NOT `@ServerTimestamp`-style required: absent is
+    /// the normal case, so a wrapper that demanded the key would make every
+    /// hand-typed expense undecodable — which is exactly how every unconfirmed
+    /// period disappeared from this app once already.
+    var autoRuleId: String?
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
 
     /// Only an explicit `true` with a figure behind it counts as verified.
     var isVerified: Bool { verified == true && usdCents != nil }
+
+    /// Filed by a rule rather than typed.
+    var isAutomatic: Bool { autoRuleId != nil }
 }
 
 /// An expense plus local snapshot metadata (offline "pendiente" chip).
@@ -261,6 +272,26 @@ struct BankCharge: Codable, Identifiable, Equatable {
 /// falls due. The MONEY is not here — a charged service is an ordinary expense
 /// in the `services` category whose note is this name, and the link between the
 /// two is that name and is not stored. See ServiceLogic.
+/// `households/{id}/recurringRules/{id}` — a merchant pattern and what to file
+/// it as when the bank reports it. See shared/schema.md.
+///
+/// NOT `ServiceDoc`: that one is scheduled and this one fires when a charge
+/// lands. Neither can answer the other's question.
+struct RecurringRuleDoc: Codable, Identifiable, Equatable, RecurringRuleLike {
+    @DocumentID var docId: String?
+    var pattern: String
+    var categoryId: String
+    var note: String
+    /// Absent is the rule saying "ask me", and is not the same as zero — the
+    /// rules refuse a zero precisely so the two cannot be confused.
+    var amountAudCents: Int?
+    var createdBy: String
+    @ServerTimestamp var createdAt: Date?
+    @ServerTimestamp var updatedAt: Date?
+
+    var id: String { docId ?? "" }
+}
+
 struct ServiceDoc: Codable, Identifiable, Equatable, DueRule {
     @DocumentID var docId: String?
     var name: String

@@ -36,6 +36,26 @@ final class AppModel {
     private(set) var monthSpentCents: Int?
     /// Bank charges the Gmail ingestion imported and nobody has matched yet.
     private(set) var bankCharges: [BankCharge] = []
+
+    /// The patterns that file a charge on their own. See RecurringRules.swift.
+    private(set) var recurringRules: [RecurringRuleDoc] = []
+    /// False until the rules listener has answered once.
+    ///
+    /// Kept because an empty list while loading is indistinguishable from "no
+    /// rule matched", and the prompt would decide it had nothing to say a beat
+    /// before the data arrived. The web hit exactly this.
+    private(set) var recurringRulesLoaded = false
+    /// False until the charges listener has answered once. Same reason.
+    private(set) var bankChargesLoaded = false
+    /// Up when the rules have something to report or to ask. Offered once per
+    /// launch: postponing loses nothing, because what is left stays pending and
+    /// keeps showing in Historial.
+    var showRecurringPrompt = false
+    /// How many the rules filed on their own this time round. Captured, because
+    /// the listener empties the queue the moment the writes land and reading it
+    /// live would report zero.
+    var recurringFiledCount = 0
+    var offeredRecurringPrompt = false
     /// Invite code for this household (created lazily), nil until generated.
     private(set) var inviteCode: String?
 
@@ -164,7 +184,7 @@ final class AppModel {
 
     // MARK: Services & listeners
 
-    private let auth = AuthService()
+    let auth = AuthService()
     // Internal rather than private, because the periods logic lives in
     // AppModel+Periods.swift and Swift's `private` is file-scoped. These are
     // the model's own bookkeeping — nothing outside AppModel has a reason to
@@ -186,6 +206,7 @@ final class AppModel {
     private var periodsListener: ListenerRegistration?
     private var currentExpensesListener: ListenerRegistration?
     private var bankChargesListener: ListenerRegistration?
+    private var recurringRulesListener: ListenerRegistration?
     /// Charges already handed to the sweep, so it never asks twice.
     private var sweptChargeIds: Set<String> = []
     private var viewedExpensesListener: ListenerRegistration?
@@ -211,7 +232,7 @@ final class AppModel {
     }
 
     /// Same, for callers already inside an async context.
-    private func awaitWrite(_ operation: () async throws -> Void) async {
+    func awaitWrite(_ operation: () async throws -> Void) async {
         do {
             try await operation()
         } catch {
@@ -274,7 +295,11 @@ final class AppModel {
         currentExpensesListener?.remove(); currentExpensesListener = nil
         viewedExpensesListener?.remove(); viewedExpensesListener = nil
         bankChargesListener?.remove(); bankChargesListener = nil
+        recurringRulesListener?.remove(); recurringRulesListener = nil
         bankCharges = []
+        recurringRules = []
+        recurringRulesLoaded = false
+        bankChargesLoaded = false
         sweptChargeIds = []
         currentListenerRange = nil
         viewedListenerRange = nil
@@ -312,11 +337,20 @@ final class AppModel {
         householdListener?.remove()
         periodsListener?.remove()
         bankChargesListener?.remove()
+        recurringRulesListener?.remove()
+
+        recurringRulesListener = firestore.listenRecurringRules(householdId: id) {
+            [weak self] rules in
+            guard let self else { return }
+            self.recurringRules = rules
+            self.recurringRulesLoaded = true
+        }
 
         bankChargesListener = firestore.listenBankCharges(householdId: id) {
             [weak self] charges in
             guard let self else { return }
             self.bankCharges = charges
+            self.bankChargesLoaded = true
             self.sweepExpiredDismissals(charges, householdId: id)
         }
 

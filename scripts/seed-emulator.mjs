@@ -278,11 +278,20 @@ async function main() {
     createdAt: now,
     updatedAt: now,
   });
+  // Confirmed unless SEED_UNANSWERED_PERIOD is set.
+  //
+  // Unanswered is the right fixture for the start-period screen, and the wrong
+  // one for everything else: it is a fullScreenCover that cannot be dismissed
+  // by design, so with no way to tap in this environment it hides every other
+  // screen from inspection. The flag keeps both fixtures available from one
+  // seed.
+  const answered = process.env.SEED_UNANSWERED_PERIOD !== "1";
   await put(`households/${householdId}/periodBudgets/${day}`, {
     startDate: day,
     endDate: addDays(day, 13),
     period: "fortnightly",
     amountCents: 90000,
+    ...(answered ? { confirmedAt: now } : {}),
     source: "default",
     createdAt: now,
     updatedAt: now,
@@ -381,6 +390,12 @@ async function main() {
     ["gmail-1", "exp-netflix", 2299, "NETFLIX.COM"],
     ["gmail-2", "exp-telefonia", 4850, "TELEFONICA"],
     ["gmail-3", null, 9900, "UNA COMPRA SUELTA"],
+    /* The two the recurring rules are about: one a rule can price on its own
+       and files without asking, and one whose rule carries no amount, so it
+       stays pending and the prompt asks. Without both, only half of that
+       screen can be exercised. */
+    ["gmail-4", null, 1500, "OPAL AUCKLAND ST"],
+    ["gmail-5", null, 800, "CAFE MARTINEZ"],
   ];
   for (const [id, expenseId, audCents, merchant] of bankCharges) {
     await put(`households/${householdId}/bankCharges/${id}`, {
@@ -389,6 +404,26 @@ async function main() {
       date: day,
       merchant,
       importedAt: now,
+    });
+  }
+
+  /* Recurring rules: the two shapes. "Opal*" carries an amount, so the charge
+     above is filed the moment a client opens; "Cafe" carries none, so its
+     charge stays pending and the prompt asks for the figure. */
+  const recurringRules = [
+    ["rule-opal", "Opal*", "transport", "Opal", 1500],
+    ["rule-cafe", "Cafe", "food", "Café", null],
+  ];
+  for (const [id, pattern, categoryId, note, amountAudCents] of recurringRules) {
+    await put(`households/${householdId}/recurringRules/${id}`, {
+      pattern,
+      categoryId,
+      note,
+      // Absent, not zero: absent is the rule saying "ask me".
+      ...(amountAudCents === null ? {} : { amountAudCents }),
+      createdBy: uid,
+      createdAt: now,
+      updatedAt: now,
     });
   }
 

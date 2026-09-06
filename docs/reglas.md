@@ -308,6 +308,24 @@ acaba de pedir.
   lee `firestore.rules` y `Limits.swift` en vez de repetir números, y verifica
   que los DOS formularios que tocan cada campo lleven la constante.
 
+- **Un `.sheet` sobre un `Group` que envuelve un `switch` no presenta, y no se
+  queja.** El estado pasaba a `true`, el body lo veía en `true`, y no aparecía
+  nada. Movido al `MainTabView` concreto —donde el `fullScreenCover` de al lado
+  ya funcionaba— presenta. Ese contenedor no tiene un host estable del que
+  presentar. Costó una hora, y el síntoma era el peor posible para esta feature:
+  un gasto cargado solo, correctamente, y sin una palabra al respecto.
+- **La clave de un `.task(id:)` no puede incluir algo que el propio trabajo
+  cambia.** La primera versión llevaba la cantidad de cargos pendientes;
+  archivar el primero movía la clave, SwiftUI cancelaba la tarea a mitad de
+  camino, y el aviso nunca se mostraba. Tiene que ser un latch que sólo va de
+  falso a verdadero.
+- **Y las dos mitades de esto son la misma falla**: la web tuvo la suya —el
+  aviso se cerraba solo mientras los dos listeners todavía cargaban, porque una
+  lista vacía en vuelo es idéntica a "no coincidió nada"— y el resultado era el
+  mismo en las dos plataformas. Cuando una feature carga algo sin que nadie lo
+  pida, el modo de falla que importa no es que no cargue: es que cargue y no lo
+  diga.
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada

@@ -15,12 +15,14 @@
 		1D8B6B03A09E6BE1DFF05C1E /* Limits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDB6C0C73CFD2C722DCEF1F /* Limits.swift */; };
 		1F4703215A63555016DC9CC6 /* GastosDiariosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F2E45F4FFC8505622F84485F /* GastosDiariosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1F9BA58700725716F9D218B6 /* ExpenseDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770FE80DDDE76F46C9859BB8 /* ExpenseDetailSheet.swift */; };
+		20558D3C0CC5119E8496216F /* AppModel+Recurring.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A179FF82E881F9FA70E35A6 /* AppModel+Recurring.swift */; };
 		24F97EE6D6D69ADFB1D44C5F /* RecurringRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF028A0AD8AB1D00020A299 /* RecurringRulesTests.swift */; };
 		274C430DD6B23B4F19C0A5E5 /* WatchConnectivityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA2FE7D38ADF32A88459CF /* WatchConnectivityModel.swift */; };
 		27FA6C49E3337B31FEF5AB05 /* BankMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9AE25283BC9E432099A5B3B /* BankMatch.swift */; };
 		287317EE4CCAB473C7B3B0DD /* PiggyMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BF3AEB1A7B631C490D0F18 /* PiggyMark.swift */; };
 		2CC4BB92F1CB68711C723A14 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 7BDAA615B344F7D33E02779C /* GoogleSignInSwift */; };
 		2CD243C91826F313B2AF2ECE /* AmountInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E1BD1553193EC737896A64 /* AmountInput.swift */; };
+		2D40B1726F30E2E1DB7FA466 /* RecurringRuleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39F4F6C624632E0AB022EDD /* RecurringRuleSheet.swift */; };
 		305EAFC930274F18C79F0DF8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 145F6B37DD56D3F48641A9AB /* Theme.swift */; };
 		3210FA34CD44CCE793592DE3 /* ModelDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0E1907B1FEAADDF744484A8 /* ModelDecodingTests.swift */; };
 		32D758F427368025E2807228 /* NewExpenseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1410A3F6EF345165785F0EB9 /* NewExpenseButton.swift */; };
@@ -34,6 +36,7 @@
 		4A7C9399EB868F5BD37FCEE2 /* PeriodLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */; };
 		4C0A22109A11E18556E2E5CE /* UsdArsRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22E21C719AA1C4BCA834DCA /* UsdArsRate.swift */; };
 		4CDD97FED70D3E038184719A /* PeriodLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */; };
+		4D8AE7C33A915BB40DF84444 /* RecurringPromptSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53783DA15EBC164A242B50E2 /* RecurringPromptSheet.swift */; };
 		4E0559786DE3931FCA38453B /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ED43CCFFBE449FFB095396B /* AuthService.swift */; };
 		50F8A743A1A76D4AC3AB60A9 /* Suggestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F33893831374AFF5EE633D25 /* Suggestions.swift */; };
 		5172346AA7A7E3798CDDB9FD /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 88C4CEE8AB2BD7C3B1A50660 /* GoogleService-Info.plist */; };
@@ -176,6 +179,7 @@
 		24370CD3C5C4E80E76227FF0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		259F5AD824CF65448A6876A2 /* AppModel+Periods.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Periods.swift"; sourceTree = "<group>"; };
 		2608C215296384372DBC7254 /* CardLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardLogic.swift; sourceTree = "<group>"; };
+		2A179FF82E881F9FA70E35A6 /* AppModel+Recurring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Recurring.swift"; sourceTree = "<group>"; };
 		2B3321D9E7495AC37BDC6004 /* GastosDiarios.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GastosDiarios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B6F41CE08795F7FABF2312F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseVerificationTests.swift; sourceTree = "<group>"; };
@@ -185,6 +189,7 @@
 		45E8539DAFA9587CC0291F04 /* CategoriesManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesManagerView.swift; sourceTree = "<group>"; };
 		48BF3AEB1A7B631C490D0F18 /* PiggyMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiggyMark.swift; sourceTree = "<group>"; };
 		4D2312BF519B44947A6A995D /* GastosDiariosWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosDiariosWidgetBundle.swift; sourceTree = "<group>"; };
+		53783DA15EBC164A242B50E2 /* RecurringPromptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringPromptSheet.swift; sourceTree = "<group>"; };
 		552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatter.swift; sourceTree = "<group>"; };
 		5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		5ED06E0D2EF77E0D2F45131F /* CountLabelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountLabelTests.swift; sourceTree = "<group>"; };
@@ -224,6 +229,7 @@
 		BAEA9BBAFF633250640CC1BC /* GastosDiariosWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosDiariosWatchApp.swift; sourceTree = "<group>"; };
 		C11071D8F868F2AA1741FF7C /* AppModel+Derived.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Derived.swift"; sourceTree = "<group>"; };
 		C1C12B6B3B51CC9E2962B1CE /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		C39F4F6C624632E0AB022EDD /* RecurringRuleSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRuleSheet.swift; sourceTree = "<group>"; };
 		C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C5AA2FE7D38ADF32A88459CF /* WatchConnectivityModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityModel.swift; sourceTree = "<group>"; };
 		C61FCF0E69A7236D256390A7 /* period-test-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "period-test-vectors.json"; sourceTree = "<group>"; };
@@ -365,6 +371,7 @@
 				1C8F75E05B2CB5526FAED626 /* AppModel.swift */,
 				C11071D8F868F2AA1741FF7C /* AppModel+Derived.swift */,
 				259F5AD824CF65448A6876A2 /* AppModel+Periods.swift */,
+				2A179FF82E881F9FA70E35A6 /* AppModel+Recurring.swift */,
 				86228DE8CD158F7CBF6F706A /* GastosDiariosApp.swift */,
 				94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */,
 				5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */,
@@ -422,6 +429,7 @@
 				0448E3CBD3A1D278A80384D1 /* Entry */,
 				73CAD261DF4859186CE751F8 /* History */,
 				72CF5D8BF79D96DF4DB2B25C /* Onboarding */,
+				B8C5CD2280E1B474BAC159BF /* Recurring */,
 				E6CD0795A48955E5941750E9 /* Services */,
 				6863DB5EFAF36F68CD5B49FB /* Settings */,
 				FC6393D243A4D33471F44C47 /* Summary */,
@@ -491,6 +499,15 @@
 				9EC5D52EACCD6C3040982EE4 /* WidgetTheme.swift */,
 			);
 			path = GastosDiariosWidget;
+			sourceTree = "<group>";
+		};
+		B8C5CD2280E1B474BAC159BF /* Recurring */ = {
+			isa = PBXGroup;
+			children = (
+				53783DA15EBC164A242B50E2 /* RecurringPromptSheet.swift */,
+				C39F4F6C624632E0AB022EDD /* RecurringRuleSheet.swift */,
+			);
+			path = Recurring;
 			sourceTree = "<group>";
 		};
 		C1031BEA647A7B4B784DE082 /* gastos-diarios */ = {
@@ -746,6 +763,7 @@
 				7FDB5283CC22C18562CD767D /* AmountInput.swift in Sources */,
 				CB775A4C53A25A4386C3B70A /* AppModel+Derived.swift in Sources */,
 				BB884FA28E193048F372B64F /* AppModel+Periods.swift in Sources */,
+				20558D3C0CC5119E8496216F /* AppModel+Recurring.swift in Sources */,
 				8268094E7E032831B3671199 /* AppModel.swift in Sources */,
 				4E0559786DE3931FCA38453B /* AuthService.swift in Sources */,
 				E0BCA48607F739A48666E584 /* BankChargeInbox.swift in Sources */,
@@ -771,6 +789,8 @@
 				5E46E4B94AD5C7F23B172691 /* OnboardingView.swift in Sources */,
 				E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */,
 				9ED3E316CDD7541FFB9D1270 /* QuickEntryIntent.swift in Sources */,
+				4D8AE7C33A915BB40DF84444 /* RecurringPromptSheet.swift in Sources */,
+				2D40B1726F30E2E1DB7FA466 /* RecurringRuleSheet.swift in Sources */,
 				E4509C563E7BE9E33D0AEF1C /* RecurringRules.swift in Sources */,
 				A5F76507F0CC0B20997205D6 /* ReminderService.swift in Sources */,
 				F5A92CB3FE60BBB11026A9CB /* RichText.swift in Sources */,

@@ -318,6 +318,26 @@ struct HistoryView: View {
                 .foregroundStyle(expense.isVerified ? Theme.greenText : Theme.amberText)
             }
             .buttonStyle(.plain)
+
+            // An expense nobody typed says so, and offers the way back.
+            //
+            // The undo is on the row rather than in a menu because its window
+            // is short: it lasts exactly as long as the charge does — 48 hours
+            // — and then the sweep takes the charge and this becomes an
+            // ordinary expense.
+            if expense.isAutomatic, let id = expense.id {
+                Button {
+                    model.undoRecurring(expenseId: id)
+                } label: {
+                    Image(systemName: "arrow.uturn.backward")
+                        .appFont(10.5, .semibold)
+                        .foregroundStyle(Theme.inkTertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    "\(l10n.t("recurring.undo")) — \(l10n.t("recurring.autoBadge"))"
+                )
+            }
         }
     }
 

@@ -18,6 +18,8 @@ struct BankChargesSheet: View {
     @State private var choice: [String: String] = [:]
     /// Collapsed by default: the discarded list is a safety net, not the job.
     @State private var showDismissed = false
+    /// Set when a charge's icon is tapped: opens the rule sheet filled in.
+    @State private var seedMerchant: String?
     /// Asking before confirming every guess at once. Assigning DELETES the
     /// charge, so a bulk mistake cannot be walked back the way a dismissal can.
     @State private var confirmingAll = false
@@ -34,6 +36,12 @@ struct BankChargesSheet: View {
                 }
             }
             .background(Theme.bg.ignoresSafeArea())
+            .sheet(item: Binding(
+                get: { seedMerchant.map(SeedMerchant.init) },
+                set: { seedMerchant = $0?.merchant }
+            )) { seed in
+                RecurringRuleSheet(rule: nil, seedMerchant: seed.merchant)
+            }
             .alert(
                 l10n.t("bank.confirmAllTitle"),
                 isPresented: $confirmingAll
@@ -287,6 +295,26 @@ struct BankChargesSheet: View {
                         model.assignBankCharge(charge, to: expenseId)
                         choice[charge.id] = nil
                     }
+                    // Turn this one into a rule, pre-filled from what is on
+                    // screen: the point is that the merchant is right there,
+                    // and retyping what you are looking at is the thing this
+                    // removes.
+                    Button {
+                        seedMerchant = charge.merchant
+                    } label: {
+                        Image(systemName: "arrow.trianglehead.2.clockwise")
+                            .appFont(15, .semibold)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Theme.inkSecondary)
+                    // Named after its charge, because there is one of these per
+                    // row: without it every button in the list is called
+                    // "Hacerlo recurrente" and only the row says which.
+                    .accessibilityLabel(
+                        "\(l10n.t("recurring.fromCharge")) — \(charge.merchant.isEmpty ? MoneyFormatter.usd(charge.usdCents, locale: l10n.locale) : charge.merchant)"
+                    )
+                    .disabled(charge.merchant.isEmpty)
+
                     Button(l10n.t("bank.discard")) {
                         model.discardBankCharge(charge)
                     }
@@ -344,4 +372,14 @@ struct BankChargesSheet: View {
         formatter.maximumFractionDigits = 3
         return formatter.string(from: NSNumber(value: rate)) ?? "—"
     }
+}
+
+/// A merchant string as a sheet item.
+///
+/// `.sheet(item:)` needs Identifiable and a bare String is not — wrapping it
+/// keeps the presentation tied to WHICH charge was tapped, so tapping a second
+/// one while the first is open re-presents rather than silently doing nothing.
+private struct SeedMerchant: Identifiable {
+    let merchant: String
+    var id: String { merchant }
 }
