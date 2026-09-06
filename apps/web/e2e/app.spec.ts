@@ -61,7 +61,11 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
 
   // Add an expense in /gastos.
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await page.getByLabel("0,00").fill("12,50");
+  // `exact`: getByLabel matches a SUBSTRING by default, and the verify button
+  // in the grid is named after its expense — "…— Referencia, $100,00" contains
+  // "0,00". Naming that button is what made this selector ambiguous, which is
+  // the honest price of a control that says which row it belongs to.
+  await page.getByLabel("0,00", { exact: true }).fill("12,50");
   await page.getByLabel("Nota (opcional)").fill("Café de prueba");
   await page.getByRole("button", { name: "Guardar" }).click();
 
@@ -103,7 +107,7 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
 
   // A second expense, in a different category — the grid's category filter
   // below needs two to have anything to separate.
-  await page.getByLabel("0,00").fill("31,00");
+  await page.getByLabel("0,00", { exact: true }).fill("31,00");
   await page.getByLabel("Categoría: todas").selectOption("transport");
   await page.getByLabel("Nota (opcional)").fill("Nafta de prueba");
   await page.getByRole("button", { name: "Guardar" }).click();
@@ -244,8 +248,8 @@ test("a bank charge is matched to the expense it paid for", async ({
   ]) {
     // The save clears the add row asynchronously; typing before it does would
     // lose the amount.
-    await expect(page.getByLabel("0,00")).toHaveValue("");
-    await page.getByLabel("0,00").fill(amount);
+    await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
+    await page.getByLabel("0,00", { exact: true }).fill(amount);
     await page.getByLabel("Nota (opcional)").fill(note);
     await page.getByRole("button", { name: "Guardar" }).click();
     await expect(page.getByText(note).first()).toBeVisible();
@@ -771,13 +775,13 @@ test("an expense saved offline does not freeze the form", async ({
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await expect(page.getByLabel("0,00")).toHaveValue("");
+  await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
 
   // Cut the network the way a phone does. Firestore queues the write and
   // serves it straight back from the local cache — but its promise stays
   // pending until a server acknowledges, so anything awaiting it is stuck.
   await context.setOffline(true);
-  await page.getByLabel("0,00").fill("12,50");
+  await page.getByLabel("0,00", { exact: true }).fill("12,50");
   await page.getByLabel("Nota (opcional)").fill("Sin señal");
   await page.getByRole("button", { name: "Guardar" }).click();
 
@@ -787,7 +791,7 @@ test("an expense saved offline does not freeze the form", async ({
   await expect(page.getByText("Sin señal").first()).toBeVisible({
     timeout: 10_000,
   });
-  await expect(page.getByLabel("0,00")).toHaveValue("");
+  await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
 
   // And no error dialog: Firestore queues a write made without signal and sends
   // it later, so there is nothing to report. This is the other half of "a write
@@ -950,7 +954,7 @@ test("a write the server refuses says so", async ({ page, request }) => {
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await expect(page.getByLabel("0,00")).toHaveValue("");
+  await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
 
   // Make the server refuse. Loading rules into the emulator is how a real
   // rejection is produced without touching the repo's own rules file. The
@@ -965,7 +969,7 @@ test("a write the server refuses says so", async ({ page, request }) => {
     }`;
   await loadRules(request, deny);
 
-  await page.getByLabel("0,00").fill("33,00");
+  await page.getByLabel("0,00", { exact: true }).fill("33,00");
   await page.getByLabel("Nota (opcional)").fill("Rechazado");
   await page.getByRole("button", { name: "Guardar" }).click();
 
@@ -1695,7 +1699,7 @@ test("a service is reconciled against the expense that paid it", async ({
   // The bill lands in Gastos, in that category, under the service's name —
   // accents and case included, which the matching has to survive.
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await page.getByLabel("0,00").fill("48,50");
+  await page.getByLabel("0,00", { exact: true }).fill("48,50");
   await page.getByLabel("Categoría: todas").selectOption("services");
   await page.getByLabel("Nota (opcional)").fill("telefonia");
   await page.getByRole("button", { name: "Guardar" }).click();
