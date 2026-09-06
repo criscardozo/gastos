@@ -112,7 +112,8 @@
     "clearVerification": "Clear verification",
     "exportUnverifiedConfirm": "{count, plural, one {# expense has no bank USD yet: its USD column will be blank. Export anyway?} other {# expenses have no bank USD yet: their USD columns will be blank. Export anyway?}}",
     "groupMonths": "Months",
-    "groupPeriods": "Periods"
+    "groupPeriods": "Periods",
+    "undoAuto": "Undo the automatic entry"
   },
   "services": {
     "title": "Services",
@@ -494,5 +495,38 @@
     "title": "Could not save",
     "body": "The server refused the change, so it was not saved. Try again.",
     "dismiss": "Got it"
+  },
+  "recurring": {
+    "title": "Recurring expenses",
+    "subtitle": "When the bank reports a charge matching one of these, it is filed for you.",
+    "empty": "You have not added any yet.",
+    "add": "Add",
+    "pattern": "Merchant text",
+    "patternHelp": "As the bank spells it. “Opal” finds “OPAL AUCKLAND ST”. Use * to anchor the start or the end: “Opal*”.",
+    "patternPlaceholder": "Opal*",
+    "note": "What to call it",
+    "notePlaceholder": "Opal",
+    "category": "Category",
+    "amount": "Suggested amount (AUD)",
+    "amountHelp": "Leave it empty and I will ask you each time one arrives.",
+    "amountAsk": "Ask me",
+    "save": "Save",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this rule? The expenses it already filed stay.",
+    "fromCharge": "Make it recurring",
+    "matches": "Matches {count, plural, one {# charge} other {# charges}} currently waiting",
+    "matchesNone": "Matches none of the charges currently waiting",
+    "promptTitle": "Recurring expenses",
+    "promptFiled": "{count, plural, one {# expense was filed for you} other {# expenses were filed for you}}",
+    "promptAsking": "{count, plural, one {# needs an amount} other {# need an amount}}",
+    "promptAmount": "AUD amount",
+    "promptLater": "Later",
+    "promptSave": "Save",
+    "promptOf": "{index} of {total}",
+    "autoBadge": "automatic",
+    "autoFrom": "Filed by the rule “{pattern}”",
+    "undo": "Undo",
+    "awaiting": "amount missing",
+    "promptDone": "Done"
   }
 }

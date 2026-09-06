@@ -36,6 +36,16 @@ import {
   type VerificationFilter,
 } from "./pieces";
 import { visibleExpenses } from "@/lib/expense-list";
+import { RecurringPrompt } from "@/components/recurring-prompt";
+import { RecurringRuleDialog } from "@/components/recurring-rule-dialog";
+import { useRecurringRules } from "@/lib/firebase/hooks";
+import { isPending } from "@/lib/bank-charges";
+import {
+  addRecurringRule,
+  fileRecurringExpense,
+  undoRecurringExpense,
+  chargeIdFromAutoExpense,
+} from "@/lib/firebase/mutations";
 import type { Expense, Household } from "@/lib/firebase/converters";
 import { categoryCircleBg, categoryColor } from "@/lib/categories";
 import {
@@ -89,6 +99,16 @@ export default function ExpensesPage() {
   const [verifyAmount, setVerifyAmount] = useState("");
   /** Expense whose detail dialog is open. */
   const [detailId, setDetailId] = useState<string | null>(null);
+  // Seeded from a charge: the merchant and the figure the user is looking at.
+  const [ruleSeed, setRuleSeed] = useState<
+    { merchant: string; usdCents: number } | null
+  >(null);
+  // Offered once per visit. Dismissing it must not bring it straight back —
+  // the charges it asks about are still pending by design.
+  const [promptDone, setPromptDone] = useState(false);
+  const { rules: recurringRules, loading: rulesLoading } = useRecurringRules(
+    household?.id ?? null,
+  );
   const amountRef = useRef<HTMLInputElement | null>(null);
 
   // Calendar months are a window, not a budget: they cross period boundaries
@@ -108,7 +128,9 @@ export default function ExpensesPage() {
     selected?.startDate ?? null,
     selected?.endDate ?? null,
   );
-  const { charges } = useBankCharges(household?.id ?? null);
+  const { charges, loading: chargesLoading } = useBankCharges(
+    household?.id ?? null,
+  );
 
   const [addForm, setAddForm] = useState<FormState>({
     amount: "",
@@ -468,6 +490,32 @@ export default function ExpensesPage() {
           >
             {e.note !== "" ? e.note : catLabel}
           </button>
+          {/* An expense nobody typed says so, and offers the way back.
+              The undo lives on the row rather than in a menu because its
+              window is short: it lasts exactly as long as the charge does,
+              48 hours, and then the sweep takes the charge and this becomes
+              an ordinary expense. */}
+          {e.autoRuleId !== null && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                const fb = getFirebaseClient();
+                const chargeId = chargeIdFromAutoExpense(e.id);
+                if (fb === null || chargeId === null) return;
+                write(
+                  undoRecurringExpense(fb.db, household.id, e.id, chargeId),
+                );
+              }}
+              title={t("undoAuto")}
+              aria-label={`${t("undoAuto")} — ${
+                e.note !== "" ? e.note : catLabel
+              }`}
+              className="flex flex-none items-center gap-1 text-[11px] font-semibold text-ink-3"
+            >
+              <Icon name="autorenew" size={13} />
+            </button>
+          )}
           {e.pendingWrite && (
             <span
               className="flex flex-none items-center gap-1 text-[11px] font-semibold text-ink-3"
@@ -691,8 +739,57 @@ export default function ExpensesPage() {
             : (categories.find((c) => c.id === e.categoryId)?.label ??
               tCat("deleted"))
         }
+        onMakeRecurring={setRuleSeed}
         locale={locale}
       />
+
+      {/* A rule seeded from a charge: the merchant and the figure are already
+          on screen, so the dialog opens filled in. */}
+      {ruleSeed !== null && (
+        <RecurringRuleDialog
+          rule={null}
+          household={household}
+          locale={locale}
+          pendingMerchants={charges.filter(isPending).map((c) => c.merchant)}
+          seed={ruleSeed}
+          onSave={(input) => {
+            const fb = getFirebaseClient();
+            if (fb === null || user === null) return;
+            write(addRecurringRule(fb.db, household.id, user.uid, input));
+            setRuleSeed(null);
+          }}
+          onDelete={null}
+          onClose={() => setRuleSeed(null)}
+        />
+      )}
+
+      {/* What the rules did while you were away, and what they still need. */}
+      {/* Only once BOTH listeners have answered.
+          While they are loading each is an empty list, and an empty list is
+          indistinguishable from "no rule matched anything" — the prompt would
+          conclude there was nothing to say and close itself a moment before
+          the data arrived. Same trap the charges listener already documents:
+          a read in flight is not a read that came back empty. */}
+      {!promptDone && !chargesLoading && !rulesLoading && (
+        <RecurringPrompt
+          charges={charges.filter(isPending)}
+          rules={recurringRules}
+          locale={locale}
+          onFile={async (charge, rule, amountAudCents) => {
+            const fb = getFirebaseClient();
+            if (fb === null || user === null) return;
+            await fileRecurringExpense(
+              fb.db,
+              household.id,
+              user.uid,
+              charge,
+              rule,
+              amountAudCents,
+            );
+          }}
+          onDismissed={() => setPromptDone(true)}
+        />
+      )}
 
       {/* Quick-entry shortcut — the phone's replacement for the add row below */}
       <Link

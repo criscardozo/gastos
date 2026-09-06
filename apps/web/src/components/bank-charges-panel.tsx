@@ -54,6 +54,7 @@ export function BankChargesPanel({
   charges,
   expenses,
   expenseLabel,
+  onMakeRecurring,
   locale,
 }: {
   household: Household;
@@ -62,9 +63,19 @@ export function BankChargesPanel({
   expenses: Expense[];
   /** Note, or the category name when the note is empty. */
   expenseLabel: (expense: Expense) => string;
+  /**
+   * Turn this charge into a recurring rule, pre-filled.
+   *
+   * Takes the two things a rule needs suggested — how the bank spells the
+   * merchant, and what it charged — rather than the document, because the
+   * point is that both are already on screen and retyping what you are
+   * looking at is the thing this removes.
+   */
+  onMakeRecurring: (seed: { merchant: string; usdCents: number }) => void;
   locale: string;
 }) {
   const t = useTranslations("bank");
+  const tRecurring = useTranslations("recurring");
   const { write } = useAppError();
   const [open, setOpen] = useState(false);
   /** Manual overrides, charge id → expense id ("" = none chosen). */
@@ -264,6 +275,27 @@ export function BankChargesPanel({
                     className="rounded-full bg-accent px-3.5 py-[7px] text-[12.5px] font-bold text-white disabled:opacity-40"
                   >
                     {t("assign")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onMakeRecurring({
+                        merchant: charge.merchant,
+                        usdCents: charge.usdCents,
+                      })
+                    }
+                    title={tRecurring("fromCharge")}
+                    /* Named after the charge, because there is one of these
+                       per row: without it every button in the list reads
+                       "Hacerlo recurrente" and only the row says which. */
+                    aria-label={`${tRecurring("fromCharge")} — ${
+                      charge.merchant !== ""
+                        ? charge.merchant
+                        : formatUsd(charge.usdCents, locale)
+                    }`}
+                    className="flex items-center text-ink-2"
+                  >
+                    <Icon name="autorenew" size={17} />
                   </button>
                   <button
                     type="button"

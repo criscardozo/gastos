@@ -18,6 +18,7 @@ import { AvatarPair } from "@/components/ui/avatar";
 import { Segmented } from "@/components/ui/segmented";
 import { CardsCard } from "@/components/cards-card";
 import { CategoriesCard } from "@/components/categories-card";
+import { RecurringRulesCard } from "@/components/recurring-rules-card";
 import { ImportExpenses } from "@/components/import-expenses";
 import { ExtendPeriodDialog } from "@/components/extend-period-dialog";
 import { parseBudgetAmount } from "@/components/budget-amount-field";
@@ -514,6 +515,8 @@ export default function SettingsPage() {
 
       {/* Which four digits are which card — routes the bank's charges */}
       <CardsCard household={household} />
+
+      <RecurringRulesCard household={household} locale={locale} />
 
       {/* Importing a CSV. Here rather than on Datos, which is now for reading
           what is already there: this is the one control on either screen that

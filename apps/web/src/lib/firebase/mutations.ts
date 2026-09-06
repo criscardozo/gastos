@@ -908,3 +908,164 @@ export async function deleteCardCharge(
 ): Promise<void> {
   await deleteDoc(doc(db, "households", householdId, "cardCharges", chargeId));
 }
+
+// ---------------------------- recurring rules ----------------------------
+
+export interface RecurringRuleInput {
+  pattern: string;
+  categoryId: string;
+  note: string;
+  /** Null is the rule saying "ask me" — written as an ABSENT field, never 0. */
+  amountAudCents: number | null;
+}
+
+function recurringFields(input: RecurringRuleInput) {
+  return {
+    pattern: input.pattern.trim(),
+    categoryId: input.categoryId,
+    note: input.note.trim(),
+    // Absent, not zero. The rules refuse a zero and reading one back as "ask
+    // me" would make the two states indistinguishable in the data.
+    ...(input.amountAudCents === null
+      ? {}
+      : { amountAudCents: input.amountAudCents }),
+  };
+}
+
+export async function addRecurringRule(
+  db: Firestore,
+  householdId: string,
+  uid: string,
+  input: RecurringRuleInput,
+): Promise<void> {
+  await setDoc(
+    doc(collection(db, "households", householdId, "recurringRules")),
+    {
+      ...recurringFields(input),
+      createdBy: uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+  );
+}
+
+export async function updateRecurringRule(
+  db: Firestore,
+  householdId: string,
+  ruleId: string,
+  input: RecurringRuleInput,
+): Promise<void> {
+  const ref = doc(db, "households", householdId, "recurringRules", ruleId);
+  await updateDoc(ref, {
+    ...recurringFields(input),
+    // An edit that clears the amount has to REMOVE the field, not write null:
+    // the rules only accept an int or nothing, and "ask me" is the absence.
+    ...(input.amountAudCents === null ? { amountAudCents: deleteField() } : {}),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteRecurringRule(
+  db: Firestore,
+  householdId: string,
+  ruleId: string,
+): Promise<void> {
+  await deleteDoc(doc(db, "households", householdId, "recurringRules", ruleId));
+}
+
+/**
+ * The expense id a charge always files under.
+ *
+ * Derived rather than generated because both clients may be open when a charge
+ * arrives, and both will match it against the same rule. Racing on a
+ * deterministic id writes the same document twice; racing on a generated one
+ * writes the expense twice, and the second is indistinguishable from a real
+ * duplicate. Firestore ids allow this alphabet, and the Gmail message id the
+ * charge is keyed by is already unique.
+ */
+const AUTO_PREFIX = "auto_";
+
+export function autoExpenseId(chargeId: string): string {
+  return `${AUTO_PREFIX}${chargeId}`.slice(0, 1500);
+}
+
+/**
+ * The charge an auto-filed expense came from, or null when the id says it was
+ * not one.
+ *
+ * The inverse belongs beside the function it inverts. Written out by hand at
+ * the call site, the prefix would be in two places and the undo would silently
+ * point at the wrong document the day the prefix changed.
+ */
+export function chargeIdFromAutoExpense(expenseId: string): string | null {
+  return expenseId.startsWith(AUTO_PREFIX)
+    ? expenseId.slice(AUTO_PREFIX.length)
+    : null;
+}
+
+/**
+ * File a charge as an expense, because a rule recognised it.
+ *
+ * One batch, because the two halves cannot be allowed to separate: an expense
+ * without the charge dismissed would be filed again on the next open, and a
+ * charge dismissed without the expense would lose the money silently.
+ *
+ * The charge is DISMISSED rather than deleted, which is what makes the undo
+ * possible — it is the same 48-hour recoverable window a member gets when they
+ * discard a charge by hand, expiring by the same sweep. See lib/bank-charges.ts.
+ */
+export async function fileRecurringExpense(
+  db: Firestore,
+  householdId: string,
+  uid: string,
+  charge: { id: string; usdCents: number; date: string },
+  rule: { id: string; categoryId: string; note: string },
+  amountAudCents: number,
+): Promise<void> {
+  const batch = writeBatch(db);
+  batch.set(
+    doc(db, "households", householdId, "expenses", autoExpenseId(charge.id)),
+    {
+      amountCents: amountAudCents,
+      categoryId: rule.categoryId,
+      note: rule.note,
+      // The charge's own date, already in the household timezone — the
+      // ingestion converted it. Never today's: a charge that arrives on Monday
+      // for a Saturday purchase belongs to Saturday's period.
+      date: charge.date,
+      createdBy: uid,
+      // What the bank actually charged, so the pairing is the verification.
+      usdCents: charge.usdCents,
+      verified: true,
+      autoRuleId: rule.id,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+  );
+  batch.update(doc(db, "households", householdId, "bankCharges", charge.id), {
+    dismissedAt: serverTimestamp(),
+  });
+  await batch.commit();
+}
+
+/**
+ * Take back an expense a rule filed, and put its charge back in the list.
+ *
+ * The mirror of the above, in one batch for the same reason. Only possible
+ * while the charge is still there — past the 48 hours the sweep has removed
+ * it, and what is left is an ordinary expense to be edited or deleted like any
+ * other.
+ */
+export async function undoRecurringExpense(
+  db: Firestore,
+  householdId: string,
+  expenseId: string,
+  chargeId: string,
+): Promise<void> {
+  const batch = writeBatch(db);
+  batch.delete(doc(db, "households", householdId, "expenses", expenseId));
+  batch.update(doc(db, "households", householdId, "bankCharges", chargeId), {
+    dismissedAt: deleteField(),
+  });
+  await batch.commit();
+}

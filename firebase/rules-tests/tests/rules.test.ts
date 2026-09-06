@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -1944,5 +1945,67 @@ describe("an expense a rule filed on its own", () => {
     await assertFails(
       setDoc(ref(), expenseDoc(ALICE, { autoRuleId: "x".repeat(61) })),
     );
+  });
+});
+
+describe("filing a charge a rule recognised", () => {
+  beforeEach(async () => {
+    await seed(env, async (admin) => {
+      await setDoc(doc(admin, "households", HOUSEHOLD), householdDoc(ALICE));
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "bankCharges", "msg1"),
+        { usdCents: 1240, date: "2026-09-05", merchant: "OPAL AUCKLAND ST", importedAt: serverTimestamp() },
+      );
+    });
+  });
+
+  /** Exactly what mutations.ts sends: both halves in one batch. */
+  function fileIt(uid: string) {
+    const client = db(env, uid);
+    const batch = writeBatch(client);
+    batch.set(doc(client, "households", HOUSEHOLD, "expenses", "auto_msg1"), {
+      ...expenseDoc(uid, {
+        amountCents: 1500,
+        usdCents: 1240,
+        verified: true,
+        autoRuleId: "r1",
+        date: "2026-09-05",
+      }),
+    });
+    batch.update(doc(client, "households", HOUSEHOLD, "bankCharges", "msg1"), {
+      dismissedAt: serverTimestamp(),
+    });
+    return batch.commit();
+  }
+
+  it("goes through as one batch: the expense lands and the charge leaves", async () => {
+    await assertSucceeds(fileIt(ALICE));
+  });
+
+  it("and comes back the same way, which is what the 48 hours are", async () => {
+    await fileIt(ALICE);
+    const client = db(env, ALICE);
+    const batch = writeBatch(client);
+    batch.delete(doc(client, "households", HOUSEHOLD, "expenses", "auto_msg1"));
+    batch.update(doc(client, "households", HOUSEHOLD, "bankCharges", "msg1"), {
+      dismissedAt: deleteField(),
+    });
+    await assertSucceeds(batch.commit());
+  });
+
+  it("a stranger cannot file one", async () => {
+    await assertFails(fileIt(CAROL));
+  });
+
+  it("filing cannot smuggle another field onto the charge", async () => {
+    // The charge is the ingestion's document; a client may only ever dismiss
+    // it. If this stopped holding, a client could rewrite what the bank said.
+    const client = db(env, ALICE);
+    const batch = writeBatch(client);
+    batch.update(doc(client, "households", HOUSEHOLD, "bankCharges", "msg1"), {
+      dismissedAt: serverTimestamp(),
+      usdCents: 1,
+    });
+    await assertFails(batch.commit());
   });
 });

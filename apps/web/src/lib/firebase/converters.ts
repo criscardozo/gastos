@@ -114,6 +114,15 @@ export interface Expense {
   /** Last write to the doc — shown in the detail when it differs from the
    * creation, so an edited expense says so. */
   updatedAt: Timestamp | null;
+  /**
+   * The recurring rule that filed this on its own, or null when a person
+   * typed it.
+   *
+   * Stored rather than derived: after the fact nothing else can tell an
+   * automatic entry from a typed one, and that is exactly what the row has to
+   * say before somebody trusts a figure they never entered.
+   */
+  autoRuleId: string | null;
   /** Written locally but not yet acknowledged by the server — the expense is
    * queued offline. Local state, never a stored field. */
   pendingWrite: boolean;
@@ -129,6 +138,20 @@ export interface BankChargeDoc {
   /** When a member discarded it; null while pending. Recoverable for
    * DISMISS_WINDOW_HOURS after this — see lib/bank-charges.ts. */
   dismissedAt: Date | null;
+}
+
+/**
+ * `households/{id}/recurringRules/{id}` — a merchant pattern and what to file
+ * it as. See shared/schema.md, and note it is NOT `services`: that one is
+ * scheduled, this one fires when a charge lands.
+ */
+export interface RecurringRuleDoc {
+  id: string;
+  pattern: string;
+  categoryId: string;
+  note: string;
+  /** Null is the rule saying "ask me", and is not the same as zero. */
+  amountAudCents: number | null;
 }
 
 /** `households/{id}/services/{id}` — a recurring bill. See shared/schema.md. */
@@ -353,6 +376,8 @@ export const expenseConverter = readOnly<Expense>((snap) => {
     verified: data.verified === true,
     createdAt: (data.createdAt as Timestamp | null) ?? null,
     updatedAt: (data.updatedAt as Timestamp | null) ?? null,
+    // Absent on every expense a person typed, which is nearly all of them.
+    autoRuleId: isString(data.autoRuleId) ? data.autoRuleId : null,
     pendingWrite: snap.metadata.hasPendingWrites,
   };
   return expense;
@@ -384,6 +409,30 @@ export const bankChargeConverter = readOnly<BankChargeDoc>((snap) => {
     merchant: isMaybeEmptyString(data.merchant) ? data.merchant : "",
     cardLast4: isString(data.cardLast4) ? data.cardLast4 : null,
     dismissedAt: dismissedAt?.toDate() ?? null,
+  };
+});
+
+export const recurringRuleConverter = readOnly<RecurringRuleDoc>((snap) => {
+  const data = snap.data();
+  // A rule with no pattern claims nothing, and a rule with no category could
+  // never file anything even if it matched. Both are broken rather than
+  // incomplete, so the document is refused rather than half-read — a rule that
+  // silently stopped matching would look like the bank changing its wording.
+  if (!isString(data.pattern) || data.pattern.trim() === "") {
+    return rejectDoc(`recurringRules/${snap.id}`, "pattern is missing");
+  }
+  if (!isString(data.categoryId) || data.categoryId === "") {
+    return rejectDoc(`recurringRules/${snap.id}`, "categoryId is missing");
+  }
+  return {
+    id: snap.id,
+    pattern: data.pattern,
+    categoryId: data.categoryId,
+    note: isString(data.note) ? data.note : "",
+    // Absent means "ask me". Distinct from zero, which the rules reject.
+    amountAudCents: isPositiveInt(data.amountAudCents)
+      ? data.amountAudCents
+      : null,
   };
 });
 

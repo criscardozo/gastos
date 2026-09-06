@@ -112,7 +112,8 @@
     "clearVerification": "Quitar verificación",
     "exportUnverifiedConfirm": "{count, plural, one {Hay # gasto sin el USD del banco: su columna USD va a quedar vacía. ¿Exportar igual?} other {Hay # gastos sin el USD del banco: sus columnas USD van a quedar vacías. ¿Exportar igual?}}",
     "groupMonths": "Meses",
-    "groupPeriods": "Períodos"
+    "groupPeriods": "Períodos",
+    "undoAuto": "Deshacer la carga automática"
   },
   "services": {
     "title": "Servicios",
@@ -494,5 +495,38 @@
     "title": "No se pudo guardar",
     "body": "El servidor rechazó el cambio, así que no quedó guardado. Volvé a intentarlo.",
     "dismiss": "Entendido"
+  },
+  "recurring": {
+    "title": "Gastos recurrentes",
+    "subtitle": "Cuando el banco reporta un gasto que coincide con uno de estos, se carga solo.",
+    "empty": "Todavía no cargaste ninguno.",
+    "add": "Agregar",
+    "pattern": "Texto del comercio",
+    "patternHelp": "Como lo escribe el banco. «Opal» encuentra «OPAL AUCKLAND ST». Usá * para atar el principio o el final: «Opal*».",
+    "patternPlaceholder": "Opal*",
+    "note": "Cómo se llama el gasto",
+    "notePlaceholder": "Opal",
+    "category": "Categoría",
+    "amount": "Importe sugerido (AUD)",
+    "amountHelp": "Dejalo vacío y te lo pregunto cada vez que llegue uno.",
+    "amountAsk": "Preguntarme",
+    "save": "Guardar",
+    "delete": "Borrar",
+    "deleteConfirm": "¿Borrar esta regla? Los gastos que ya cargó se quedan.",
+    "fromCharge": "Hacerlo recurrente",
+    "matches": "Coincide con {count, plural, one {# cargo} other {# cargos}} de los que están esperando",
+    "matchesNone": "Todavía no coincide con ninguno de los que están esperando",
+    "promptTitle": "Gastos recurrentes",
+    "promptFiled": "{count, plural, one {Se cargó # gasto solo} other {Se cargaron # gastos solos}}",
+    "promptAsking": "{count, plural, one {# espera importe} other {# esperan importe}}",
+    "promptAmount": "Importe AUD",
+    "promptLater": "Después",
+    "promptSave": "Guardar",
+    "promptOf": "{index} de {total}",
+    "autoBadge": "automático",
+    "autoFrom": "Lo cargó la regla «{pattern}»",
+    "undo": "Deshacer",
+    "awaiting": "falta importe",
+    "promptDone": "Listo"
   }
 }

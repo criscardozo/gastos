@@ -1938,3 +1938,92 @@ test("charges are routed by the card they came from", async ({ page, request }) 
   // bank charge, which is the whole reason that write is a single batch.
   await expect(page.getByText("STEAM")).toHaveCount(1);
 });
+
+test("a recurring rule files the charge it recognises, and it can be taken back", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-rec-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Rec Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  // The rule: anything the bank spells starting with OPAL, at $15.
+  await page.getByRole("link", { name: "Ajustes", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Agregar" })
+    .and(page.locator("xpath=preceding-sibling::*[1][text()]"))
+    .or(page.getByRole("button", { name: "Agregar" }).last())
+    .click();
+  await page.getByRole("dialog").getByLabel("Texto del comercio").fill("Opal*");
+  await page.getByRole("dialog").getByLabel("Cómo se llama el gasto").fill("Opal");
+  await page.getByRole("dialog").getByRole("tab", { name: "Importe sugerido (AUD)" }).click();
+  await page.getByRole("dialog").getByLabel("Importe sugerido (AUD)").fill("15,00");
+  await page.getByRole("dialog").getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Opal*")).toBeVisible();
+
+  // The ingestion's job, by hand.
+  const households = await request.get(`${REST}/households`, {
+    headers: { Authorization: "Bearer owner" },
+  });
+  const docs = (await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[];
+  const mine = docs.find((d) => d.fields.name.stringValue === "Hogar de Rec");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Australia/Sydney",
+  }).format(new Date());
+  const created = await request.post(
+    `${REST}/households/${householdId}/bankCharges?documentId=gmail-opal1`,
+    {
+      headers: { Authorization: "Bearer owner" },
+      data: {
+        fields: {
+          usdCents: { integerValue: "1240" },
+          date: { stringValue: today },
+          merchant: { stringValue: "OPAL AUCKLAND ST" },
+          importedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+  expect(created.ok()).toBe(true);
+
+  // Coming back is what runs the rule: there is no server to run it.
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Gastos recurrentes" })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByText("Se cargó 1 gasto solo")).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Listo" }).click();
+
+  // Filed at the rule's amount, with the bank's USD as its verification.
+  await expect(page.getByText("Opal").first()).toBeVisible();
+  // The row's own accessible name carries both figures, which is the tidiest
+  // proof that the AUD came from the rule and the USD from the bank.
+  await expect(
+    page.getByRole("button", { name: /Verificado.*Opal, \$ ?15,00/ }),
+  ).toBeVisible();
+  await expect(page.getByText("US$ 12,40").first()).toBeVisible();
+
+  // ...and it can be taken back, which puts the charge back in the list.
+  await page
+    .getByRole("button", { name: /Deshacer la carga automática/ })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("button", { name: /Verificado.*Opal/ }),
+  ).toHaveCount(0);
+  // The charge is waiting again — which is the whole point of the window: the
+  // undo does not just delete an expense, it puts back the thing the expense
+  // came from. (The panel is collapsed by default, so its header is what says
+  // so on screen.)
+  await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible();
+});

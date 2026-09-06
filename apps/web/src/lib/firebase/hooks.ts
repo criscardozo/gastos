@@ -25,11 +25,13 @@ import {
   cardChargeConverter,
   cardStatementConverter,
   expenseConverter,
+  recurringRuleConverter,
   serviceConverter,
   type BankChargeDoc,
   type CardCharge,
   type CardStatement,
   type Expense,
+  type RecurringRuleDoc,
   type ServiceDoc,
 } from "./converters";
 import { decoded } from "./shape";
@@ -245,6 +247,61 @@ export function useServices(householdId: string | null): ServicesState {
       (error) => {
         console.error("[gastos] services listener", error);
         setState({ services: [], loading: false, failed: true });
+      },
+    );
+  }, [householdId]);
+
+  return state;
+}
+
+/* ── Recurring rules ───────────────────────────────────────────────────── */
+
+/**
+ * Enough patterns for a household that files by hand anyway, and bounded like
+ * every other listener because the free tier is part of the design.
+ */
+const MAX_RECURRING_RULES = 50;
+
+export interface RecurringRulesState {
+  rules: RecurringRuleDoc[];
+  loading: boolean;
+  /**
+   * The listener errored. It matters more here than elsewhere: read as an
+   * empty list, a failed read means NO rule matches, so charges quietly stop
+   * being filed and nothing says why.
+   */
+  failed?: boolean;
+}
+
+export function useRecurringRules(
+  householdId: string | null,
+): RecurringRulesState {
+  const [state, setState] = useState<RecurringRulesState>({
+    rules: [],
+    loading: true,
+  });
+
+  useEffect(() => {
+    if (householdId === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setState({ rules: [], loading: false });
+      return;
+    }
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    const q = query(
+      collection(fb.db, "households", householdId, "recurringRules"),
+      orderBy("pattern", "asc"),
+      limit(MAX_RECURRING_RULES),
+    ).withConverter(recurringRuleConverter);
+    return onSnapshot(
+      q,
+      (snap) => {
+        setState({ rules: decoded(snap.docs.map((d) => d.data())), loading: false });
+      },
+      (error) => {
+        console.error("[gastos] recurring rules listener", error);
+        setState({ rules: [], loading: false, failed: true });
       },
     );
   }, [householdId]);
