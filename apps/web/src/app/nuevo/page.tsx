@@ -14,6 +14,7 @@ import { useTranslations } from "next-intl";
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { useAppError } from "@/components/app-error";
 import { Icon } from "@/components/ui/icon";
+import { MAX_NOTE_CHARACTERS } from "@/lib/limits";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { addExpense } from "@/lib/firebase/mutations";
 import { useExpensesRange } from "@/lib/firebase/hooks";
@@ -213,7 +214,7 @@ export default function QuickEntryPage() {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder={t("notePlaceholder")}
-          maxLength={200}
+          maxLength={MAX_NOTE_CHARACTERS}
           className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none"
         />
       </div>

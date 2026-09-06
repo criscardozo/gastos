@@ -10,6 +10,7 @@ import { useAuth, useLocale, ackNewPeriod } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { GoogleG, PiggyMark } from "@/components/brand";
 import { AmountInput } from "@/components/ui/amount-input";
+import { MAX_HOUSEHOLD_NAME_CHARACTERS } from "@/lib/limits";
 import { Segmented } from "@/components/ui/segmented";
 import { parseBudgetAmount } from "@/components/budget-amount-field";
 import { getFirebaseClient } from "@/lib/firebase/client";
@@ -264,6 +265,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          maxLength={MAX_HOUSEHOLD_NAME_CHARACTERS}
           aria-label={t("householdName")}
           className="rounded-xl border border-pill bg-bg px-3.5 py-3 text-[15px] font-semibold text-ink outline-none"
         />

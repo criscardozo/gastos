@@ -20,6 +20,7 @@ import { Icon } from "@/components/ui/icon";
 import { Segmented } from "@/components/ui/segmented";
 import { BankChargesPanel } from "@/components/bank-charges-panel";
 import { ExpenseDetailDialog } from "@/components/expense-detail-dialog";
+import { MAX_NOTE_CHARACTERS } from "@/lib/limits";
 import { useBankCharges, useExpensesRange } from "@/lib/firebase/hooks";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { monthSelection, resolveSelection } from "@/lib/period-selection";
@@ -170,7 +171,7 @@ function ExpenseFormFields({
         onChange={(e) => setForm({ ...form, note: e.target.value })}
         placeholder={t("notePlaceholder")}
         aria-label={t("notePlaceholder")}
-        maxLength={200}
+        maxLength={MAX_NOTE_CHARACTERS}
         list={hasNoteSuggestions ? noteListId : undefined}
         className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] text-ink outline-none"
       />

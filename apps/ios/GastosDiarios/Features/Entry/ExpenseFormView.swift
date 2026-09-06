@@ -374,7 +374,7 @@ struct ExpenseFormView: View {
     private var amountText: Binding<String> {
         Binding(
             get: { amount.input.editingText(separator: separator) },
-            set: { amount.input.setDisplay($0, separator: separator) }
+            set: { amount.setDisplay($0, separator: separator) }
         )
     }
 
@@ -460,6 +460,17 @@ struct ExpenseFormView: View {
                 .foregroundStyle(Theme.ink)
                 .focused($focus, equals: .note)
                 .submitLabel(.done)
+                // SwiftUI has no `maxLength`, and the rules cap the note at
+                // 200. Without this the field accepted a longer one, Firestore
+                // showed the expense saved from its local cache, and a
+                // write-error alert followed — for text the field could have
+                // stopped taking. The web has capped it at the same number all
+                // along; this side never did.
+                .onChange(of: note) { _, typed in
+                    if typed.count > Limits.maxNoteCharacters {
+                        note = String(typed.prefix(Limits.maxNoteCharacters))
+                    }
+                }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 13)

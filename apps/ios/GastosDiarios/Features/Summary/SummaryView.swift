@@ -494,7 +494,7 @@ struct SummaryView: View {
 struct AdjustPeriodBudgetSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
-    @State private var budget = BudgetEntryAmount()
+    @State private var budget = BudgetEntryAmount(maxCents: Limits.maxBudgetAmountCents)
     @State private var loaded = false
 
     private var l10n: L10n { model.l10n }
@@ -550,7 +550,7 @@ struct AdjustPeriodBudgetSheet: View {
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            budget = .fromAUDCents(model.currentPeriod?.amountCents ?? 0)
+            budget.setAUDCents(model.currentPeriod?.amountCents ?? 0)
         }
     }
 }

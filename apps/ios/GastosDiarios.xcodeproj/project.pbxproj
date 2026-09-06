@@ -12,6 +12,7 @@
 		1331895649B5F9CF8C93401D /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E33FD8DDEB4A07F1B2A435 /* L10n.swift */; };
 		15AA1CB724446599FF29B4E1 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B5FBDD1492FAB100BFF4DC69 /* Outfit-Variable.ttf */; };
 		1D715F394294FC39E44D5552 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */; };
+		1D8B6B03A09E6BE1DFF05C1E /* Limits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDB6C0C73CFD2C722DCEF1F /* Limits.swift */; };
 		1F4703215A63555016DC9CC6 /* GastosDiariosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F2E45F4FFC8505622F84485F /* GastosDiariosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1F9BA58700725716F9D218B6 /* ExpenseDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770FE80DDDE76F46C9859BB8 /* ExpenseDetailSheet.swift */; };
 		274C430DD6B23B4F19C0A5E5 /* WatchConnectivityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AA2FE7D38ADF32A88459CF /* WatchConnectivityModel.swift */; };
@@ -53,6 +54,7 @@
 		79C3AAF1F72C5A8D5923D2AF /* BankChargeInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */; };
 		7BF9EC6646A0185FAC5D276A /* RichText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FAB94B640D4DFAAF7E6AB91 /* RichText.swift */; };
 		7E5C183155873E3B21BC04CF /* CardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DA4DFB594CEF55E24F86CA7 /* CardsView.swift */; };
+		7E7C00938F475374210A459A /* LimitsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09F971BEC734CD729969A346 /* LimitsTests.swift */; };
 		7FDB5283CC22C18562CD767D /* AmountInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E1BD1553193EC737896A64 /* AmountInput.swift */; };
 		822EFD43241545538E9E07A9 /* SigningExpiryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F2CD9DC403E30E0D49F3C5 /* SigningExpiryService.swift */; };
 		8268094E7E032831B3671199 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C8F75E05B2CB5526FAED626 /* AppModel.swift */; };
@@ -84,6 +86,7 @@
 		C19497155C651CCEC6F0E5E9 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C4CC9EABCE305CAAE362D514 /* Localizable.xcstrings */; };
 		C7595C1C338C319A2E7A092B /* CardLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2608C215296384372DBC7254 /* CardLogic.swift */; };
 		C85234FD7E915451EBD5B306 /* ExpenseFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87966E98F3C0C867AE517CE9 /* ExpenseFormView.swift */; };
+		C8ECDDD3CA0079EDA101A856 /* Limits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDB6C0C73CFD2C722DCEF1F /* Limits.swift */; };
 		C92E8EBD9E46D90366CB2EA9 /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */; };
 		CB8092081896A331FD25750E /* BankChargeInboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021A158506471604F1680607 /* BankChargeInboxTests.swift */; };
 		D1D835112EBEB73ADD5E788C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB86DA59B8D86AC1BE949A16 /* Assets.xcassets */; };
@@ -156,6 +159,7 @@
 		021A158506471604F1680607 /* BankChargeInboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargeInboxTests.swift; sourceTree = "<group>"; };
 		0384CFCE02C836FE68B8468C /* ServicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesView.swift; sourceTree = "<group>"; };
 		03D045921BA5FA8C21C1F897 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		09F971BEC734CD729969A346 /* LimitsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LimitsTests.swift; sourceTree = "<group>"; };
 		09FAD06B6AC51C9258BE8127 /* TestFonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFonts.swift; sourceTree = "<group>"; };
 		0C19C8E5B211D3024BBF75AD /* ServiceLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLogicTests.swift; sourceTree = "<group>"; };
 		1410A3F6EF345165785F0EB9 /* NewExpenseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewExpenseButton.swift; sourceTree = "<group>"; };
@@ -194,6 +198,7 @@
 		87966E98F3C0C867AE517CE9 /* ExpenseFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseFormView.swift; sourceTree = "<group>"; };
 		88C4CEE8AB2BD7C3B1A50660 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		8A795380C7AD182D04979254 /* bank-match-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "bank-match-vectors.json"; sourceTree = "<group>"; };
+		8CDB6C0C73CFD2C722DCEF1F /* Limits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Limits.swift; sourceTree = "<group>"; };
 		8FAB94B640D4DFAAF7E6AB91 /* RichText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichText.swift; sourceTree = "<group>"; };
 		94ECE3CD0E4139219665135A /* QuickEntryIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickEntryIntent.swift; sourceTree = "<group>"; };
 		990596864A5AD40BA5EE4803 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -277,6 +282,7 @@
 				F9AE25283BC9E432099A5B3B /* BankMatch.swift */,
 				2608C215296384372DBC7254 /* CardLogic.swift */,
 				75E33FD8DDEB4A07F1B2A435 /* L10n.swift */,
+				8CDB6C0C73CFD2C722DCEF1F /* Limits.swift */,
 				23612A2AE85E20827C54AF6A /* Models.swift */,
 				552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */,
 				E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */,
@@ -431,6 +437,7 @@
 				2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */,
 				42DC61E9383304A6425AED4B /* FontLoadingTests.swift */,
 				A61FD1D9C51B26E68C12816E /* FontScalingPathTests.swift */,
+				09F971BEC734CD729969A346 /* LimitsTests.swift */,
 				E0E1907B1FEAADDF744484A8 /* ModelDecodingTests.swift */,
 				F9267B91CA5884281ACB5887 /* PeriodLogicTests.swift */,
 				3064D79EEF48BC7380766319 /* RichTextTests.swift */,
@@ -737,6 +744,7 @@
 				4A6170B92E597704ED1A35D9 /* GastosDiariosApp.swift in Sources */,
 				F6C3A5A2215B37A39404FBF6 /* HistoryView.swift in Sources */,
 				64A277BCB7F020EF239963C3 /* L10n.swift in Sources */,
+				1D8B6B03A09E6BE1DFF05C1E /* Limits.swift in Sources */,
 				B088F40899D33FEB92EE2A8A /* Models.swift in Sources */,
 				98CF0F503439808C29ADD186 /* MoneyFormatter.swift in Sources */,
 				32D758F427368025E2807228 /* NewExpenseButton.swift in Sources */,
@@ -779,6 +787,8 @@
 				6EE16FA45AC592A83DFE63DC /* FontLoadingTests.swift in Sources */,
 				F3A0540CE996F01682F6D020 /* FontScalingPathTests.swift in Sources */,
 				1331895649B5F9CF8C93401D /* L10n.swift in Sources */,
+				C8ECDDD3CA0079EDA101A856 /* Limits.swift in Sources */,
+				7E7C00938F475374210A459A /* LimitsTests.swift in Sources */,
 				3210FA34CD44CCE793592DE3 /* ModelDecodingTests.swift in Sources */,
 				DAA68B4CBEDC600E9A6BE6DC /* Models.swift in Sources */,
 				BAD0594FFEBDF616197DE08A /* MoneyFormatter.swift in Sources */,

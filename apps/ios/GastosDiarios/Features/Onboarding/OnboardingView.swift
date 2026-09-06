@@ -306,7 +306,9 @@ private struct BudgetSetupStep: View {
     @Environment(AppModel.self) private var model
     var onBack: () -> Void
 
-    @State private var budget = BudgetEntryAmount.fromAUDCents(90000)
+    @State private var budget = BudgetEntryAmount.fromAUDCents(
+        90000, max: Limits.maxBudgetAmountCents
+    )
     @State private var period: PeriodType = .fortnightly
     @State private var startDate: CalendarDate?
     @State private var showDatePicker = false

@@ -28,7 +28,7 @@ struct NewPeriodScreen: View {
     /// The date the stretch picker is on. Anchored at midday so the day it
     /// means is the same one in every timezone offset.
     @State private var stretchSelection = Date()
-    @State private var custom = BudgetEntryAmount()
+    @State private var custom = BudgetEntryAmount(maxCents: Limits.maxBudgetAmountCents)
     /// Leftover of the period before this one; nil until the read lands (or
     /// when there is no previous period to have left anything).
     @State private var leftover: Int?
@@ -181,7 +181,7 @@ struct NewPeriodScreen: View {
                 )
             }
             Button {
-                custom = .fromAUDCents(defaultAmount)
+                custom.setAUDCents(defaultAmount)
                 editingAmount = true
             } label: {
                 Text(l10n.t("newPeriod.custom"))

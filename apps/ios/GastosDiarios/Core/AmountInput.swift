@@ -22,7 +22,11 @@ struct AmountInput: Equatable {
 
     var isEmpty: Bool { text.isEmpty }
 
-    var cents: Int {
+    var cents: Int { Self.cents(of: text) }
+
+    /// Cents for a string in canonical form, so a guard can price a candidate
+    /// before it becomes `text`.
+    static func cents(of text: String) -> Int {
         guard !text.isEmpty else { return 0 }
         let parts = text.split(separator: ",", omittingEmptySubsequences: false)
         let whole = Int(parts[0]) ?? 0
@@ -58,7 +62,11 @@ struct AmountInput: Equatable {
     /// pasting "1.050" in Spanish used to land 1,05 in the field, a thousandth
     /// of the amount, which is exactly the defect the web parser had (see
     /// parseAmountToCents in money.ts).
-    mutating func setDisplay(_ typed: String, separator: String) {
+    mutating func setDisplay(
+        _ typed: String,
+        separator: String,
+        max maxCents: Int = Limits.maxExpenseAmountCents
+    ) {
         let grouping: Character = separator == "," ? "." : ","
         let decimal: Character = Character(separator)
         // Keep only digits and the two marks.
@@ -96,30 +104,44 @@ struct AmountInput: Equatable {
         // Integer part: cap at 7 digits, strip leading zeros (keep a lone "0").
         var whole = String((parts.first ?? "").prefix(7))
         while whole.count > 1 && whole.hasPrefix("0") { whole.removeFirst() }
+        let candidate: String
         if parts.count > 1 {
             // Decimals: cap at 2.
             let decimals = String(parts[1].prefix(2))
-            text = whole + "," + decimals
+            candidate = whole + "," + decimals
         } else if hasSeparator {
             // Trailing separator with no decimals yet ("12,").
-            text = whole + ","
+            candidate = whole + ","
         } else {
-            text = whole
+            candidate = whole
         }
+        // ...and the ceiling the rules enforce, which seven digits is not.
+        //
+        // Seven digits allows 9.999.999,99 — a hundred times what the rules
+        // accept for an expense. Pasting or typing past the ceiling used to
+        // reach Firestore, show as saved in the local cache and come back as a
+        // write-error alert.
+        guard Self.cents(of: candidate) <= maxCents else { return }
+        text = candidate
     }
 
-    mutating func tap(_ key: KeypadKey) {
+    mutating func tap(_ key: KeypadKey, max maxCents: Int = Limits.maxExpenseAmountCents) {
         switch key {
         case .digit(let digit):
+            var candidate = text
             if let commaIndex = text.firstIndex(of: ",") {
                 // Cap at 2 decimals.
                 guard text.distance(from: commaIndex, to: text.endIndex) <= 2 else { return }
-                text.append(String(digit))
+                candidate.append(String(digit))
             } else {
                 guard text.count < 7 else { return }
-                if text == "0" { text = "" }
-                text.append(String(digit))
+                if candidate == "0" { candidate = "" }
+                candidate.append(String(digit))
             }
+            // The same ceiling the typed path enforces: a key that would cross
+            // it does nothing, exactly as the eighth digit already did.
+            guard Self.cents(of: candidate) <= maxCents else { return }
+            text = candidate
         case .separator:
             guard !text.contains(",") else { return }
             text = text.isEmpty ? "0," : text + ","
@@ -150,20 +172,41 @@ struct AmountInput: Equatable {
 struct BudgetEntryAmount: Equatable {
     var input = AmountInput()
 
+    /// The ceiling the rules put on THIS field.
+    ///
+    /// The same type backs the expense form and the four budget editors, and
+    /// the rules do not cap them alike: an expense stops at $100,000 and a
+    /// budget at ten times that. Defaulting to the stricter one means a screen
+    /// that forgets to say which it is refuses too much rather than too little.
+    var maxCents: Int = Limits.maxExpenseAmountCents
+
     /// Integer cents to persist.
     var audCents: Int { input.cents }
 
     mutating func tap(_ key: KeypadKey) {
-        input.tap(key)
+        input.tap(key, max: maxCents)
+    }
+
+    /// What a native `TextField` writes back, held to the same ceiling.
+    mutating func setDisplay(_ typed: String, separator: String) {
+        input.setDisplay(typed, separator: separator, max: maxCents)
     }
 
     /// Fills an amount (e.g. a recent-amount quick-fill chip).
+    ///
+    /// Preferred over reassigning from `fromAUDCents`, which builds a fresh
+    /// value and therefore resets `maxCents` to the stricter default: a budget
+    /// editor loading its current amount would silently drop to the expense
+    /// ceiling. This replaces the inner input and leaves the ceiling alone.
     mutating func setAUDCents(_ cents: Int) {
         input = .fromCents(cents)
     }
 
-    static func fromAUDCents(_ cents: Int) -> BudgetEntryAmount {
-        var value = BudgetEntryAmount()
+    static func fromAUDCents(
+        _ cents: Int,
+        max maxCents: Int = Limits.maxExpenseAmountCents
+    ) -> BudgetEntryAmount {
+        var value = BudgetEntryAmount(maxCents: maxCents)
         value.input = .fromCents(cents)
         return value
     }

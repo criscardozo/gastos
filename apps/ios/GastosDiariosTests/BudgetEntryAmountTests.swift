@@ -101,8 +101,16 @@ final class AmountInputEditingTests: XCTestCase {
         spanish.setDisplay("1.050", separator: ",")
         XCTAssertEqual(spanish.cents, 105_000)
 
-        spanish.setDisplay("1.234.567,89", separator: ",")
-        XCTAssertEqual(spanish.cents, 123_456_789)
+        // Two grouping marks, which only a BUDGET field can hold.
+        //
+        // This line used to paste $1.234.567,89 — an amount the rules refuse
+        // for anything, and which the field accepted until the ceilings landed.
+        // Under the ledger's ceiling ($100,000) no amount has two grouping
+        // marks at all, so the multi-mark path is now exercised where it can
+        // legally occur: exactly at the budget ceiling.
+        var budget = AmountInput()
+        budget.setDisplay("1.000.000", separator: ",", max: Limits.maxBudgetAmountCents)
+        XCTAssertEqual(budget.cents, Limits.maxBudgetAmountCents)
 
         var english = AmountInput()
         english.setDisplay("1,050", separator: ".")

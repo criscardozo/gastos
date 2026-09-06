@@ -21,6 +21,7 @@ import { CategoriesCard } from "@/components/categories-card";
 import { ImportExpenses } from "@/components/import-expenses";
 import { ExtendPeriodDialog } from "@/components/extend-period-dialog";
 import { parseBudgetAmount } from "@/components/budget-amount-field";
+import { MAX_HOUSEHOLD_NAME_CHARACTERS } from "@/lib/limits";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   createInvite,
@@ -128,7 +129,7 @@ function EditableHouseholdName({
       <input
         autoFocus
         type="text"
-        maxLength={60}
+        maxLength={MAX_HOUSEHOLD_NAME_CHARACTERS}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={commit}

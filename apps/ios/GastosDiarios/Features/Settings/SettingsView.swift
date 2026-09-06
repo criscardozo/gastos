@@ -523,6 +523,15 @@ struct SettingsView: View {
             isPresented: $renamingHousehold
         ) {
             TextField(l10n.t("settings.household.name.placeholder"), text: $householdNameDraft)
+                // The rules cap the name at 60 and the web's settings screen
+                // has always said so; this field never did.
+                .onChange(of: householdNameDraft) { _, typed in
+                    if typed.count > Limits.maxHouseholdNameCharacters {
+                        householdNameDraft = String(
+                            typed.prefix(Limits.maxHouseholdNameCharacters)
+                        )
+                    }
+                }
             Button(l10n.t("common.save")) {
                 model.setHouseholdName(householdNameDraft)
             }
@@ -706,7 +715,7 @@ struct SettingsView: View {
 struct DefaultAmountSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
-    @State private var budget = BudgetEntryAmount()
+    @State private var budget = BudgetEntryAmount(maxCents: Limits.maxBudgetAmountCents)
     @State private var loaded = false
 
     private var l10n: L10n { model.l10n }
@@ -755,7 +764,7 @@ struct DefaultAmountSheet: View {
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            budget = .fromAUDCents(model.household?.defaultBudget.amountCents ?? 0)
+            budget.setAUDCents(model.household?.defaultBudget.amountCents ?? 0)
         }
     }
 }

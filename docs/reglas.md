@@ -289,6 +289,25 @@ acaba de pedir.
   guardia de conteo que existía sólo en iOS con un comentario que la describía
   como si estuviera en las dos.)
 
+- **Un cliente más laxo que las reglas es un error que la pantalla podía evitar.**
+  Las reglas topean el monto de un gasto en $100.000 y la nota en 200; el
+  teclado de iOS topeaba por CANTIDAD DE DÍGITOS (`text.count < 7`), o sea hasta
+  $9.999.999,99, y la nota no tenía tope alguno. Duele más que un rechazo común
+  por la caché optimista: Firestore muestra el gasto guardado y la alerta de
+  error llega después, por un dígito de más. El mismo defecto ya se había
+  encontrado y arreglado en la web —el comentario de `MAX_AMOUNT_CENTS` lo
+  cuenta— y nunca se cruzó a iOS. Al revés (cliente más estricto) es sólo una
+  molestia.
+- **Y el mismo campo puede estar capado en un formulario y no en el otro, dentro
+  del mismo cliente.** El nombre del hogar estaba topeado a 60 en Ajustes y
+  suelto en el onboarding. Es más difícil de ver que una diferencia entre
+  plataformas porque ninguno de los dos archivos menciona al otro: no aparece
+  revisando comentarios, sólo enumerando los topes y preguntando quién los
+  aplica. (La levantó la sesión Stock, que tenía el par idéntico.)
+- **La pregunta no es "¿lo apliqué?" sino "¿dónde MÁS aplica?".** `limits.test.ts`
+  lee `firestore.rules` y `Limits.swift` en vez de repetir números, y verifica
+  que los DOS formularios que tocan cada campo lleven la constante.
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada
