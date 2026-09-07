@@ -397,6 +397,15 @@ acaba de pedir.
   un puerto que resulta que tiene un forward de SSH, contestando algo sin
   `documents`. Nada en ese error dice "puerto". Lo fija
   `apps/web/src/lib/emulator-ports.test.ts`.
+- **Y el puerto forwardeado no contesta basura: contesta OTRO emulador de
+  Firestore, vacío.** Medido: `GET /` da `Ok` en los dos, un documento
+  inexistente da el mismo JSON `{"error":{"code":404,…}}` en los dos, y la
+  diferencia aparece sólo en el CONTENIDO — `households` tiene `seed-household`
+  en el nuestro y nada en el otro. Así que `wait-on tcp:` pasa, una sonda de
+  forma pasa, y las lecturas vuelven vacías. **Ningún chequeo de "¿responde lo
+  que es?" distingue estos dos**; lo único que distingue es qué tiene adentro.
+  La protección no es una sonda, es tener un bloque de puertos que nadie más
+  use y una guarda que obligue a todas las copias a coincidir.
 - **Y eran SIETE, no seis: el `wait-on` del CI también.** Escribí la guarda
   diciendo "todas las copias" con cinco adentro, arreglé la sexta, y el CI
   falló igual esperando `tcp:9099 tcp:8080` — dos minutos de espera y un
