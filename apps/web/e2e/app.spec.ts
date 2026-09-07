@@ -2024,6 +2024,12 @@ test("a recurring rule files the charge it recognises, and it can be taken back"
     page.getByRole("button", { name: /Verificado.*Opal, \$ ?15,00/ }),
   ).toBeVisible();
   await expect(page.getByText("US$ 12,40").first()).toBeVisible();
+  // And the charge is NO LONGER waiting. This line was missing, which is what
+  // made this the one test of the three that a split batch fools completely:
+  // the expense commits either way, so the row above proves nothing about the
+  // charge. It also makes the undo assertion at the end mean something — it
+  // now reads as 0 charges then 1, rather than just 1 at the end.
+  await expect(page.getByText(/cargo del banco sin asignar/)).toHaveCount(0);
 
   // Now the same two facts FROM THE SERVER, which is a NARROWER claim than it
   // looks — and narrower than the first version of this comment said.

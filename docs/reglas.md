@@ -446,10 +446,17 @@ acaba de pedir.
   pendiente en el servidor. El primer test de recurrentes no asegura el contador
   del panel, así que ahí la pantalla se come el engaño entero. Nada más en la
   suite fija esa atomicidad.
-- **Y la sonda hay que mutarla**: apuntada a `pending` tiene que fallar, o es un
-  poll verde que no consulta nada. Igual que el control del experimento tiene
-  que dar positivo — mi primera medición dio `row=0` en las dos ramas y no
-  significaba nada hasta que corrí el control.
+- **Una medición que no puede dar el resultado contrario no es una medición.**
+  Es la forma general de tres cosas que este archivo ya tenía anotadas por
+  separado, y la frase es de la sesión Stock: el baseline que no asegura nada
+  positivo, la sonda inerte que pasa apuntada a cualquier valor, y el control
+  que no discrimina. Las tres aparecieron el mismo día. Mi primera medición del
+  rollback dio `row=0` en las dos ramas y la iba a reportar como prueba; recién
+  el control (`row=1` con las reglas reales) me dijo que había medido el reloj y
+  no el rollback. Y después, queriendo demostrar que la aserción nueva del panel
+  agarra un batch partido, corrí el batch partido **sin** las reglas hostiles:
+  las dos escrituras pasan, el test da verde, y el verde no significaba nada.
+  Tres veces en un día con el mismo error de diseño.
 - **Un experimento tirable también necesita el `afterEach`.** El probe dejó
   instaladas las reglas hostiles y la corrida siguiente murió antes de empezar,
   culpando al código equivocado — exactamente lo que `app.spec.ts` advierte en
