@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8.apps.googleusercontent.com</string>
+	<string>56331687585-o1vn25s25vv682tgqc34uq03hucklc89.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8</string>
+	<string>com.googleusercontent.apps.56331687585-o1vn25s25vv682tgqc34uq03hucklc89</string>
 	<key>API_KEY</key>
 	<string>AIzaSyC825o9DAGTb4QCtVrfzY8ttnnLpQGYX34</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>dev.cardozo.gastosdiarios</string>
+	<string>dev.cardozo.gastos</string>
 	<key>PROJECT_ID</key>
 	<string>qcris-gastos-diarios</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:56331687585:ios:f7e8c0c6c6e684468682e0</string>
+	<string>1:56331687585:ios:f494c462827cf8488682e0</string>
 </dict>
 </plist>

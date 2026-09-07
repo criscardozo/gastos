@@ -262,7 +262,7 @@ couple of the 2,000 free Actions minutes a month.
 One-time: add the backup key as a repository secret.
 
 ```sh
-gh secret set FIREBASE_SERVICE_ACCOUNT --repo criscardozo/gastos-diarios \
+gh secret set FIREBASE_SERVICE_ACCOUNT --repo criscardozo/gastos \
   < firebase/service-account.json
 ```
 

@@ -101,7 +101,7 @@ de fuentes. Ponelo justo antes de `pnpm --filter web build`.
 
 Sólo si C2 no alcanza. El job encadena install, typecheck, lint, vitest, tests
 del ingest, build y dos pasos de Python. Medir con `gh api
-repos/criscardozo/gastos-diarios/actions/runs/<id>/jobs` los `steps[].started_at
+repos/criscardozo/gastos/actions/runs/<id>/jobs` los `steps[].started_at
 /completed_at` y ver cuál pesa. No partir en más jobs sin pensar: cada job paga
 su propio install (~1 min).
 

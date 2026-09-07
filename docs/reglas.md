@@ -353,6 +353,23 @@ acaba de pedir.
   que mide no es un detector; el log es el único lugar donde ese hecho es
   observable desde acá.
 
+- **El team gratuito instala TRES apps por dispositivo, no más.** Renombrar el
+  bundle id crea una app nueva, así que el rebranding intentó ser la cuarta
+  —`gastos` junto a `gastosdiarios`, `holocron` y `stock`— y el teléfono la
+  rechazó con `ApplicationVerificationFailed` y la lista de los tres slots
+  tomados, en `MIFreeProfileValidatedAppTracker`. Se destraba borrando la
+  anterior. No se pierde ningún gasto (viven en Firestore); sí las preferencias
+  por dispositivo: el recordatorio diario, el tema elegido, y el widget y la app
+  del reloj, que hay que volver a agregar porque el bundle id es otro.
+- **Y un cliente OAuth de iOS es por bundle id, así que el rebranding lo
+  invalida.** El plist nuevo que baja de Firebase trae un `CLIENT_ID` NUEVO, y
+  `project.yml` lo tiene copiado a mano en DOS lugares (`GIDClientID` y el
+  esquema de URL invertido que recibe el callback). Cambiar sólo el plist deja
+  el login rechazado sin ninguna pista en el dispositivo. Lo fija
+  `apps/web/src/lib/ios-config.test.ts`, que lee el plist y `project.yml` y
+  compara — en la suite de la web porque es la única que corre en CI, y una
+  guarda que nadie corre es un comentario.
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada

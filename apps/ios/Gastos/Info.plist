@@ -25,7 +25,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8</string>
+				<string>com.googleusercontent.apps.56331687585-o1vn25s25vv682tgqc34uq03hucklc89</string>
 			</array>
 		</dict>
 		<dict>
@@ -42,7 +42,7 @@
 	<key>GDIngestURL</key>
 	<string>$(GD_INGEST_URL)</string>
 	<key>GIDClientID</key>
-	<string>56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8.apps.googleusercontent.com</string>
+	<string>56331687585-o1vn25s25vv682tgqc34uq03hucklc89.apps.googleusercontent.com</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>shoebox</string>
