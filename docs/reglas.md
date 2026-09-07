@@ -468,6 +468,27 @@ acaba de pedir.
   batch rechazado se ve idéntico en pantalla» cuando la atomicidad lo delata a
   los 150ms, y el `(8080 was busy)` sobre un puerto que nunca se intentó. Las
   cuatro habrían mandado al siguiente a mirar el lugar equivocado.
+- **Y vienen en dos formas, que cuestan distinto.** La sesión Stock contó sus
+  cinco y encontró que las tres peores **cerraban una puerta**: decían que algo
+  no se podía probar, o que ya estaba probado. Ésa es la clase cara, porque su
+  conclusión es que dejes de mirar. Nuestras cuatro son de la otra forma —
+  **desvían**: mandan a mirar, pero al lugar equivocado (un puerto que el script
+  nunca intentó, dos puertos que el código ya no usaba). Y una hacía algo peor
+  que desviar: decir que la CSP «necesitaría esfuerzo» **invita** a que alguien
+  con más tiempo lo intente, cuando lo que hay es una contradicción. Un
+  comentario que dice «es difícil» convoca trabajo inútil; uno que dice «es
+  contradictorio» no. Al escribir el motivo de una decisión, la pregunta es si
+  la frase manda a alguien a trabajar, a dejar de mirar, o al lugar correcto.
+- **Y no todas son sobre herramientas ajenas.** Stock encontró que sus cinco
+  eran todas sobre el comportamiento de algo que no habían medido antes de
+  describirlo —Firestore, `UIFontMetrics`, un forward de SSH, la caché
+  optimista— y ninguna sobre su propio código. Acá el reparto es mitad y mitad:
+  dos sobre herramientas (la caché de Firestore, la spec de CSP) y dos sobre
+  artefactos nuestros (el mensaje de `run-tests.mjs` y la cabecera del spec).
+  Así que la protección no es «desconfiá de lo que digas sobre una herramienta»:
+  las dos nuestras eran datos que fueron ciertos y dejaron de serlo, que es un
+  modo de falla distinto y no lo arregla ninguna medición inicial. A ésas las
+  agarra una guarda que las obligue a coincidir, como el test de puertos.
 - **Y lo que hizo que aparecieran no fue leer código nuevo, fue que preguntara
   alguien que no lo había escrito.** Los tres bugs que encontramos esta semana
   con la sesión Stock son de código de esta misma semana, y los tres salieron de
