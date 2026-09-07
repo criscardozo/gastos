@@ -94,19 +94,40 @@ const nextConfig: NextConfig = {
    * leaking a path to a third party, the app framed by someone else, a
    * permission prompt nobody asked for.
    *
-   * NOT here, on purpose: Content-Security-Policy. Firebase Auth's handler is
-   * proxied through this origin (see rewrites above) and its page runs inline
-   * script; a policy strict enough to be worth having would need a nonce
-   * threaded through a build that is entirely static, and a policy loose
-   * enough to avoid that is decoration. It is worth doing properly one day and
-   * is not worth guessing at today.
+   * NOT here, on purpose: Content-Security-Policy — and the reason is a
+   * contradiction to resolve, not a chore to get around.
    *
-   * When that day comes, `connect-src` has to include the EMULATOR hosts, and
-   * only when they are in use. The Stock session added a policy and its
-   * report-only run produced twelve violations, every one of them the
-   * emulator — and the symptom is not a CSP error anyone would see: it is
-   * Firestore never connecting and a screen with nothing on it. Measured
-   * there, written here, so it is not learned twice.
+   * Firebase Auth's handler is proxied through this origin (see rewrites
+   * above), and `source: "/:path*"` below means these headers DO reach it:
+   * curl `/__/auth/handler` and the X-Frame-Options here comes back on it. So
+   * a CSP added here would govern a page this project does not author.
+   *
+   * That page (462 bytes) loads two relative scripts, which `'self'` covers
+   * fine, and one INLINE script carrying `nonce="firebase-auth-helper"` —
+   * a nonce Firebase chose, not us. Per CSP3, a `script-src` containing any
+   * `nonce-` source makes `'unsafe-inline'` be ignored. So the moment anyone
+   * writes the nonce-based policy — the only kind worth enforcing — that
+   * inline script has no nonce we can emit, and sign-in breaks on the redirect
+   * back from Google, which no local test reaches.
+   *
+   * The obvious escape hatch is worthless: allowlisting the literal
+   * `'nonce-firebase-auth-helper'` works, but a constant, public nonce is
+   * `'unsafe-inline'` with extra steps for anyone who can read the header.
+   *
+   * So the decision that comes FIRST is architectural — stop proxying the
+   * handler, or accept `'unsafe-inline'` permanently — and it is not a
+   * decision to make while writing a header. Measured on this origin and
+   * independently by the Stock session, which ships the same rewrite WITH a
+   * policy and hit the same wall from the other side (their `f8b2f83`).
+   *
+   * Two more things for whoever takes it. `connect-src` has to include the
+   * EMULATOR hosts, and only when they are in use: Stock's report-only run
+   * produced twelve violations, every one of them the emulator, and the
+   * symptom is not an error anyone sees — it is Firestore never connecting and
+   * a screen with nothing on it. And a CSP is one of the copies of those port
+   * numbers that CANNOT read `firebase.json`, like `ci.yml`'s `wait-on` — the
+   * two that broke on both sides are exactly the two that are not code, so add
+   * it to `emulator-ports.test.ts` the day it exists.
    *
    * X-Frame-Options does not affect sign-in: the handler is a top-level
    * navigation (popup or redirect), never an iframe.

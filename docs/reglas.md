@@ -413,6 +413,13 @@ acaba de pedir.
   emulador arriba escuchando en otro lado. **Una guarda que dice "todas" hay
   que enseñarle cuáles son todas**, y el número que uno cree es el que conviene
   desconfiar.
+- **Y las copias que no son código son las que se olvidan.** La sesión Stock
+  hizo el mismo movimiento en su proyecto y tenía nueve copias; de las nueve,
+  las dos que le fallaron son las dos que no son código: el `wait-on` del CI y
+  la CSP. Es la misma que falló acá. Un refactor de código nunca las toca, un
+  grep del nombre de la variable no las encuentra, y las dos leen el puerto
+  como texto en un archivo de config. Cuando hagas la lista, empezá por lo que
+  no es código.
 - **Un fallback silencioso a "la primera cuenta" siembra el hogar para
   cualquiera.** `seed-emulator.mjs` buscaba `simulador@test.dev` y caía a
   `userInfo[0]`; la suite e2e deja una cuenta por test (55 tras una corrida), y
@@ -420,6 +427,18 @@ acaba de pedir.
   app encuentra sólo los sobrantes del e2e. El hogar quedaba a nombre de un
   "Bank Tester" y la app mostraba el onboarding sin ninguna pista. Ahora falla y
   dice qué esperar.
+- **No tenemos Content-Security-Policy, y el motivo es una contradicción, no
+  una tarea pendiente.** Proxeamos el handler de Firebase Auth por nuestro
+  origen, y como los headers salen con `source: "/:path*"`, una CSP nuestra
+  gobernaría esa página: `curl /__/auth/handler` devuelve nuestro
+  X-Frame-Options. Esa página trae un script inline con
+  `nonce="firebase-auth-helper"`, elegido por Firebase. Por CSP3, **cualquier
+  fuente `nonce-` en `script-src` hace que `'unsafe-inline'` se ignore**, así
+  que la única policy que valdría enforcar es la que rompe el sign-in — y
+  rompe en el redirect de vuelta de Google, que ningún test local alcanza.
+  Permitir el nonce literal no arregla nada: un nonce constante y público es
+  `'unsafe-inline'` con pasos extra. Primero se decide si se sigue proxeando el
+  handler; recién después se escribe un header.
 - **Y para leer las cuentas del emulador de auth el endpoint es
   `identitytoolkit.googleapis.com/v1/projects/{p}/accounts:query` (POST).**
   `/emulator/v1/projects/{p}/accounts` contesta 200 con una lista vacía, así que
