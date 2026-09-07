@@ -340,8 +340,18 @@ acaba de pedir.
   por qué la lista de cuentas queda vacía. La lista vacía es la consecuencia.
   Leerla como la causa mandó dos veces a la instrucción equivocada. Descartado
   con evidencia: no es el keychain bloqueado (está en `no-timeout`) ni el
-  script (nunca escribe al keychain). `install-ios.sh` ahora chequea el ítem
-  antes de compilar y dice qué falta.
+  script (nunca escribe al keychain). `install-ios.sh` lo detecta leyendo el
+  LOG y dice qué falta.
+- **Y el chequeo "prolijo" de eso estaba mal: la credencial no se puede ver
+  desde el CLI.** Puse un pre-flight con
+  `security find-generic-password -l Xcode-Username` para fallar en un segundo
+  en vez de compilar dos minutos. Fallaba SIEMPRE: Xcode guarda esa credencial
+  en el **data-protection keychain**, que `security dump-keychain` no enumera —
+  con la firma andando perfecto, el ítem tampoco aparece. Lo descubrí porque
+  después de que Cristian volviera a firmar el chequeo seguía diciendo que
+  faltaba, y saltearlo instaló sin problemas. Un detector que no puede ver lo
+  que mide no es un detector; el log es el único lugar donde ese hecho es
+  observable desde acá.
 
 ## 8. Secretos
 

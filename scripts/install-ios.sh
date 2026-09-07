@@ -38,42 +38,6 @@ PROFILES="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
 STASH="$(mktemp -d)/profiles"
 BUNDLE_ID="dev.cardozo.gastosdiarios"
 
-# The signing credential, checked BEFORE anything is compiled or moved.
-#
-# When it is missing, xcodebuild compiles the whole project and then fails with
-# "No Accounts: Add a new account in Accounts settings" — which reads as if
-# Xcode had never been signed in. It has: the account is in Xcode's prefs and
-# the log says exactly what is wrong,
-#
-#   DVTDeveloperAccountManager: Failed to load credentials for <uuid>:
-#   "Invalid credentials in keychain ... missing Xcode-Username"
-#
-# and then xcodebuild PRUNES the account it could not authenticate, which is
-# why the account list reads empty afterwards. The empty list is the
-# consequence, not the cause — and reading it as the cause sent this script's
-# operator to the wrong instruction twice.
-#
-# What removes the keychain items is not established. It is not the keychain
-# locking (it is unlocked, no-timeout) and it is not this script (which never
-# writes to the keychain). The likeliest explanation is the free tier's session
-# being invalidated and Xcode discarding the credential on the rejection —
-# same family as the seven-day profiles.
-if ! security find-generic-password -l "Xcode-Username" >/dev/null 2>&1; then
-  cat <<'MSG'
-No está la credencial de firma en el keychain (falta el ítem "Xcode-Username").
-
-La cuenta puede seguir figurando en Xcode; lo que se perdió es su credencial,
-así que xcodebuild no puede pedir un perfil nuevo. Se arregla volviendo a
-firmar:
-
-  Xcode → Settings → Accounts → tu Apple ID → Sign In
-
-y después correr este script de nuevo. No se compiló nada ni se movió ningún
-perfil, así que no se gastaron días de firma.
-MSG
-  exit 1
-fi
-
 mkdir -p "$STASH"
 restore_profiles() {
   if compgen -G "$STASH/*.mobileprovision" > /dev/null; then
@@ -107,7 +71,35 @@ if [[ $BUILD_STATUS -ne 0 ]]; then
   echo "BUILD FALLÓ (exit $BUILD_STATUS). Últimas líneas:"
   grep -E "error:|No Accounts" "$DERIVED.log" | head -5 || tail -5 "$DERIVED.log"
   echo
-  echo "Si dice 'No Accounts': Xcode → Settings → Accounts, agregá el Apple ID."
+  # "No Accounts" is xcodebuild's message and it is misleading: Xcode HAS the
+  # account — its prefs hold the uuid — and what it could not do is load the
+  # account's credential. The log says so a few lines earlier,
+  #
+  #   DVTDeveloperAccountManager: Failed to load credentials for <uuid>:
+  #   "Invalid credentials in keychain ... missing Xcode-Username"
+  #
+  # and xcodebuild then PRUNES the account it could not authenticate, which is
+  # why the account list reads empty afterwards. The empty list is the
+  # consequence; reading it as the cause sent this script's operator to the
+  # wrong instruction twice.
+  #
+  # Checked from the LOG rather than from the keychain. A pre-flight
+  # `security find-generic-password -l Xcode-Username` looked like the tidier
+  # answer and was wrong: Xcode keeps that credential in the data-protection
+  # keychain, which the `security` CLI cannot enumerate at all, so the check
+  # failed even with signing working perfectly. The log is the only place the
+  # fact is actually observable from here.
+  if grep -q "missing Xcode-Username\|No Accounts" "$DERIVED.log"; then
+    cat <<'MSG'
+La cuenta está en Xcode pero se perdió su credencial del keychain, así que
+xcodebuild no puede pedir un perfil nuevo. Se arregla volviendo a firmar:
+
+  Xcode → Settings → Accounts → tu Apple ID → Sign In
+
+y corriendo este script otra vez. (Pasa cada tantas horas con la cuenta
+gratuita; ver docs/reglas.md.)
+MSG
+  fi
   exit "$BUILD_STATUS"
 fi
 
