@@ -1004,33 +1004,37 @@ export function chargeIdFromAutoExpense(expenseId: string): string | null {
 }
 
 /**
- * File a charge as an expense, because a rule recognised it.
+ * File a charge as an expense.
  *
  * One batch, because the two halves cannot be allowed to separate: an expense
- * without the charge dismissed would be filed again on the next open, and a
- * charge dismissed without the expense would lose the money silently.
+ * without the charge dismissed would be offered again, and a charge dismissed
+ * without the expense would lose the money silently.
  *
  * The charge is DISMISSED rather than deleted, which is what makes the undo
  * possible — it is the same 48-hour recoverable window a member gets when they
  * discard a charge by hand, expiring by the same sweep. See lib/bank-charges.ts.
+ *
+ * One function for both ways in, because they differ by one field: a rule
+ * recognised it (`rule` given, and the expense records which), or somebody
+ * pressed "Crear gasto" on it. Two copies of a batch that has to stay atomic
+ * is how the halves come apart.
  */
-export async function fileRecurringExpense(
+export async function fileChargeAsExpense(
   db: Firestore,
   householdId: string,
   uid: string,
   charge: { id: string; usdCents: number; date: string },
-  rule: { id: string; categoryId: string; note: string },
-  amountAudCents: number,
-  /** True when the amount came from the learned rate rather than the rule. */
-  estimated = false,
+  expense: { categoryId: string; note: string; amountAudCents: number },
+  /** The rule that recognised it, when one did. */
+  rule?: { id: string; estimated: boolean },
 ): Promise<void> {
   const batch = writeBatch(db);
   batch.set(
     doc(db, "households", householdId, "expenses", autoExpenseId(charge.id)),
     {
-      amountCents: amountAudCents,
-      categoryId: rule.categoryId,
-      note: rule.note,
+      amountCents: expense.amountAudCents,
+      categoryId: expense.categoryId,
+      note: expense.note,
       // The charge's own date, already in the household timezone — the
       // ingestion converted it. Never today's: a charge that arrives on Monday
       // for a Saturday purchase belongs to Saturday's period.
@@ -1039,10 +1043,10 @@ export async function fileRecurringExpense(
       // What the bank actually charged, so the pairing is the verification.
       usdCents: charge.usdCents,
       verified: true,
-      autoRuleId: rule.id,
-      // Absent rather than false: the rules accept only `true`, so that the
-      // two spellings of "no" cannot disagree.
-      ...(estimated ? { autoEstimated: true } : {}),
+      ...(rule === undefined ? {} : { autoRuleId: rule.id }),
+      // Absent rather than false: the rules accept only `true`, so the two
+      // spellings of "no" cannot disagree.
+      ...(rule?.estimated === true ? { autoEstimated: true } : {}),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     },
@@ -1051,6 +1055,26 @@ export async function fileRecurringExpense(
     dismissedAt: serverTimestamp(),
   });
   await batch.commit();
+}
+
+/** A charge a recurring rule recognised. */
+export async function fileRecurringExpense(
+  db: Firestore,
+  householdId: string,
+  uid: string,
+  charge: { id: string; usdCents: number; date: string },
+  rule: { id: string; categoryId: string; note: string },
+  amountAudCents: number,
+  estimated = false,
+): Promise<void> {
+  await fileChargeAsExpense(
+    db,
+    householdId,
+    uid,
+    charge,
+    { categoryId: rule.categoryId, note: rule.note, amountAudCents },
+    { id: rule.id, estimated },
+  );
 }
 
 /**

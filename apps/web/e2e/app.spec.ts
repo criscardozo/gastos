@@ -306,7 +306,11 @@ test("a bank charge is matched to the expense it paid for", async ({
   // The panel shows up on its own (live listener) with the learned rate.
   await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible();
   await expect(page.getByText(/Tasa del banco aprendida/)).toBeVisible();
-  await page.getByRole("button", { name: "Revisar" }).click();
+  // No "Revisar" any more: the panel opens itself when something is waiting,
+  // which is what pressing that used to be for. Waiting on a row instead of a
+  // toggle also says what the test actually needs.
+  await expect(page.getByRole("button", { name: /Descartar/ }).first())
+    .toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("US$ 41,54")).toBeVisible();
 
   // Discarding is recoverable for 48 hours. Worth an end-to-end pass because
@@ -1907,7 +1911,11 @@ test("charges are routed by the card they came from", async ({ page, request }) 
   // Gastos now offers the debit charge and the orphan — never the credit one.
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
   await expect(page.getByText("2 cargos del banco sin asignar")).toBeVisible();
-  await page.getByRole("button", { name: "Revisar" }).click();
+  // No "Revisar" any more: the panel opens itself when something is waiting,
+  // which is what pressing that used to be for. Waiting on a row instead of a
+  // toggle also says what the test actually needs.
+  await expect(page.getByRole("button", { name: /Descartar/ }).first())
+    .toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("COLES 0831")).toBeVisible();
   await expect(page.getByText("TIENDA RARA")).toBeVisible();
   await expect(page.getByText("STEAM")).toBeHidden();
@@ -2079,7 +2087,11 @@ test("a rule made from a charge files that charge on the spot", async ({
     timeout: 20_000,
   });
   // The panel is collapsed by default; "Revisar" is what opens it.
-  await page.getByRole("button", { name: "Revisar" }).click();
+  // No "Revisar" any more: the panel opens itself when something is waiting,
+  // which is what pressing that used to be for. Waiting on a row instead of a
+  // toggle also says what the test actually needs.
+  await expect(page.getByRole("button", { name: /Descartar/ }).first())
+    .toBeVisible({ timeout: 20_000 });
 
   // The icon ON the charge, named after it.
   await page
@@ -2103,5 +2115,79 @@ test("a rule made from a charge files that charge on the spot", async ({
       name: /Verificado.*Opal Auckland St, \$ ?15,00/,
     }),
   ).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
+});
+
+test("a charge with nothing to match is created as its own expense", async ({
+  page,
+  request,
+}) => {
+  // The case the button exists for. Before it, a charge with no counterpart
+  // could only be DISCARDED — which says "this was not ours" about a real
+  // purchase nobody had entered yet.
+  const email = `e2e-create-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Create Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, {
+    headers: { Authorization: "Bearer owner" },
+  });
+  const docs = (await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[];
+  const mine = docs.find((d) => d.fields.name.stringValue === "Hogar de Create");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Australia/Sydney",
+  }).format(new Date());
+  const created = await request.post(
+    `${REST}/households/${householdId}/bankCharges?documentId=gmail-new1`,
+    {
+      headers: { Authorization: "Bearer owner" },
+      data: {
+        fields: {
+          usdCents: { integerValue: "3250" },
+          date: { stringValue: today },
+          merchant: { stringValue: "BUNNINGS ALEXANDRIA" },
+          importedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+  expect(created.ok()).toBe(true);
+
+  // The ledger is empty, so there is nothing this charge could be matched to.
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+
+  // The panel opens itself, because there is something waiting.
+  await expect(
+    page.getByRole("button", { name: /Crear gasto — BUNNINGS ALEXANDRIA/ }),
+  ).toBeVisible({ timeout: 20_000 });
+  await page
+    .getByRole("button", { name: /Crear gasto — BUNNINGS ALEXANDRIA/ })
+    .click();
+
+  const dialog = page.getByRole("dialog", { name: "Crear gasto" });
+  // Nothing verified yet, so there is no rate and no figure to suggest.
+  await expect(dialog.getByLabel("Importe en AUD")).toHaveValue("");
+  // The note is title-cased from what the bank shouted.
+  await expect(dialog.getByLabel("Nota")).toHaveValue("Bunnings Alexandria");
+  await dialog.getByLabel("Importe en AUD").fill("50,00");
+  await dialog.getByRole("button", { name: "Crear gasto" }).click();
+
+  // Filed, verified by the bank's own figure, and the charge is gone.
+  await expect(
+    page.getByRole("button", {
+      name: /Verificado.*Bunnings Alexandria, \$ ?50,00/,
+    }),
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("US$ 32,50").first()).toBeVisible();
   await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
 });

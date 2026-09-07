@@ -426,7 +426,12 @@
     "suggested": "Suggested · rate {rate} · {score}%",
     "allClear": "Nothing pending",
     "fetchNow": "Fetch from the bank",
-    "fetching": "Fetching…"
+    "fetching": "Fetching…",
+    "createExpense": "Create expense",
+    "audAmount": "AUD amount",
+    "audFromRate": "Estimated at the {rate} rate learned from your already-verified expenses. Change it if that is not what it was.",
+    "note": "Note",
+    "category": "Category"
   },
   "detail": {
     "title": "Expense detail",

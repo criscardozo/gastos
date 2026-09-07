@@ -426,7 +426,12 @@
     "suggested": "Sugerido · tasa {rate} · {score}%",
     "allClear": "Sin cargos pendientes",
     "fetchNow": "Traer del banco",
-    "fetching": "Buscando…"
+    "fetching": "Buscando…",
+    "createExpense": "Crear gasto",
+    "audAmount": "Importe en AUD",
+    "audFromRate": "Estimado con la tasa {rate} que aprendimos de tus gastos ya verificados. Cambialo si no fue eso.",
+    "note": "Nota",
+    "category": "Categoría"
   },
   "detail": {
     "title": "Detalle del gasto",

@@ -14,12 +14,15 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
+import { CreateFromChargeDialog } from "@/components/create-from-charge-dialog";
 import { useAppError } from "@/components/app-error";
+import { useAuth } from "@/components/providers";
 import { DismissedCharges } from "@/components/dismissed-charges";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   assignBankCharge,
   dismissBankCharge,
+  fileChargeAsExpense,
   requestBankIngest,
   restoreBankCharge,
 } from "@/lib/firebase/mutations";
@@ -77,7 +80,16 @@ export function BankChargesPanel({
   const t = useTranslations("bank");
   const tRecurring = useTranslations("recurring");
   const { write } = useAppError();
-  const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+  // Open when there is something waiting, closed when there is not — and once
+  // you have collapsed or expanded it by hand, that wins.
+  //
+  // Not `useState(pending.length > 0)`: an initialiser runs once, and the
+  // charges arrive from a listener a moment later, so the panel would have
+  // decided it was empty before the data came. Null means "nobody has said".
+  const [openedByHand, setOpenedByHand] = useState<boolean | null>(null);
+  /** The charge whose "Crear gasto" dialog is up. */
+  const [creatingFrom, setCreatingFrom] = useState<string | null>(null);
   /** Manual overrides, charge id → expense id ("" = none chosen). */
   const [choice, setChoice] = useState<Record<string, string>>({});
 
@@ -95,6 +107,9 @@ export function BankChargesPanel({
     () => partitionCharges(mine, new Date()),
     [mine],
   );
+  // Derived, so a charge arriving after the first render opens the panel.
+  const open = openedByHand ?? pending.length > 0;
+
   const suggestions = useMemo(
     () => suggestMatches(pending, expenses, rate),
     [pending, expenses, rate],
@@ -207,7 +222,7 @@ export function BankChargesPanel({
         {pending.length > 0 && (
           <button
             type="button"
-            onClick={() => setOpen(!open)}
+            onClick={() => setOpenedByHand(!open)}
             className="rounded-full border border-pill bg-surface px-3.5 py-1.5 text-[12.5px] font-bold text-ink"
           >
             {open ? t("hide") : t("review")}
@@ -299,6 +314,20 @@ export function BankChargesPanel({
                   </button>
                   <button
                     type="button"
+                    onClick={() => setCreatingFrom(charge.id)}
+                    /* Named after its charge: there is one per row, and
+                       "Crear gasto" alone says nothing about which. */
+                    aria-label={`${t("createExpense")} — ${
+                      charge.merchant !== ""
+                        ? charge.merchant
+                        : formatUsd(charge.usdCents, locale)
+                    }`}
+                    className="text-[12.5px] font-bold text-accent-strong"
+                  >
+                    {t("createExpense")}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => discard(charge)}
                     className="text-[12.5px] font-semibold text-ink-2 disabled:opacity-40"
                   >
@@ -310,6 +339,35 @@ export function BankChargesPanel({
           })}
         </div>
       )}
+
+      {creatingFrom !== null &&
+        (() => {
+          const charge = pending.find((c) => c.id === creatingFrom);
+          if (charge === undefined) return null;
+          return (
+            <CreateFromChargeDialog
+              charge={charge}
+              household={household}
+              locale={locale}
+              learnedRate={rate}
+              onCreate={(input) => {
+                const fb = getFirebaseClient();
+                if (fb === null || user === null) return;
+                write(
+                  fileChargeAsExpense(
+                    fb.db,
+                    household.id,
+                    user.uid,
+                    charge,
+                    input,
+                  ),
+                );
+                setCreatingFrom(null);
+              }}
+              onClose={() => setCreatingFrom(null)}
+            />
+          );
+        })()}
 
       <DismissedCharges
         charges={dismissed}
