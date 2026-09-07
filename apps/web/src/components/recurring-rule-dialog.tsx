@@ -20,6 +20,19 @@ import { formatCents, parseAmountToCents } from "@/lib/money";
 import { matchesPattern } from "@/lib/recurring";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
+/**
+ * "OPAL AUCKLAND ST" → "Opal Auckland St".
+ *
+ * Only for the NOTE, which is what shows in Historial — the bank shouts and a
+ * ledger should not. The pattern is left exactly as the bank writes it,
+ * because that one has to match.
+ */
+function titleCase(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/(^|\s)(\p{L})/gu, (_, sep, first) => sep + first.toUpperCase());
+}
+
 /** Integer cents back to an editable string ("1500" → "15,00"). */
 function centsToInput(cents: number | null, locale: string): string {
   if (cents === null) return "";
@@ -66,7 +79,9 @@ export function RecurringRuleDialog({
   const tCat = useTranslations("categories");
 
   const [pattern, setPattern] = useState(rule?.pattern ?? seed?.merchant ?? "");
-  const [note, setNote] = useState(rule?.note ?? seed?.merchant ?? "");
+  const [note, setNote] = useState(
+    rule?.note ?? (seed === undefined ? "" : titleCase(seed.merchant)),
+  );
   const [categoryId, setCategoryId] = useState(
     rule?.categoryId ?? Object.keys(household.categories)[0] ?? "",
   );

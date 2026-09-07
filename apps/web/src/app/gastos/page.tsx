@@ -36,6 +36,8 @@ import {
   type VerificationFilter,
 } from "./pieces";
 import { visibleExpenses } from "@/lib/expense-list";
+import { learnRate } from "@/lib/bank-match";
+import { claimsOfOneRule } from "@/lib/recurring";
 import { RecurringPrompt } from "@/components/recurring-prompt";
 import { RecurringRuleDialog } from "@/components/recurring-rule-dialog";
 import { useRecurringRules } from "@/lib/firebase/hooks";
@@ -169,6 +171,10 @@ export default function ExpensesPage() {
   /* Which rows the screen shows, and the days they print under. The filters,
      the sort and the grouping live in lib/expense-list.ts, where they can be
      tested — see expense-list.test.ts. */
+  // The rate the household's own verified pairs reveal — the same one the
+  // charges panel matches with, off the expenses already in memory.
+  const learnedRate = learnRate(expenses);
+
   const { rows: sorted, days } = visibleExpenses(expenses, {
     category: categoryFilter,
     person: personFilter,
@@ -516,6 +522,15 @@ export default function ExpensesPage() {
               <Icon name="autorenew" size={13} />
             </button>
           )}
+          {/* An amount worked out from the learned rate, not one anybody
+              stated. Said on the row rather than only in the detail, because
+              an estimate nobody can see is just a number — and the row is
+              where you would notice it was off. Tapping the row edits it. */}
+          {e.autoEstimated && (
+            <span className="flex-none text-[11px] font-semibold text-warn-text">
+              {t("estimated")}
+            </span>
+          )}
           {e.pendingWrite && (
             <span
               className="flex flex-none items-center gap-1 text-[11px] font-semibold text-ink-3"
@@ -755,7 +770,40 @@ export default function ExpensesPage() {
           onSave={(input) => {
             const fb = getFirebaseClient();
             if (fb === null || user === null) return;
-            write(addRecurringRule(fb.db, household.id, user.uid, input));
+            // Save it AND file what it already recognises. The icon that
+            // opened this sits on a pending charge, so that charge is the
+            // whole reason the rule exists — leaving it in the list until the
+            // next launch made the rule look like it had not worked.
+            write(
+              (async () => {
+                const ruleId = await addRecurringRule(
+                  fb.db,
+                  household.id,
+                  user.uid,
+                  input,
+                );
+                for (const claim of claimsOfOneRule(
+                  charges.filter(isPending),
+                  { id: ruleId, ...input },
+                  learnedRate,
+                )) {
+                  if (claim.amountAudCents === null) continue;
+                  await fileRecurringExpense(
+                    fb.db,
+                    household.id,
+                    user.uid,
+                    claim.charge,
+                    {
+                      id: ruleId,
+                      categoryId: input.categoryId,
+                      note: input.note,
+                    },
+                    claim.amountAudCents,
+                    claim.estimated,
+                  );
+                }
+              })(),
+            );
             setRuleSeed(null);
           }}
           onDelete={null}
@@ -774,8 +822,9 @@ export default function ExpensesPage() {
         <RecurringPrompt
           charges={charges.filter(isPending)}
           rules={recurringRules}
+          learnedRate={learnedRate}
           locale={locale}
-          onFile={async (charge, rule, amountAudCents) => {
+          onFile={async (charge, rule, amountAudCents, estimated) => {
             const fb = getFirebaseClient();
             if (fb === null || user === null) return;
             await fileRecurringExpense(
@@ -785,6 +834,7 @@ export default function ExpensesPage() {
               charge,
               rule,
               amountAudCents,
+              estimated,
             );
           }}
           onDismissed={() => setPromptDone(true)}

@@ -2009,3 +2009,34 @@ describe("filing a charge a rule recognised", () => {
     await assertFails(batch.commit());
   });
 });
+
+describe("an amount the rule did not state", () => {
+  beforeEach(async () => {
+    await seed(env, async (admin) => {
+      await setDoc(doc(admin, "households", HOUSEHOLD), householdDoc(ALICE));
+    });
+  });
+
+  const ref = () => doc(db(env, ALICE), "households", HOUSEHOLD, "expenses", "e1");
+
+  it("may be flagged as estimated, alongside the rule that filed it", async () => {
+    await assertSucceeds(
+      setDoc(ref(), expenseDoc(ALICE, { autoRuleId: "r1", autoEstimated: true })),
+    );
+  });
+
+  it("cannot be flagged on an expense no rule filed", async () => {
+    // "Estimated" is only meaningful about an automatic entry. On a typed one
+    // it would be a claim about a figure the person in front of the keyboard
+    // stated themselves.
+    await assertFails(setDoc(ref(), expenseDoc(ALICE, { autoEstimated: true })));
+  });
+
+  it("is only ever true, never false", async () => {
+    // False and absent would mean the same thing, and two spellings of "no" is
+    // how a filter comes to disagree with itself.
+    await assertFails(
+      setDoc(ref(), expenseDoc(ALICE, { autoRuleId: "r1", autoEstimated: false })),
+    );
+  });
+});

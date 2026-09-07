@@ -113,7 +113,8 @@
     "exportUnverifiedConfirm": "{count, plural, one {Hay # gasto sin el USD del banco: su columna USD va a quedar vacía. ¿Exportar igual?} other {Hay # gastos sin el USD del banco: sus columnas USD van a quedar vacías. ¿Exportar igual?}}",
     "groupMonths": "Meses",
     "groupPeriods": "Períodos",
-    "undoAuto": "Deshacer la carga automática"
+    "undoAuto": "Deshacer la carga automática",
+    "estimated": "estimado"
   },
   "services": {
     "title": "Servicios",

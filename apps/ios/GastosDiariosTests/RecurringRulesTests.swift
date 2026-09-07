@@ -19,10 +19,18 @@ final class RecurringRulesTests: XCTestCase {
             let merchant: String
             let expected: String?
         }
+        struct EstimateCase: Decodable {
+            let name: String
+            let usdCents: Int
+            let rate: Double?
+            let expected: Int?
+        }
         struct Matches: Decodable { let cases: [MatchCase] }
+        struct Estimate: Decodable { let cases: [EstimateCase] }
         struct FirstMatch: Decodable { let cases: [FirstCase] }
         let matches: Matches
         let firstMatch: FirstMatch
+        let estimate: Estimate
     }
 
     private struct Rule: RecurringRuleLike {
@@ -46,8 +54,10 @@ final class RecurringRulesTests: XCTestCase {
     /// green while covering nothing — the same guard the period vectors carry.
     func testEveryVectorIsActuallyRun() {
         XCTAssertEqual(
-            Self.vectors.matches.cases.count + Self.vectors.firstMatch.cases.count,
-            22
+            Self.vectors.matches.cases.count
+                + Self.vectors.firstMatch.cases.count
+                + Self.vectors.estimate.cases.count,
+            30
         )
     }
 
@@ -68,6 +78,16 @@ final class RecurringRulesTests: XCTestCase {
                 in: c.patterns.map { Rule(pattern: $0, amountAudCents: 1500) }
             )
             XCTAssertEqual(chosen?.pattern, c.expected, c.name)
+        }
+    }
+
+    func testEstimatesMatchTheSharedVectors() {
+        for c in Self.vectors.estimate.cases {
+            XCTAssertEqual(
+                RecurringRules.estimateAudCents(usdCents: c.usdCents, rate: c.rate),
+                c.expected,
+                "\(c.name) — US$ \(c.usdCents) at \(String(describing: c.rate))"
+            )
         }
     }
 

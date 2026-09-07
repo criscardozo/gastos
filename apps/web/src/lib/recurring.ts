@@ -119,31 +119,95 @@ export interface MatchableCharge {
   merchant: string;
 }
 
-/** A pending charge and the rule that claims it. */
+/**
+ * The AUD a charge probably was, when the rule does not say.
+ *
+ * The household's own verified pairs reveal the rate the bank uses
+ * (`BankMatch.learnRate`), so a charge a rule recognises can be filed at that
+ * rate instead of waiting for somebody to type a figure — which is what left
+ * charges hanging in the list.
+ *
+ * Null when there is nothing to estimate from: no rate learned yet, a rate
+ * that is not a rate, or an estimate that would round to zero. Zero would read
+ * as an expense that cost nothing, and the rules refuse it anyway.
+ */
+export function estimateAudCents(
+  usdCents: number,
+  rate: number | null,
+): number | null {
+  if (rate === null || rate <= 0) return null;
+  const cents = Math.round(usdCents / rate);
+  return cents > 0 ? cents : null;
+}
+
+/** A pending charge, the rule that claims it, and what to file it for. */
 export interface ClaimedCharge<T extends MatchableCharge> {
   charge: T;
   rule: RecurringRule;
+  /** Null when neither the rule nor the learned rate can price it. */
+  amountAudCents: number | null;
+  /** True when the amount is a division rather than a figure anybody stated. */
+  estimated: boolean;
 }
 
 /**
- * The pending charges a rule claims, split by whether the rule can answer on
- * its own.
+ * The pending charges a rule claims, split by whether they can be filed.
  *
- * `ready` has an amount and can be filed without asking. `asking` matched a
- * rule that carries no amount, so it needs the one thing only a person knows —
- * those stay PENDING in the charges list rather than becoming half an expense,
- * and the prompt on open is what collects them.
+ * `ready` can: either the rule states the amount, or the household's own
+ * verified pairs reveal the rate and it is worked out from the bank's USD.
+ * `asking` is what is left — a rule with no amount and nothing to estimate
+ * from, which happens only before anything has ever been verified.
+ *
+ * The estimate exists because the alternative was leaving the charge in the
+ * pending list until somebody typed a figure, and a charge a rule already
+ * recognised sitting there unhandled is the thing this feature was supposed to
+ * remove.
  */
-export function claimCharges<T extends MatchableCharge>(
+export function claimCharges<T extends MatchableCharge & { usdCents: number }>(
   charges: readonly T[],
   rules: readonly RecurringRule[],
+  /** From BankMatch.learnRate — null until something has been verified. */
+  learnedRate: number | null,
 ): { ready: ClaimedCharge<T>[]; asking: ClaimedCharge<T>[] } {
   const ready: ClaimedCharge<T>[] = [];
   const asking: ClaimedCharge<T>[] = [];
   for (const charge of charges) {
     const rule = ruleForCharge(rules, charge.merchant);
     if (rule === null) continue;
-    (rule.amountAudCents === null ? asking : ready).push({ charge, rule });
+    if (rule.amountAudCents !== null) {
+      ready.push({
+        charge,
+        rule,
+        amountAudCents: rule.amountAudCents,
+        estimated: false,
+      });
+      continue;
+    }
+    const estimate = estimateAudCents(charge.usdCents, learnedRate);
+    const claim: ClaimedCharge<T> = {
+      charge,
+      rule,
+      amountAudCents: estimate,
+      estimated: estimate !== null,
+    };
+    (estimate === null ? asking : ready).push(claim);
   }
   return { ready, asking };
+}
+
+/**
+ * What a rule claims out of the charges waiting RIGHT NOW.
+ *
+ * Saving a rule used to change nothing until the app was next opened, which is
+ * exactly backwards: the way you make a rule is by seeing a charge you
+ * recognise and pressing the icon on it, so that charge is the first thing the
+ * rule should file. It sat in the pending list instead, and the rule looked
+ * like it had not worked.
+ */
+export function claimsOfOneRule<T extends MatchableCharge & { usdCents: number }>(
+  charges: readonly T[],
+  rule: RecurringRule,
+  learnedRate: number | null,
+): ClaimedCharge<T>[] {
+  return claimCharges(charges, [rule], learnedRate).ready;
 }

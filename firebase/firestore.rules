@@ -381,7 +381,7 @@ service cloud.firestore {
       // and that is exactly what the row has to say before somebody trusts a
       // figure they never entered. It is also what the undo reads.
       function isValidExpense(data) {
-        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt', 'usdCents', 'verified', 'autoRuleId'])
+        return data.keys().hasOnly(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt', 'usdCents', 'verified', 'autoRuleId', 'autoEstimated'])
           && data.keys().hasAll(['amountCents', 'categoryId', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt'])
           && data.amountCents is int
           && data.amountCents > 0 && data.amountCents <= 10000000
@@ -395,6 +395,14 @@ service cloud.firestore {
           && (!('autoRuleId' in data)
               || (data.autoRuleId is string
                   && data.autoRuleId.size() >= 1 && data.autoRuleId.size() <= 60))
+          // `autoEstimated` says the AUD is a DIVISION, not a figure anybody
+          // stated: the rule carried no amount, so it was worked out from the
+          // bank's USD and the rate the household's own verified pairs reveal.
+          // Only meaningful on an automatic entry, and only ever true — false
+          // would be the same as absent, and two spellings of "no" is how a
+          // filter comes to disagree with itself.
+          && (!('autoEstimated' in data)
+              || (data.autoEstimated == true && ('autoRuleId' in data)))
           && isValidVerification(data);
       }
 

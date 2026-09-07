@@ -113,7 +113,8 @@
     "exportUnverifiedConfirm": "{count, plural, one {# expense has no bank USD yet: its USD column will be blank. Export anyway?} other {# expenses have no bank USD yet: their USD columns will be blank. Export anyway?}}",
     "groupMonths": "Months",
     "groupPeriods": "Periods",
-    "undoAuto": "Undo the automatic entry"
+    "undoAuto": "Undo the automatic entry",
+    "estimated": "estimated"
   },
   "services": {
     "title": "Services",

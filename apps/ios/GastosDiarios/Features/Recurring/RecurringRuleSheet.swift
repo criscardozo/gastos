@@ -178,12 +178,12 @@ struct RecurringRuleSheet: View {
             .map { ($0.key, $0.value) }
     }
 
+    /// The display rule lives in `L10n.categoryName`, which prefixes the key
+    /// with `category.` — a second copy here passed the bare key, so `t("transport")`
+    /// fell through to its own fallback and the picker listed raw ids.
     private func categoryName(id: String, category: Category) -> String {
-        // A seed category carries a translatable key; one the household made
-        // carries a literal name. Neither is guaranteed, so the id is the last
-        // resort rather than a crash.
-        if let key = category.key { return l10n.t(key) }
-        return category.name ?? id
+        let name = l10n.categoryName(category)
+        return name.isEmpty ? id : name
     }
 
     /// What the pattern would claim right now, out of the charges waiting.
@@ -221,10 +221,21 @@ struct RecurringRuleSheet: View {
         // one-second edit — whereas a clever guess that drops the wrong half is
         // a rule that never fires and says nothing about why.
         pattern = rule?.pattern ?? seedMerchant ?? ""
-        note = rule?.note ?? seedMerchant ?? ""
+        // The note is what shows in Historial, so it is title-cased: the bank
+        // shouts and a ledger should not. The PATTERN stays exactly as the
+        // bank writes it, because that one has to match.
+        note = rule?.note ?? seedMerchant.map(Self.titleCased) ?? ""
         categoryId = rule?.categoryId ?? sortedCategories.first?.0 ?? ""
         asks = rule?.amountAudCents == nil
         if let cents = rule?.amountAudCents { amount.setAUDCents(cents) }
+    }
+
+    /// "OPAL AUCKLAND ST" → "Opal Auckland St".
+    private static func titleCased(_ text: String) -> String {
+        text.lowercased()
+            .split(separator: " ", omittingEmptySubsequences: false)
+            .map { $0.isEmpty ? "" : $0.prefix(1).uppercased() + $0.dropFirst() }
+            .joined(separator: " ")
     }
 
     private func save() {
@@ -234,12 +245,17 @@ struct RecurringRuleSheet: View {
                 rule.id, pattern: pattern, categoryId: categoryId,
                 note: note, amountAudCents: cents
             )
+            dismiss()
         } else {
-            model.addRecurringRule(
-                pattern: pattern, categoryId: categoryId,
-                note: note, amountAudCents: cents
-            )
+            // Saved AND applied: the icon that opens this sits on a pending
+            // charge, so that charge is the whole reason the rule exists.
+            let (p, c, n) = (pattern, categoryId, note)
+            Task { @MainActor in
+                await model.addRecurringRuleAndApply(
+                    pattern: p, categoryId: c, note: n, amountAudCents: cents
+                )
+            }
+            dismiss()
         }
-        dismiss()
     }
 }

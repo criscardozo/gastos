@@ -123,6 +123,12 @@ export interface Expense {
    * say before somebody trusts a figure they never entered.
    */
   autoRuleId: string | null;
+  /**
+   * The AUD is a division, not a figure anybody stated: the rule carried no
+   * amount, so it came from the bank's USD and the learned rate. Shown on the
+   * row so it can be corrected — an estimate nobody can see is just a number.
+   */
+  autoEstimated: boolean;
   /** Written locally but not yet acknowledged by the server — the expense is
    * queued offline. Local state, never a stored field. */
   pendingWrite: boolean;
@@ -378,6 +384,7 @@ export const expenseConverter = readOnly<Expense>((snap) => {
     updatedAt: (data.updatedAt as Timestamp | null) ?? null,
     // Absent on every expense a person typed, which is nearly all of them.
     autoRuleId: isString(data.autoRuleId) ? data.autoRuleId : null,
+    autoEstimated: data.autoEstimated === true,
     pendingWrite: snap.metadata.hasPendingWrites,
   };
   return expense;

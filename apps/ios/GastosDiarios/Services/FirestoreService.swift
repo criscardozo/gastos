@@ -882,6 +882,8 @@ final class FirestoreService {
         return fields
     }
 
+    /// Returns the new rule's id, so the caller can apply it straight away.
+    @discardableResult
     func addRecurringRule(
         householdId: String,
         uid: String,
@@ -889,15 +891,17 @@ final class FirestoreService {
         categoryId: String,
         note: String,
         amountAudCents: Int?
-    ) async throws {
+    ) async throws -> String {
         var fields = recurringFields(
             pattern: pattern, categoryId: categoryId,
             note: note, amountAudCents: amountAudCents
         )
         fields["createdBy"] = uid
         fields["createdAt"] = FieldValue.serverTimestamp()
-        try await db.collection("households").document(householdId)
-            .collection("recurringRules").addDocument(data: fields)
+        let ref = db.collection("households").document(householdId)
+            .collection("recurringRules").document()
+        try await ref.setData(fields)
+        return ref.documentID
     }
 
     func updateRecurringRule(
@@ -952,7 +956,9 @@ final class FirestoreService {
         uid: String,
         charge: BankCharge,
         rule: RecurringRuleDoc,
-        amountAudCents: Int
+        amountAudCents: Int,
+        /// True when the amount came from the learned rate, not the rule.
+        estimated: Bool = false
     ) async throws {
         // `id` is the document id or "" — a charge without one is not in
         // Firestore, so there is nothing to dismiss and nothing to file.
@@ -960,8 +966,7 @@ final class FirestoreService {
         guard !chargeId.isEmpty else { return }
         let household = db.collection("households").document(householdId)
         let batch = db.batch()
-        batch.setData(
-            [
+        var expense: [String: Any] = [
                 "amountCents": amountAudCents,
                 "categoryId": rule.categoryId,
                 "note": rule.note,
@@ -975,9 +980,14 @@ final class FirestoreService {
                 "usdCents": charge.usdCents,
                 "verified": true,
                 "autoRuleId": rule.id,
+                // Absent rather than false: the rules accept only `true`, so
+                // the two spellings of "no" cannot disagree.
                 "createdAt": FieldValue.serverTimestamp(),
                 "updatedAt": FieldValue.serverTimestamp(),
-            ],
+        ]
+        if estimated { expense["autoEstimated"] = true }
+        batch.setData(
+            expense,
             forDocument: household.collection("expenses")
                 .document(Self.autoExpenseId(chargeId: chargeId))
         )

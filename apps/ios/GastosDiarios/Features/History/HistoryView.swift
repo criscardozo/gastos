@@ -325,6 +325,17 @@ struct HistoryView: View {
             // is short: it lasts exactly as long as the charge does — 48 hours
             // — and then the sweep takes the charge and this becomes an
             // ordinary expense.
+            // An amount worked out from the learned rate, not one anybody
+            // stated. On the row rather than only in the detail, because an
+            // estimate nobody can see is just a number — and the row is where
+            // you would notice it was off.
+            if expense.isEstimated {
+                Text(l10n.t("recurring.estimated"))
+                    .appFont(11, .semibold)
+                    .foregroundStyle(Theme.amberText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             if expense.isAutomatic, let id = expense.id {
                 Button {
                     model.undoRecurring(expenseId: id)

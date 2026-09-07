@@ -72,6 +72,22 @@ enum RecurringRules {
         return true
     }
 
+    /// The AUD a charge probably was, when the rule does not say.
+    ///
+    /// The household's own verified pairs reveal the rate the bank uses
+    /// (`BankMatch.learnRate`), so a charge a rule recognises can be filed at
+    /// that rate instead of waiting for somebody to type a figure — which is
+    /// what left charges hanging in the list.
+    ///
+    /// Nil when there is nothing to estimate from: no rate learned yet, a rate
+    /// that is not a rate, or an estimate that would round to zero. Zero would
+    /// read as an expense that cost nothing, and the rules refuse it anyway.
+    static func estimateAudCents(usdCents: Int, rate: Double?) -> Int? {
+        guard let rate, rate > 0 else { return nil }
+        let cents = Int((Double(usdCents) / rate).rounded())
+        return cents > 0 ? cents : nil
+    }
+
     /// The rule that claims this charge, or nil.
     ///
     /// Ordered by how specific the pattern is — the longer one wins — and then

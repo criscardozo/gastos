@@ -4,25 +4,120 @@
   "matches": {
     "comment": "pattern x merchant -> does it match",
     "cases": [
-      { "name": "a bare pattern is a substring, so it finds the merchant's own wording", "pattern": "Opal", "merchant": "OPAL AUCKLAND ST", "expected": true },
-      { "name": "and it is case-insensitive in both directions", "pattern": "OPAL", "merchant": "opal auckland st", "expected": true },
-      { "name": "accents fold, because the bank does not spell them", "pattern": "Café", "merchant": "CAFE MARTINEZ", "expected": true },
-      { "name": "and fold the other way too", "pattern": "Cafe", "merchant": "CAFÉ MARTÍNEZ", "expected": true },
-      { "name": "a substring that is not there does not match", "pattern": "Opal", "merchant": "COLES 0831", "expected": false },
-      { "name": "trailing star anchors the start: Opal* is what the user wrote", "pattern": "Opal*", "merchant": "OPAL AUCKLAND ST", "expected": true },
-      { "name": "...and that anchor is what makes it refuse a mid-word hit", "pattern": "Opal*", "merchant": "TRANSPORT OPAL TOPUP", "expected": false },
-      { "name": "leading star anchors the end", "pattern": "*TOPUP", "merchant": "TRANSPORT OPAL TOPUP", "expected": true },
-      { "name": "a star in the middle spans whatever is between", "pattern": "OPAL*ST", "merchant": "OPAL AUCKLAND ST", "expected": true },
-      { "name": "a star matches nothing at all, so the exact word still passes", "pattern": "OPAL*", "merchant": "OPAL", "expected": true },
-      { "name": "two stars, both anchors gone: back to a substring", "pattern": "*AUCKLAND*", "merchant": "OPAL AUCKLAND ST", "expected": true },
-      { "name": "digits are part of the merchant and can be matched", "pattern": "COLES 0831", "merchant": "COLES 0831", "expected": true },
-      { "name": "spaces inside a pattern are literal", "pattern": "OPAL AUCKLAND", "merchant": "OPALAUCKLAND", "expected": false },
-      { "name": "surrounding whitespace is trimmed, because it is a typo not an intent", "pattern": "  Opal  ", "merchant": "OPAL AUCKLAND ST", "expected": true },
-      { "name": "an empty pattern matches NOTHING — it would otherwise claim every charge", "pattern": "", "merchant": "OPAL AUCKLAND ST", "expected": false },
-      { "name": "a pattern of only stars matches nothing, for the same reason", "pattern": "***", "merchant": "OPAL AUCKLAND ST", "expected": false },
-      { "name": "an empty merchant is matched by nothing", "pattern": "Opal", "merchant": "", "expected": false },
-      { "name": "regex characters are literal: a rule is not a regular expression", "pattern": "A+B", "merchant": "A+B STORE", "expected": true },
-      { "name": "...and a dot is a dot", "pattern": "ST.GEORGE", "merchant": "STXGEORGE", "expected": false }
+      {
+        "name": "a bare pattern is a substring, so it finds the merchant's own wording",
+        "pattern": "Opal",
+        "merchant": "OPAL AUCKLAND ST",
+        "expected": true
+      },
+      {
+        "name": "and it is case-insensitive in both directions",
+        "pattern": "OPAL",
+        "merchant": "opal auckland st",
+        "expected": true
+      },
+      {
+        "name": "accents fold, because the bank does not spell them",
+        "pattern": "Café",
+        "merchant": "CAFE MARTINEZ",
+        "expected": true
+      },
+      {
+        "name": "and fold the other way too",
+        "pattern": "Cafe",
+        "merchant": "CAFÉ MARTÍNEZ",
+        "expected": true
+      },
+      {
+        "name": "a substring that is not there does not match",
+        "pattern": "Opal",
+        "merchant": "COLES 0831",
+        "expected": false
+      },
+      {
+        "name": "trailing star anchors the start: Opal* is what the user wrote",
+        "pattern": "Opal*",
+        "merchant": "OPAL AUCKLAND ST",
+        "expected": true
+      },
+      {
+        "name": "...and that anchor is what makes it refuse a mid-word hit",
+        "pattern": "Opal*",
+        "merchant": "TRANSPORT OPAL TOPUP",
+        "expected": false
+      },
+      {
+        "name": "leading star anchors the end",
+        "pattern": "*TOPUP",
+        "merchant": "TRANSPORT OPAL TOPUP",
+        "expected": true
+      },
+      {
+        "name": "a star in the middle spans whatever is between",
+        "pattern": "OPAL*ST",
+        "merchant": "OPAL AUCKLAND ST",
+        "expected": true
+      },
+      {
+        "name": "a star matches nothing at all, so the exact word still passes",
+        "pattern": "OPAL*",
+        "merchant": "OPAL",
+        "expected": true
+      },
+      {
+        "name": "two stars, both anchors gone: back to a substring",
+        "pattern": "*AUCKLAND*",
+        "merchant": "OPAL AUCKLAND ST",
+        "expected": true
+      },
+      {
+        "name": "digits are part of the merchant and can be matched",
+        "pattern": "COLES 0831",
+        "merchant": "COLES 0831",
+        "expected": true
+      },
+      {
+        "name": "spaces inside a pattern are literal",
+        "pattern": "OPAL AUCKLAND",
+        "merchant": "OPALAUCKLAND",
+        "expected": false
+      },
+      {
+        "name": "surrounding whitespace is trimmed, because it is a typo not an intent",
+        "pattern": "  Opal  ",
+        "merchant": "OPAL AUCKLAND ST",
+        "expected": true
+      },
+      {
+        "name": "an empty pattern matches NOTHING — it would otherwise claim every charge",
+        "pattern": "",
+        "merchant": "OPAL AUCKLAND ST",
+        "expected": false
+      },
+      {
+        "name": "a pattern of only stars matches nothing, for the same reason",
+        "pattern": "***",
+        "merchant": "OPAL AUCKLAND ST",
+        "expected": false
+      },
+      {
+        "name": "an empty merchant is matched by nothing",
+        "pattern": "Opal",
+        "merchant": "",
+        "expected": false
+      },
+      {
+        "name": "regex characters are literal: a rule is not a regular expression",
+        "pattern": "A+B",
+        "merchant": "A+B STORE",
+        "expected": true
+      },
+      {
+        "name": "...and a dot is a dot",
+        "pattern": "ST.GEORGE",
+        "merchant": "STXGEORGE",
+        "expected": false
+      }
     ]
   },
   "firstMatch": {
@@ -30,20 +125,82 @@
     "cases": [
       {
         "name": "the more specific pattern wins over the looser one",
-        "patterns": ["Opal", "OPAL AUCKLAND"],
+        "patterns": [
+          "Opal",
+          "OPAL AUCKLAND"
+        ],
         "merchant": "OPAL AUCKLAND ST",
         "expected": "OPAL AUCKLAND"
       },
       {
         "name": "same length, so the alphabet decides and both clients agree",
-        "patterns": ["OPAL B", "OPAL A"],
+        "patterns": [
+          "OPAL B",
+          "OPAL A"
+        ],
         "merchant": "OPAL A OPAL B",
         "expected": "OPAL A"
       },
       {
         "name": "nothing matches, nothing is chosen",
-        "patterns": ["Opal", "Coles"],
+        "patterns": [
+          "Opal",
+          "Coles"
+        ],
         "merchant": "WOOLWORTHS 1234",
+        "expected": null
+      }
+    ]
+  },
+  "estimate": {
+    "comment": "When a rule carries no amount, the AUD is estimated from the bank's USD and the rate the household's own verified pairs reveal (BankMatch.learnRate). Integer cents, rounded half-up, because money is cents everywhere. A null rate means nothing has been verified yet and there is nothing to estimate from — the charge has to be asked about instead.",
+    "cases": [
+      {
+        "name": "the plain case: US$ 5,20 at 0.65 is $8,00",
+        "usdCents": 520,
+        "rate": 0.65,
+        "expected": 800
+      },
+      {
+        "name": "rounds to the nearest cent rather than truncating",
+        "usdCents": 521,
+        "rate": 0.65,
+        "expected": 802
+      },
+      {
+        "name": "rounds half up, so a half cent does not vanish",
+        "usdCents": 130,
+        "rate": 0.8,
+        "expected": 163
+      },
+      {
+        "name": "a rate above 1 is still just division",
+        "usdCents": 1000,
+        "rate": 1.25,
+        "expected": 800
+      },
+      {
+        "name": "nothing verified yet, nothing to estimate from",
+        "usdCents": 520,
+        "rate": null,
+        "expected": null
+      },
+      {
+        "name": "a zero rate is not a rate",
+        "usdCents": 520,
+        "rate": 0,
+        "expected": null
+      },
+      {
+        "name": "a negative rate is not a rate either",
+        "usdCents": 520,
+        "rate": -0.65,
+        "expected": null
+      },
+      {
+        "name": "an estimate never comes out as zero — it would read as free",
+        "usdCents": 1,
+        "rate": 900,
         "expected": null
       }
     ]

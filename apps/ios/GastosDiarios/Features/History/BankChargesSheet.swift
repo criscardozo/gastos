@@ -233,15 +233,43 @@ struct BankChargesSheet: View {
         let chosen = model.unverifiedExpenses.first { $0.id == chosenId }
         return Card(padding: EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)) {
             VStack(alignment: .leading, spacing: 12) {
-                // What the bank says.
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(MoneyFormatter.usd(charge.usdCents, locale: l10n.locale))
-                        .appFont(20, .bold)
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.ink)
-                    Text(chargeSubtitle(charge))
-                        .appFont(12)
-                        .foregroundStyle(Theme.inkTertiary)
+                // What the bank says, and the one action that is ABOUT the
+                // charge rather than about this instance of it.
+                //
+                // Up here rather than in the action row below, where it sat a
+                // thumb's width from Descartar — an irreversible-feeling press
+                // beside a harmless one, which is how you discard a charge you
+                // meant to make recurring. Making a rule is a settings act; it
+                // does not belong in the row of answers.
+                AdaptiveRow {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(MoneyFormatter.usd(charge.usdCents, locale: l10n.locale))
+                            .appFont(20, .bold)
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.ink)
+                        Text(chargeSubtitle(charge))
+                            .appFont(12)
+                            .foregroundStyle(Theme.inkTertiary)
+                    }
+                    AdaptiveGap()
+                    Button {
+                        seedMerchant = charge.merchant
+                    } label: {
+                        Image(systemName: "arrow.trianglehead.clockwise")
+                            .appFont(15, .semibold)
+                            .padding(7)
+                            .background(Theme.fill)
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Theme.inkSecondary)
+                    // Named after its charge, because there is one of these per
+                    // row: without it every button in the list is called
+                    // "Hacerlo recurrente" and only the row says which.
+                    .accessibilityLabel(
+                        "\(l10n.t("recurring.fromCharge")) — \(charge.merchant.isEmpty ? MoneyFormatter.usd(charge.usdCents, locale: l10n.locale) : charge.merchant)"
+                    )
+                    .disabled(charge.merchant.isEmpty)
                 }
 
                 Divider().overlay(Theme.separator)
@@ -295,26 +323,6 @@ struct BankChargesSheet: View {
                         model.assignBankCharge(charge, to: expenseId)
                         choice[charge.id] = nil
                     }
-                    // Turn this one into a rule, pre-filled from what is on
-                    // screen: the point is that the merchant is right there,
-                    // and retyping what you are looking at is the thing this
-                    // removes.
-                    Button {
-                        seedMerchant = charge.merchant
-                    } label: {
-                        Image(systemName: "arrow.trianglehead.2.clockwise")
-                            .appFont(15, .semibold)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Theme.inkSecondary)
-                    // Named after its charge, because there is one of these per
-                    // row: without it every button in the list is called
-                    // "Hacerlo recurrente" and only the row says which.
-                    .accessibilityLabel(
-                        "\(l10n.t("recurring.fromCharge")) — \(charge.merchant.isEmpty ? MoneyFormatter.usd(charge.usdCents, locale: l10n.locale) : charge.merchant)"
-                    )
-                    .disabled(charge.merchant.isEmpty)
-
                     Button(l10n.t("bank.discard")) {
                         model.discardBankCharge(charge)
                     }

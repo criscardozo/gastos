@@ -12,16 +12,21 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@/components/ui/icon";
 import { RecurringRuleDialog } from "@/components/recurring-rule-dialog";
 import { useAppError } from "@/components/app-error";
-import { useAuth } from "@/components/providers";
+import { useAuth, useHousehold } from "@/components/providers";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { useBankCharges, useRecurringRules } from "@/lib/firebase/hooks";
 import {
   addRecurringRule,
   deleteRecurringRule,
+  fileRecurringExpense,
   updateRecurringRule,
+  type RecurringRuleInput,
 } from "@/lib/firebase/mutations";
 import type { Household, RecurringRuleDoc } from "@/lib/firebase/converters";
 import { isPending } from "@/lib/bank-charges";
+import { learnRate } from "@/lib/bank-match";
+import { claimsOfOneRule } from "@/lib/recurring";
+import { useExpensesRange } from "@/lib/firebase/hooks";
 import { formatCents } from "@/lib/money";
 
 export function RecurringRulesCard({
@@ -34,9 +39,20 @@ export function RecurringRulesCard({
   const t = useTranslations("recurring");
   const tCat = useTranslations("categories");
   const { user } = useAuth();
+  const { currentPeriod } = useHousehold();
   const { write } = useAppError();
   const { rules } = useRecurringRules(household.id);
   const { charges } = useBankCharges(household.id);
+  // Only to learn the bank's rate, which is what prices a rule that states no
+  // amount. Bounded by the current period's dates like every other expense
+  // query — and it is the same query the summary runs, so in practice it is
+  // served from the cache rather than costing a read.
+  const { expenses } = useExpensesRange(
+    household.id,
+    currentPeriod?.startDate ?? null,
+    currentPeriod?.endDate ?? null,
+  );
+  const learnedRate = learnRate(expenses);
 
   const [editing, setEditing] = useState<RecurringRuleDoc | null>(null);
   const [adding, setAdding] = useState(false);
@@ -50,6 +66,41 @@ export function RecurringRulesCard({
     const def = household.categories[id];
     if (def === undefined) return id;
     return def.key !== undefined ? tCat(def.key) : def.name;
+  };
+
+  /**
+   * Save the rule and immediately file whatever it already recognises.
+   *
+   * The icon that opens this dialog sits ON a pending charge, so that charge is
+   * the whole reason the rule exists — leaving it in the list until the next
+   * launch made the rule look like it had not worked.
+   */
+  const saveAndApply = async (input: RecurringRuleInput, existingId?: string) => {
+    const fb = getFirebaseClient();
+    if (fb === null || user === null) return;
+    const ruleId =
+      existingId ??
+      (await addRecurringRule(fb.db, household.id, user.uid, input));
+    if (existingId !== undefined) {
+      await updateRecurringRule(fb.db, household.id, existingId, input);
+    }
+    const pending = charges.filter(isPending);
+    for (const claim of claimsOfOneRule(
+      pending,
+      { id: ruleId, ...input },
+      learnedRate,
+    )) {
+      if (claim.amountAudCents === null) continue;
+      await fileRecurringExpense(
+        fb.db,
+        household.id,
+        user.uid,
+        claim.charge,
+        { id: ruleId, categoryId: input.categoryId, note: input.note },
+        claim.amountAudCents,
+        claim.estimated,
+      );
+    }
   };
 
   const close = () => {
@@ -110,13 +161,7 @@ export function RecurringRulesCard({
           locale={locale}
           pendingMerchants={pendingMerchants}
           onSave={(input) => {
-            const fb = getFirebaseClient();
-            if (fb === null || user === null) return;
-            write(
-              editing === null
-                ? addRecurringRule(fb.db, household.id, user.uid, input)
-                : updateRecurringRule(fb.db, household.id, editing.id, input),
-            );
+            write(saveAndApply(input, editing?.id));
             close();
           }}
           onDelete={

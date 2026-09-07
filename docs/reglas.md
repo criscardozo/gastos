@@ -326,6 +326,13 @@ acaba de pedir.
   pida, el modo de falla que importa no es que no cargue: es que cargue y no lo
   diga.
 
+- **`PATCH` con `updateMask` sobre el emulador de Firestore borra el resto del
+  documento.** Me pasó dos veces el mismo día: una para marcar `confirmedAt` en
+  un período y otra para verificar un gasto, y las dos veces el documento quedó
+  con sólo los campos enmascarados. Para tocar un fixture, cambiar
+  `scripts/seed-emulator.mjs` y volver a sembrar — el script escribe documentos
+  completos y es idempotente.
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada

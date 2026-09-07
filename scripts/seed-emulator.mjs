@@ -411,7 +411,9 @@ async function main() {
      above is filed the moment a client opens; "Cafe" carries none, so its
      charge stays pending and the prompt asks for the figure. */
   const recurringRules = [
-    ["rule-opal", "Opal*", "transport", "Opal", 1500],
+    // Only the unpriced one. The Opal charge is left WAITING on purpose: the
+    // flow worth exercising by hand is making a rule from a charge and seeing
+    // that charge filed before the dialog closes.
     ["rule-cafe", "Cafe", "food", "Café", null],
   ];
   for (const [id, pattern, categoryId, note, amountAudCents] of recurringRules) {

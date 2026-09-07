@@ -4869,6 +4869,22 @@
           }
         }
       }
+    },
+    "recurring.estimated": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "estimado"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "estimated"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

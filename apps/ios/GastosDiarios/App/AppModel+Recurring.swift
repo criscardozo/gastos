@@ -13,31 +13,65 @@ import Foundation
 /// on a guess.
 extension AppModel {
 
-    /// A pending charge and the rule that claims it.
+    /// A pending charge, the rule that claims it, and what to file it for.
     struct ClaimedCharge: Identifiable, Equatable {
         let charge: BankCharge
         let rule: RecurringRuleDoc
+        /// Nil when neither the rule nor the learned rate can price it.
+        let amountAudCents: Int?
+        /// True when the amount is a division rather than a figure anybody
+        /// stated.
+        let estimated: Bool
         var id: String { charge.id }
     }
 
-    /// Charges a rule can file without asking.
+    /// Charges that can be filed: the rule states the amount, or the
+    /// household's own verified pairs reveal the rate and it is worked out
+    /// from the bank's USD.
     var recurringReady: [ClaimedCharge] {
-        claimed.filter { $0.rule.amountAudCents != nil }
+        claimed.filter { $0.amountAudCents != nil }
     }
 
-    /// Charges a rule claimed but cannot price — these need the one thing only
-    /// a person knows, and stay pending until they say it.
+    /// What is left — a rule with no amount and nothing to estimate from,
+    /// which happens only before anything has ever been verified.
     var recurringAsking: [ClaimedCharge] {
-        claimed.filter { $0.rule.amountAudCents == nil }
+        claimed.filter { $0.amountAudCents == nil }
+    }
+
+    /// What one rule claims out of the charges waiting RIGHT NOW.
+    ///
+    /// Saving a rule used to change nothing until the app was next opened,
+    /// which is exactly backwards: the way you make a rule is by seeing a
+    /// charge you recognise and pressing the icon on it, so that charge is the
+    /// first thing the rule should file. It sat in the pending list instead,
+    /// and the rule looked like it had not worked.
+    func claims(of rule: RecurringRuleDoc) -> [ClaimedCharge] {
+        expenseBankCharges.compactMap { claim(charge: $0, under: [rule]) }
+            .filter { $0.amountAudCents != nil }
     }
 
     private var claimed: [ClaimedCharge] {
-        expenseBankCharges.compactMap { charge in
-            guard let rule = RecurringRules.rule(
-                for: charge.merchant, in: recurringRules
-            ) else { return nil }
-            return ClaimedCharge(charge: charge, rule: rule)
+        expenseBankCharges.compactMap { claim(charge: $0, under: recurringRules) }
+    }
+
+    private func claim(
+        charge: BankCharge, under rules: [RecurringRuleDoc]
+    ) -> ClaimedCharge? {
+        guard let rule = RecurringRules.rule(for: charge.merchant, in: rules) else {
+            return nil
         }
+        if let stated = rule.amountAudCents {
+            return ClaimedCharge(
+                charge: charge, rule: rule, amountAudCents: stated, estimated: false
+            )
+        }
+        let estimate = RecurringRules.estimateAudCents(
+            usdCents: charge.usdCents, rate: learnedBankRate
+        )
+        return ClaimedCharge(
+            charge: charge, rule: rule,
+            amountAudCents: estimate, estimated: estimate != nil
+        )
     }
 
     /// What the on-open run watches.
@@ -82,7 +116,9 @@ extension AppModel {
 
     // MARK: Writes
 
-    func fileRecurring(_ claim: ClaimedCharge, amountAudCents: Int) {
+    func fileRecurring(
+        _ claim: ClaimedCharge, amountAudCents: Int, estimated: Bool = false
+    ) {
         guard let householdId = attachedHouseholdId, let uid = self.uid else { return }
         write { [firestore] in
             try await firestore.fileRecurringExpense(
@@ -90,7 +126,8 @@ extension AppModel {
                 uid: uid,
                 charge: claim.charge,
                 rule: claim.rule,
-                amountAudCents: amountAudCents
+                amountAudCents: amountAudCents,
+                estimated: estimated
             )
         }
     }
@@ -102,14 +139,45 @@ extension AppModel {
     func fileAllReadyRecurring() async {
         guard let householdId = attachedHouseholdId, let uid = self.uid else { return }
         for claim in recurringReady {
-            guard let amount = claim.rule.amountAudCents else { continue }
+            guard let amount = claim.amountAudCents else { continue }
             await awaitWrite { [firestore] in
                 try await firestore.fileRecurringExpense(
                     householdId: householdId,
                     uid: uid,
                     charge: claim.charge,
                     rule: claim.rule,
-                    amountAudCents: amount
+                    amountAudCents: amount,
+                    estimated: claim.estimated
+                )
+            }
+        }
+    }
+
+    /// Save a rule and immediately file whatever it already recognises.
+    func addRecurringRuleAndApply(
+        pattern: String, categoryId: String, note: String, amountAudCents: Int?
+    ) async {
+        guard let householdId = attachedHouseholdId, let uid = self.uid else { return }
+        var newId: String?
+        await awaitWrite { [firestore] in
+            newId = try await firestore.addRecurringRule(
+                householdId: householdId, uid: uid, pattern: pattern,
+                categoryId: categoryId, note: note, amountAudCents: amountAudCents
+            )
+        }
+        guard let ruleId = newId else { return }
+        // Built by hand rather than waiting for the listener: the charge the
+        // rule was made from should be filed before the dialog is even closed.
+        let rule = RecurringRuleDoc(
+            docId: ruleId, pattern: pattern, categoryId: categoryId,
+            note: note, amountAudCents: amountAudCents, createdBy: uid
+        )
+        for claim in claims(of: rule) {
+            guard let amount = claim.amountAudCents else { continue }
+            await awaitWrite { [firestore] in
+                try await firestore.fileRecurringExpense(
+                    householdId: householdId, uid: uid, charge: claim.charge,
+                    rule: rule, amountAudCents: amount, estimated: claim.estimated
                 )
             }
         }

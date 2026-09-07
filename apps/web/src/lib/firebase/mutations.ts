@@ -932,21 +932,21 @@ function recurringFields(input: RecurringRuleInput) {
   };
 }
 
+/** Returns the new rule's id, so the caller can apply it straight away. */
 export async function addRecurringRule(
   db: Firestore,
   householdId: string,
   uid: string,
   input: RecurringRuleInput,
-): Promise<void> {
-  await setDoc(
-    doc(collection(db, "households", householdId, "recurringRules")),
-    {
-      ...recurringFields(input),
-      createdBy: uid,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    },
-  );
+): Promise<string> {
+  const ref = doc(collection(db, "households", householdId, "recurringRules"));
+  await setDoc(ref, {
+    ...recurringFields(input),
+    createdBy: uid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return ref.id;
 }
 
 export async function updateRecurringRule(
@@ -1021,6 +1021,8 @@ export async function fileRecurringExpense(
   charge: { id: string; usdCents: number; date: string },
   rule: { id: string; categoryId: string; note: string },
   amountAudCents: number,
+  /** True when the amount came from the learned rate rather than the rule. */
+  estimated = false,
 ): Promise<void> {
   const batch = writeBatch(db);
   batch.set(
@@ -1038,6 +1040,9 @@ export async function fileRecurringExpense(
       usdCents: charge.usdCents,
       verified: true,
       autoRuleId: rule.id,
+      // Absent rather than false: the rules accept only `true`, so that the
+      // two spellings of "no" cannot disagree.
+      ...(estimated ? { autoEstimated: true } : {}),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     },

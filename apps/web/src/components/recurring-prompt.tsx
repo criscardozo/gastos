@@ -26,6 +26,7 @@ import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 export function RecurringPrompt({
   charges,
   rules,
+  learnedRate,
   locale,
   onFile,
   onDismissed,
@@ -33,12 +34,15 @@ export function RecurringPrompt({
   /** The PENDING charges only — a dismissed one is not waiting for anything. */
   charges: readonly BankChargeDoc[];
   rules: readonly RecurringRuleDoc[];
+  /** From BankMatch.learnRate — what prices a rule that states no amount. */
+  learnedRate: number | null;
   locale: string;
   /** Files one charge under one rule, for the given AUD cents. */
   onFile: (
     charge: BankChargeDoc,
     rule: RecurringRuleDoc,
     amountAudCents: number,
+    estimated: boolean,
   ) => Promise<void>;
   /** Called once the prompt is closed, so the screen can stop offering it. */
   onDismissed: () => void;
@@ -46,7 +50,7 @@ export function RecurringPrompt({
   const t = useTranslations("recurring");
   const tCommon = useTranslations("expenses");
 
-  const { ready, asking } = claimCharges(charges, rules);
+  const { ready, asking } = claimCharges(charges, rules, learnedRate);
 
   // Filed once per mount, not per render.
   //
@@ -71,7 +75,13 @@ export function RecurringPrompt({
       for (const claim of batch) {
         // Sequential on purpose: each is its own batch, and a burst of
         // parallel writes is how a free-tier quota disappears.
-        await onFile(claim.charge, claim.rule, claim.rule.amountAudCents ?? 0);
+        if (claim.amountAudCents === null) continue;
+        await onFile(
+          claim.charge,
+          claim.rule,
+          claim.amountAudCents,
+          claim.estimated,
+        );
       }
       setFiled(batch);
     })();
@@ -105,7 +115,8 @@ export function RecurringPrompt({
 
   const saveCurrent = async () => {
     if (current === null || cents === null) return;
-    await onFile(current.charge, current.rule, cents);
+    // Typed, so not an estimate.
+    await onFile(current.charge, current.rule, cents, false);
     setAmount("");
     setIndex((i) => i + 1);
   };

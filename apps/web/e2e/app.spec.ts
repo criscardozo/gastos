@@ -2027,3 +2027,81 @@ test("a recurring rule files the charge it recognises, and it can be taken back"
   // so on screen.)
   await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible();
 });
+
+test("a rule made from a charge files that charge on the spot", async ({
+  page,
+  request,
+}) => {
+  // The flow the icon exists for, and the one that used to change nothing
+  // until the app was next opened: you see a charge you recognise, press the
+  // icon on it, and the charge should be gone from the list when you close the
+  // dialog — not still sitting there looking like the rule had not worked.
+  const email = `e2e-onspot-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Spot Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, {
+    headers: { Authorization: "Bearer owner" },
+  });
+  const docs = (await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[];
+  const mine = docs.find((d) => d.fields.name.stringValue === "Hogar de Spot");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Australia/Sydney",
+  }).format(new Date());
+  const created = await request.post(
+    `${REST}/households/${householdId}/bankCharges?documentId=gmail-spot1`,
+    {
+      headers: { Authorization: "Bearer owner" },
+      data: {
+        fields: {
+          usdCents: { integerValue: "1240" },
+          date: { stringValue: today },
+          merchant: { stringValue: "OPAL AUCKLAND ST" },
+          importedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+  expect(created.ok()).toBe(true);
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible({
+    timeout: 20_000,
+  });
+  // The panel is collapsed by default; "Revisar" is what opens it.
+  await page.getByRole("button", { name: "Revisar" }).click();
+
+  // The icon ON the charge, named after it.
+  await page
+    .getByRole("button", { name: /Hacerlo recurrente — OPAL AUCKLAND ST/ })
+    .click();
+
+  const dialog = page.getByRole("dialog", { name: "Gastos recurrentes" });
+  // Seeded with the whole merchant, which is the point of opening it here.
+  await expect(dialog.getByLabel("Texto del comercio")).toHaveValue(
+    "OPAL AUCKLAND ST",
+  );
+  await dialog.getByRole("tab", { name: "Importe sugerido (AUD)" }).click();
+  await dialog.getByLabel("Importe sugerido (AUD)").fill("15,00");
+  await dialog.getByRole("button", { name: "Guardar" }).click();
+
+  // No reload, no reopen: the charge is filed and the panel is empty.
+  // Filed, verified, at the rule's amount and the bank's USD — and the note is
+  // title-cased, because the bank shouts and a ledger should not.
+  await expect(
+    page.getByRole("button", {
+      name: /Verificado.*Opal Auckland St, \$ ?15,00/,
+    }),
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
+});

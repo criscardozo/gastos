@@ -225,6 +225,11 @@ struct Expense: Codable, Identifiable, Equatable {
     /// hand-typed expense undecodable — which is exactly how every unconfirmed
     /// period disappeared from this app once already.
     var autoRuleId: String?
+    /// The AUD is a division, not a figure anybody stated: the rule carried no
+    /// amount, so it came from the bank's USD and the learned rate. Only ever
+    /// present as `true` — absent is the same as false, and two spellings of
+    /// "no" is how a filter comes to disagree with itself.
+    var autoEstimated: Bool?
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
 
@@ -233,6 +238,9 @@ struct Expense: Codable, Identifiable, Equatable {
 
     /// Filed by a rule rather than typed.
     var isAutomatic: Bool { autoRuleId != nil }
+
+    /// Filed at a rate rather than at a stated amount.
+    var isEstimated: Bool { autoEstimated == true }
 }
 
 /// An expense plus local snapshot metadata (offline "pendiente" chip).
