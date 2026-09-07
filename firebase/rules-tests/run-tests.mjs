@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Run the rules tests on a port that is actually free.
 //
-// The suite used to hardcode 8080 through firebase.json, so it died with "port
+// The suite used to hardcode Firestore's port through firebase.json, so it died
+// with "port
 // taken" whenever anything else held it — which on this machine is often: a
 // Docker stack lives there, and a leftover emulator from an earlier session
 // does too. The failure looked like a broken test run rather than a busy port,
@@ -33,29 +34,51 @@ function freePort() {
   });
 }
 
-async function usablePort(preferred) {
-  if (preferred === undefined) return freePort();
+/** Is this port free right now? */
+async function isFree(port) {
+  return new Promise((ok) => {
+    const server = createServer();
+    server.once("error", () => ok(false));
+    server.listen(port, "127.0.0.1", () => server.close(() => ok(true)));
+  });
+}
+
+async function usablePort(preferred, pinned) {
+  if (preferred === undefined) {
+    // The project's own port first, an ephemeral one only if it is taken.
+    //
+    // It used to go straight to an ephemeral port and then print "(8080 was
+    // busy)" — which it had never tried. A message that names a port it did
+    // not attempt sends you to look at the wrong thing.
+    return (await isFree(pinned)) ? pinned : freePort();
+  }
   const port = Number(preferred);
   // A pinned port is a request, not a suggestion: if it is taken, say which
   // one and stop, rather than silently running somewhere else.
-  const taken = await new Promise((ok) => {
-    const server = createServer();
-    server.once("error", () => ok(true));
-    server.listen(port, "127.0.0.1", () => server.close(() => ok(false)));
-  });
-  if (taken) {
+  if (!(await isFree(port))) {
     console.error(`FIRESTORE_EMULATOR_PORT=${port} is already in use.`);
     process.exit(1);
   }
   return port;
 }
 
-const port = await usablePort(process.env.FIRESTORE_EMULATOR_PORT);
-
-// A copy of firebase.json with the port replaced. The real one keeps 8080,
-// which is what `pnpm emulators` and the iOS app expect.
+// A copy of firebase.json with the ports replaced. The real one keeps the
+// project's own block, which is what `pnpm emulators` and the iOS app expect.
 const config = JSON.parse(readFileSync(join(firebaseDir, "firebase.json"), "utf8"));
+const pinned = config.emulators.firestore.port;
+const port = await usablePort(process.env.FIRESTORE_EMULATOR_PORT, pinned);
 config.emulators.firestore.port = port;
+// The websocket, the hub and the logging port get free ones too.
+//
+// They used to be absent from the config, so firebase-tools fell back to its
+// defaults and shifted them itself when busy ("hub unable to start on port
+// 4400, starting on 4401 instead"). Now that the project pins them, a test run
+// alongside a running `pnpm emulators` would collide on the pinned numbers —
+// and a pinned port does not shift. So this copy asks for free ones, the same
+// as it already does for Firestore.
+config.emulators.firestore.websocketPort = await freePort();
+config.emulators.hub = { port: await freePort() };
+config.emulators.logging = { port: await freePort() };
 config.emulators.ui = { ...config.emulators.ui, enabled: false };
 // Rules and indexes are relative to the config file, so the copy has to point
 // back at the real directory.
@@ -67,7 +90,7 @@ const dir = mkdtempSync(join(tmpdir(), "gd-rules-"));
 const configPath = join(dir, "firebase.json");
 writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-if (port !== 8080) console.log(`firestore emulator on :${port} (8080 was busy)`);
+if (port !== pinned) console.log(`firestore emulator on :${port} (${pinned} was busy)`);
 
 const child = spawn(
   join(here, "node_modules", ".bin", "firebase"),

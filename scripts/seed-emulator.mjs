@@ -36,8 +36,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const FIRESTORE = process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080";
-const AUTH = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "127.0.0.1:9099";
+const FIRESTORE = process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8390";
+const AUTH = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "127.0.0.1:9390";
 
 // TWO project ids, and they are not interchangeable — measured, because the
 // first version of this script asked the wrong one and got a truthful "no
@@ -193,8 +193,24 @@ async function signedInUid() {
         "that is the simulator keychain lying: `xcrun simctl erase` it.",
     );
   }
-  const account =
-    userInfo.find((u) => u.email === "simulador@test.dev") ?? userInfo[0];
+  // The simulator's own account, or nothing.
+  //
+  // It used to fall back to `userInfo[0]`, which is silently wrong: the e2e
+  // suite leaves an account behind per test — 55 of them after one run — so the
+  // fallback seeds a household for an arbitrary "Bank Tester" and the app,
+  // signed in as somebody else, shows the onboarding screen with no hint that
+  // the fixture went to the wrong uid. Which is what happened, because the seed
+  // can RACE the app: `-devSignIn` is asynchronous, so running the seed a second
+  // after launch finds only the e2e leftovers.
+  const account = userInfo.find((u) => u.email === "simulador@test.dev");
+  if (account === undefined) {
+    throw new Error(
+      `The simulator's account is not in the auth emulator yet (found ` +
+        `${userInfo.length} other accounts, which the e2e suite leaves behind). ` +
+        "`-devSignIn` is asynchronous — launch the app, let it reach a screen, " +
+        "and run this again.",
+    );
+  }
   return { uid: account.localId, name: account.displayName ?? "Cristian" };
 }
 

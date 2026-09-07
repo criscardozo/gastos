@@ -24,8 +24,8 @@ const PROJECT = "demo-gastos-diarios";
 // Unique per run so reruns never collide even if the wipe below fails.
 const EMAIL = `e2e-${Date.now()}@test.dev`;
 
-const AUTH_PORT = process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT ?? "9099";
-const FIRESTORE_PORT = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? "8080";
+const AUTH_PORT = process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT ?? "9390";
+const FIRESTORE_PORT = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? "8390";
 /** Admin-side REST, for standing in as the Gmail ingestion (rules bypassed). */
 const REST = `http://localhost:${FIRESTORE_PORT}/v1/projects/${PROJECT}/databases/(default)/documents`;
 

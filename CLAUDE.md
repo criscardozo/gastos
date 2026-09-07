@@ -55,12 +55,20 @@ All JS commands run from the repo root (pnpm workspace):
 - Exports live in `apps/web/src/lib/export/`: `pdf.ts` (jsPDF) and `spreadsheet.ts` (exceljs) render the SAME payload, so Excel/Sheets mirror the PDF. Every export carries both money columns (AUD + the bank's USD, blank when unverified) and a range with unverified expenses is only exported after the consent checkbox is ticked; `drive.ts` uploads the workbook to Drive converted to a Google Sheet (needs the Drive API enabled — see `docs/setup.md`). Both libraries are dynamically imported to stay out of the first-load bundle.
 - `pnpm verify:pwa` — PWA smoke check (service worker + offline cold start). Needs a PRODUCTION build already serving: `pnpm build && pnpm --filter web exec next start -p 3112`.
 - `pnpm test:rules` — Firestore rules tests. Picks a FREE port rather than
-  insisting on 8080 (`firebase/rules-tests/run-tests.mjs`), because on this
-  machine 8080 is often taken by a Docker stack or a leftover emulator and the
+  insisting on one (`firebase/rules-tests/run-tests.mjs`) — it tries the
+  project's own port first and falls back only if it is taken, because on this
+  machine a port is often held by a Docker stack or a leftover emulator and the
   failure read as a broken test run. Pin one with `FIRESTORE_EMULATOR_PORT`.
   Needs a **JDK 21 or newer** — firebase-tools 15 dropped older ones, and on
   Java 17 it refuses to start rather than warning.
-- `pnpm emulators` — local emulator suite (Auth 9099, Firestore 8080, UI 4000).
+- `pnpm emulators` — local emulator suite on **this project's own port block**:
+  Auth 9390, Firestore 8390 (websocket 9490), UI 4390, hub 4690, logging 4790.
+  NOT Firebase's defaults: on this machine SSH port forwards hold 4000, 8080,
+  8085, 9099, 9150 and 9199 — the whole default set — and 8085 is `stock`'s
+  Firestore, so the defaults never bind and a neighbouring project would take
+  whatever did. The numbers live in `firebase/firebase.json` and are mirrored
+  in four places that cannot read it: the web client, the Playwright config,
+  `scripts/seed-emulator.mjs` and iOS's `configureEmulatorsIfRequested()`.
   Start it with **`--project qcris-gastos-diarios`** when an app will connect:
   under any other project id the rules resolve `isMember()`'s `get()` in a
   namespace with no household, which is an evaluation error, and every

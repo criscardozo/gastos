@@ -73,8 +73,8 @@ sheet; the intent also works via Siri ("Registrar gasto en Gastos").
 Set the `USE_FIREBASE_EMULATORS` environment variable (e.g. to `1`) in the run
 scheme to point the app at the local emulator suite:
 
-- Auth → `localhost:9099`
-- Firestore → `localhost:8080`
+- Auth → `localhost:9390`
+- Firestore → `localhost:8390`
 
 ## Fonts
 

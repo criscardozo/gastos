@@ -35,7 +35,7 @@ upload are web-only for the same reason.
 pnpm install
 pnpm dev            # web on :3000
 pnpm test           # web unit tests + Firestore rules (emulator, needs Java) + the email parser
-pnpm emulators      # Auth 9099, Firestore 8080, UI 4000
+pnpm emulators      # Auth 9390, Firestore 8390, UI 4390 (this project's own block)
 cd apps/ios && xcodegen && open Gastos.xcodeproj   # iOS
 ```
 

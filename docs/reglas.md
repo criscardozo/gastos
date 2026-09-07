@@ -382,6 +382,34 @@ acaba de pedir.
   en la primera pantalla que ve cualquiera. Lo fija
   `apps/web/src/lib/ios-config.test.ts`, que busca la forma partida.
 
+- **Los puertos por defecto de Firebase no sirven en esta máquina.** Forwards de
+  SSH tienen 4000, 8080, 8085, 9099, 9150 y 9199 — el set completo — y el 8085
+  es el Firestore del proyecto `stock`. Así que este proyecto tiene su propio
+  bloque: Auth 9390, Firestore 8390 (websocket 9490), UI 4390, hub 4690,
+  logging 4790. Antes usaba los defaults, que es lo que agarra cualquier
+  proyecto sin bloque explícito.
+- **Y ese número vive en SEIS lugares, cinco de los cuales no pueden leer el
+  sexto.** `firebase/firebase.json` decide; el cliente web, el config de
+  Playwright, el spec del e2e, `seed-emulator.mjs` y el
+  `configureEmulatorsIfRequested()` de iOS lo repiten. Moverlos lo demostró:
+  actualicé cinco y me olvidé del spec, y 15 de 18 e2e fallaron con
+  `Cannot read properties of undefined (reading 'find')` — una llamada REST a
+  un puerto que resulta que tiene un forward de SSH, contestando algo sin
+  `documents`. Nada en ese error dice "puerto". Lo fija
+  `apps/web/src/lib/emulator-ports.test.ts`.
+- **Un fallback silencioso a "la primera cuenta" siembra el hogar para
+  cualquiera.** `seed-emulator.mjs` buscaba `simulador@test.dev` y caía a
+  `userInfo[0]`; la suite e2e deja una cuenta por test (55 tras una corrida), y
+  `-devSignIn` es asincrónico, así que sembrar un segundo después de lanzar la
+  app encuentra sólo los sobrantes del e2e. El hogar quedaba a nombre de un
+  "Bank Tester" y la app mostraba el onboarding sin ninguna pista. Ahora falla y
+  dice qué esperar.
+- **Y para leer las cuentas del emulador de auth el endpoint es
+  `identitytoolkit.googleapis.com/v1/projects/{p}/accounts:query` (POST).**
+  `/emulator/v1/projects/{p}/accounts` contesta 200 con una lista vacía, así que
+  parece que no hay cuentas cuando hay 55. El seed usa el correcto; yo usé el
+  otro y casi concluí que iOS no hablaba con el emulador.
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada

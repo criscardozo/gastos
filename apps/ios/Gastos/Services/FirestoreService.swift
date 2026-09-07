@@ -63,9 +63,12 @@ final class FirestoreService {
     /// Call once at startup, BEFORE any Firestore usage.
     static func configureEmulatorsIfRequested() {
         guard emulatorsRequested else { return }
-        Auth.auth().useEmulator(withHost: "localhost", port: 9099)
+        // The project's own block, not Firebase's defaults: 9099, 8080, 8085,
+        // 9150 and 9199 are all held by SSH port forwards on this machine, so
+        // the defaults never bind. Must match firebase/firebase.json.
+        Auth.auth().useEmulator(withHost: "localhost", port: 9390)
         let settings = Firestore.firestore().settings
-        settings.host = "localhost:8080"
+        settings.host = "localhost:8390"
         settings.isSSLEnabled = false
         settings.cacheSettings = MemoryCacheSettings()
         Firestore.firestore().settings = settings

@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 // E2E tests run ONLY against the Firebase emulators (never production).
 //
 // REQUIRED, started externally before `pnpm test:e2e`:
-//   Auth emulator on :9099 and Firestore emulator on :8080 with project
+//   Auth emulator on :9390 and Firestore emulator on :8390 with project
 //   "demo-gastos-diarios", e.g. from the repo root:
 //     cd firebase/rules-tests && ./node_modules/.bin/firebase emulators:start \
 //       --only auth,firestore --config ../firebase.json --project demo-gastos-diarios
@@ -43,11 +43,11 @@ export default defineConfig({
       NEXT_PUBLIC_USE_EMULATORS: "1",
       NEXT_PUBLIC_FIREBASE_PROJECT_ID: "demo-gastos-diarios",
       // Pass the emulator ports through so the dev server connects to whatever
-      // ports the suite is on (defaults 9099/8080 when unset).
+      // ports the suite is on (defaults 9390/8390 when unset).
       NEXT_PUBLIC_AUTH_EMULATOR_PORT:
-        process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT ?? "9099",
+        process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT ?? "9390",
       NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT:
-        process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? "8080",
+        process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? "8390",
     },
   },
 });

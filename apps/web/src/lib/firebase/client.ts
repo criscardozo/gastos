@@ -45,12 +45,14 @@ export function getFirebaseClient(): FirebaseClient | null {
 
   if (useEmulators) {
     // Emulator host/ports are env-configurable so E2E can run against a suite
-    // on alternate ports when the defaults (9099/8080) are taken by another
+    // on alternate ports. The defaults are not usable here: 9099, 8080, 8085,
+    // 9150 and 9199 are all held by SSH port forwards on this machine, so the
+    // project owns a block of its own (see firebase/firebase.json) rather than
     // local process. Production/default behavior is unchanged.
     const host = process.env.NEXT_PUBLIC_EMULATOR_HOST ?? "localhost";
-    const authPort = process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT ?? "9099";
+    const authPort = process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT ?? "9390";
     const firestorePort =
-      process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? "8080";
+      process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? "8390";
     connectAuthEmulator(auth, `http://${host}:${authPort}`, {
       disableWarnings: true,
     });
