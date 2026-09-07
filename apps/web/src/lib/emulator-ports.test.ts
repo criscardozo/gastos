@@ -7,10 +7,16 @@ import config from "../../../../firebase/firebase.json";
 /**
  * The emulator ports, held to the one file that decides them.
  *
- * `firebase/firebase.json` is what `pnpm emulators` reads, and five other
+ * `firebase/firebase.json` is what `pnpm emulators` reads, and SIX other
  * places have to agree with it because none of them can read it: the web
- * client, the Playwright config, the e2e spec's REST base, the seed script and
- * iOS's `configureEmulatorsIfRequested()`.
+ * client, the Playwright config, the e2e spec's REST base, the seed script,
+ * iOS's `configureEmulatorsIfRequested()`, and CI's `wait-on`.
+ *
+ * The count was five when this was written, and the sixth is why the count is
+ * worth distrusting: CI waited on the old pair, sat for the full two minutes
+ * and reported "Timed out waiting for: tcp:9099, tcp:8080" — which is exactly
+ * what a slow emulator looks like, while the emulator was up and listening
+ * elsewhere. A guard that says "every copy" has to be told about every copy.
  *
  * Moving the ports proved why this is needed. Four of the five were updated
  * and the e2e spec's own defaults were not, so 15 of 18 tests failed with
@@ -49,6 +55,14 @@ describe("every copy of the emulator ports", () => {
     expect(text).toContain(`?? "${FIRESTORE}"`);
   });
 
+  it("agrees with firebase.json — CI's wait-on", () => {
+    // The one that got missed. It has no env override: the workflow starts the
+    // emulator from the same firebase.json and then waits on literals.
+    expect(read(".github/workflows/ci.yml")).toContain(
+      `wait-on tcp:${AUTH} tcp:${FIRESTORE}`,
+    );
+  });
+
   it("agrees with firebase.json — the seed script", () => {
     // No env override here: it talks to the emulator or to nothing.
     expect(read("scripts/seed-emulator.mjs")).toContain(FIRESTORE);
@@ -70,9 +84,11 @@ describe("every copy of the emulator ports", () => {
       "apps/web/e2e/app.spec.ts",
       "scripts/seed-emulator.mjs",
       "apps/ios/Gastos/Services/FirestoreService.swift",
+      ".github/workflows/ci.yml",
     ]) {
       expect(read(path), path).not.toMatch(/\?\? "(9099|8080)"/);
       expect(read(path), path).not.toMatch(/localhost:8080|port: 9099/);
+      expect(read(path), path).not.toMatch(/tcp:9099|tcp:8080/);
     }
   });
 });

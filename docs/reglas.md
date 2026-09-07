@@ -397,6 +397,13 @@ acaba de pedir.
   un puerto que resulta que tiene un forward de SSH, contestando algo sin
   `documents`. Nada en ese error dice "puerto". Lo fija
   `apps/web/src/lib/emulator-ports.test.ts`.
+- **Y eran SIETE, no seis: el `wait-on` del CI también.** Escribí la guarda
+  diciendo "todas las copias" con cinco adentro, arreglé la sexta, y el CI
+  falló igual esperando `tcp:9099 tcp:8080` — dos minutos de espera y un
+  `Timed out`, que es exactamente lo que parece un emulador lento, con el
+  emulador arriba escuchando en otro lado. **Una guarda que dice "todas" hay
+  que enseñarle cuáles son todas**, y el número que uno cree es el que conviene
+  desconfiar.
 - **Un fallback silencioso a "la primera cuenta" siembra el hogar para
   cualquiera.** `seed-emulator.mjs` buscaba `simulador@test.dev` y caía a
   `userInfo[0]`; la suite e2e deja una cuenta por test (55 tras una corrida), y

@@ -105,7 +105,11 @@ jobs:
         run: |
           ./node_modules/.bin/firebase emulators:start --only auth,firestore \
             --config ../firebase.json --project demo-gastos-diarios &
-          npx wait-on tcp:9099 tcp:8080 --timeout 120000
+          # These two come from firebase/firebase.json and are checked against
+          # it by apps/web/src/lib/emulator-ports.test.ts. Waiting on the wrong
+          # pair does not fail fast — it waits the full two minutes and then
+          # says "Timed out", which is what a slow emulator looks like.
+          npx wait-on tcp:9390 tcp:8390 --timeout 120000
       - name: Run E2E
         run: pnpm --filter web test:e2e
 
