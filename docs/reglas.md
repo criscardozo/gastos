@@ -457,6 +457,18 @@ acaba de pedir.
   agarra un batch partido, corrí el batch partido **sin** las reglas hostiles:
   las dos escrituras pasan, el test da verde, y el verde no significaba nada.
   Tres veces en un día con el mismo error de diseño.
+- **Y tiene una mitad retrospectiva, que es la que ya usábamos sin nombrar:**
+  cuando una verificación da el resultado esperado, preguntarse *qué otra cosa
+  produciría ese mismo resultado*. Eso es lo que desarmó el pre-flight del
+  keychain, los nombres cortos de Dependabot y el `Ok` del 8080 — en los tres
+  el chequeo contestaba lo que esperábamos por un motivo que no era el nuestro.
+  Pero sólo sirve **después** de correr, y necesita un resultado sospechoso que
+  te haga mirar dos veces. La versión de arriba se aplica **antes** y no
+  necesita ninguno: mi batch partido con las reglas reales dio verde, el verde
+  era correcto, y no probaba nada — no fallé en verificar, fallé en diseñar, y
+  ahí la pregunta retrospectiva no tiene de dónde agarrarse. Van juntas: antes
+  de correr, «¿qué tendría que pasar para que esto falle?»; después, «¿qué otra
+  cosa daría este mismo verde?». (La partición es de la sesión Stock.)
 - **Un experimento tirable también necesita el `afterEach`.** El probe dejó
   instaladas las reglas hostiles y la corrida siguiente murió antes de empezar,
   culpando al código equivocado — exactamente lo que `app.spec.ts` advierte en
