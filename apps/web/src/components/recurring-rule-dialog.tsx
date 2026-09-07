@@ -18,6 +18,7 @@ import type { RecurringRuleInput } from "@/lib/firebase/mutations";
 import { MAX_NOTE_CHARACTERS } from "@/lib/limits";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 import { matchesPattern } from "@/lib/recurring";
+import { SERVICES_CATEGORY_ID, nameKey } from "@/lib/services";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
 /**
@@ -45,6 +46,20 @@ export function RecurringRuleDialog({
   locale,
   /** Merchants of the charges still waiting, so the pattern can be tried. */
   pendingMerchants,
+  /**
+   * The household's services, for the note when the category is Servicios.
+   *
+   * Servicios links a service to its charge by NAME — an expense filed in that
+   * category whose note is the service's name IS that month's charge. A rule
+   * already picks the note of what it files, so a rule can close a service's
+   * month on its own; nothing new was needed for that. What WAS needed is
+   * this: the note is seeded with the merchant ("Google Youtubepremium"),
+   * which is right for an Opal top-up and is exactly wrong here, and a typo
+   * fails the same way — silently. The expense is filed, correct, and the
+   * service goes on saying it was never charged. So when the category is
+   * Servicios the note stops being free text and becomes the list.
+   */
+  services,
   seed,
   onSave,
   onDelete,
@@ -55,6 +70,7 @@ export function RecurringRuleDialog({
   household: Household;
   locale: string;
   pendingMerchants: readonly string[];
+  services: readonly { id: string; name: string }[];
   /**
    * Pre-fill from the charge this was opened over: the merchant as the bank
    * spells it, and what it charged.
@@ -91,6 +107,33 @@ export function RecurringRuleDialog({
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Servicios mode: the note comes from the list, unless the household has no
+  // services yet (then there is no list to pick from and free text is all
+  // there is) or the note deliberately is not one of them.
+  const picksService = categoryId === SERVICES_CATEGORY_ID && services.length > 0;
+  const matchedService =
+    services.find((s) => nameKey(s.name) === nameKey(note)) ?? null;
+  // "Write it myself" is a real answer, not an escape hatch for a bug: a rule
+  // in Servicios can legitimately be for something the household never
+  // registered as a service.
+  //
+  // The list is the default in Servicios, ALWAYS, and only an explicit "write
+  // it myself" leaves it.
+  //
+  // The first version of this derived the mode from the note — free text
+  // whenever the note was not a service — and that is wrong in the exact case
+  // this exists for. The note arrives seeded with the merchant, so
+  // "GOOGLE YOUTUBEPREMIUM" derives to free text holding "Google
+  // Youtubepremium", which looks fine, saves fine, and never links: the
+  // failure is unchanged and now has a control that looks like it addressed
+  // it. Showing the list UNSELECTED instead is what says a choice is owed.
+  //
+  // The same is true of editing an old rule whose note is not a service: it
+  // opens on an empty list, which is not a nuisance but the answer to "why is
+  // this one not marking the service as charged".
+  const [chosen, setChosen] = useState<"list" | "other" | null>(null);
+  const usesList = picksService && chosen !== "other";
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -104,6 +147,11 @@ export function RecurringRuleDialog({
     pattern.trim() !== "" &&
     note.trim() !== "" &&
     categoryId !== "" &&
+    // In list mode the note has to BE one of the services. This is the guard
+    // the whole change exists for: saving a Servicios rule whose note matches
+    // nothing is the silent failure, so it is refused rather than warned
+    // about.
+    (!usesList || matchedService !== null) &&
     (asks || cents !== null);
 
   // What the pattern would claim RIGHT NOW, out of the charges still waiting.
@@ -169,14 +217,53 @@ export function RecurringRuleDialog({
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="section-label">{t("note")}</span>
-          <input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={t("notePlaceholder")}
-            maxLength={MAX_NOTE_CHARACTERS}
-            className={field}
-          />
+          <span className="section-label">
+            {picksService ? t("noteService") : t("note")}
+          </span>
+          {picksService && (
+            <select
+              value={usesList ? (matchedService?.id ?? "") : "__other"}
+              aria-label={t("noteService")}
+              onChange={(e) => {
+                if (e.target.value === "__other") {
+                  setChosen("other");
+                  return;
+                }
+                setChosen("list");
+                const picked = services.find((s) => s.id === e.target.value);
+                // The service's name VERBATIM. Typing it is what breaks the
+                // link, so the one thing this control must never do is hand
+                // back something the user could have typed.
+                if (picked !== undefined) setNote(picked.name);
+              }}
+              className={field}
+            >
+              {usesList && matchedService === null && (
+                <option value="">{t("noteServicePick")}</option>
+              )}
+              {services.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+              <option value="__other">{t("noteServiceOther")}</option>
+            </select>
+          )}
+          {!usesList && (
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={t("notePlaceholder")}
+              aria-label={t("note")}
+              maxLength={MAX_NOTE_CHARACTERS}
+              className={field}
+            />
+          )}
+          {picksService && (
+            <span className="text-[11.5px] text-ink-3">
+              {usesList ? t("noteServiceHelp") : t("noteServiceOtherHelp")}
+            </span>
+          )}
         </label>
 
         <label className="flex flex-col gap-1.5">

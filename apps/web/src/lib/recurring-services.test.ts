@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { claimCharges } from "./recurring";
+import { type ClaimedCharge, claimCharges } from "./recurring";
 import { SERVICES_CATEGORY_ID, serviceStatuses } from "./services";
 
 /**
@@ -24,9 +24,8 @@ describe("a recurring rule and the service it pays", () => {
     id: "svc-yt",
     name: "YouTube",
     amountAudCents: 1199,
+    interval: "monthly" as const,
     dueDay: 7,
-    every: 1,
-    startMonth: 0,
   };
   const rule = {
     id: "rule-yt",
@@ -44,17 +43,17 @@ describe("a recurring rule and the service it pays", () => {
   };
 
   /** What the app writes when it files a claimed charge. */
-  function fileAsExpense(claim: {
-    rule: { categoryId: string; note: string };
-    amountAudCents: number;
-    charge: { id: string; date: string };
-  }) {
+  function fileAsExpense(claim: ClaimedCharge<typeof charge>) {
+    // `amountAudCents` is nullable on a claim in general — a rule that asks,
+    // with no learned rate, cannot price one. These rules all carry an amount,
+    // so a null here is the fixture being wrong rather than a case to handle.
+    expect(claim.amountAudCents).not.toBeNull();
     return {
       id: `auto-${claim.charge.id}`,
       date: claim.charge.date,
       categoryId: claim.rule.categoryId,
       note: claim.rule.note,
-      amountCents: claim.amountAudCents,
+      amountCents: claim.amountAudCents as number,
     };
   }
 

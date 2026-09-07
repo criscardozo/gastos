@@ -40,7 +40,7 @@ import { learnRate } from "@/lib/bank-match";
 import { claimsOfOneRule } from "@/lib/recurring";
 import { RecurringPrompt } from "@/components/recurring-prompt";
 import { RecurringRuleDialog } from "@/components/recurring-rule-dialog";
-import { useRecurringRules } from "@/lib/firebase/hooks";
+import { useRecurringRules, useServices } from "@/lib/firebase/hooks";
 import { isPending } from "@/lib/bank-charges";
 import {
   addRecurringRule,
@@ -105,6 +105,13 @@ export default function ExpensesPage() {
   const [ruleSeed, setRuleSeed] = useState<
     { merchant: string; usdCents: number } | null
   >(null);
+
+  // Only while the dialog is open. The hook takes null for "do not subscribe",
+  // so the Servicios picker costs a listener exactly when somebody is looking
+  // at it rather than on every visit to this screen.
+  const servicesForRule = useServices(
+    ruleSeed === null ? null : (household?.id ?? null),
+  ).services;
   // Offered once per visit. Dismissing it must not bring it straight back —
   // the charges it asks about are still pending by design.
   const [promptDone, setPromptDone] = useState(false);
@@ -766,6 +773,7 @@ export default function ExpensesPage() {
           household={household}
           locale={locale}
           pendingMerchants={charges.filter(isPending).map((c) => c.merchant)}
+          services={servicesForRule}
           seed={ruleSeed}
           onSave={(input) => {
             const fb = getFirebaseClient();

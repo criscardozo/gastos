@@ -68,6 +68,7 @@
 		993C79A798814EDFC5506F46 /* ServiceLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB1E0209EBF466D3AEEC77A /* ServiceLogic.swift */; };
 		998988C00C2EF7DFF3021301 /* Limits.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB48A44A14A7CEAB4B8167C5 /* Limits.swift */; };
 		9B80C656E63162C79F9E2BB9 /* GastosWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5286F43846B5610F65AC6162 /* GastosWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		9CB1FD757657B5B123CDBC61 /* ServiceNameVectorsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08F5C7217DFB5D8D3FBF2A0F /* ServiceNameVectorsTests.swift */; };
 		9E788961B4A6AF7EB55E67B1 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C60ADD48A6501D6D9659577 /* L10n.swift */; };
 		A1855EDBAC366037CD601811 /* CardTaxesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8A35F7729A25C4D60FCE2F8 /* CardTaxesTests.swift */; };
 		A26E522293A59DCF406CE539 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 82AA9BE64B0ED51CC48EFEBE /* Outfit-Variable.ttf */; };
@@ -89,6 +90,7 @@
 		BA6104FEE86502169BAECA7D /* ServiceLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8043182EF7DF168D7084E96E /* ServiceLogicTests.swift */; };
 		BA7C85206BFA1C4737B5D6CD /* ServiceLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB1E0209EBF466D3AEEC77A /* ServiceLogic.swift */; };
 		BB8A293F405068FE03D1D24D /* WatchEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9DF8AB78E48D25CD17E3699 /* WatchEntryView.swift */; };
+		BE9B776B989667236A6D2EAB /* service-name-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 02020E3EEBB0438CA4F9B9DD /* service-name-vectors.json */; };
 		BF9CAD3298E7CB5B03E1AC41 /* ModelDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7EC5992D1786FDB955842A7 /* ModelDecodingTests.swift */; };
 		C04366713899D7FEDDED3F31 /* ReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D321AA370E8BB907F772691 /* ReminderService.swift */; };
 		C238BB660BCF1C05CFEE5C03 /* WatchSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA6AD3615C464D47F7851C01 /* WatchSupport.swift */; };
@@ -167,7 +169,9 @@
 /* Begin PBXFileReference section */
 		01CB733D4BFFA92DAF919CF9 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		01D4600AE62B3542F20C1794 /* ExtendPeriodSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtendPeriodSheet.swift; sourceTree = "<group>"; };
+		02020E3EEBB0438CA4F9B9DD /* service-name-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "service-name-vectors.json"; sourceTree = "<group>"; };
 		067C280D5CF24508EBF0B210 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		08F5C7217DFB5D8D3FBF2A0F /* ServiceNameVectorsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceNameVectorsTests.swift; sourceTree = "<group>"; };
 		0963262547EEBAC0E33FC206 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		0CB1E0209EBF466D3AEEC77A /* ServiceLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLogic.swift; sourceTree = "<group>"; };
 		0F52461B7F382959DAB51CFE /* bank-match-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "bank-match-vectors.json"; sourceTree = "<group>"; };
@@ -408,6 +412,7 @@
 				9FF743F833087A8F15FFF83F /* RecurringRulesTests.swift */,
 				890A88734AEF52E42002B803 /* RichTextTests.swift */,
 				8043182EF7DF168D7084E96E /* ServiceLogicTests.swift */,
+				08F5C7217DFB5D8D3FBF2A0F /* ServiceNameVectorsTests.swift */,
 				6E21225B8D0199186BA4D194 /* SigningExpiryTests.swift */,
 				B6BADDD6BD96E0AC52AA90BD /* SuggestionsTests.swift */,
 				1E65928D5D49A9294DEEF332 /* TestFonts.swift */,
@@ -523,6 +528,7 @@
 				235D10EDA6DEC652D26ECE10 /* categories.json */,
 				6B6ABFCA2CCF14D38B8BDAED /* period-test-vectors.json */,
 				16F92C157275F9AA6D760455 /* recurring-vectors.json */,
+				02020E3EEBB0438CA4F9B9DD /* service-name-vectors.json */,
 			);
 			path = shared;
 			sourceTree = "<group>";
@@ -720,6 +726,7 @@
 				AB171D2591A0614D298B0B26 /* categories.json in Resources */,
 				6BB7A16E3F9DF0A6BD5309AC /* period-test-vectors.json in Resources */,
 				B2AB891DADC45E8012159EC4 /* recurring-vectors.json in Resources */,
+				BE9B776B989667236A6D2EAB /* service-name-vectors.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -792,6 +799,7 @@
 				A786E2B4EA2124453BB668EC /* RichTextTests.swift in Sources */,
 				993C79A798814EDFC5506F46 /* ServiceLogic.swift in Sources */,
 				BA6104FEE86502169BAECA7D /* ServiceLogicTests.swift in Sources */,
+				9CB1FD757657B5B123CDBC61 /* ServiceNameVectorsTests.swift in Sources */,
 				4BCB42C742AA0AEF0249879D /* SigningExpiryService.swift in Sources */,
 				360A4A33883A51281C53AB3E /* SigningExpiryTests.swift in Sources */,
 				579E9B6AACDA3892F25CA4D1 /* Suggestions.swift in Sources */,

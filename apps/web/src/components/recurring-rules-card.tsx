@@ -14,7 +14,7 @@ import { RecurringRuleDialog } from "@/components/recurring-rule-dialog";
 import { useAppError } from "@/components/app-error";
 import { useAuth, useHousehold } from "@/components/providers";
 import { getFirebaseClient } from "@/lib/firebase/client";
-import { useBankCharges, useRecurringRules } from "@/lib/firebase/hooks";
+import { useBankCharges, useRecurringRules, useServices } from "@/lib/firebase/hooks";
 import {
   addRecurringRule,
   deleteRecurringRule,
@@ -56,6 +56,11 @@ export function RecurringRulesCard({
 
   const [editing, setEditing] = useState<RecurringRuleDoc | null>(null);
   const [adding, setAdding] = useState(false);
+
+  // Only while the dialog is open — see the same call on the Gastos screen.
+  const servicesForRule = useServices(
+    adding || editing !== null ? household.id : null,
+  ).services;
 
   const pendingMerchants = charges
     .filter(isPending)
@@ -160,6 +165,7 @@ export function RecurringRulesCard({
           household={household}
           locale={locale}
           pendingMerchants={pendingMerchants}
+          services={servicesForRule}
           onSave={(input) => {
             write(saveAndApply(input, editing?.id));
             close();

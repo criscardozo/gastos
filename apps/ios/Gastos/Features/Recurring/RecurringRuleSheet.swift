@@ -1,3 +1,4 @@
+import FirebaseFirestore
 import SwiftUI
 
 /// Add or edit a recurring-expense rule.
@@ -22,7 +23,33 @@ struct RecurringRuleSheet: View {
     @State private var amount = BudgetEntryAmount()
     @State private var confirmDelete = false
 
+    /// The household's services, loaded only while the category is Servicios.
+    ///
+    /// Servicios links a service to its charge by NAME: an expense in that
+    /// category whose note IS the service's name is that month's charge. A
+    /// rule already chooses the note of what it files, so a rule can close a
+    /// service's month on its own — but the note arrives seeded with the
+    /// merchant, and "Google Youtubepremium" links to nothing. It fails the
+    /// only way that is hard to notice: the expense is filed, correct, and the
+    /// service goes on saying it was never charged.
+    @State private var services: [ServiceDoc] = []
+    @State private var servicesListener: ListenerRegistration?
+    /// Set only by choosing "write it myself"; the list is otherwise always
+    /// what a Servicios rule uses, even when nothing in it is selected. An
+    /// empty list is what says a choice is owed — deriving free text from "the
+    /// note is not a service" would leave the seeded merchant sitting there
+    /// looking answered.
+    @State private var writesOwnNote = false
+
     private var l10n: L10n { model.l10n }
+
+    private var picksService: Bool {
+        categoryId == ServiceLogic.categoryId && !services.isEmpty
+    }
+    private var usesList: Bool { picksService && !writesOwnNote }
+    private var matchedService: ServiceDoc? {
+        services.first { ServiceLogic.nameKey($0.name) == ServiceLogic.nameKey(note) }
+    }
     /// Same rule the entry form uses: the app's language, not the device's.
     private var separator: String { l10n.language == "en" ? "." : "," }
 
@@ -43,9 +70,24 @@ struct RecurringRuleSheet: View {
                         .appFont(11.5, .semibold)
                         .foregroundStyle(Theme.inkSecondary)
 
-                    field(l10n.t("recurring.note")) {
-                        TextField("Opal", text: $note)
-                            .appFont(15)
+                    if picksService {
+                        VStack(alignment: .leading, spacing: 6) {
+                            SectionLabel(text: l10n.t("recurring.noteService"))
+                            servicePicker
+                            Text(
+                                usesList
+                                    ? l10n.t("recurring.noteServiceHelp")
+                                    : l10n.t("recurring.noteServiceOtherHelp")
+                            )
+                            .appFont(11.5)
+                            .foregroundStyle(Theme.inkTertiary)
+                        }
+                    }
+                    if !usesList {
+                        field(l10n.t("recurring.note")) {
+                            TextField("Opal", text: $note)
+                                .appFont(15)
+                        }
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -124,6 +166,23 @@ struct RecurringRuleSheet: View {
             }
         }
         .onAppear(perform: load)
+        // Only while the category is Servicios: the picker costs a listener
+        // exactly when somebody is looking at it. `services` is a register —
+        // one document per bill, capped at 100 — so it is one of the few
+        // collections this app reads unbounded, and it stops on dismiss.
+        .task(id: categoryId) {
+            guard categoryId == ServiceLogic.categoryId,
+                  servicesListener == nil,
+                  let householdId = model.household?.id
+            else { return }
+            servicesListener = model.db.listenServices(householdId: householdId) {
+                services = $0
+            }
+        }
+        .onDisappear {
+            servicesListener?.remove()
+            servicesListener = nil
+        }
     }
 
     // MARK: Pieces
@@ -152,6 +211,39 @@ struct RecurringRuleSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// The service's name goes in VERBATIM. Typing it is what breaks the link,
+    /// so the one thing this control must never do is hand back something the
+    /// user could have typed.
+    private var servicePicker: some View {
+        Picker(l10n.t("recurring.noteService"), selection: serviceSelection) {
+            if usesList && matchedService == nil {
+                Text(l10n.t("recurring.noteServicePick")).tag("")
+            }
+            ForEach(services) { service in
+                Text(service.name).tag(service.id)
+            }
+            Text(l10n.t("recurring.noteServiceOther")).tag("__other")
+        }
+        .pickerStyle(.menu)
+        .tint(Theme.ink)
+    }
+
+    private var serviceSelection: Binding<String> {
+        Binding(
+            get: { usesList ? (matchedService?.id ?? "") : "__other" },
+            set: { picked in
+                if picked == "__other" {
+                    writesOwnNote = true
+                    return
+                }
+                writesOwnNote = false
+                if let service = services.first(where: { $0.id == picked }) {
+                    note = service.name
+                }
+            }
+        )
     }
 
     private var categoryPicker: some View {
@@ -211,6 +303,11 @@ struct RecurringRuleSheet: View {
         !pattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !categoryId.isEmpty
+            // In list mode the note has to BE one of the services. This is the
+            // guard the control exists for: saving a Servicios rule whose note
+            // matches nothing is the silent failure, so it is refused rather
+            // than warned about.
+            && (!usesList || matchedService != nil)
             && (asks || amount.audCents > 0)
     }
 

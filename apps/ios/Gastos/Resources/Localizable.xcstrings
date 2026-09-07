@@ -4550,6 +4550,86 @@
         }
       }
     },
+    "recurring.noteService": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servicio que paga"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Service it pays"
+          }
+        }
+      }
+    },
+    "recurring.noteServicePick": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elegí un servicio…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a service…"
+          }
+        }
+      }
+    },
+    "recurring.noteServiceOther": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otro — lo escribo yo"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other — I'll write it"
+          }
+        }
+      }
+    },
+    "recurring.noteServiceHelp": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El servicio va a figurar como cobrado del mes cuando llegue este cargo."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The service will show as charged for the month when this charge lands."
+          }
+        }
+      }
+    },
+    "recurring.noteServiceOtherHelp": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un gasto de Servicios que no es ninguno de los registrados."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A Servicios expense that is none of the registered ones."
+          }
+        }
+      }
+    },
     "recurring.category": {
       "localizations": {
         "es": {

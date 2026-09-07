@@ -2310,3 +2310,103 @@ test("a charge with nothing to match is created as its own expense", async ({
     })
     .toBe("dismissed/5000/verified");
 });
+
+/**
+ * A recurring rule that closes a service's month.
+ *
+ * These two features are deliberately separate collections — a service is
+ * SCHEDULED and asks "has this month's arrived?", a rule is not scheduled at
+ * all and fires when a charge lands — but they already meet, by name: an
+ * expense in the Servicios category whose note IS the service's name is that
+ * month's charge. A rule picks the note of what it files, so it could always
+ * do this.
+ *
+ * What it could not do is tell you. The note is seeded with the merchant, so
+ * the obvious rule for "GOOGLE YOUTUBEPREMIUM" files a note of "Google
+ * Youtubepremium" and the service goes on saying it was never charged — while
+ * the expense sits there, filed and correct. This walks the path that fixes
+ * it: choosing the service from a list rather than typing its name.
+ */
+test("a recurring rule can be pointed at the service it pays", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-svcrule-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("SvcRule Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await page.getByRole("button", { name: "Agregar", exact: true }).click();
+  await page.getByLabel("Nombre").fill("YouTube");
+  await page.getByLabel("AUD").fill("11,99");
+  await page.getByLabel("Día de vencimiento").fill("7");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Todavía no se cobró")).toBeVisible();
+
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const householdId = (
+    ((await households.json()).documents as {
+      name: string;
+      fields: { name: { stringValue: string } };
+    }[]).find((d) => d.fields.name.stringValue === "Hogar de SvcRule") as {
+      name: string;
+    }
+  ).name
+    .split("/")
+    .pop() as string;
+  await request.post(
+    `${REST}/households/${householdId}/bankCharges?documentId=gmail-yt1`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          usdCents: { integerValue: "780" },
+          date: { stringValue: sydneyDate(0) },
+          merchant: { stringValue: "GOOGLE YOUTUBEPREMIUM" },
+          importedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await page
+    .getByRole("button", { name: /Hacerlo recurrente — GOOGLE YOUTUBEPREMIUM/ })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Gastos recurrentes" });
+
+  // Free text until the category says Servicios, seeded with the merchant.
+  await expect(dialog.getByLabel("Cómo se llama el gasto")).toHaveValue(
+    "Google Youtubepremium",
+  );
+  await dialog.getByLabel("Categoría").selectOption({ label: "Servicios" });
+
+  // Now it is the list, and nothing is selected: the seeded merchant is not a
+  // service, and saying so is the whole point. Saving is refused until it is
+  // answered, because a rule that files a note matching no service fails in
+  // the one way nobody notices.
+  const picker = dialog.getByLabel("Servicio que paga");
+  await expect(picker).toBeVisible();
+  await expect(dialog.getByLabel("Cómo se llama el gasto")).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Guardar" })).toBeDisabled();
+
+  await picker.selectOption({ label: "YouTube" });
+  await dialog.getByRole("tab", { name: "Importe sugerido (AUD)" }).click();
+  await dialog.getByLabel("Importe sugerido (AUD)").fill("11,99");
+  await dialog.getByRole("button", { name: "Guardar" }).click();
+
+  // Filed on the spot, under the service's own name.
+  await expect(
+    page.getByRole("button", { name: /Verificado.*YouTube, \$ ?11,99/ }),
+  ).toBeVisible({ timeout: 20_000 });
+
+  // ...and that is what Servicios was waiting for.
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await expect(page.getByText("Todavía no se cobró")).toHaveCount(0);
+  await expect(page.getByText("1 de 1 servicios del mes")).toBeVisible();
+});

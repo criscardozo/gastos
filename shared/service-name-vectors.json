@@ -1,0 +1,38 @@
+{
+  "$comment": [
+    "Servicios links a service to its charge by NAME: an expense in the",
+    "Servicios category whose note folds to the same key as a service's name",
+    "IS that month's charge. A recurring rule can therefore close a service's",
+    "month by filing under its name — which is why the rule editor offers the",
+    "list rather than a text box.",
+    "",
+    "The fold exists twice (apps/web/src/lib/services.ts nameKey,",
+    "apps/ios/Gastos/Core/ServiceLogic.swift nameKey) and the two are not the",
+    "same code: one strips combining marks after NFD, the other asks Foundation",
+    "for a diacritic- and case-insensitive folding. They agree on everything",
+    "below. Measured, not assumed.",
+    "",
+    "They do NOT agree on one thing, deliberately left alone:",
+    "  Straße -> straße (web) but strasse (iOS)",
+    "ss-folding is a German convention that Foundation applies and NFD cannot,",
+    "since ß carries no combining mark. Making them agree would mean editing a",
+    "fold that existing service names already run through, to serve a character",
+    "that cannot appear in this household's bills. Recorded here so the next",
+    "person finds the answer instead of the surprise."
+  ],
+  "sameKey": [
+    { "a": "YouTube", "b": "youtube", "why": "case" },
+    { "a": "YouTube", "b": "  YouTube  ", "why": "surrounding space" },
+    { "a": "Telefonía", "b": "TELEFONIA", "why": "accent and case" },
+    { "a": "Café", "b": "cafe", "why": "accent" },
+    { "a": "Ñandú", "b": "nandu", "why": "tilde and accent" },
+    { "a": "Netflix ", "b": "Netflix", "why": "trailing space" },
+    { "a": "İstanbul", "b": "istanbul", "why": "dotted capital I" }
+  ],
+  "differentKey": [
+    { "a": "YouTube", "b": "YouTube Premium", "why": "a longer name is a different service" },
+    { "a": "Disney+", "b": "Disney", "why": "punctuation is part of the name" },
+    { "a": "Netflix", "b": "Netflex", "why": "a typo does not link, which is the point of the picker" },
+    { "a": "Luz", "b": "", "why": "an empty note links to nothing" }
+  ]
+}

@@ -254,6 +254,7 @@ targets:
         buildPhase: resources
       - path: ../../shared/bank-match-vectors.json
       - path: ../../shared/recurring-vectors.json
+      - path: ../../shared/service-name-vectors.json
         buildPhase: resources
     settings:
       base:
