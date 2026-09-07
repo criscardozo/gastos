@@ -427,18 +427,38 @@ acaba de pedir.
   app encuentra sólo los sobrantes del e2e. El hogar quedaba a nombre de un
   "Bank Tester" y la app mostraba el onboarding sin ninguna pista. Ahora falla y
   dice qué esperar.
-- **Una aserción por pantalla no dice nada sobre el servidor: la caché hace eco
-  de la escritura en el instante en que se encola.** Las reglas se evalúan del
-  lado del servidor, así que un batch que las reglas RECHAZAN se ve idéntico en
-  pantalla a uno que aceptan — y con `persistentLocalCache` el eco sobrevive
-  incluso a un `page.reload()`. Los tres tests de recurrentes verificaban una
-  escritura en batch (crear el gasto + estampar `dismissedAt` en el cargo) sólo
-  por pantalla: si caía la primera mitad nomás, pasaban en verde, el cargo
-  quedaba pendiente para todos los demás dispositivos y la regla lo volvía a
-  cargar en el próximo ingreso — el gasto duplicado. Ahora los tres tienen un
-  `expect.poll` contra el REST admin. **Y la sonda hay que mutarla**: apuntada a
-  `pending` tiene que fallar, o es un poll verde que no consulta nada. Lo trajo
-  la sesión Stock, que se comió el mismo bug en su suite.
+- **La atomicidad es lo que hace alcanzar al chequeo barato — y eso hay que
+  medirlo, no suponerlo.** Escribí que un batch rechazado por las reglas «se ve
+  idéntico en pantalla» a uno aceptado. Lo medí con reglas que aceptan el gasto
+  y niegan el `update` del cargo: **es falso**. Aceptado da `row=1 panel=0`,
+  negado da `row=0 panel=1`, las dos cosas firmes a los 150ms, sin ni un
+  destello del eco optimista. `fileChargeAsExpense` es **un** `writeBatch`, así
+  que rechazar cualquier mitad revierte el conjunto y el listener reporta el
+  rollback. Lo mismo le pasó a la sesión Stock en su proyecto y se desmintió
+  primero.
+- **Entonces el poll contra el servidor sirve, pero para menos de lo que
+  parece.** Suma tres cosas concretas: los campos que ninguna pantalla renderiza
+  (`dismissedAt` presente, `verified`, el importe en centavos enteros y no
+  `"$ 15,00"`); no depender de que una aserción de pantalla le gane la carrera
+  al ack del servidor; y la que se gana el sueldo, **ser lo que se daría cuenta
+  si esa escritura dejara de ser un solo batch**. Partido en dos `await`, el
+  gasto commitea y NO se revierte: medido, `row=1` con el cargo todavía
+  pendiente en el servidor. El primer test de recurrentes no asegura el contador
+  del panel, así que ahí la pantalla se come el engaño entero. Nada más en la
+  suite fija esa atomicidad.
+- **Y la sonda hay que mutarla**: apuntada a `pending` tiene que fallar, o es un
+  poll verde que no consulta nada. Igual que el control del experimento tiene
+  que dar positivo — mi primera medición dio `row=0` en las dos ramas y no
+  significaba nada hasta que corrí el control.
+- **Un experimento tirable también necesita el `afterEach`.** El probe dejó
+  instaladas las reglas hostiles y la corrida siguiente murió antes de empezar,
+  culpando al código equivocado — exactamente lo que `app.spec.ts` advierte en
+  un comentario que acababa de leer. Y después `.find(h => nombre === "Hogar de
+  Probe")` me devolvió el hogar de una corrida anterior, así que el cargo iba a
+  un hogar que la sesión no veía y el síntoma era «el panel nunca aparece»: el
+  mismo fallback silencioso del `userInfo[0]` del seed, dos entradas más arriba
+  en este archivo. Un throwaway se salta las dos protecciones porque parece que
+  no valen para algo que vas a borrar.
 - **El arreglo ya estaba en el archivo, un test más arriba.** El test de
   bank-match polea desde siempre y tiene escrito el motivo — «the UI reflects
   the local write immediately, so a single read here can beat the batch's

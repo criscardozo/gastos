@@ -2025,18 +2025,30 @@ test("a recurring rule files the charge it recognises, and it can be taken back"
   ).toBeVisible();
   await expect(page.getByText("US$ 12,40").first()).toBeVisible();
 
-  // Now the same two facts FROM THE SERVER, which is a different claim.
+  // Now the same two facts FROM THE SERVER, which is a NARROWER claim than it
+  // looks — and narrower than the first version of this comment said.
   //
-  // Everything above reads the local cache, and the cache echoes a write the
-  // instant it is enqueued — rules are evaluated server-side, so a batch the
-  // rules reject looks identical on screen to one they accept. This is a
-  // batch: it creates the expense AND stamps `dismissedAt` on the charge. If
-  // only the first half landed, every assertion above still passes, and the
-  // charge stays pending for every other device — so the rule files it again
-  // on the next open and the household gets the expense twice.
+  // That version said a rules rejection "looks identical on screen". Measured
+  // against the emulator with rules that allow the expense and deny the
+  // charge's update, it does not: accepted gives row=1 panel=0 and denied
+  // gives row=0 panel=1, both settled 150ms in, with no flash of the
+  // optimistic echo in between. `fileChargeAsExpense` is ONE `writeBatch`, so
+  // rejecting either half rolls back the whole thing and the listener reports
+  // the rollback. The atomicity this app already guarantees is what makes the
+  // cheap check sufficient. (Credit to the Stock session, which measured the
+  // same claim false in its own suite first and said so.)
   //
-  // The bank-match test above already polls for exactly this reason. I wrote
-  // that comment and then wrote this test without it.
+  // So what this poll adds, exactly:
+  //   - the fields no screen renders: `dismissedAt` present at all, `verified`
+  //     true, the amount as integer cents rather than "$ 15,00" formatted;
+  //   - not needing a screen assertion to win the race against the server ack;
+  //   - and the one that earns its keep: it is what would notice if
+  //     `fileChargeAsExpense` ever stopped being a single batch. Split into
+  //     two awaits, the expense commits and is NOT rolled back, so the row
+  //     renders and every assertion above passes — measured: row=1 with the
+  //     charge still pending on the server. This test has no panel-count
+  //     assertion, so the screen is fooled completely here; the other two
+  //     catch it on the panel. Nothing else in the suite pins that atomicity.
   await expect
     .poll(async () => {
       const [charges, expenses] = await Promise.all([
@@ -2157,10 +2169,13 @@ test("a rule made from a charge files that charge on the spot", async ({
 
   // And on the SERVER, all three: the rule saved, the charge dismissed, the
   // expense filed. This is the flow that shipped broken — the rule saved and
-  // the charge sat there — so the screen agreeing is the weaker half of the
-  // claim. The screen reads a cache that echoes the batch before the rules
-  // have seen it; only this says the household will find the same thing
-  // tomorrow, on the phone.
+  // the charge sat there — so it is worth stating twice.
+  //
+  // What it adds over the screen is the narrow list in the first recurring
+  // test above (fields nothing renders, no race, and the guard on the write
+  // staying a single batch); it is NOT that the screen cannot see a rejection.
+  // It can: the batch is atomic, so a rejected half rolls the whole thing
+  // back. Measured, not assumed.
   await expect
     .poll(async () => {
       const [rules, charge, expenses] = await Promise.all([
@@ -2264,9 +2279,9 @@ test("a charge with nothing to match is created as its own expense", async ({
   await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
 
   // The server's version of the same sentence. Third batch in this feature,
-  // third poll: an expense created and a charge dismissed in one write, where
-  // half of it landing looks exactly like all of it on a screen reading the
-  // local cache.
+  // third poll — for the reasons listed on the first one, which are narrower
+  // than "the screen cannot tell": while this stays one batch, the screen can
+  // tell. The poll is what keeps that true.
   await expect
     .poll(async () => {
       const [charge, expenses] = await Promise.all([
