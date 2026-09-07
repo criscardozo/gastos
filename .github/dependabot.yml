@@ -33,6 +33,17 @@ updates:
           - "*"
 
   # iOS Swift Package Manager dependencies (Firebase, GoogleSignIn)
+  # Swift, with a warning attached.
+  #
+  # There is NO iOS CI — a private repo bills macOS runners at 10x against one
+  # free allowance, which this project does not spend — so the green ticks on a
+  # Swift PR here are the web's and the rules' checks. They mean "the web still
+  # works" and nothing else. A Swift bump is verified by building and running
+  # the 143 Swift tests on Cristian's machine, which is where every other iOS
+  # thing is verified too.
+  #
+  # Which makes the noise worth suppressing: a PR that cannot be auto-verified
+  # should at least be about code the app actually compiles.
   - package-ecosystem: swift
     directory: "/apps/ios"
     schedule:
@@ -50,3 +61,17 @@ updates:
       - dependency-name: "*"
         update-types:
           - version-update:semver-major
+      # Analytics and Ads, which this app does not link.
+      #
+      # It uses FirebaseAuth and FirebaseFirestore only. These TWO packages are
+      # in Package.resolved because the firebase-ios-sdk package DECLARES them
+      # for FirebaseAnalytics, which is not included — so their code is never
+      # compiled into the app, and a PR bumping them moves nothing that runs.
+      # One such PR was opened and closed (#23) before this was added.
+      #
+      # Listed under both spellings on purpose: Package.resolved names the repo
+      # in lower case and the PR titled it in mixed case, and which one
+      # Dependabot matches on is not worth finding out by waiting a week.
+      - dependency-name: "google-ads-on-device-conversion-ios-sdk"
+      - dependency-name: "googleappmeasurement"
+      - dependency-name: "GoogleAppMeasurement"
