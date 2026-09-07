@@ -457,6 +457,24 @@ acaba de pedir.
   agarra un batch partido, corrí el batch partido **sin** las reglas hostiles:
   las dos escrituras pasan, el test da verde, y el verde no significaba nada.
   Tres veces en un día con el mismo error de diseño.
+- **Un comentario equivocado sobrevive más que un bug, porque nada lo
+  ejecuta.** La frase es de la sesión Stock y es el motivo por el que vale la
+  pena corregir un comentario que ya nadie va a mirar. Un bug lo encuentra
+  alguien: falla, alguien lo reporta, alguien lo arregla. Una frase falsa en un
+  comentario la lee el próximo y la usa — y si está escrita con seguridad, la
+  usa sin verificarla. Este archivo tiene cuatro de esta semana: la cabecera del
+  spec que decía 9099/8080 mucho después de que el código cambiara, «una policy
+  estricta necesitaría esfuerzo» cuando el problema era una contradicción, «un
+  batch rechazado se ve idéntico en pantalla» cuando la atomicidad lo delata a
+  los 150ms, y el `(8080 was busy)` sobre un puerto que nunca se intentó. Las
+  cuatro habrían mandado al siguiente a mirar el lugar equivocado.
+- **Y lo que hizo que aparecieran no fue leer código nuevo, fue que preguntara
+  alguien que no lo había escrito.** Los tres bugs que encontramos esta semana
+  con la sesión Stock son de código de esta misma semana, y los tres salieron de
+  que ellos encontraran algo en su proyecto y nosotros preguntáramos si aplicaba
+  acá; los cinco de ellos, al revés. No hace falta que el otro conozca el
+  proyecto: alcanza con que traiga la pregunta. El autor no puede hacerse esa
+  pregunta con la misma fuerza porque ya decidió que estaba bien.
 - **Y tiene una mitad retrospectiva, que es la que ya usábamos sin nombrar:**
   cuando una verificación da el resultado esperado, preguntarse *qué otra cosa
   produciría ese mismo resultado*. Eso es lo que desarmó el pre-flight del
