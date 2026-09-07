@@ -32,6 +32,36 @@ import config from "../../../../firebase/firebase.json";
 const ROOT = join(import.meta.dirname, "../../../..");
 const AUTH = String(config.emulators.auth.port);
 const FIRESTORE = String(config.emulators.firestore.port);
+const WEBSOCKET = String(config.emulators.firestore.websocketPort);
+const UI = String(config.emulators.ui.port);
+const HUB = String(config.emulators.hub.port);
+const LOGGING = String(config.emulators.logging.port);
+
+/**
+ * Prose is a copy too — and for four of these six it is the ONLY other copy.
+ *
+ * Everything above this line checks code. Measured by mutation, that leaves a
+ * hole: move `auth` in firebase.json and five tests fail, but move the UI, the
+ * hub, the logging or the websocket port and all eight still pass. No code
+ * default repeats those four. They live in firebase.json and in sentences.
+ *
+ * The class is narrower than "the docs go stale". A comment that was WRONG
+ * when written is caught by measuring once; these were RIGHT when written and
+ * stopped being right when the block moved, which no amount of care at writing
+ * time prevents. The spec header two files over claimed 9099/8080 for two days
+ * after the code changed. (The Stock session found the same hole in its own
+ * ports guard, from the same measurement, and swept two more out of its docs.)
+ *
+ * Each file lists the ports it actually names, not all six, because a guard
+ * that demands more than a file claims gets loosened until it means nothing.
+ * `docs/reglas.md` is deliberately absent: it narrates what the ports used to
+ * be, so pinning it would forbid writing history down.
+ */
+const DOCUMENTED: readonly (readonly [string, readonly string[]])[] = [
+  ["CLAUDE.md", [AUTH, FIRESTORE, WEBSOCKET, UI, HUB, LOGGING]],
+  ["README.md", [AUTH, FIRESTORE, UI]],
+  ["apps/ios/README.md", [AUTH, FIRESTORE]],
+];
 
 function read(path: string): string {
   return readFileSync(join(ROOT, path), "utf8");
@@ -72,6 +102,30 @@ describe("every copy of the emulator ports", () => {
     const swift = read("apps/ios/Gastos/Services/FirestoreService.swift");
     expect(swift).toContain(`port: ${AUTH}`);
     expect(swift).toContain(`settings.host = "localhost:${FIRESTORE}"`);
+  });
+
+  it.each(DOCUMENTED.map((d) => [d[0], d[1]] as const))(
+    "agrees with firebase.json — the prose in %s",
+    (path, ports) => {
+      const text = read(path);
+      for (const port of ports) expect(text, `${path} must name :${port}`).toContain(port);
+    },
+  );
+
+  it("has no port in firebase.json that nothing documents", () => {
+    // The completeness half. Adding a seventh port to the config should fail
+    // here until somebody decides which sentence explains it, because the
+    // lesson of the `wait-on` was that a guard saying "every copy" has to be
+    // told what every copy is — and the number you believe is the one to
+    // distrust.
+    const declared = [
+      ...JSON.stringify(config.emulators).matchAll(/"(?:websocketPort|port)":(\d+)/g),
+    ].map((m) => m[1]);
+    expect(declared.length).toBe(6);
+    const documented = new Set(DOCUMENTED.flatMap((d) => d[1]));
+    for (const port of declared) {
+      expect(documented, `:${port} is in firebase.json but in no prose`).toContain(port);
+    }
   });
 
   it("is nowhere still on Firebase's defaults", () => {
