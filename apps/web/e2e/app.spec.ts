@@ -3,9 +3,13 @@
 // started externally). Sign-in uses the emulator-only window.__devSignIn hook
 // wired in src/lib/firebase/client.ts.
 //
-// The emulator ports default to 9099 (auth) / 8080 (firestore) but can be
-// overridden with NEXT_PUBLIC_AUTH_EMULATOR_PORT / _FIRESTORE_EMULATOR_PORT so
-// the suite can run on alternate ports when the defaults are taken.
+// The emulator ports default to 9390 (auth) / 8390 (firestore) — this
+// project's own block, because Firebase's defaults are all held by SSH
+// forwards on this machine — and can be overridden with
+// NEXT_PUBLIC_AUTH_EMULATOR_PORT / _FIRESTORE_EMULATOR_PORT.
+//
+// This comment said 9099/8080 for a while after the code below stopped: prose
+// is a copy of those numbers that nothing checks and no refactor touches.
 //
 // The default locale is Spanish (es-AR formatting), so assertions use the
 // Spanish copy until the language is switched at the end.
@@ -2021,6 +2025,40 @@ test("a recurring rule files the charge it recognises, and it can be taken back"
   ).toBeVisible();
   await expect(page.getByText("US$ 12,40").first()).toBeVisible();
 
+  // Now the same two facts FROM THE SERVER, which is a different claim.
+  //
+  // Everything above reads the local cache, and the cache echoes a write the
+  // instant it is enqueued — rules are evaluated server-side, so a batch the
+  // rules reject looks identical on screen to one they accept. This is a
+  // batch: it creates the expense AND stamps `dismissedAt` on the charge. If
+  // only the first half landed, every assertion above still passes, and the
+  // charge stays pending for every other device — so the rule files it again
+  // on the next open and the household gets the expense twice.
+  //
+  // The bank-match test above already polls for exactly this reason. I wrote
+  // that comment and then wrote this test without it.
+  await expect
+    .poll(async () => {
+      const [charges, expenses] = await Promise.all([
+        request.get(`${REST}/households/${householdId}/bankCharges/gmail-opal1`, {
+          headers: admin,
+        }),
+        request.get(`${REST}/households/${householdId}/expenses`, { headers: admin }),
+      ]);
+      const charge = (await charges.json()) as {
+        fields?: { dismissedAt?: unknown };
+      };
+      const filed = (((await expenses.json()).documents ?? []) as {
+        fields: Record<string, { integerValue?: string; booleanValue?: boolean }>;
+      }[]).find((d) => d.fields.usdCents?.integerValue === "1240");
+      return [
+        charge.fields?.dismissedAt === undefined ? "pending" : "dismissed",
+        filed === undefined ? "no-expense" : filed.fields.amountCents?.integerValue,
+        filed?.fields.verified?.booleanValue === true ? "verified" : "unverified",
+      ].join("/");
+    })
+    .toBe("dismissed/1500/verified");
+
   // ...and it can be taken back, which puts the charge back in the list.
   await page
     .getByRole("button", { name: /Deshacer la carga automática/ })
@@ -2116,6 +2154,40 @@ test("a rule made from a charge files that charge on the spot", async ({
     }),
   ).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
+
+  // And on the SERVER, all three: the rule saved, the charge dismissed, the
+  // expense filed. This is the flow that shipped broken — the rule saved and
+  // the charge sat there — so the screen agreeing is the weaker half of the
+  // claim. The screen reads a cache that echoes the batch before the rules
+  // have seen it; only this says the household will find the same thing
+  // tomorrow, on the phone.
+  await expect
+    .poll(async () => {
+      const [rules, charge, expenses] = await Promise.all([
+        request.get(`${REST}/households/${householdId}/recurringRules`, {
+          headers: admin,
+        }),
+        request.get(`${REST}/households/${householdId}/bankCharges/gmail-spot1`, {
+          headers: admin,
+        }),
+        request.get(`${REST}/households/${householdId}/expenses`, { headers: admin }),
+      ]);
+      const rule = (((await rules.json()).documents ?? []) as {
+        fields: { pattern?: { stringValue?: string } };
+      }[]).find((d) => d.fields.pattern?.stringValue === "OPAL AUCKLAND ST");
+      const filed = (((await expenses.json()).documents ?? []) as {
+        fields: Record<string, { integerValue?: string }>;
+      }[]).find((d) => d.fields.usdCents?.integerValue === "1240");
+      return [
+        rule === undefined ? "no-rule" : "rule",
+        ((await charge.json()) as { fields?: { dismissedAt?: unknown } }).fields
+          ?.dismissedAt === undefined
+          ? "pending"
+          : "dismissed",
+        filed === undefined ? "no-expense" : filed.fields.amountCents?.integerValue,
+      ].join("/");
+    })
+    .toBe("rule/dismissed/1500");
 });
 
 test("a charge with nothing to match is created as its own expense", async ({
@@ -2190,4 +2262,30 @@ test("a charge with nothing to match is created as its own expense", async ({
   ).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("US$ 32,50").first()).toBeVisible();
   await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
+
+  // The server's version of the same sentence. Third batch in this feature,
+  // third poll: an expense created and a charge dismissed in one write, where
+  // half of it landing looks exactly like all of it on a screen reading the
+  // local cache.
+  await expect
+    .poll(async () => {
+      const [charge, expenses] = await Promise.all([
+        request.get(`${REST}/households/${householdId}/bankCharges/gmail-new1`, {
+          headers: admin,
+        }),
+        request.get(`${REST}/households/${householdId}/expenses`, { headers: admin }),
+      ]);
+      const filed = (((await expenses.json()).documents ?? []) as {
+        fields: Record<string, { integerValue?: string; booleanValue?: boolean }>;
+      }[]).find((d) => d.fields.usdCents?.integerValue === "3250");
+      return [
+        ((await charge.json()) as { fields?: { dismissedAt?: unknown } }).fields
+          ?.dismissedAt === undefined
+          ? "pending"
+          : "dismissed",
+        filed === undefined ? "no-expense" : filed.fields.amountCents?.integerValue,
+        filed?.fields.verified?.booleanValue === true ? "verified" : "unverified",
+      ].join("/");
+    })
+    .toBe("dismissed/5000/verified");
 });

@@ -11,9 +11,16 @@ import { defineConfig, devices } from "@playwright/test";
 // The Next.js dev server is started automatically (webServer below) with the
 // emulator env vars, so sign-in uses the window.__devSignIn emulator-only
 // hook (signInWithPopup cannot be automated headlessly).
-// The dev-server port is configurable (E2E_PORT) so the suite can run while a
-// separate dev server holds the default 3000.
-const PORT = process.env.E2E_PORT ?? "3000";
+// The dev server runs on 3390 — this project's own port block, like the
+// emulators (see firebase/firebase.json), not Next's default 3000. On this
+// machine 3000 is held by a neighbouring project's `next dev` most of the day,
+// and the failure is `EADDRINUSE` from Playwright's webServer, which reads as
+// the suite being broken. Nothing registers this port (e2e signs in through
+// the emulator hook, so there is no OAuth redirect URI to whitelist), which is
+// what makes it free to move — unlike `pnpm dev`, still on 3000 because
+// `localhost:3000` is an authorized domain in the Firebase console.
+// Override with E2E_PORT.
+const PORT = process.env.E2E_PORT ?? "3390";
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({

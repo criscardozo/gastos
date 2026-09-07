@@ -427,6 +427,24 @@ acaba de pedir.
   app encuentra sólo los sobrantes del e2e. El hogar quedaba a nombre de un
   "Bank Tester" y la app mostraba el onboarding sin ninguna pista. Ahora falla y
   dice qué esperar.
+- **Una aserción por pantalla no dice nada sobre el servidor: la caché hace eco
+  de la escritura en el instante en que se encola.** Las reglas se evalúan del
+  lado del servidor, así que un batch que las reglas RECHAZAN se ve idéntico en
+  pantalla a uno que aceptan — y con `persistentLocalCache` el eco sobrevive
+  incluso a un `page.reload()`. Los tres tests de recurrentes verificaban una
+  escritura en batch (crear el gasto + estampar `dismissedAt` en el cargo) sólo
+  por pantalla: si caía la primera mitad nomás, pasaban en verde, el cargo
+  quedaba pendiente para todos los demás dispositivos y la regla lo volvía a
+  cargar en el próximo ingreso — el gasto duplicado. Ahora los tres tienen un
+  `expect.poll` contra el REST admin. **Y la sonda hay que mutarla**: apuntada a
+  `pending` tiene que fallar, o es un poll verde que no consulta nada. Lo trajo
+  la sesión Stock, que se comió el mismo bug en su suite.
+- **El arreglo ya estaba en el archivo, un test más arriba.** El test de
+  bank-match polea desde siempre y tiene escrito el motivo — «the UI reflects
+  the local write immediately, so a single read here can beat the batch's
+  server ack». Escribí ese comentario y después escribí tres tests sin él.
+  Cuando encontrás una clase de bug, la pregunta no es sólo «¿dónde más
+  aplica?» sino «¿esto ya lo resolví en este mismo archivo?».
 - **No tenemos Content-Security-Policy, y el motivo es una contradicción, no
   una tarea pendiente.** Proxeamos el handler de Firebase Auth por nuestro
   origen, y como los headers salen con `source: "/:path*"`, una CSP nuestra
