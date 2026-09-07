@@ -38,7 +38,7 @@ quota abuse from outside your apps. In
    `apps/ios/Gastos/Resources/GoogleService-Info.plist`. The web is unaffected:
    its Firebase config is keyed by domain, not by bundle id.
 2. **Browser key** (`AIzaSyCFjR...`, auto-created as "Browser key"): choose
-   **Websites** and add `gastos.cardozo.dev` and `gastos-diarios-web.vercel.app`,
+   **Websites** and add `gastos.cardozo.dev` and `gastos-merlines.vercel.app`,
    plus `localhost:3000` for local dev.
 3. Leave *API restrictions* on "Don't restrict key" (Firebase needs its own
    set), or restrict to Identity Toolkit + Token Service + Firestore APIs.
@@ -58,7 +58,7 @@ quota abuse from outside your apps. In
 The apex `cardozo.dev` is registered at Namecheap. To serve the app from a
 subdomain:
 
-1. **Vercel** → project `gastos-diarios-web` → Settings → Domains → add
+1. **Vercel** → project `gastos` → Settings → Domains → add
    `gastos.cardozo.dev`. Vercel shows the DNS record to create — for a
    subdomain it's a **CNAME** (value like `cname.vercel-dns-0.com`; use the
    exact value Vercel displays).
@@ -75,7 +75,7 @@ subdomain:
    the new domain.
 5. **Make it the canonical URL (optional).** Vercel → Settings → Domains: use
    the `⋯` menu on `gastos.cardozo.dev` → **Set as Production Domain**, then on
-   `gastos-diarios-web.vercel.app` choose **Redirect to** → `gastos.cardozo.dev`
+   `gastos-merlines.vercel.app` choose **Redirect to** → `gastos.cardozo.dev`
    (308). After that the app answers on one canonical URL and the `.vercel.app`
    forwards to it. The in-app "open the web" link (iOS Settings) already points
    at `https://gastos.cardozo.dev`.
