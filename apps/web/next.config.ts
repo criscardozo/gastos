@@ -101,6 +101,13 @@ const nextConfig: NextConfig = {
    * enough to avoid that is decoration. It is worth doing properly one day and
    * is not worth guessing at today.
    *
+   * When that day comes, `connect-src` has to include the EMULATOR hosts, and
+   * only when they are in use. The Stock session added a policy and its
+   * report-only run produced twelve violations, every one of them the
+   * emulator — and the symptom is not a CSP error anyone would see: it is
+   * Firestore never connecting and a screen with nothing on it. Measured
+   * there, written here, so it is not learned twice.
+   *
    * X-Frame-Options does not affect sign-in: the handler is a top-level
    * navigation (popup or redirect), never an iframe.
    */
