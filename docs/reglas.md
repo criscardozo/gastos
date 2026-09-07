@@ -333,6 +333,16 @@ acaba de pedir.
   `scripts/seed-emulator.mjs` y volver a sembrar — el script escribe documentos
   completos y es idempotente.
 
+- **"No Accounts" de xcodebuild no significa que Xcode no tenga la cuenta.**
+  Significa que no pudo cargar su credencial del keychain. El log lo dice
+  exacto —`Failed to load credentials for <uuid>: missing Xcode-Username`— y
+  recién después xcodebuild **poda** la cuenta que no pudo autenticar, que es
+  por qué la lista de cuentas queda vacía. La lista vacía es la consecuencia.
+  Leerla como la causa mandó dos veces a la instrucción equivocada. Descartado
+  con evidencia: no es el keychain bloqueado (está en `no-timeout`) ni el
+  script (nunca escribe al keychain). `install-ios.sh` ahora chequea el ítem
+  antes de compilar y dice qué falta.
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada
