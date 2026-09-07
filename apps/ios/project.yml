@@ -81,7 +81,7 @@ targets:
     info:
       path: Gastos/Info.plist
       properties:
-        CFBundleDisplayName: Gastos Diarios
+        CFBundleDisplayName: Gastos
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
@@ -163,7 +163,7 @@ targets:
     info:
       path: GastosWidget/Info.plist
       properties:
-        CFBundleDisplayName: Gastos Diarios
+        CFBundleDisplayName: Gastos
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
@@ -200,7 +200,7 @@ targets:
     info:
       path: GastosWatch/Info.plist
       properties:
-        CFBundleDisplayName: Gastos Diarios
+        CFBundleDisplayName: Gastos
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Modern single-target watchOS app paired to the iOS app.

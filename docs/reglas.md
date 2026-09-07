@@ -370,6 +370,18 @@ acaba de pedir.
   compara — en la suite de la web porque es la única que corre en CI, y una
   guarda que nadie corre es un comentario.
 
+- **Editar un archivo generado es no editar nada.** Cambié el nombre visible en
+  los tres `Info.plist` y el teléfono siguió mostrando el viejo después de una
+  instalación que reportó éxito: `xcodegen` regenera cada `Info.plist` desde
+  `info: properties:` de `project.yml`, así que el siguiente `xcodegen` deshizo
+  los tres cambios en silencio. La fuente es `project.yml`.
+- **Un nombre partido en dos líneas no aparece buscándolo como uno.** El título
+  del login era `Text(verbatim: "Gastos\nDiarios")` en iOS y
+  `Gastos<br />Diarios` en la web, así que el `grep` de "Gastos Diarios" no vio
+  ninguno de los dos y el rebranding se declaró terminado con el nombre viejo
+  en la primera pantalla que ve cualquiera. Lo fija
+  `apps/web/src/lib/ios-config.test.ts`, que busca la forma partida.
+
 ## 8. Secretos
 
 - Las claves de service account **nunca** entran al repo (gitignored) y cada

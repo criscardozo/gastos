@@ -64,7 +64,7 @@ struct OnboardingView: View {
                 .shadow(color: Color(hex: "#FF5C39", alpha: 0.35), radius: 14, y: 12)
                 .padding(.bottom, 24)
 
-            Text(verbatim: "Gastos\nDiarios")
+            Text(verbatim: "Gastos")
                 .appFont(34, .bold)
                 .kerning(-0.02 * 34)
                 .multilineTextAlignment(.center)

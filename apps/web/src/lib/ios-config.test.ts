@@ -61,3 +61,33 @@ describe("the iOS app's Firebase config", () => {
     expect(plistValue("PROJECT_ID")).toBe("qcris-gastos-diarios");
   });
 });
+
+describe("the name the phone shows", () => {
+  it("is set in project.yml, on all three bundles", () => {
+    // In project.yml and NOT in the Info.plists, because xcodegen regenerates
+    // those from `info: properties:` — an edit to a generated plist is undone
+    // by the next `xcodegen`, which is how the old label survived an install
+    // that reported success.
+    const names = [...project.matchAll(/CFBundleDisplayName: (.+)$/gm)].map(
+      (m) => m[1].trim(),
+    );
+    expect(names).toEqual(["Gastos", "Gastos", "Gastos"]);
+  });
+
+  it("is not left anywhere as the old one", () => {
+    // Searched as a regex across a line break too: the login title was
+    // `Text(verbatim: "Gastos\nDiarios")` on iOS and `Gastos<br />Diarios` on
+    // the web, so a plain search for "Gastos Diarios" found neither. Both are
+    // gone; this is what keeps them gone.
+    for (const path of [
+      "apps/ios/project.yml",
+      "apps/ios/Gastos/Features/Onboarding/OnboardingView.swift",
+      "apps/web/src/components/onboarding/onboarding.tsx",
+      "apps/web/src/app/manifest.webmanifest",
+      "apps/web/messages/es.json",
+      "apps/web/messages/en.json",
+    ]) {
+      expect(read(path), path).not.toMatch(/Gastos\s*(\\n|<br \/>|\s)\s*Diarios/);
+    }
+  });
+});

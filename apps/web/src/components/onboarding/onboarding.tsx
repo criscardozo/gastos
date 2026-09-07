@@ -82,10 +82,12 @@ function LoginStep() {
       <div className="mb-6 flex h-[88px] w-[88px] items-center justify-center rounded-[28px] bg-accent shadow-[0_12px_28px_rgba(255,92,57,.35)]">
         <PiggyMark size={64} variant="cream" />
       </div>
+      {/* From the messages, like the sidebar. Typed in, this was the last
+          place the old two-word name survived: it was split across a `<br />`,
+          so searching for it as one string found nothing. See
+          lib/ios-config.test.ts, which now looks for the split spelling. */}
       <h1 className="text-center text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-ink">
-        Gastos
-        <br />
-        Diarios
+        {t("app.name")}
       </h1>
       <p className="mb-12 mt-3.5 text-center text-[15px] leading-[1.45] text-ink-2">
         {t.rich("app.tagline", { br: () => <br /> })}
