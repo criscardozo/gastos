@@ -69,9 +69,15 @@ updates:
       # compiled into the app, and a PR bumping them moves nothing that runs.
       # One such PR was opened and closed (#23) before this was added.
       #
-      # Listed under both spellings on purpose: Package.resolved names the repo
-      # in lower case and the PR titled it in mixed case, and which one
-      # Dependabot matches on is not worth finding out by waiting a week.
-      - dependency-name: "google-ads-on-device-conversion-ios-sdk"
-      - dependency-name: "googleappmeasurement"
-      - dependency-name: "GoogleAppMeasurement"
+      # Named the way the SWIFT ecosystem names things: host and path, not the
+      # short repo name. The first attempt used the short names, Dependabot
+      # matched neither, and it re-opened the same PR (#25) within minutes of
+      # the config landing — which is at least a fast way to be told. The names
+      # here are copied from the PR body, which prints exactly what it matches:
+      #   Updates `github.com/google/googleappmeasurement` from 12.18.0 to …
+      #
+      # Lower case as the resolved file spells it; Dependabot's own body uses
+      # both cases for this one, so both are listed.
+      - dependency-name: "github.com/googleads/google-ads-on-device-conversion-ios-sdk"
+      - dependency-name: "github.com/google/googleappmeasurement"
+      - dependency-name: "github.com/google/GoogleAppMeasurement"
