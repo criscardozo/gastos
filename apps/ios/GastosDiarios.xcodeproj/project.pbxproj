@@ -55,6 +55,7 @@
 		6EE16FA45AC592A83DFE63DC /* FontLoadingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42DC61E9383304A6425AED4B /* FontLoadingTests.swift */; };
 		6F988A6795BF9227AEDA3A80 /* SigningExpiryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F875CB9A4249023372B6A501 /* SigningExpiryTests.swift */; };
 		789F6152666388E18CA30122 /* ExpenseVerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */; };
+		7927E6705EE3A3B32BB4C07B /* CreateFromChargeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B87194F3CAD284E2B4083B8 /* CreateFromChargeSheet.swift */; };
 		79C3AAF1F72C5A8D5923D2AF /* BankChargeInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */; };
 		7BF9EC6646A0185FAC5D276A /* RichText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FAB94B640D4DFAAF7E6AB91 /* RichText.swift */; };
 		7E5C183155873E3B21BC04CF /* CardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DA4DFB594CEF55E24F86CA7 /* CardsView.swift */; };
@@ -84,6 +85,7 @@
 		A81659D5DF0A3C5EA2D6BC8D /* GastosDiariosWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2312BF519B44947A6A995D /* GastosDiariosWidgetBundle.swift */; };
 		B088F40899D33FEB92EE2A8A /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23612A2AE85E20827C54AF6A /* Models.swift */; };
 		B34CA47D13921BED80C35823 /* GastosDiariosWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9E73BFFFDD149DEA34FF6D4B /* GastosDiariosWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B3CF232FF385BC71B50E4D55 /* BankChargesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E566CEA8337DECD9191FF093 /* BankChargesPanel.swift */; };
 		B9FE52D1FA9F7D04829C48D1 /* BudgetWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A287043194DBE706C3F695D1 /* BudgetWidget.swift */; };
 		BAD0594FFEBDF616197DE08A /* MoneyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552ACC0EF35076D9F87DE8BD /* MoneyFormatter.swift */; };
 		BB884FA28E193048F372B64F /* AppModel+Periods.swift in Sources */ = {isa = PBXBuildFile; fileRef = 259F5AD824CF65448A6876A2 /* AppModel+Periods.swift */; };
@@ -106,7 +108,6 @@
 		E3369B40B60E8E9F1C03A0CF /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = B2DE59304825CBC116B66700 /* categories.json */; };
 		E4509C563E7BE9E33D0AEF1C /* RecurringRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9735A9E9F67E32D74132AF3A /* RecurringRules.swift */; };
 		E49104A9FE7E72C24D85CD20 /* PeriodLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */; };
-		E5DC5BAF309E5A07BDACCC7F /* BankChargesSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641417306B9A3971B3910276 /* BankChargesSheet.swift */; };
 		E9A36DFB46064CBB78CB3148 /* NewPeriodScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7176FBEFF6274765EDCC3CCD /* NewPeriodScreen.swift */; };
 		EC2434DE5909830DA8DB749F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D3934372BE7A86D42D837236 /* GoogleSignIn */; };
 		ECD72F7F796CCE30319D28CD /* CountLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED06E0D2EF77E0D2F45131F /* CountLabelTests.swift */; };
@@ -182,6 +183,7 @@
 		2A179FF82E881F9FA70E35A6 /* AppModel+Recurring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Recurring.swift"; sourceTree = "<group>"; };
 		2B3321D9E7495AC37BDC6004 /* GastosDiarios.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GastosDiarios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B6F41CE08795F7FABF2312F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2B87194F3CAD284E2B4083B8 /* CreateFromChargeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateFromChargeSheet.swift; sourceTree = "<group>"; };
 		2BFB850DCD2E81C2D2FE3A61 /* ExpenseVerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseVerificationTests.swift; sourceTree = "<group>"; };
 		3064D79EEF48BC7380766319 /* RichTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichTextTests.swift; sourceTree = "<group>"; };
 		36C6176C5EC1A14172A018F1 /* BankChargeInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargeInbox.swift; sourceTree = "<group>"; };
@@ -194,7 +196,6 @@
 		5668D1DC7CEDD7BBB3BE18A4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		5ED06E0D2EF77E0D2F45131F /* CountLabelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountLabelTests.swift; sourceTree = "<group>"; };
 		5FF2C9C180DB1513B7C1F494 /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
-		641417306B9A3971B3910276 /* BankChargesSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargesSheet.swift; sourceTree = "<group>"; };
 		68782F8F6E6DBE2B3A582B62 /* GastosDiarios.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GastosDiarios.entitlements; sourceTree = "<group>"; };
 		6B98CA105FB223E5AFAF9A68 /* GastosDiariosTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GastosDiariosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6DA4DFB594CEF55E24F86CA7 /* CardsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardsView.swift; sourceTree = "<group>"; };
@@ -243,6 +244,7 @@
 		D97F66821E44E31296A3C8CB /* ExtendPeriodSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtendPeriodSheet.swift; sourceTree = "<group>"; };
 		DBF028A0AD8AB1D00020A299 /* RecurringRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRulesTests.swift; sourceTree = "<group>"; };
 		E0E1907B1FEAADDF744484A8 /* ModelDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDecodingTests.swift; sourceTree = "<group>"; };
+		E566CEA8337DECD9191FF093 /* BankChargesPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargesPanel.swift; sourceTree = "<group>"; };
 		E6926EB34226D1EF94D6ABB2 /* SuggestionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestionsTests.swift; sourceTree = "<group>"; };
 		E9FF38E6AC6CDBCE84D78FF7 /* PeriodLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogic.swift; sourceTree = "<group>"; };
 		EC439A76443D441CA1E59FBA /* WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
@@ -414,7 +416,7 @@
 		73CAD261DF4859186CE751F8 /* History */ = {
 			isa = PBXGroup;
 			children = (
-				641417306B9A3971B3910276 /* BankChargesSheet.swift */,
+				E566CEA8337DECD9191FF093 /* BankChargesPanel.swift */,
 				770FE80DDDE76F46C9859BB8 /* ExpenseDetailSheet.swift */,
 				D1033958EAF0770812248EF2 /* HistoryView.swift */,
 				7DBD83BF0FBE89C5BB0805F6 /* VerifyExpenseSheet.swift */,
@@ -504,6 +506,7 @@
 		B8C5CD2280E1B474BAC159BF /* Recurring */ = {
 			isa = PBXGroup;
 			children = (
+				2B87194F3CAD284E2B4083B8 /* CreateFromChargeSheet.swift */,
 				53783DA15EBC164A242B50E2 /* RecurringPromptSheet.swift */,
 				C39F4F6C624632E0AB022EDD /* RecurringRuleSheet.swift */,
 			);
@@ -767,13 +770,14 @@
 				8268094E7E032831B3671199 /* AppModel.swift in Sources */,
 				4E0559786DE3931FCA38453B /* AuthService.swift in Sources */,
 				E0BCA48607F739A48666E584 /* BankChargeInbox.swift in Sources */,
-				E5DC5BAF309E5A07BDACCC7F /* BankChargesSheet.swift in Sources */,
+				B3CF232FF385BC71B50E4D55 /* BankChargesPanel.swift in Sources */,
 				27FA6C49E3337B31FEF5AB05 /* BankMatch.swift in Sources */,
 				8352CF5D8B36C1504025D291 /* BudgetAmountEditor.swift in Sources */,
 				C7595C1C338C319A2E7A092B /* CardLogic.swift in Sources */,
 				7E5C183155873E3B21BC04CF /* CardsView.swift in Sources */,
 				5294EA0188CE3A372AA24069 /* CategoriesManagerView.swift in Sources */,
 				C003724BF4470744B6B53B53 /* Components.swift in Sources */,
+				7927E6705EE3A3B32BB4C07B /* CreateFromChargeSheet.swift in Sources */,
 				1F9BA58700725716F9D218B6 /* ExpenseDetailSheet.swift in Sources */,
 				C85234FD7E915451EBD5B306 /* ExpenseFormView.swift in Sources */,
 				FBA2FB7F467551ED953B03E1 /* ExtendPeriodSheet.swift in Sources */,

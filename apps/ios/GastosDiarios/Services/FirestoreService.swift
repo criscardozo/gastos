@@ -944,20 +944,27 @@ final class FirestoreService {
         expenseId.hasPrefix("auto_") ? String(expenseId.dropFirst(5)) : nil
     }
 
-    /// File a charge as an expense, because a rule recognised it.
+    /// File a charge as an expense.
     ///
-    /// One batch: an expense without the charge dismissed would be filed again
-    /// on the next open, and a charge dismissed without the expense would lose
-    /// the money silently. The charge is DISMISSED rather than deleted, which
-    /// is what makes the 48-hour undo possible — the same recoverable window a
-    /// member gets discarding one by hand, expiring by the same sweep.
-    func fileRecurringExpense(
+    /// One batch: an expense without the charge dismissed would be offered
+    /// again, and a charge dismissed without the expense would lose the money
+    /// silently. The charge is DISMISSED rather than deleted, which is what
+    /// makes the 48-hour undo possible — the same recoverable window a member
+    /// gets discarding one by hand, expiring by the same sweep.
+    ///
+    /// One function for both ways in, because they differ by one field: a rule
+    /// recognised it, or somebody pressed "Crear gasto". Two copies of a batch
+    /// that has to stay atomic is how the halves come apart.
+    func fileChargeAsExpense(
         householdId: String,
         uid: String,
         charge: BankCharge,
-        rule: RecurringRuleDoc,
+        categoryId: String,
+        note: String,
         amountAudCents: Int,
-        /// True when the amount came from the learned rate, not the rule.
+        /// The rule that recognised it, when one did.
+        ruleId: String? = nil,
+        /// True when the amount came from the learned rate, not a stated one.
         estimated: Bool = false
     ) async throws {
         // `id` is the document id or "" — a charge without one is not in
@@ -967,24 +974,24 @@ final class FirestoreService {
         let household = db.collection("households").document(householdId)
         let batch = db.batch()
         var expense: [String: Any] = [
-                "amountCents": amountAudCents,
-                "categoryId": rule.categoryId,
-                "note": rule.note,
-                // The charge's own date, already in the household timezone.
-                // Never today's: a charge that arrives on Monday for a Saturday
-                // purchase belongs to Saturday's period.
-                "date": charge.date,
-                "createdBy": uid,
-                // What the bank actually charged, so the pairing is the
-                // verification.
-                "usdCents": charge.usdCents,
-                "verified": true,
-                "autoRuleId": rule.id,
-                // Absent rather than false: the rules accept only `true`, so
-                // the two spellings of "no" cannot disagree.
-                "createdAt": FieldValue.serverTimestamp(),
-                "updatedAt": FieldValue.serverTimestamp(),
+            "amountCents": amountAudCents,
+            "categoryId": categoryId,
+            "note": note,
+            // The charge's own date, already in the household timezone. Never
+            // today's: a charge that arrives on Monday for a Saturday purchase
+            // belongs to Saturday's period.
+            "date": charge.date,
+            "createdBy": uid,
+            // What the bank actually charged, so the pairing is the
+            // verification.
+            "usdCents": charge.usdCents,
+            "verified": true,
+            "createdAt": FieldValue.serverTimestamp(),
+            "updatedAt": FieldValue.serverTimestamp(),
         ]
+        if let ruleId { expense["autoRuleId"] = ruleId }
+        // Absent rather than false: the rules accept only `true`, so the two
+        // spellings of "no" cannot disagree.
         if estimated { expense["autoEstimated"] = true }
         batch.setData(
             expense,
@@ -996,6 +1003,27 @@ final class FirestoreService {
             forDocument: household.collection("bankCharges").document(chargeId)
         )
         try await batch.commit()
+    }
+
+    /// A charge a recurring rule recognised.
+    func fileRecurringExpense(
+        householdId: String,
+        uid: String,
+        charge: BankCharge,
+        rule: RecurringRuleDoc,
+        amountAudCents: Int,
+        estimated: Bool = false
+    ) async throws {
+        try await fileChargeAsExpense(
+            householdId: householdId,
+            uid: uid,
+            charge: charge,
+            categoryId: rule.categoryId,
+            note: rule.note,
+            amountAudCents: amountAudCents,
+            ruleId: rule.id,
+            estimated: estimated
+        )
     }
 
     /// Take back an expense a rule filed, and put its charge back in the list.

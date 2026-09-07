@@ -2,6 +2,12 @@ import SwiftUI
 
 /// The bank's pending USD charges, waiting to be matched to an expense.
 ///
+/// A PANEL above the history, not a sheet behind a chip. It was the latter, and
+/// the chip is easy not to notice — a charge nobody looks at is a purchase
+/// missing from the ledger, which is the opposite of what this exists for. It
+/// opens itself when something is waiting and collapses to one line when
+/// nothing is, so the prominence costs the list nothing on a quiet day.
+///
 /// The Gmail ingestion (tools/gmail-bank-ingest) files one charge per
 /// notification email; this screen proposes which expense each belongs to and
 /// the user confirms. The matching itself is BankMatch, validated against the
@@ -10,9 +16,8 @@ import SwiftUI
 /// Suggestions are matched against the expenses already in memory (the current
 /// and viewed periods), which is where a charge from the last day or two lands.
 /// No extra reads.
-struct BankChargesSheet: View {
+struct BankChargesPanel: View {
     @Environment(AppModel.self) private var model
-    var onDone: () -> Void
 
     /// Manual overrides, charge id → expense id.
     @State private var choice: [String: String] = [:]
@@ -20,27 +25,70 @@ struct BankChargesSheet: View {
     @State private var showDismissed = false
     /// Set when a charge's icon is tapped: opens the rule sheet filled in.
     @State private var seedMerchant: String?
+    /// The charge whose "Crear gasto" sheet is up.
+    @State private var creatingFrom: BankCharge?
     /// Asking before confirming every guess at once. Assigning DELETES the
     /// charge, so a bulk mistake cannot be walked back the way a dismissal can.
     @State private var confirmingAll = false
 
     private var l10n: L10n { model.l10n }
 
+    /// Open when something is waiting, closed when not — and once you have
+    /// said which by hand, that wins. Nil means nobody has said.
+    @State private var openedByHand: Bool?
+    /// Past the first few, on request.
+    @State private var showAll = false
+
+    /// Two.
+    ///
+    /// Each card carries a figure, a subtitle, a picker, the rate it guessed
+    /// at and three buttons, so it is tall. At three the history behind the
+    /// panel started at the bottom edge of the screen; at two you can see the
+    /// first day under it, which is what tells you there is a list at all.
+    private static let visibleCards = 2
+
+    private var isOpen: Bool {
+        openedByHand ?? !model.expenseBankCharges.isEmpty
+    }
+
     var body: some View {
-        NavigationStack {
-            Group {
-                if model.expenseBankCharges.isEmpty && model.dismissedBankCharges.isEmpty {
-                    emptyState
-                } else {
-                    list
+        let pending = model.expenseBankCharges.count
+        let dismissed = model.dismissedBankCharges.count
+        if pending > 0 || dismissed > 0 {
+            VStack(alignment: .leading, spacing: 10) {
+                Button {
+                    openedByHand = !isOpen
+                } label: {
+                    AdaptiveRow {
+                        Text(l10n.bankChargesCount(pending))
+                            .appFont(13.5, .bold)
+                            .foregroundStyle(Theme.amberText)
+                        AdaptiveGap()
+                        Image(systemName: isOpen ? "chevron.up" : "chevron.down")
+                            .appFont(12, .semibold)
+                            .foregroundStyle(Theme.inkTertiary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(Theme.amberBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    "\(l10n.bankChargesCount(pending)) — \(l10n.t(isOpen ? "bank.hide" : "bank.review"))"
+                )
+
+                if isOpen { list }
             }
-            .background(Theme.bg.ignoresSafeArea())
             .sheet(item: Binding(
                 get: { seedMerchant.map(SeedMerchant.init) },
                 set: { seedMerchant = $0?.merchant }
             )) { seed in
                 RecurringRuleSheet(rule: nil, seedMerchant: seed.merchant)
+            }
+            .sheet(item: $creatingFrom) { charge in
+                CreateFromChargeSheet(charge: charge)
             }
             .alert(
                 l10n.t("bank.confirmAllTitle"),
@@ -51,36 +99,9 @@ struct BankChargesSheet: View {
             } message: {
                 Text(l10n.t("bank.confirmAllBody", pendingGuesses.count))
             }
-            .navigationTitle(l10n.t("bank.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                // Left, not next to Listo: it is the one destructive-adjacent
-                // thing here in that it talks to the outside, and putting it
-                // beside the dismiss button invites the wrong tap.
-                ToolbarItem(placement: .topBarLeading) {
-                    if AppModel.ingestEndpoint != nil {
-                        Button {
-                            model.requestBankIngest()
-                        } label: {
-                            if model.isFetchingCharges {
-                                ProgressView().controlSize(.small)
-                            } else {
-                                Label(l10n.t("bank.fetchNow"), systemImage: "arrow.clockwise")
-                                    .appFont(14, .semibold)
-                            }
-                        }
-                        .disabled(model.isFetchingCharges)
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(l10n.t("common.done")) { onDone() }
-                        .appFont(15, .semibold)
-                }
-            }
         }
     }
 
-    // MARK: Confirming every guess at once
 
     /// Charge → expense for every card that currently HAS an answer on it.
     ///
@@ -138,11 +159,10 @@ struct BankChargesSheet: View {
         }
     }
 
-    // MARK: Pieces
-
     private var list: some View {
-        ScrollView {
-            VStack(spacing: 12) {
+        // No ScrollView: the history screen this sits in already scrolls, and
+        // a scroll view inside another one traps the gesture.
+        VStack(spacing: 12) {
                 if !model.expenseBankCharges.isEmpty {
                     // The learned rate is the reason the suggestions are any
                     // good, so it is stated rather than hidden behind them.
@@ -162,17 +182,29 @@ struct BankChargesSheet: View {
                     confirmAllButton
                 }
 
-                ForEach(model.bankChargeSuggestions, id: \.chargeId) { suggestion in
+                // A couple, and then a way to see the rest.
+                //
+                // Open with five charges the panel filled the screen and the
+                // history behind it could not be reached at all — prominence
+                // that costs you the thing you came for is not prominence.
+                let shown = showAll
+                    ? model.bankChargeSuggestions
+                    : Array(model.bankChargeSuggestions.prefix(Self.visibleCards))
+                ForEach(shown, id: \.chargeId) { suggestion in
                     if let charge = model.expenseBankCharges.first(where: { $0.id == suggestion.chargeId }) {
                         card(charge: charge, suggestion: suggestion)
                     }
                 }
+                let hidden = model.bankChargeSuggestions.count - shown.count
+                if hidden > 0 {
+                    Button(l10n.t("bank.showRest", hidden)) { showAll = true }
+                        .appFont(13, .semibold)
+                        .foregroundStyle(Theme.accentStrong)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
 
                 dismissedSection
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 28)
         }
     }
 
@@ -323,6 +355,18 @@ struct BankChargesSheet: View {
                         model.assignBankCharge(charge, to: expenseId)
                         choice[charge.id] = nil
                     }
+                    // The third way out. Before it, a charge with no
+                    // counterpart could only be DISCARDED — which says "this
+                    // was not ours" about a real purchase nobody had entered.
+                    Button(l10n.t("bank.createExpense")) {
+                        creatingFrom = charge
+                    }
+                    .appFont(13.5, .bold)
+                    .foregroundStyle(Theme.accentStrong)
+                    .accessibilityLabel(
+                        "\(l10n.t("bank.createExpense")) — \(charge.merchant.isEmpty ? MoneyFormatter.usd(charge.usdCents, locale: l10n.locale) : charge.merchant)"
+                    )
+
                     Button(l10n.t("bank.discard")) {
                         model.discardBankCharge(charge)
                     }

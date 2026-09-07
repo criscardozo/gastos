@@ -11,7 +11,6 @@ struct HistoryView: View {
     @State private var deletingItem: ExpenseItem?
     @State private var verifyingItem: ExpenseItem?
     @State private var detailItem: ExpenseItem?
-    @State private var showBankCharges = false
     /// Narrows the list to the expenses the bank has not confirmed yet.
     @State private var onlyUnverified = false
 
@@ -51,6 +50,14 @@ struct HistoryView: View {
                 .padding(.bottom, unverifiedCount > 0 || !model.expenseBankCharges.isEmpty ? 8 : 12)
             verificationBar
                 .padding(.horizontal, 20)
+
+            // The charges as a PANEL, not behind a chip: a chip is easy not to
+            // notice, and a charge nobody looks at is a purchase missing from
+            // the ledger. It collapses to one line when nothing is waiting, so
+            // the prominence costs the list nothing on a quiet day.
+            BankChargesPanel()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 10)
             if dayGroups.isEmpty {
                 emptyState
             } else {
@@ -126,13 +133,12 @@ struct HistoryView: View {
                 verifyingItem = nil
             }
         }
-        .sheet(isPresented: $showBankCharges) {
-            BankChargesSheet { showBankCharges = false }
-        }
         // gastosdiarios://cargos lands here.
         .onChange(of: model.openBankChargesRequest) { _, requested in
             guard requested else { return }
-            showBankCharges = true
+            // There is no sheet to open any more — the panel is already on
+            // this screen and opens itself when something is waiting, so
+            // arriving here IS the answer.
             model.openBankChargesRequest = false
         }
         .sheet(item: $detailItem) { item in
@@ -384,24 +390,6 @@ struct HistoryView: View {
                         .padding(.vertical, 5)
                         .background(onlyUnverified ? Theme.accentSoft : Theme.fill)
                         .foregroundStyle(onlyUnverified ? Theme.accentStrong : Theme.inkSecondary)
-                        .clipShape(chipShape)
-                    }
-                    .buttonStyle(.plain)
-                }
-                if !model.expenseBankCharges.isEmpty {
-                    Button {
-                        showBankCharges = true
-                    } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: "creditcard.fill")
-                                .appFont(11, .semibold)
-                            Text(l10n.bankChargesCount(model.expenseBankCharges.count))
-                                .appFont(12, .semibold)
-                        }
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 5)
-                        .background(Theme.amberBg)
-                        .foregroundStyle(Theme.amberText)
                         .clipShape(chipShape)
                     }
                     .buttonStyle(.plain)

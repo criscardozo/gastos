@@ -183,6 +183,26 @@ extension AppModel {
         }
     }
 
+    /// A charge nobody had entered, filed as its own expense.
+    func createExpenseFromCharge(
+        _ charge: BankCharge,
+        categoryId: String,
+        note: String,
+        amountAudCents: Int
+    ) {
+        guard let householdId = attachedHouseholdId, let uid = self.uid else { return }
+        write { [firestore] in
+            try await firestore.fileChargeAsExpense(
+                householdId: householdId,
+                uid: uid,
+                charge: charge,
+                categoryId: categoryId,
+                note: note,
+                amountAudCents: amountAudCents
+            )
+        }
+    }
+
     func undoRecurring(expenseId: String) {
         guard let householdId = attachedHouseholdId,
               let chargeId = FirestoreService.chargeId(fromAutoExpense: expenseId)
