@@ -1,6 +1,6 @@
-# Design tokens — Gastos Diarios
+# Design tokens — Gastos
 
-Extracted from the Claude Design project (`docs/design/gastos-diarios.dc.html` is the raw
+Extracted from the Claude Design project (`docs/design/gastos.dc.html` is the raw
 reference). Both clients implement these exactly; do not invent new colors.
 
 ## Typography

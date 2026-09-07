@@ -1,7 +1,7 @@
 {
   "name": "@cardozo/design-tokens",
   "version": "0.1.0",
-  "description": "Design tokens for Gastos Diarios and the apps that share its look. Generated into each platform; never hand-edited in two places.",
+  "description": "Design tokens for Gastos and the apps that share its look. Generated into each platform; never hand-edited in two places.",
   "license": "MIT",
   "private": true,
   "type": "module",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draw the Gastos Diarios app icon from the design system's own geometry.
+"""Draw the Gastos app icon from the design system's own geometry.
 
 Run:  python3 docs/design/app-icon/build-icon.py [size]
 Needs `rsvg-convert` (brew install librsvg). Writes SVG + PNG into ./out/.

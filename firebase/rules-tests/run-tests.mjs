@@ -74,7 +74,7 @@ const child = spawn(
   [
     "emulators:exec",
     "--only", "firestore",
-    "--project", "demo-gastos-diarios",
+    "--project", "demo-gastos",
     "--config", configPath,
     "vitest run",
   ],

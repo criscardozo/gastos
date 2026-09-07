@@ -1,4 +1,4 @@
-# Gastos Diarios
+# Gastos
 
 Household expense tracker for two people sharing one weekly/fortnightly budget.
 A SwiftUI iOS app for fast entry, a Next.js web app for everything you sit down

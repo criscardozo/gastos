@@ -11,7 +11,7 @@
 //   2. GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json pnpm backup
 //      (or drop it at firebase/service-account.json and just `pnpm backup`)
 //
-// Output: backups/gastos-diarios-<YYYY-MM-DDTHH-MM-SSZ>.json (gitignored).
+// Output: backups/gastos-<YYYY-MM-DDTHH-MM-SSZ>.json (gitignored).
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -20,7 +20,7 @@ import { cert, initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PROJECT_ID = "qcris-gastos-diarios";
+const PROJECT_ID = "qcris-gastos";
 
 function resolveCredentials() {
   const explicit = process.env.GOOGLE_APPLICATION_CREDENTIALS;
@@ -107,7 +107,7 @@ async function main() {
   const dir = join(repoRoot, "backups");
   mkdirSync(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const file = join(dir, `gastos-diarios-${stamp}.json`);
+  const file = join(dir, `gastos-${stamp}.json`);
   writeFileSync(file, JSON.stringify(dump, null, 2));
   console.log(`\nBackup written to ${file}`);
 }

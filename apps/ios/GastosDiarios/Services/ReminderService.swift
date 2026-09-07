@@ -62,7 +62,7 @@ enum ReminderService {
     /// previous one (same request identifier).
     private static func schedule(l10n: L10n) async {
         let content = UNMutableNotificationContent()
-        content.title = "Gastos Diarios"
+        content.title = "Gastos"
         content.body = l10n.t("reminder.body")
         content.sound = .default
 

@@ -18,7 +18,7 @@ const rulesPath = fileURLToPath(
 
 export async function createTestEnv(): Promise<RulesTestEnvironment> {
   return initializeTestEnvironment({
-    projectId: "demo-gastos-diarios",
+    projectId: "demo-gastos",
     firestore: { rules: readFileSync(rulesPath, "utf8") },
   });
 }

@@ -29,7 +29,7 @@ export interface PdfCategoryTotal {
 
 export interface PdfExportOptions {
   filename: string;
-  /** Document title (brand): "Gastos Diarios". */
+  /** Document title (brand): "Gastos". */
   title: string;
   householdName: string;
   /** Human date range, e.g. "1 – 14 jul 2026". */

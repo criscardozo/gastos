@@ -14,7 +14,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Gastos Diarios",
+  title: "Gastos",
   description: "El presupuesto de la casa, entre los dos.",
   // Installed-app behaviour on iOS. The manifest covers modern iOS, but the
   // legacy meta tags still matter on older versions.

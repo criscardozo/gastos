@@ -182,7 +182,7 @@ cat <<'EOF'
 ✓ Instalada. Después de esto:
   • Solo la primera vez — iPhone: Ajustes → General → VPN y gestión de
     dispositivos → confiá en tu certificado de desarrollador.
-  • iPhone: abrí la app Watch → Gastos Diarios → activá "Mostrar app en
+  • iPhone: abrí la app Watch → Gastos → activá "Mostrar app en
     Apple Watch" si no apareció sola.
   • Iniciá sesión con Google en el teléfono (el reloj escribe a través de él).
   • La firma dura ~7 días; la app te avisa 2 días antes. Volvé a correr esto

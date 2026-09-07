@@ -24,6 +24,7 @@ const NAV = [
 
 export function Sidebar() {
   const t = useTranslations("nav");
+  const tApp = useTranslations("app");
   const pathname = usePathname();
   const { household } = useHousehold();
 
@@ -41,7 +42,11 @@ export function Sidebar() {
         <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-accent">
           <PiggyMark size={24} variant="cream" />
         </div>
-        <span className="text-base font-bold text-ink">Gastos Diarios</span>
+        {/* From the messages, not typed here.
+            `app.name` already existed with the same value and NOBODY read it,
+            so the name lived in two places and the rebrand had to find both.
+            One of them is now the only one. */}
+        <span className="text-base font-bold text-ink">{tApp("name")}</span>
       </div>
 
       {NAV.map((item) => {

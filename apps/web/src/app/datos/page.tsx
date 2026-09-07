@@ -283,7 +283,7 @@ export default function DataPage() {
       .sort((a, b) => b.amountCents - a.amountCents);
     return {
       filename: `${fileBase}.${extension}`,
-      title: "Gastos Diarios",
+      title: "Gastos",
       householdName: household.name,
       rangeLabel: `${formatPeriodRange(range.startDate, range.endDate, locale, "short")} ${range.endDate.slice(0, 4)}`,
       rows: rows.map((e) => ({

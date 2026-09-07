@@ -120,7 +120,7 @@ def main() -> None:
         return entry
 
     tokens = {
-        "$description": "Gastos Diarios design tokens. Source of truth; the web CSS "
+        "$description": "Gastos design tokens. Source of truth; the web CSS "
                         "and the iOS theme are generated from this file.",
         "color": {
             "core":    {k.removeprefix("--"): colour(k, sw, n) for k, (sw, n) in CORE.items()},

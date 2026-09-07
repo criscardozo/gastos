@@ -3475,13 +3475,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notifications are turned off. Enable them in Settings → Notifications → Gastos Diarios."
+            "value": "Notifications are turned off. Enable them in Settings → Notifications → Gastos."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Las notificaciones están desactivadas. Activálas en Ajustes → Notificaciones → Gastos Diarios."
+            "value": "Las notificaciones están desactivadas. Activálas en Ajustes → Notificaciones → Gastos."
           }
         }
       }
@@ -3832,13 +3832,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gastos Diarios is about to expire"
+            "value": "Gastos is about to expire"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gastos Diarios está por vencer"
+            "value": "Gastos está por vencer"
           }
         }
       }

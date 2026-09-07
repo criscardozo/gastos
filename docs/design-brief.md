@@ -12,7 +12,7 @@ apps are actually built against — this file is the input, not the output.
 
 ---
 
-Design the screens for **"Gastos Diarios"**, a personal expense tracker for a 2-person
+Design the screens for **"Gastos"**, a personal expense tracker for a 2-person
 household (a couple sharing one budget). Fast-entry-first, warm and personal — not corporate
 banking / generic fintech.
 

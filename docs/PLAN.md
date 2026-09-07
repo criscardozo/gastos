@@ -1,4 +1,4 @@
-# Plan: Gastos Diarios — Household expense tracker
+# Plan: Gastos — Household expense tracker
 
 ## Contexto
 

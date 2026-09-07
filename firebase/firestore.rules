@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // ===============================================================
-// Gastos Diarios — Firestore security rules
+// Gastos — Firestore security rules
 // These rules ARE the security boundary: there is no backend.
 // Contract: shared/schema.md (any change there must be mirrored here).
 // ===============================================================

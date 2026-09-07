@@ -1,4 +1,4 @@
-# Gastos Diarios — iOS
+# Gastos — iOS
 
 SwiftUI app (iOS 26+, MVVM with `@Observable`) for fast household expense entry.
 Talks directly to Firebase (Auth + Firestore) — the Firestore security rules in
@@ -66,7 +66,7 @@ from and saving returns you where you were. One-time setup on the iPhone:
 
 Alternative wiring: create a plain Shortcut with "Open URL" →
 `gastosdiarios://nuevo` and assign that to Back Tap. Both paths open the same
-sheet; the intent also works via Siri ("Registrar gasto en Gastos Diarios").
+sheet; the intent also works via Siri ("Registrar gasto en Gastos").
 
 ## Firebase emulators
 
