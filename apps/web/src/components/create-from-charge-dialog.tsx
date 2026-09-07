@@ -16,12 +16,15 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import {
+  ServiceNoteField,
+  serviceNoteValid,
+} from "@/components/service-note-field";
+import {
   DIALOG_BACKDROP,
   DIALOG_FIELD,
   DIALOG_SHELL,
 } from "@/components/ui/dialog-shell";
 import type { Household } from "@/lib/firebase/converters";
-import { MAX_NOTE_CHARACTERS } from "@/lib/limits";
 import { formatCents, formatUsd, parseAmountToCents } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 import { estimateAudCents } from "@/lib/recurring";
@@ -31,6 +34,11 @@ export function CreateFromChargeDialog({
   household,
   locale,
   learnedRate,
+  /**
+   * The household's services, for the note when the category is Servicios.
+   * Same reason as the recurring dialog — see service-note-field.tsx.
+   */
+  services,
   onCreate,
   onClose,
 }: {
@@ -39,6 +47,7 @@ export function CreateFromChargeDialog({
   locale: string;
   /** From learnRate — null until something has been verified. */
   learnedRate: number | null;
+  services: readonly { id: string; name: string }[];
   onCreate: (input: {
     categoryId: string;
     note: string;
@@ -60,6 +69,7 @@ export function CreateFromChargeDialog({
   const [categoryId, setCategoryId] = useState(
     Object.keys(household.categories)[0] ?? "",
   );
+  const [writesOwnNote, setWritesOwnNote] = useState(false);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -70,7 +80,11 @@ export function CreateFromChargeDialog({
   }, [onClose]);
 
   const cents = parseAmountToCents(amount, locale);
-  const valid = cents !== null && note.trim() !== "" && categoryId !== "";
+  const valid =
+    cents !== null &&
+    note.trim() !== "" &&
+    categoryId !== "" &&
+    serviceNoteValid(categoryId, note, services, writesOwnNote);
 
   const categories = Object.entries(household.categories).sort(
     ([, a], [, b]) => a.sortOrder - b.sortOrder,
@@ -128,16 +142,16 @@ export function CreateFromChargeDialog({
           )}
         </label>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="section-label">{t("note")}</span>
-          <input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={MAX_NOTE_CHARACTERS}
-            aria-label={t("note")}
-            className={DIALOG_FIELD}
-          />
-        </label>
+        <ServiceNoteField
+          categoryId={categoryId}
+          note={note}
+          onNote={setNote}
+          services={services}
+          writesOwnNote={writesOwnNote}
+          onWritesOwnNote={setWritesOwnNote}
+          className={DIALOG_FIELD}
+          plainLabel={t("note")}
+        />
 
         <label className="flex flex-col gap-1.5">
           <span className="section-label">{t("category")}</span>

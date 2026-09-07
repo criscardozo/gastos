@@ -2374,10 +2374,14 @@ test("a recurring rule can be pointed at the service it pays", async ({
     },
   );
 
-  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  // A COLD load, which is the condition the report came from: the service was
+  // registered in some earlier session, not seconds ago in this one, so the
+  // services listener starts from nothing rather than answering from cache.
+  await page.goto("/gastos");
+  await page.reload();
   await page
     .getByRole("button", { name: /Hacerlo recurrente — GOOGLE YOUTUBEPREMIUM/ })
-    .click();
+    .click({ timeout: 20_000 });
   const dialog = page.getByRole("dialog", { name: "Gastos recurrentes" });
 
   // Free text until the category says Servicios, seeded with the merchant.
@@ -2409,4 +2413,47 @@ test("a recurring rule can be pointed at the service it pays", async ({
   await page.getByRole("link", { name: "Servicios", exact: true }).click();
   await expect(page.getByText("Todavía no se cobró")).toHaveCount(0);
   await expect(page.getByText("1 de 1 servicios del mes")).toBeVisible();
+
+  // The SECOND way a charge becomes a Servicios expense, and the one that was
+  // missed: "Crear gasto" files it directly instead of through a rule. It
+  // seeds the note with the merchant exactly the same way, so it had exactly
+  // the same silent hole — the report that found it said the combo showed up
+  // in Ajustes and not here.
+  await request.post(
+    `${REST}/households/${householdId}/bankCharges?documentId=gmail-yt2`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          usdCents: { integerValue: "640" },
+          date: { stringValue: sydneyDate(0) },
+          merchant: { stringValue: "SPOTIFY AU" },
+          importedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await page.getByRole("button", { name: "Agregar", exact: true }).click();
+  await page.getByLabel("Nombre").fill("Spotify");
+  await page.getByLabel("AUD").fill("13,99");
+  await page.getByLabel("Día de vencimiento").fill("3");
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await page
+    .getByRole("button", { name: /Crear gasto — SPOTIFY AU/ })
+    .click({ timeout: 20_000 });
+  const create = page.getByRole("dialog", { name: "Crear gasto" });
+  await create.getByLabel("Categoría").selectOption({ label: "Servicios" });
+  const servicePicker = create.getByLabel("Servicio que paga");
+  await expect(servicePicker).toBeVisible();
+  await expect(create.getByRole("button", { name: "Crear" })).toBeDisabled();
+  await servicePicker.selectOption({ label: "Spotify" });
+  await create.getByRole("button", { name: "Crear" }).click();
+
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await expect(page.getByText("2 de 2 servicios del mes")).toBeVisible({
+    timeout: 20_000,
+  });
 });

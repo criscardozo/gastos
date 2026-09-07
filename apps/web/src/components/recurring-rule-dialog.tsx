@@ -15,10 +15,12 @@ import { Icon } from "@/components/ui/icon";
 import { Segmented } from "@/components/ui/segmented";
 import type { Household, RecurringRuleDoc } from "@/lib/firebase/converters";
 import type { RecurringRuleInput } from "@/lib/firebase/mutations";
-import { MAX_NOTE_CHARACTERS } from "@/lib/limits";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 import { matchesPattern } from "@/lib/recurring";
-import { SERVICES_CATEGORY_ID, nameKey } from "@/lib/services";
+import {
+  ServiceNoteField,
+  serviceNoteValid,
+} from "@/components/service-note-field";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
 /**
@@ -107,32 +109,12 @@ export function RecurringRuleDialog({
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Servicios mode: the note comes from the list, unless the household has no
-  // services yet (then there is no list to pick from and free text is all
-  // there is) or the note deliberately is not one of them.
-  const picksService = categoryId === SERVICES_CATEGORY_ID && services.length > 0;
-  const matchedService =
-    services.find((s) => nameKey(s.name) === nameKey(note)) ?? null;
-  // "Write it myself" is a real answer, not an escape hatch for a bug: a rule
-  // in Servicios can legitimately be for something the household never
-  // registered as a service.
-  //
-  // The list is the default in Servicios, ALWAYS, and only an explicit "write
-  // it myself" leaves it.
-  //
-  // The first version of this derived the mode from the note — free text
-  // whenever the note was not a service — and that is wrong in the exact case
-  // this exists for. The note arrives seeded with the merchant, so
-  // "GOOGLE YOUTUBEPREMIUM" derives to free text holding "Google
-  // Youtubepremium", which looks fine, saves fine, and never links: the
-  // failure is unchanged and now has a control that looks like it addressed
-  // it. Showing the list UNSELECTED instead is what says a choice is owed.
-  //
-  // The same is true of editing an old rule whose note is not a service: it
-  // opens on an empty list, which is not a nuisance but the answer to "why is
-  // this one not marking the service as charged".
-  const [chosen, setChosen] = useState<"list" | "other" | null>(null);
-  const usesList = picksService && chosen !== "other";
+  // The note becomes the list of services when the category is Servicios.
+  // Why, and why it is refused rather than warned about, is in
+  // components/service-note-field.tsx — both dialogs that can file into
+  // Servicios share it, because both seeded the note with the merchant and
+  // both had the same silent hole.
+  const [writesOwnNote, setWritesOwnNote] = useState(false);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -151,7 +133,7 @@ export function RecurringRuleDialog({
     // the whole change exists for: saving a Servicios rule whose note matches
     // nothing is the silent failure, so it is refused rather than warned
     // about.
-    (!usesList || matchedService !== null) &&
+    serviceNoteValid(categoryId, note, services, writesOwnNote) &&
     (asks || cents !== null);
 
   // What the pattern would claim RIGHT NOW, out of the charges still waiting.
@@ -216,55 +198,16 @@ export function RecurringRuleDialog({
           </span>
         </label>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="section-label">
-            {picksService ? t("noteService") : t("note")}
-          </span>
-          {picksService && (
-            <select
-              value={usesList ? (matchedService?.id ?? "") : "__other"}
-              aria-label={t("noteService")}
-              onChange={(e) => {
-                if (e.target.value === "__other") {
-                  setChosen("other");
-                  return;
-                }
-                setChosen("list");
-                const picked = services.find((s) => s.id === e.target.value);
-                // The service's name VERBATIM. Typing it is what breaks the
-                // link, so the one thing this control must never do is hand
-                // back something the user could have typed.
-                if (picked !== undefined) setNote(picked.name);
-              }}
-              className={field}
-            >
-              {usesList && matchedService === null && (
-                <option value="">{t("noteServicePick")}</option>
-              )}
-              {services.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-              <option value="__other">{t("noteServiceOther")}</option>
-            </select>
-          )}
-          {!usesList && (
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={t("notePlaceholder")}
-              aria-label={t("note")}
-              maxLength={MAX_NOTE_CHARACTERS}
-              className={field}
-            />
-          )}
-          {picksService && (
-            <span className="text-[11.5px] text-ink-3">
-              {usesList ? t("noteServiceHelp") : t("noteServiceOtherHelp")}
-            </span>
-          )}
-        </label>
+        <ServiceNoteField
+          categoryId={categoryId}
+          note={note}
+          onNote={setNote}
+          services={services}
+          writesOwnNote={writesOwnNote}
+          onWritesOwnNote={setWritesOwnNote}
+          className={field}
+          plainLabel={t("note")}
+        />
 
         <label className="flex flex-col gap-1.5">
           <span className="section-label">{t("category")}</span>

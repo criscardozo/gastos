@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		006421298CDDC23FD4BB86E1 /* bank-match-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 0F52461B7F382959DAB51CFE /* bank-match-vectors.json */; };
 		0136B57384891501AB30D8CB /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = 235D10EDA6DEC652D26ECE10 /* categories.json */; };
+		05133EDB5A9E8AA481E01189 /* ServiceNotePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F785322FFCA80A43799A194 /* ServiceNotePicker.swift */; };
 		07B717A9D9DABA180AD11271 /* WatchSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FE4481C1E27B95BC2F45054 /* WatchSyncService.swift */; };
 		08FCA24204BD661A13812566 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E9DDEF9ED1920FC461324CC /* Theme.swift */; };
 		0D06A7B8C4AF4F55893426CD /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 9D60869E022C41FE521B3BBB /* FirebaseFirestore */; };
@@ -219,6 +220,7 @@
 		88697FE91DBCB7A2DF861AA3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		890A88734AEF52E42002B803 /* RichTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichTextTests.swift; sourceTree = "<group>"; };
 		8C60ADD48A6501D6D9659577 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		8F785322FFCA80A43799A194 /* ServiceNotePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceNotePicker.swift; sourceTree = "<group>"; };
 		8FEDE9F8A530ADDCFB8FA1C5 /* QuickEntryIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickEntryIntent.swift; sourceTree = "<group>"; };
 		9D321AA370E8BB907F772691 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		9DB8A352BB1E1E129697174D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -338,6 +340,7 @@
 				3185D8D0B36CD3028B6C8CBE /* CreateFromChargeSheet.swift */,
 				53931650482F664B2A869C76 /* RecurringPromptSheet.swift */,
 				B54F5FBB8326951E806D6B65 /* RecurringRuleSheet.swift */,
+				8F785322FFCA80A43799A194 /* ServiceNotePicker.swift */,
 			);
 			path = Recurring;
 			sourceTree = "<group>";
@@ -862,6 +865,7 @@
 				D1CB45992765268A06B09499 /* RichText.swift in Sources */,
 				1F0CA448B675342FD4A222FB /* RootView.swift in Sources */,
 				BA7C85206BFA1C4737B5D6CD /* ServiceLogic.swift in Sources */,
+				05133EDB5A9E8AA481E01189 /* ServiceNotePicker.swift in Sources */,
 				3C5BB0D6AC02E727A7F323D9 /* ServicesView.swift in Sources */,
 				3CC771E7F662936B06E4AB3C /* SettingsView.swift in Sources */,
 				A63A3492DD9D441082FB7708 /* SigningExpiryService.swift in Sources */,

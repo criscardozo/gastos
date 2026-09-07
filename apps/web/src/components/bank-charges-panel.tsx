@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import { CreateFromChargeDialog } from "@/components/create-from-charge-dialog";
+import { useServices } from "@/lib/firebase/hooks";
 import { useAppError } from "@/components/app-error";
 import { useAuth } from "@/components/providers";
 import { DismissedCharges } from "@/components/dismissed-charges";
@@ -90,6 +91,13 @@ export function BankChargesPanel({
   const [openedByHand, setOpenedByHand] = useState<boolean | null>(null);
   /** The charge whose "Crear gasto" dialog is up. */
   const [creatingFrom, setCreatingFrom] = useState<string | null>(null);
+
+  // Only while "Crear gasto" is open. Same reason as the recurring dialog: an
+  // expense filed in Servicios links to a service by name, so the note has to
+  // be chosen rather than typed — and this dialog seeds it with the merchant.
+  const servicesForNote = useServices(
+    creatingFrom === null ? null : household.id,
+  ).services;
   /** Manual overrides, charge id → expense id ("" = none chosen). */
   const [choice, setChoice] = useState<Record<string, string>>({});
 
@@ -350,6 +358,7 @@ export function BankChargesPanel({
               household={household}
               locale={locale}
               learnedRate={rate}
+              services={servicesForNote}
               onCreate={(input) => {
                 const fb = getFirebaseClient();
                 if (fb === null || user === null) return;

@@ -19,6 +19,9 @@ struct CreateFromChargeSheet: View {
     @State private var amount = BudgetEntryAmount()
     @State private var note = ""
     @State private var categoryId = ""
+    /// The Servicios note: chosen from the list rather than typed. Same reason
+    /// as the recurring sheet — see ServiceNotePicker.swift.
+    @State private var servicePicker = ServiceNotePicker()
 
     private var l10n: L10n { model.l10n }
     private var separator: String { l10n.language == "en" ? "." : "," }
@@ -68,19 +71,13 @@ struct CreateFromChargeSheet: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        SectionLabel(text: l10n.t("bank.note"))
-                        TextField("", text: $note)
-                            .appFont(15)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 11)
-                            .background(Theme.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .strokeBorder(Theme.border, lineWidth: 1)
-                            )
-                    }
+                    ServiceNoteField(
+                        picker: servicePicker,
+                        categoryId: categoryId,
+                        note: $note,
+                        l10n: l10n,
+                        plainLabel: l10n.t("bank.note")
+                    )
 
                     VStack(alignment: .leading, spacing: 6) {
                         SectionLabel(text: l10n.t("bank.category"))
@@ -104,6 +101,9 @@ struct CreateFromChargeSheet: View {
                     PrimaryCTA(
                         title: l10n.t("bank.createExpense"),
                         enabled: amount.audCents > 0 && !trimmedNote.isEmpty
+                            // Refused, not warned about: a Servicios note that
+                            // matches no service is the silent failure.
+                            && servicePicker.isValid(categoryId: categoryId, note: note)
                     ) {
                         model.createExpenseFromCharge(
                             charge,
@@ -126,6 +126,14 @@ struct CreateFromChargeSheet: View {
             }
         }
         .onAppear(perform: load)
+        .task(id: categoryId) {
+            servicePicker.sync(
+                categoryId: categoryId,
+                householdId: model.household?.id,
+                db: model.db
+            )
+        }
+        .onDisappear { servicePicker.stop() }
     }
 
     // MARK: Pieces
