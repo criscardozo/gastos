@@ -14,6 +14,7 @@ import type { CardChargeInput } from "@/lib/firebase/mutations";
 import { formatLongDate, formatShortDate } from "@/lib/dates";
 import { formatUsd, parseAmountToCents } from "@/lib/money";
 import { CARD_BRANDS, type CardBrand, type StatementRange } from "@/lib/statements";
+import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
 /** The peso ceiling the security rules enforce on both `cardFees` fields. */
 const ARS_MAX_CENTS = 100_000_000;
@@ -21,8 +22,6 @@ const ARS_MAX_CENTS = 100_000_000;
 const FIELD =
   "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
 
-const SHELL =
-  "flex max-h-[92vh] w-full max-w-[440px] flex-col gap-3.5 overflow-y-auto rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]";
 
 /** Escape closes, like every other dialog in the app. */
 function useEscape(onClose: () => void) {
@@ -86,7 +85,7 @@ export function VerifyStatementDialog({
         aria-modal="true"
         aria-label={t("verifyTitle")}
         onClick={(event) => event.stopPropagation()}
-        className={SHELL}
+        className={DIALOG_SHELL}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-0.5">
@@ -214,7 +213,7 @@ export function CardChargeDialog({
         aria-modal="true"
         aria-label={charge === null ? t("addCharge") : t("editCharge")}
         onClick={(event) => event.stopPropagation()}
-        className={SHELL}
+        className={DIALOG_SHELL}
       >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-ink">
@@ -431,7 +430,7 @@ export function StatementDatesDialog({
         aria-modal="true"
         aria-label={t("newStatement")}
         onClick={(event) => event.stopPropagation()}
-        className={SHELL}
+        className={DIALOG_SHELL}
       >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-ink">{t("newStatement")}</h2>
@@ -596,7 +595,7 @@ export function CardFeesDialog({
         aria-modal="true"
         aria-label={t("arsSettings")}
         onClick={(event) => event.stopPropagation()}
-        className={SHELL}
+        className={DIALOG_SHELL}
       >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-ink">{t("arsSettings")}</h2>

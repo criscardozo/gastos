@@ -18,6 +18,7 @@ import type { RecurringRuleInput } from "@/lib/firebase/mutations";
 import { MAX_NOTE_CHARACTERS } from "@/lib/limits";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 import { matchesPattern } from "@/lib/recurring";
+import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
 /** Integer cents back to an editable string ("1500" → "15,00"). */
 function centsToInput(cents: number | null, locale: string): string {
@@ -121,7 +122,7 @@ export function RecurringRuleDialog({
         aria-modal="true"
         aria-label={t("title")}
         onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[92vh] w-full max-w-[440px] flex-col gap-3.5 overflow-y-auto rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]"
+        className={DIALOG_SHELL}
       >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-ink">{t("title")}</h2>

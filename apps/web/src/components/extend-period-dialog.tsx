@@ -19,6 +19,7 @@ import { Icon } from "@/components/ui/icon";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 import { formatLongDate } from "@/lib/dates";
 import { extendToFortnight, type PeriodBudgetLike } from "@/lib/periods";
+import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
 export function ExtendPeriodDialog({
   period,
@@ -74,7 +75,7 @@ export function ExtendPeriodDialog({
         aria-modal="true"
         aria-label={t("title")}
         onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[92vh] w-full max-w-[440px] flex-col gap-3.5 overflow-y-auto rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]"
+        className={DIALOG_SHELL}
       >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-ink">{t("title")}</h2>

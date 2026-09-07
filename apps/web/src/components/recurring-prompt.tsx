@@ -21,6 +21,7 @@ import { parseAmountToCents } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 import { formatUsd } from "@/lib/money";
 import { claimCharges, type ClaimedCharge } from "@/lib/recurring";
+import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
 export function RecurringPrompt({
   charges,
@@ -118,7 +119,7 @@ export function RecurringPrompt({
         role="dialog"
         aria-modal="true"
         aria-label={t("promptTitle")}
-        className="flex max-h-[92vh] w-full max-w-[440px] flex-col gap-3.5 overflow-y-auto rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]"
+        className={DIALOG_SHELL}
       >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-ink">{t("promptTitle")}</h2>
