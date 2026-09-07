@@ -13,7 +13,7 @@ security boundary is `firebase/firestore.rules`, never config secrecy.
    ```sh
    firebase deploy --only firestore:rules,firestore:indexes --config firebase/firebase.json --project qcris-gastos-diarios
    ```
-4. **iOS app config**: ✅ done — `apps/ios/GastosDiarios/Resources/GoogleService-Info.plist`
+4. **iOS app config**: ✅ done — `apps/ios/Gastos/Resources/GoogleService-Info.plist`
    carries the real `CLIENT_ID` / `REVERSED_CLIENT_ID` (downloaded after enabling
    the Google provider), and `apps/ios/project.yml` has the matching `GIDClientID`
    + URL scheme. If the plist is ever re-downloaded with a different client ID,
@@ -28,7 +28,15 @@ quota abuse from outside your apps. In
 
 1. **iOS key** (`AIzaSyC825...`, auto-created as "iOS key"): under
    *Application restrictions* choose **iOS apps** and add bundle ID
-   `dev.cardozo.gastosdiarios`.
+   `dev.cardozo.gastos`.
+
+   **This one is not optional after the rebrand.** The bundle id changed from
+   `dev.cardozo.gastosdiarios`, and an iOS OAuth client is registered against a
+   specific bundle id — so the plist in the repo still names the old one and
+   Google Sign-In will be rejected until a NEW iOS app is registered under the
+   new id and its `GoogleService-Info.plist` replaces
+   `apps/ios/Gastos/Resources/GoogleService-Info.plist`. The web is unaffected:
+   its Firebase config is keyed by domain, not by bundle id.
 2. **Browser key** (`AIzaSyCFjR...`, auto-created as "Browser key"): choose
    **Websites** and add `gastos.cardozo.dev` and `gastos-diarios-web.vercel.app`,
    plus `localhost:3000` for local dev.
@@ -298,8 +306,8 @@ Two things worth repeating here:
 ## iOS
 
 ```sh
-cd apps/ios && xcodegen   # generates GastosDiarios.xcodeproj from project.yml
-open GastosDiarios.xcodeproj
+cd apps/ios && xcodegen   # generates Gastos.xcodeproj from project.yml
+open Gastos.xcodeproj
 ```
 
 - Requires Xcode 16+. Dependencies (Firebase, GoogleSignIn) resolve via SPM on first open.
@@ -307,11 +315,11 @@ open GastosDiarios.xcodeproj
   multiplier, and this project's rule is that Actions never costs anything, so
   the iOS app is built and tested locally against a simulator before each
   change lands:
-  `xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiariosTests -destination 'platform=iOS Simulator,name=<iPhone>'`.
-  That scheme builds ONLY the test bundle, which compiles `GastosDiarios/Core`
+  `xcodebuild test -project Gastos.xcodeproj -scheme GastosTests -destination 'platform=iOS Simulator,name=<iPhone>'`.
+  That scheme builds ONLY the test bundle, which compiles `Gastos/Core`
   directly instead of depending on the app — the app embeds the watchOS app, so
-  the old `-scheme GastosDiarios` needed the watchOS platform installed to run a
-  unit test. Use `-scheme GastosDiarios` to build or run the app itself.
+  the old `-scheme Gastos` needed the watchOS platform installed to run a
+  unit test. Use `-scheme Gastos` to build or run the app itself.
   Everything that does run on Actions (`CI`, `Backup`) is Ubuntu.
 - Signing: personal (free) team → 7-day certificate; re-run from Xcode weekly on each phone.
   This is the documented $0 path until the Apple Developer Program decision (PLAN Phase 5).
@@ -324,5 +332,5 @@ open GastosDiarios.xcodeproj
   Auth emulator with a fabricated credential — refused outright unless this
   launch is pointed at the emulators, so there is no path into it on a device.
   Then seed a household over the emulator's REST API and deep-link around the
-  app: `xcrun simctl openurl booted gastosdiarios://cargos` (also `://nuevo`,
+  app: `xcrun simctl openurl booted gastos://cargos` (also `://nuevo`,
   `://historial`).

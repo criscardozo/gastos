@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sideload GastosDiarios (iOS app + the embedded watchOS app) onto a connected
+# Sideload Gastos (iOS app + the embedded watchOS app) onto a connected
 # iPhone using the free personal signing team — no Xcode UI needed.
 #
 # Usage:
@@ -19,10 +19,10 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 
-SCHEME="GastosDiarios"
-PROJECT="GastosDiarios.xcodeproj"
+SCHEME="Gastos"
+PROJECT="Gastos.xcodeproj"
 DD="build-device"
-BUNDLE_PREFIX="dev.cardozo.gastosdiarios"
+BUNDLE_PREFIX="dev.cardozo.gastos"
 PROFILE_DIR="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
 
 die() { echo "✗ $*" >&2; exit 1; }

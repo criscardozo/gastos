@@ -5,7 +5,7 @@ notification per purchase. This Apps Script files those emails into
 `households/{id}/bankCharges`, where **either client** matches each charge to the
 expense it belongs to and, once confirmed, writes `usdCents` + `verified` on that
 expense. The matcher exists twice (`apps/web/src/lib/bank-match.ts`,
-`apps/ios/GastosDiarios/Core/BankMatch.swift`) and both run
+`apps/ios/Gastos/Core/BankMatch.swift`) and both run
 `shared/bank-match-vectors.json`.
 
 When the email names the card (`cardLast4`), the household can say which digits

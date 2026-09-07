@@ -1,6 +1,6 @@
 // Matching the bank's USD charges to the expenses they belong to.
 //
-// This exists TWICE — here and in apps/ios/GastosDiarios/Core/BankMatch.swift —
+// This exists TWICE — here and in apps/ios/Gastos/Core/BankMatch.swift —
 // and both are validated against shared/bank-match-vectors.json. Change the
 // behaviour in the vectors first, then in both files, exactly as the period
 // arithmetic works.

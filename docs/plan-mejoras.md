@@ -111,7 +111,7 @@ su propio install (~1 min).
 
 ### I1. Tres listeners que descartan el error
 
-**Evidencia.** `apps/ios/GastosDiarios/Services/FirestoreService.swift`:
+**Evidencia.** `apps/ios/Gastos/Services/FirestoreService.swift`:
 ```
 67:  db.collection("users").document(uid).addSnapshotListener { snapshot, _ in
 77:  db.collection("households").document(id).addSnapshotListener { snapshot, _ in
@@ -127,13 +127,13 @@ error) } ... }` en los tres, mismo estilo que el de `periodBudgets` (línea
 ~102), que además tiene el comentario que explica por qué.
 
 **Verificar.** `cd apps/ios && xcodegen && xcodebuild build -project
-GastosDiarios.xcodeproj -scheme GastosDiarios -destination 'platform=iOS
+Gastos.xcodeproj -scheme Gastos -destination 'platform=iOS
 Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO`. Los 94 tests:
-`xcodebuild test ... -scheme GastosDiariosTests ...`.
+`xcodebuild test ... -scheme GastosTests ...`.
 
 ### I2. Una escritura rechazada que no dice nada
 
-**Evidencia.** `apps/ios/GastosDiarios/Features/Services/ServicesView.swift:312`:
+**Evidencia.** `apps/ios/Gastos/Features/Services/ServicesView.swift:312`:
 `try? await db.updateServiceAmount(...)` dentro de un `Task {}`. Si las reglas
 rechazan la escritura, la caché local la muestra aplicada y el servidor la
 descarta: la app miente. Todas las demás escrituras pasan por

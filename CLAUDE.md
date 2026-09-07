@@ -14,7 +14,7 @@ A household expense tracker for 2 users (Cristian + wife) who share a single wee
 - `apps/web/` — Next.js App Router + TypeScript + Tailwind + next-intl, fully client-rendered, deployed on Vercel Hobby. Charts are plain styled divs per the design (no chart library). Also an installable **PWA** (service worker in `public/sw.js`, manifest + safe-area handling), which is how the app stays permanently on the iPhone without Apple signing. One codebase, two layouts: sidebar from `lg` up, bottom tab bar below it, with `/nuevo` mirroring the iOS quick-entry screen.
 - `firebase/` — Firestore security rules, indexes, emulator config, and rules tests (vitest + `@firebase/rules-unit-testing`).
 - `shared/` — the cross-platform contract: `schema.md` (Firestore schema source of truth), `categories.json`, `period-test-vectors.json`, `bank-match-vectors.json`.
-- `tools/gmail-bank-ingest/` — Apps Script (free, Google-side, 15-min trigger) that files the bank's USD charge emails into `households/{id}/bankCharges` with its OWN service-account key. Both apps match each charge to an expense using the rate they learn from already-verified pairs — the matcher exists twice (`apps/web/src/lib/bank-match.ts`, `apps/ios/GastosDiarios/Core/BankMatch.swift`) and both run `shared/bank-match-vectors.json`, like the period arithmetic. There is no FX API anywhere. `pnpm test:ingest` covers the email parser.
+- `tools/gmail-bank-ingest/` — Apps Script (free, Google-side, 15-min trigger) that files the bank's USD charge emails into `households/{id}/bankCharges` with its OWN service-account key. Both apps match each charge to an expense using the rate they learn from already-verified pairs — the matcher exists twice (`apps/web/src/lib/bank-match.ts`, `apps/ios/Gastos/Core/BankMatch.swift`) and both run `shared/bank-match-vectors.json`, like the period arithmetic. There is no FX API anywhere. `pnpm test:ingest` covers the email parser.
 
 pnpm workspaces for the JS side (web + rules-tests). Swift and TS share no code — only data contracts in `shared/`.
 
@@ -65,12 +65,12 @@ All JS commands run from the repo root (pnpm workspace):
   under any other project id the rules resolve `isMember()`'s `get()` in a
   namespace with no household, which is an evaluation error, and every
   subcollection reads back empty with no error at all (`docs/reglas.md`).
-- iOS: `cd apps/ios && xcodegen && open GastosDiarios.xcodeproj`. CLI tests:
-  `xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiariosTests -destination 'platform=iOS Simulator,name=<iPhone>'`.
-  That scheme builds ONLY the test bundle, which compiles `GastosDiarios/Core`
+- iOS: `cd apps/ios && xcodegen && open Gastos.xcodeproj`. CLI tests:
+  `xcodebuild test -project Gastos.xcodeproj -scheme GastosTests -destination 'platform=iOS Simulator,name=<iPhone>'`.
+  That scheme builds ONLY the test bundle, which compiles `Gastos/Core`
   directly instead of depending on the app — the app embeds the watchOS app, so
-  the old `-scheme GastosDiarios` needed the watchOS platform installed to run a
-  unit test. Use `-scheme GastosDiarios` to build or run the app itself.
+  the old `-scheme Gastos` needed the watchOS platform installed to run a
+  unit test. Use `-scheme Gastos` to build or run the app itself.
 - `./scripts/install-ios.sh` — build + **renovación forzada de la firma** +
   install en el iPhone. Instalar siempre renueva: el perfil del team gratuito se
   reusa, así que un build normal conserva el vencimiento viejo y cada instalación

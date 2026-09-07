@@ -39,7 +39,7 @@ function ruleCap(source: string, pattern: RegExp): number {
 }
 
 const rules = read("firebase/firestore.rules");
-const limitsSwift = read("apps/ios/GastosDiarios/Core/Limits.swift");
+const limitsSwift = read("apps/ios/Gastos/Core/Limits.swift");
 
 function swiftLimit(name: string): number {
   const match = limitsSwift.match(

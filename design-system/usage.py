@@ -19,7 +19,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 WEB = REPO / "apps/web/src"
-IOS = REPO / "apps/ios/GastosDiarios"
+IOS = REPO / "apps/ios/Gastos"
 
 TEXT = {"xs": 12.0, "sm": 14.0, "base": 16.0, "lg": 18.0, "xl": 20.0,
         "2xl": 24.0, "3xl": 30.0, "4xl": 36.0}

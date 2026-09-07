@@ -43,7 +43,7 @@ describe("the window", () => {
     const swift = readFileSync(
       join(
         import.meta.dirname,
-        "../../../ios/GastosDiarios/Core/BankChargeInbox.swift",
+        "../../../ios/Gastos/Core/BankChargeInbox.swift",
       ),
       "utf8",
     );

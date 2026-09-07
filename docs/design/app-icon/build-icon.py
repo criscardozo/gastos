@@ -136,11 +136,11 @@ REPO = Path(__file__).resolve().parents[3]
 # variant -> [(size, path relative to the repo root), ...]
 SHIPPED = {
     "a-cream-on-coral": [
-        (1024, "apps/ios/GastosDiarios/Resources/Assets.xcassets/AppIcon.appiconset/appicon-1024.png"),
-        (1024, "apps/ios/GastosDiariosWatch/Assets.xcassets/AppIcon.appiconset/appicon-1024.png"),
+        (1024, "apps/ios/Gastos/Resources/Assets.xcassets/AppIcon.appiconset/appicon-1024.png"),
+        (1024, "apps/ios/GastosWatch/Assets.xcassets/AppIcon.appiconset/appicon-1024.png"),
     ],
     "c-dark": [
-        (1024, "apps/ios/GastosDiarios/Resources/Assets.xcassets/AppIcon.appiconset/appicon-dark-1024.png"),
+        (1024, "apps/ios/Gastos/Resources/Assets.xcassets/AppIcon.appiconset/appicon-dark-1024.png"),
     ],
     # The web wears the inverse: coral mark on the app's paper, matching the
     # manifest's own background_color (#FAF6EF) and the favicon in

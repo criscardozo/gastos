@@ -2,7 +2,7 @@
   "_comment": [
     "Cross-platform test vectors for matching the bank's USD charges to the",
     "expenses they paid for. The matcher exists twice — apps/web/src/lib/",
-    "bank-match.ts and apps/ios/GastosDiarios/Core/BankMatch.swift — and both",
+    "bank-match.ts and apps/ios/Gastos/Core/BankMatch.swift — and both",
     "must produce the SAME assignment for every case here. Same arrangement as",
     "period-test-vectors.json, and for the same reason: duplicated logic only",
     "stays honest if one file decides what it does.",

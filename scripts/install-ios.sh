@@ -32,11 +32,11 @@ DEVICE="${DEVICE_UDID:-B0ADA2A7-8B96-5DC9-9975-57075F17E0BB}"  # Kylo
 if [[ "${1:-}" == "--device" ]]; then DEVICE="$2"; fi
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROJECT="$REPO/apps/ios/GastosDiarios.xcodeproj"
+PROJECT="$REPO/apps/ios/Gastos.xcodeproj"
 DERIVED="${DERIVED_DATA:-$(mktemp -d)/dd}"
 PROFILES="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
 STASH="$(mktemp -d)/profiles"
-BUNDLE_ID="dev.cardozo.gastosdiarios"
+BUNDLE_ID="dev.cardozo.gastos"
 
 mkdir -p "$STASH"
 restore_profiles() {
@@ -61,7 +61,7 @@ done
 
 echo "== compilando =="
 set +e
-xcodebuild -project "$PROJECT" -scheme GastosDiarios -configuration Debug \
+xcodebuild -project "$PROJECT" -scheme Gastos -configuration Debug \
   -destination 'generic/platform=iOS' -derivedDataPath "$DERIVED" \
   -allowProvisioningUpdates build > "$DERIVED.log" 2>&1
 BUILD_STATUS=$?
@@ -105,7 +105,7 @@ fi
 
 # Only past this line is the bundle on disk the one just built.
 trap - EXIT
-APP="$DERIVED/Build/Products/Debug-iphoneos/GastosDiarios.app"
+APP="$DERIVED/Build/Products/Debug-iphoneos/Gastos.app"
 echo "== firma del bundle recién construido =="
 python3 - "$APP" <<'PY'
 import datetime, glob, os, plistlib, re, subprocess, sys, zoneinfo

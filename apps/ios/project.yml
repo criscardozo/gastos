@@ -1,4 +1,4 @@
-name: GastosDiarios
+name: Gastos
 options:
   # iOS 26, deliberately ahead of what compatibility would suggest.
   #
@@ -52,18 +52,18 @@ settings:
     DEVELOPMENT_TEAM: FA737M2U79
 
 targets:
-  GastosDiarios:
+  Gastos:
     type: application
     platform: iOS
     sources:
-      - path: GastosDiarios
+      - path: Gastos
       # Shared cross-platform contract: seed categories (icon + color source of truth).
       - path: ../../shared/categories.json
         buildPhase: resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastosdiarios
-        PRODUCT_NAME: GastosDiarios
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastos
+        PRODUCT_NAME: Gastos
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -79,7 +79,7 @@ targets:
         # make it vanish silently the first time somebody forgot.
         GD_INGEST_URL: https://script.google.com/macros/s/AKfycbxq9Vn_eMC_fLdLV4itZFL0ABHr0BdMZCzZeOyA68vECKBawpVIHcikn48tdpHan4h9mw/exec
     info:
-      path: GastosDiarios/Info.plist
+      path: Gastos/Info.plist
       properties:
         CFBundleDisplayName: Gastos Diarios
         CFBundleShortVersionString: $(MARKETING_VERSION)
@@ -113,18 +113,18 @@ targets:
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:
               - com.googleusercontent.apps.56331687585-20fpk74r9r9ta8fuf5c1e88rnedc6qk8
-          # Deep link into quick entry (gastosdiarios://nuevo) — usable from
+          # Deep link into quick entry (gastos://nuevo) — usable from
           # a plain "Open URL" Shortcut as a Back Tap alternative.
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:
-              - gastosdiarios
+              - gastos
     # App group shared with the widget extension (budget snapshot handoff).
     # NOTE: minimal on purpose — free personal team signing.
     entitlements:
-      path: GastosDiarios/GastosDiarios.entitlements
+      path: Gastos/Gastos.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.dev.cardozo.gastosdiarios
+          - group.dev.cardozo.gastos
     dependencies:
       - package: Firebase
         product: FirebaseAuth
@@ -134,30 +134,30 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
-      - target: GastosDiariosWidget
+      - target: GastosWidget
       # Embeds the watchOS app so it installs alongside the phone app.
-      - target: GastosDiariosWatch
+      - target: GastosWatch
         embed: true
 
-  GastosDiariosWidget:
+  GastosWidget:
     type: app-extension
     platform: iOS
     sources:
-      - path: GastosDiariosWidget
+      - path: GastosWidget
       # The quick-entry App Intent is compiled into BOTH targets so the
       # iOS 18 Control can launch it (WIDGET_EXTENSION conditionals inside).
-      - path: GastosDiarios/App/QuickEntryIntent.swift
+      - path: Gastos/App/QuickEntryIntent.swift
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastosdiarios.widget
-        PRODUCT_NAME: GastosDiariosWidget
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastos.widget
+        PRODUCT_NAME: GastosWidget
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
         SKIP_INSTALL: YES
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) WIDGET_EXTENSION"
     info:
-      path: GastosDiariosWidget/Info.plist
+      path: GastosWidget/Info.plist
       properties:
         CFBundleDisplayName: Gastos Diarios
         CFBundleShortVersionString: $(MARKETING_VERSION)
@@ -165,28 +165,28 @@ targets:
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
-      path: GastosDiariosWidget/GastosDiariosWidget.entitlements
+      path: GastosWidget/GastosWidget.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.dev.cardozo.gastosdiarios
+          - group.dev.cardozo.gastos
 
   # watchOS companion — a minimal quick-entry relay. It CANNOT sign in with
   # Google (no browser on the watch), so it never talks to Firebase: it sends
   # the expense to the phone via WatchConnectivity and the (authenticated)
   # phone performs the Firestore write. No Firebase dependency here on purpose.
-  GastosDiariosWatch:
+  GastosWatch:
     type: application
     platform: watchOS
     deploymentTarget: "10.0"
     sources:
-      - path: GastosDiariosWatch
+      - path: GastosWatch
       # Same shared seed categories bundled as a resource and decoded on-watch.
       - path: ../../shared/categories.json
         buildPhase: resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastosdiarios.watchkitapp
-        PRODUCT_NAME: GastosDiariosWatch
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastos.watchkitapp
+        PRODUCT_NAME: GastosWatch
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -194,14 +194,14 @@ targets:
         SKIP_INSTALL: YES
         GENERATE_INFOPLIST_FILE: NO
     info:
-      path: GastosDiariosWatch/Info.plist
+      path: GastosWatch/Info.plist
       properties:
         CFBundleDisplayName: Gastos Diarios
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Modern single-target watchOS app paired to the iOS app.
         WKApplication: true
-        WKCompanionAppBundleIdentifier: dev.cardozo.gastosdiarios
+        WKCompanionAppBundleIdentifier: dev.cardozo.gastos
 
   # Compiles Core/ DIRECTLY instead of depending on the app target.
   #
@@ -215,25 +215,25 @@ targets:
   # compile rather than failing an assertion. That is the trade: the list below
   # is the domain, and the domain is what these tests are about. Anything that
   # needs the app (SwiftUI views, AppModel) belongs in the app scheme.
-  GastosDiariosTests:
+  GastosTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: GastosDiariosTests
-      - path: GastosDiarios/Core
-      - path: GastosDiarios/Services/SigningExpiryService.swift
+      - path: GastosTests
+      - path: Gastos/Core
+      - path: Gastos/Services/SigningExpiryService.swift
       # Composing one Text out of differently styled runs. In Design/ rather
       # than Core/ because it imports SwiftUI, and Core is deliberately free of
       # it — so it is listed here by name instead of arriving with a folder.
-      - path: GastosDiarios/Design/RichText.swift
+      - path: Gastos/Design/RichText.swift
       # AppFont's size→text-style mapping and its Dynamic Type scaling. In the
       # app target's Design/ rather than Core/ because it imports SwiftUI, so
       # it is listed by name like RichText above.
-      - path: GastosDiarios/Design/Theme.swift
+      - path: Gastos/Design/Theme.swift
       # The strings L10n looks up. Compiled into the TEST bundle, which is why
       # L10n resolves its bundle through a type in its own module rather than
       # assuming Bundle.main.
-      - path: GastosDiarios/Resources/Localizable.xcstrings
+      - path: Gastos/Resources/Localizable.xcstrings
         buildPhase: resources
       # SeedCategories decodes this at runtime.
       - path: ../../shared/categories.json
@@ -243,7 +243,7 @@ targets:
       # A test bundle has no UIAppFonts, so the tests register it at runtime;
       # without it `AppFont.available` is false here and every scaling test
       # silently measures the FALLBACK instead.
-      - path: GastosDiarios/Resources/Fonts/Outfit-Variable.ttf
+      - path: Gastos/Resources/Fonts/Outfit-Variable.ttf
         buildPhase: resources
       # Shared cross-platform test vectors (Swift + TS must both pass).
       - path: ../../shared/period-test-vectors.json
@@ -255,25 +255,25 @@ targets:
       base:
         # Test bundles have no Info.plist of their own; codesigning requires one.
         GENERATE_INFOPLIST_FILE: YES
-        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastosdiarios.tests
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cardozo.gastos.tests
     dependencies:
       # Models.swift uses @DocumentID / @ServerTimestamp.
       - package: Firebase
         product: FirebaseFirestore
 
 schemes:
-  GastosDiarios:
+  Gastos:
     build:
       targets:
-        GastosDiarios: all
-        GastosDiariosTests: [test]
+        Gastos: all
+        GastosTests: [test]
     run:
       config: Debug
     test:
       config: Debug
       gatherCoverageData: false
       targets:
-        - GastosDiariosTests
+        - GastosTests
     profile:
       config: Release
     analyze:
@@ -282,20 +282,20 @@ schemes:
       config: Release
   # Tests on their own, so the loop does not need the watchOS platform just
   # because the app scheme embeds a watch app. Use this one to run tests; the
-  # GastosDiarios scheme is for running the app.
-  GastosDiariosTests:
+  # Gastos scheme is for running the app.
+  GastosTests:
     build:
       targets:
-        GastosDiariosTests: [test]
+        GastosTests: [test]
     test:
       config: Debug
       gatherCoverageData: false
       targets:
-        - GastosDiariosTests
-  GastosDiariosWatch:
+        - GastosTests
+  GastosWatch:
     build:
       targets:
-        GastosDiariosWatch: all
+        GastosWatch: all
     run:
       config: Debug
     profile:

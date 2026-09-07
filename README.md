@@ -36,7 +36,7 @@ pnpm install
 pnpm dev            # web on :3000
 pnpm test           # web unit tests + Firestore rules (emulator, needs Java) + the email parser
 pnpm emulators      # Auth 9099, Firestore 8080, UI 4000
-cd apps/ios && xcodegen && open GastosDiarios.xcodeproj   # iOS
+cd apps/ios && xcodegen && open Gastos.xcodeproj   # iOS
 ```
 
 Playwright end-to-end tests (`pnpm --filter web test:e2e`) need the emulators

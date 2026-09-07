@@ -13,23 +13,23 @@ deliberately web-only — see the root README.
 ## Project generation
 
 The Xcode project is generated with [XcodeGen](https://github.com/yonaskolb/XcodeGen)
-from `project.yml` (the generated `GastosDiarios.xcodeproj` is committed too so the
+from `project.yml` (the generated `Gastos.xcodeproj` is committed too so the
 project opens without tooling):
 
 ```sh
 cd apps/ios
-xcodegen            # regenerates GastosDiarios.xcodeproj
+xcodegen            # regenerates Gastos.xcodeproj
 ```
 
 ## Build & test
 
 ```sh
-xcodebuild -project GastosDiarios.xcodeproj -scheme GastosDiarios \
+xcodebuild -project Gastos.xcodeproj -scheme Gastos \
   -destination 'platform=iOS Simulator,name=iPhone 17' build
 
-xcodebuild test -project GastosDiarios.xcodeproj -scheme GastosDiarios \
+xcodebuild test -project Gastos.xcodeproj -scheme Gastos \
   -destination 'platform=iOS Simulator,name=iPhone 17' \
-  -only-testing:GastosDiariosTests
+  -only-testing:GastosTests
 ```
 
 The suite runs the two shared vector files — `shared/period-test-vectors.json`
@@ -41,8 +41,8 @@ free-account signing expiry.
 
 ## Google Sign-In configuration
 
-`GastosDiarios/Resources/GoogleService-Info.plist` is the real Firebase config for
-`dev.cardozo.gastosdiarios`, downloaded **after** enabling the Google sign-in
+`Gastos/Resources/GoogleService-Info.plist` is the real Firebase config for
+`dev.cardozo.gastos`, downloaded **after** enabling the Google sign-in
 provider, so it carries real `CLIENT_ID` / `REVERSED_CLIENT_ID` values. The same
 values are wired in `project.yml` → `Info.plist` (`GIDClientID` and the
 `CFBundleURLTypes` URL scheme) — **keep the three in sync**: if the plist is ever
@@ -65,7 +65,7 @@ from and saving returns you where you were. One-time setup on the iPhone:
    **Registrar gasto** shortcut (listed under Shortcuts).
 
 Alternative wiring: create a plain Shortcut with "Open URL" →
-`gastosdiarios://nuevo` and assign that to Back Tap. Both paths open the same
+`gastos://nuevo` and assign that to Back Tap. Both paths open the same
 sheet; the intent also works via Siri ("Registrar gasto en Gastos").
 
 ## Firebase emulators

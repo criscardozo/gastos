@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[0]
 TOKENS = json.loads((ROOT / "tokens.json").read_text())
 CSS = REPO / "apps/web/src/app/globals.css"
-SWIFT = REPO / "apps/ios/GastosDiarios/Design/Theme.swift"
+SWIFT = REPO / "apps/ios/Gastos/Design/Theme.swift"
 
 
 def flat() -> list[tuple[str, dict]]:

@@ -23,7 +23,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 WEB = REPO / "apps/web/src"
-IOS = REPO / "apps/ios/GastosDiarios"
+IOS = REPO / "apps/ios/Gastos"
 
 
 # Classes that name a ROLE. Geometry (rounded-*, px-*, py-*, text-*, flex) is

@@ -31,7 +31,7 @@ describe("category cap", () => {
   it("matches the number the iOS app enforces", () => {
     // Same cap, third copy: Swift has no way to import the constant above.
     const swift = readFileSync(
-      join(import.meta.dirname, "../../../ios/GastosDiarios/Core/Models.swift"),
+      join(import.meta.dirname, "../../../ios/Gastos/Core/Models.swift"),
       "utf8",
     );
     const match = swift.match(/static let maxCategories = (\d+)/);

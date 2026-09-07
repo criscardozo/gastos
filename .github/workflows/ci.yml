@@ -68,7 +68,7 @@ jobs:
       - name: Design tokens rebuild both platforms unchanged
         run: |
           python3 design-system/emit.py --write
-          git diff --exit-code apps/web/src/app/globals.css apps/ios/GastosDiarios/Design/Theme.swift
+          git diff --exit-code apps/web/src/app/globals.css apps/ios/Gastos/Design/Theme.swift
       - name: Component anatomy is attributable and representative
         run: python3 design-system/emit.py --verify
       # The PWA is how the app stays on the phone, so "does it still start with

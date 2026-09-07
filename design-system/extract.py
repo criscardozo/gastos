@@ -17,7 +17,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 CSS = REPO / "apps/web/src/app/globals.css"
-SWIFT = REPO / "apps/ios/GastosDiarios/Design/Theme.swift"
+SWIFT = REPO / "apps/ios/Gastos/Design/Theme.swift"
 OUT = Path(__file__).parent / "tokens.json"
 
 # CSS token -> (Swift name, human note). Order is the order they appear on disk.

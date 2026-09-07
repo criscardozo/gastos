@@ -462,7 +462,7 @@ acaba de pedir.
   entonces no compila NADA de iOS — simulador ni dispositivo — porque el esquema
   de la app embebe la app del reloj. Se baja con
   `xcodebuild -downloadPlatform watchOS` (varios GB). El esquema
-  `GastosDiariosTests` existe para que el loop de tests no dependa de eso.
+  `GastosTests` existe para que el loop de tests no dependa de eso.
 - El **device support** también se desfasa: si el iPhone se actualiza antes que
   Xcode, `xcodebuild` dice que la versión de iOS "is not installed" y no hay
   build para dispositivo hasta bajar el componente.

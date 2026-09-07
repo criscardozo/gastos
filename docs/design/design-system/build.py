@@ -24,7 +24,7 @@ REPO = Path(__file__).resolve().parents[3]
 OUT = Path(__file__).parent / "out"
 CSS = REPO / "apps/web/src/app/globals.css"
 CATEGORIES = REPO / "shared/categories.json"
-THEME = REPO / "apps/ios/GastosDiarios/Design/Theme.swift"
+THEME = REPO / "apps/ios/Gastos/Design/Theme.swift"
 WEB_SRC = REPO / "apps/web/src"
 
 sys.path.insert(0, str(REPO / "design-system"))

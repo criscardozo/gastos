@@ -1,5 +1,5 @@
 // The shared vectors, run against the TypeScript matcher. The Swift one runs
-// the same file (apps/ios/GastosDiariosTests/BankMatchTests.swift), which is the
+// the same file (apps/ios/GastosTests/BankMatchTests.swift), which is the
 // only thing keeping two implementations of this honest.
 
 import { describe, expect, it } from "vitest";
