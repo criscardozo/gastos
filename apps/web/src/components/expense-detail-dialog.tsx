@@ -178,7 +178,7 @@ export function ExpenseDetailDialog({
             name={expense.verified ? "check_circle" : "error"}
             size={20}
             style={{
-              color: expense.verified ? "var(--good-text)" : "var(--warn-text)",
+              color: expense.verified ? "var(--good-text)" : "var(--info-text)",
             }}
           />
           <div className="flex min-w-0 flex-1 flex-col">

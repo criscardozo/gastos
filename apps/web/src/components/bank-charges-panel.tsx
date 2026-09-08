@@ -206,8 +206,8 @@ export function BankChargesPanel({
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface px-[18px] py-3.5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <div className="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-warn-bg">
-          <Icon name="error" size={17} style={{ color: "var(--warn-text)" }} />
+        <div className="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-info-bg">
+          <Icon name="error" size={17} style={{ color: "var(--info-text)" }} />
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-[14.5px] font-bold text-ink">

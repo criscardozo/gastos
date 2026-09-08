@@ -32,6 +32,28 @@ Budget states: green `#2E9E5B` (text `#1F7A45`, bg `rgba(46,158,91,.12)`) · amb
 (text `#B87804`, bg `rgba(227,154,12,.15)`) · red `#E5484D` (text `#E5484D`, bg
 `rgba(229,72,77,.11)`).
 
+`info` — **added 8 Sep 2026**, and the only token here that is not in the Claude
+Design export. Light `#1F7FA8` (text `#17627F`, bg `rgba(31,127,168,.13)`) · dark
+`#4FB3D4` (text `#4FB3D4`, bg `rgba(79,179,212,.16)`).
+
+For things that are NEWS, not a state: the bank's pending charges, and an
+expense the bank has not confirmed yet. Those used the amber budget-warning
+colour, which said "something is wrong" about a list that only means "the bank
+charged, tell me which expense it was".
+
+It is a new slot rather than a reused one because every blue already here
+belongs to something: `#2A6FDB` is the transport category AND Cristian's avatar,
+and services is teal `#0E8F8F` — so borrowing either would make a charge look
+like a category or like a person. Measured against AA before adding: `info-text`
+on its own composited chip is 5.40:1 in light and 5.88:1 in dark, where the
+amber it replaces managed **3.03:1** and missed the 4.5:1 floor for body text
+outright.
+
+What stays amber, on purpose: the budget-state pill, the export-without-
+verifying consent, "todavía no se cobró" on Servicios, the card-statement
+inbox, and the `estimado` badge — that last one is amber precisely because it
+DOES ask you to check the number.
+
 Member avatars: Cristian `#2A6FDB`, Natalia `#E0447C` (initials, white, 700).
 
 ## Palette — dark

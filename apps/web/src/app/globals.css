@@ -37,6 +37,20 @@
   --over-bg: rgba(229, 72, 77, 0.11);
   --over-track: rgba(229, 72, 77, 0.2);
 
+  /* Informational, NOT a state.
+     The bank's pending charges used --warn, which reads as "something is
+     wrong" about a list that is only news: the bank charged, tell me which
+     expense it was. It is its own token rather than a reused one because
+     every blue already in this palette belongs to something — --cat-transport
+     is also --member-blue (Cristian's avatar) and --cat-services is teal — so
+     borrowing one would make a charge look like a category or like a person.
+     It is also more legible than what it replaces: 5.40:1 here against the
+     composited chip, where --warn-text managed 3.03:1 and failed AA for body
+     text outright. */
+  --info: #1f7fa8;
+  --info-text: #17627f;
+  --info-bg: rgba(31, 127, 168, 0.13);
+
   /* Member avatars */
   --member-blue: #2a6fdb;
   --member-pink: #e0447c;
@@ -86,6 +100,10 @@
        --surface is 4.42:1, under the 4.5:1 AA needs for body text. */
     --warn-text: #e39a0c;
 
+    --info: #4fb3d4;
+    --info-text: #4fb3d4;
+    --info-bg: rgba(79, 179, 212, 0.16);
+
     --member-blue: #4b87e8;
     --member-pink: #ef6d9c;
 
@@ -124,6 +142,10 @@
   /* Brightened for dark, as iOS already had it: the light value on
      --surface is 4.42:1, under the 4.5:1 AA needs for body text. */
   --warn-text: #e39a0c;
+
+  --info: #4fb3d4;
+  --info-text: #4fb3d4;
+  --info-bg: rgba(79, 179, 212, 0.16);
 
   --member-blue: #4b87e8;
   --member-pink: #ef6d9c;
@@ -165,6 +187,9 @@
   --color-warn: var(--warn);
   --color-warn-text: var(--warn-text);
   --color-warn-bg: var(--warn-bg);
+  --color-info: var(--info);
+  --color-info-text: var(--info-text);
+  --color-info-bg: var(--info-bg);
   --color-over: var(--over);
   --color-over-bg: var(--over-bg);
   --color-over-track: var(--over-track);

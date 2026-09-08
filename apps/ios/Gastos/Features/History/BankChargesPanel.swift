@@ -62,7 +62,7 @@ struct BankChargesPanel: View {
                     AdaptiveRow {
                         Text(l10n.bankChargesCount(pending))
                             .appFont(13.5, .bold)
-                            .foregroundStyle(Theme.amberText)
+                            .foregroundStyle(Theme.infoText)
                         AdaptiveGap()
                         Image(systemName: isOpen ? "chevron.up" : "chevron.down")
                             .appFont(12, .semibold)
@@ -70,7 +70,7 @@ struct BankChargesPanel: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 9)
-                    .background(Theme.amberBg)
+                    .background(Theme.infoBg)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .contentShape(Rectangle())
                 }

@@ -321,7 +321,7 @@ struct HistoryView: View {
                         // break, it is a word coming apart.
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .foregroundStyle(expense.isVerified ? Theme.greenText : Theme.amberText)
+                .foregroundStyle(expense.isVerified ? Theme.greenText : Theme.infoText)
             }
             .buttonStyle(.plain)
 

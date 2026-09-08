@@ -122,7 +122,7 @@ struct ExpenseDetailSheet: View {
                       ? "checkmark.circle.fill"
                       : "exclamationmark.circle.fill")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(expense.isVerified ? Theme.greenText : Theme.amberText)
+                    .foregroundStyle(expense.isVerified ? Theme.greenText : Theme.infoText)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(l10n.t(expense.isVerified ? "history.verified" : "history.unverified"))
                         .appFont(14.5, .semibold)

@@ -79,6 +79,20 @@ enum Theme {
     /// Over-budget track tint.
     static let redTrack = Color(hex: "#E5484D", alpha: 0.2)
 
+    /// Informational, NOT a state.
+    ///
+    /// The bank's pending charges used `amber`, which reads as "something is
+    /// wrong" about a list that is only news: the bank charged, tell me which
+    /// expense it was. Its own colour rather than a reused one because every
+    /// blue in this palette already belongs to something — `avatarBlue` is
+    /// also the transport category, and services is teal — so borrowing one
+    /// would make a charge look like a category or like a person. Also more
+    /// legible than what it replaces: 5.40:1 against the composited chip in
+    /// light, where `amberText` managed 3.03:1 and missed AA for body text.
+    static let info = Color.hex(light: "#1F7FA8", dark: "#4FB3D4")
+    static let infoText = Color.hex(light: "#17627F", dark: "#4FB3D4")
+    static let infoBg = Color.hex(light: "#1F7FA8", dark: "#4FB3D4", lightAlpha: 0.13, darkAlpha: 0.16)
+
     // Member avatars (Cristian blue / Natalia pink); dark variants per tokens.
     static let avatarBlue = Color.hex(light: "#2A6FDB", dark: "#4B87E8")
     static let avatarPink = Color.hex(light: "#E0447C", dark: "#EF6D9C")

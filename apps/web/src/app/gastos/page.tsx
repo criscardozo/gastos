@@ -586,7 +586,7 @@ export default function ExpensesPage() {
               locale,
             )}`}
             className="flex items-center gap-1"
-            style={{ color: e.verified ? "var(--good-text)" : "var(--warn-text)" }}
+            style={{ color: e.verified ? "var(--good-text)" : "var(--info-text)" }}
           >
             <Icon
               name={e.verified ? "check_circle" : "error"}
