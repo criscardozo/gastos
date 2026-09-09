@@ -197,6 +197,38 @@ describe("every copy of the emulator ports", () => {
     );
   });
 
+  it("every copy agrees, whatever the cases below are called", () => {
+    // The guarantee lives HERE, in one test that iterates internally.
+    //
+    // The `it.each` blocks that follow are nicer to read in a failure report —
+    // they name the file — but they are cosmetic, and that is deliberate.
+    // Emptying an `it.each` deletes its cases without deleting any line of
+    // code, so coverage that lives in one is coverage that can evaporate in a
+    // refactor. It did: this file lost the prose block for a commit and stayed
+    // green. Measured after that was fixed, the combined mutation — both
+    // loops emptied AND a port moved — still produced exactly one red, the
+    // tripwire above, and before the tripwire existed it produced NONE.
+    //
+    // So the loops now carry no guarantee of their own. Delete them and the
+    // output gets worse; delete them and move a port and this fails. The idea
+    // is the Stock session's, which reached it from the same measurement.
+    for (const [label, path, check] of COPIES) {
+      try {
+        check(read(path));
+      } catch (error) {
+        throw new Error(`${label} (${path}) disagrees with firebase.json`, {
+          cause: error,
+        });
+      }
+    }
+    for (const [path, ports] of DOCUMENTED) {
+      const text = read(path);
+      for (const port of ports) {
+        expect(text, `${path} must name :${port}`).toContain(port);
+      }
+    }
+  });
+
   it.each(COPIES.map((c) => [c[0], c[1], c[2]] as const))(
     "agrees with firebase.json — %s",
     (_label, path, check) => {
