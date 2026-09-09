@@ -1,6 +1,10 @@
 // A fixture written straight to the emulator, so the round trip has something
 // with subcollections and timestamps in it.
-process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+// 8390, this project's own block. This said 8080 from the port move until
+// today, which means the round-trip rehearsal has been pointed at an SSH
+// forward to another project's emulator ever since — the one rehearsal that
+// proves the backups are restorable, quietly aimed at the wrong database.
+process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8390";
 const { initializeApp } = await import("firebase-admin/app");
 const { getFirestore, Timestamp } = await import("firebase-admin/firestore");
 initializeApp({ projectId: "qcris-gastos-diarios" });

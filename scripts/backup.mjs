@@ -84,28 +84,63 @@ function serialize(value) {
 }
 
 async function main() {
-  // Pointed at the emulator when FIRESTORE_EMULATOR_HOST is set, which is how
-  // the restore is proven: seed, back up, wipe, restore, compare. A backup
-  // nobody has ever read back is a hope, and the round trip cannot be
-  // rehearsed against production.
+  // Pointed at the emulator when FIRESTORE_EMULATOR_HOST is set. That is how
+  // the round trip gets rehearsed — seed, back up, wipe, restore, compare —
+  // by hand, with firebase/rules-tests/seed-for-restore.mjs. It is NOT
+  // automated and CI does not run it, so this sentence is only as true as the
+  // last time somebody did it.
+  //
+  // Last rehearsed: 9 September 2026. Wiped to zero households first and
+  // confirmed it, then compared 36 fields across households, expenses,
+  // periodBudgets and users — timestamps as instants, because the first
+  // comparison trimmed trailing zeros and reported four differences that were
+  // its own.
+  //
+  // Before that, 4 September — and in between, the rehearsal script was
+  // pointing at port 8080, which after the port move is an SSH forward to a
+  // different project's emulator. So the claim "the restore is proven" was
+  // carried for five days by a script aimed at the wrong database. That is why
+  // the date is written down instead of the assurance.
+  //
+  // `connectedProject` is what the dump gets labelled with, and it is
+  // deliberately NOT the variable read below.
+  //
+  // It used to be. `BACKUP_PROJECT_ID` overrode the label but not the
+  // connection, so running with production credentials and that variable set
+  // read the real ledger and stamped it as something else — a good backup that
+  // restore.mjs would then refuse, because it checks the label. The Stock
+  // session found that exact shape in its own copy and named the rule: the
+  // label cannot come from the same variable you might have got wrong, it has
+  // to come from the connection that was actually opened.
   const emulator = process.env.FIRESTORE_EMULATOR_HOST;
-  const project = process.env.BACKUP_PROJECT_ID ?? PROJECT_ID;
   const isEmulator = emulator !== undefined && emulator !== "";
+  let connectedProject;
   if (isEmulator) {
-    console.log(`reading the EMULATOR at ${emulator} (project "${project}")`);
-    initializeApp({ projectId: project });
+    connectedProject = process.env.BACKUP_PROJECT_ID ?? PROJECT_ID;
+    console.log(`reading the EMULATOR at ${emulator} (project "${connectedProject}")`);
+    initializeApp({ projectId: connectedProject });
   } else {
     const keyPath = resolveCredentials();
     const serviceAccount = JSON.parse(
       await import("node:fs").then((fs) => fs.readFileSync(keyPath, "utf8")),
     );
-    initializeApp({ credential: cert(serviceAccount), projectId: PROJECT_ID });
+    // The credential decides which project this reads, so the key's own
+    // project_id is the only honest label — not PROJECT_ID either, which is
+    // just as much a constant somebody could have edited.
+    connectedProject = serviceAccount.project_id;
+    if (connectedProject !== PROJECT_ID) {
+      console.error(
+        `The service-account key is for "${connectedProject}", not "${PROJECT_ID}".`,
+      );
+      process.exit(1);
+    }
+    initializeApp({ credential: cert(serviceAccount), projectId: connectedProject });
   }
   const db = getFirestore();
 
   const rootCollections = await db.listCollections();
   const dump = {
-    project,
+    project: connectedProject,
     // WHERE it was read from, which `project` cannot say.
     //
     // The emulator is started under the production project id on purpose (see

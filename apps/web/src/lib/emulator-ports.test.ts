@@ -101,6 +101,15 @@ describe("every copy of the emulator ports", () => {
     expect(read("scripts/restore.mjs")).toContain(`127.0.0.1:${FIRESTORE}`);
   });
 
+  it("agrees with firebase.json — the round-trip rehearsal", () => {
+    // The script that proves a backup can be restored. It kept 8080 through
+    // the port move, so the one rehearsal standing behind the backups was
+    // aimed at another project's emulator and said nothing about it.
+    expect(read("firebase/rules-tests/seed-for-restore.mjs")).toContain(
+      `127.0.0.1:${FIRESTORE}`,
+    );
+  });
+
   it("agrees with firebase.json — the seed script", () => {
     // No env override here: it talks to the emulator or to nothing.
     expect(read("scripts/seed-emulator.mjs")).toContain(FIRESTORE);
@@ -146,6 +155,7 @@ describe("every copy of the emulator ports", () => {
       "apps/web/e2e/app.spec.ts",
       "scripts/seed-emulator.mjs",
       "scripts/restore.mjs",
+      "firebase/rules-tests/seed-for-restore.mjs",
       "apps/ios/Gastos/Services/FirestoreService.swift",
       ".github/workflows/ci.yml",
     ]) {
