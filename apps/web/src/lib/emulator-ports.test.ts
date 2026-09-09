@@ -61,13 +61,34 @@ const LOGGING = String(config.emulators.logging.port);
  *
  * Each file lists the ports it actually names, not all six, because a guard
  * that demands more than a file claims gets loosened until it means nothing.
- * `docs/reglas.md` is deliberately absent: it narrates what the ports used to
- * be, so pinning it would forbid writing history down.
+ *
+ * These tests were absent for one commit. Restructuring this file around a
+ * single COPIES list replaced a range of it by index and took the prose
+ * `it.each` with it — the count went from 15 to 11, the suite stayed green,
+ * and the commit message said the prose was covered. Nothing caught it
+ * because the sweep below only asks whether a file is ACCOUNTED FOR, and
+ * these files still were; what vanished was the part that reads them. Found
+ * by mutating a port in docs/reglas.md and watching nothing fail.
  */
 const DOCUMENTED: readonly (readonly [string, readonly string[]])[] = [
   ["CLAUDE.md", [AUTH, FIRESTORE, WEBSOCKET, UI, HUB, LOGGING]],
   ["README.md", [AUTH, FIRESTORE, UI]],
   ["apps/ios/README.md", [AUTH, FIRESTORE]],
+  // Narrates the port move — including the OLD numbers, which is the point of
+  // the entry — but it also states the current block in full, and that half
+  // goes stale like any other copy.
+  //
+  // It used to be excluded from the sweep wholesale, on the strength of the
+  // narration. That exclusion was right about one thing and quietly covered a
+  // second I had never checked: six live ports sitting in a paragraph, in the
+  // file that explains that sentences about ports go stale. The Stock session
+  // found the identical thing inside its own guard twenty minutes after
+  // refusing a per-line exception elsewhere — neither of us evaluated the
+  // exception, we just wrote it as housekeeping.
+  //
+  // Nothing is excluded from the sweep now except firebase.json, which is the
+  // source rather than a copy.
+  ["docs/reglas.md", [AUTH, FIRESTORE, WEBSOCKET, UI, HUB, LOGGING]],
 ];
 
 function read(path: string): string {
@@ -152,6 +173,16 @@ describe("every copy of the emulator ports", () => {
     },
   );
 
+  it.each(DOCUMENTED.map((d) => [d[0], d[1]] as const))(
+    "agrees with firebase.json — the prose in %s",
+    (path, ports) => {
+      const text = read(path);
+      for (const port of ports) {
+        expect(text, `${path} must name :${port}`).toContain(port);
+      }
+    },
+  );
+
   it("knows about every file that repeats a port", () => {
     // The completeness half, and the one the rest of this file cannot supply.
     //
@@ -166,11 +197,9 @@ describe("every copy of the emulator ports", () => {
     // So this walks the tree instead. Any file that mentions a port and is not
     // accounted for fails, by name.
     const accounted = new Set([
-      // The source. Everything else is a copy of this.
+      // The source. Everything else is a copy of it, and it is the only
+      // thing this sweep excuses.
       "firebase/firebase.json",
-      // Narrates what the ports USED to be, on purpose — pinning it would
-      // forbid writing the history of the move down.
-      "docs/reglas.md",
       ...COPIES.map(([, path]) => path),
       ...DOCUMENTED.map(([path]) => path),
     ]);
