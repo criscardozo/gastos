@@ -479,6 +479,34 @@ acaba de pedir.
   verde con un arreglo parcial no es cobertura incompleta, es una flecha al
   arreglo equivocado, y eso es peor que no tenerla porque tiene forma de haber
   funcionado. Al mutar, mirar **cuál** test cayó, no cuántos.
+- **No la escribas, corrila — y antes de mirar, decí qué significaría cada
+  color.** Es la forma ejecutable de la regla que sigue, y hace falta porque la
+  otra se aplica pensando y pensando falla. Escribí tres sondas inertes en una
+  semana y las tres me parecieron obviamente discriminantes en el momento; las
+  tres las agarró correr la mutación. La segunda mitad es de la sesión Stock y
+  cubre el error simétrico: ellos estuvieron por «arreglar» algo que ya estaba
+  bien porque esperaban rojo y les dio verde, cuando verde era la respuesta
+  correcta. Anotar la predicción antes convierte el resultado en confirmación o
+  en sorpresa, en vez de en algo que uno interpreta después según lo que
+  quería ver.
+- **Hay una clase de error que sólo se comete estando concentrado en no
+  cometerlo, y por eso no cede a más atención.** El caso límite: el test que
+  verifica que la guarda no dejó de verificar buscaba la cadena
+  `it.each(...)` escrita como literal — y esa misma línea ponía la cadena en el
+  archivo, así que la búsqueda se encontraba a sí misma y no podía fallar
+  nunca. No se me pasó: **el acto de escribir la aguja la creó**. Lo mismo con
+  los comentarios que deletrean lo prohibido para advertir sobre ello. Es la
+  razón por la que todas estas reglas terminan en un paso ejecutable y no en un
+  principio: contra esto la atención no sirve, sirve ejecutar.
+- **La cobertura que vive adentro de un `it.each` se evapora en un refactor.**
+  Vaciar el iterable borra los casos sin borrar una línea de código, y la suite
+  queda verde. Medido con la mutación combinada que propuso Stock —bucles
+  vacíos Y puerto movido a la vez—: acá daba **cero** tests rojos, o sea que
+  toda la cobertura de puertos estaba ahí adentro; en su repo daban dos, que
+  además eran dos que casualmente miraban otros archivos. La garantía va en un
+  test que itera internamente; el `it.each` queda para que el reporte nombre el
+  archivo, y el comentario tiene que decir que es cosmético, para que el
+  próximo que lo borre sepa que no está borrando nada.
 - **Una medición que no puede dar el resultado contrario no es una medición.**
   Es la forma general de tres cosas que este archivo ya tenía anotadas por
   separado, y la frase es de la sesión Stock: el baseline que no asegura nada
