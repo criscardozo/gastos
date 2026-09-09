@@ -20,7 +20,17 @@ import { cert, initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PROJECT_ID = "qcris-gastos";
+// Keep the `-diarios`. The Firebase project id is permanent and still carries
+// the old name: renaming the app to Gastos renamed the display name, the repo,
+// the bundle ids and the Vercel project, and could not rename this. The
+// rebranding pass shortened it here and in restore.mjs anyway, and the weekly
+// backup failed with a permission error naming a project that does not exist.
+//
+// Guarded by apps/web/src/lib/project-id.test.ts, which greps for the wrong
+// spelling — so this comment cannot write it out, even to warn about it. That
+// is the right way round: a guard with a per-line exception is a guard that
+// stops meaning anything, and the first one reaching for the exception was me.
+const PROJECT_ID = "qcris-gastos-diarios";
 
 function resolveCredentials() {
   const explicit = process.env.GOOGLE_APPLICATION_CREDENTIALS;

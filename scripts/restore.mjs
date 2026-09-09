@@ -16,7 +16,7 @@
 //
 // The emulator target needs the suite running with the app's project id:
 //   firebase emulators:start --only auth,firestore \
-//     --config firebase/firebase.json --project qcris-gastos
+//     --config firebase/firebase.json --project qcris-gastos-diarios
 //
 // (That id is not a detail — see docs/reglas.md. Started under a different one,
 // the rules resolve their get() in a namespace where no household exists and
@@ -30,7 +30,7 @@ import { cert, initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PROJECT_ID = "qcris-gastos";
+const PROJECT_ID = "qcris-gastos-diarios";
 
 /**
  * ISO strings back into Timestamps.
