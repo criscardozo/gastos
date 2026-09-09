@@ -124,10 +124,16 @@ const nextConfig: NextConfig = {
    * EMULATOR hosts, and only when they are in use: Stock's report-only run
    * produced twelve violations, every one of them the emulator, and the
    * symptom is not an error anyone sees — it is Firestore never connecting and
-   * a screen with nothing on it. And a CSP is one of the copies of those port
-   * numbers that CANNOT read `firebase.json`, like `ci.yml`'s `wait-on` — the
-   * two that broke on both sides are exactly the two that are not code, so add
-   * it to `emulator-ports.test.ts` the day it exists.
+   * a screen with nothing on it.
+   *
+   * And the moment a policy names a port, THIS FILE becomes a copy of
+   * `firebase.json`. Concretely, so nobody has to rediscover it: adding the
+   * CSP will make `apps/web/src/lib/emulator-ports.test.ts` fail on "knows
+   * about every file that repeats a port", naming this file. The fix is to add
+   * it to `COPIES` there with a check for the ports the policy allows — not to
+   * add it to `accounted`, which would silence the failure without holding
+   * anything. Stock shipped the policy first and got the failure pointed at
+   * the wrong file for a while; this note is so we do not.
    *
    * X-Frame-Options does not affect sign-in: the handler is a top-level
    * navigation (popup or redirect), never an iframe.

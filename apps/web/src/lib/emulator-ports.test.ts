@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -7,16 +8,22 @@ import config from "../../../../firebase/firebase.json";
 /**
  * The emulator ports, held to the one file that decides them.
  *
- * `firebase/firebase.json` is what `pnpm emulators` reads, and SIX other
- * places have to agree with it because none of them can read it: the web
- * client, the Playwright config, the e2e spec's REST base, the seed script,
- * iOS's `configureEmulatorsIfRequested()`, and CI's `wait-on`.
+ * `firebase/firebase.json` is what `pnpm emulators` reads, and a number of
+ * other places have to agree with it because none of them can read it. The
+ * list is COPIES and DOCUMENTED below; there is deliberately no count in this
+ * sentence.
  *
- * The count was five when this was written, and the sixth is why the count is
- * worth distrusting: CI waited on the old pair, sat for the full two minutes
- * and reported "Timed out waiting for: tcp:9099, tcp:8080" — which is exactly
- * what a slow emulator looks like, while the emulator was up and listening
- * elsewhere. A guard that says "every copy" has to be told about every copy.
+ * There was one. It said five, then six, and it was wrong both times within
+ * days — the Stock session hit the identical thing, a header saying "nine
+ * other files" inside the file whose whole job is keeping numbers true. A
+ * count in prose is one more copy to maintain, and the list is the count.
+ *
+ * The reason to distrust it at all: CI once waited on the old pair, sat for
+ * the full two minutes and reported "Timed out waiting for" the ports it had
+ * been given — which is exactly what a slow emulator looks like, while the
+ * emulator was up and listening elsewhere. A guard that says "every copy" has
+ * to be told what every copy is, and told again every time one appears, which
+ * is what "knows about every file that repeats a port" is for.
  *
  * Moving the ports proved why this is needed. Four of the five were updated
  * and the e2e spec's own defaults were not, so 15 of 18 tests failed with
@@ -67,6 +74,69 @@ function read(path: string): string {
   return readFileSync(join(ROOT, path), "utf8");
 }
 
+/**
+ * Every file of CODE that repeats a port, and what it must contain.
+ *
+ * Declared once and used twice: to check each copy agrees, and to check the
+ * list itself has not fallen behind the repo. Those are different claims —
+ * see "knows about every file that repeats a port" below.
+ */
+const COPIES: readonly (readonly [string, string, (t: string) => void])[] = [
+  ...(
+    [
+      ["the web client", "apps/web/src/lib/firebase/client.ts"],
+      ["the Playwright config", "apps/web/playwright.config.ts"],
+      ["the e2e spec", "apps/web/e2e/app.spec.ts"],
+    ] as const
+  ).map(
+    ([label, path]) =>
+      [
+        label,
+        path,
+        (t: string) => {
+          expect(t).toContain(`?? "${AUTH}"`);
+          expect(t).toContain(`?? "${FIRESTORE}"`);
+        },
+      ] as const,
+  ),
+  [
+    // The one that got missed first. No env override: the workflow starts the
+    // emulator from the same firebase.json and then waits on literals.
+    "CI's wait-on",
+    ".github/workflows/ci.yml",
+    (t) => expect(t).toContain(`wait-on tcp:${AUTH} tcp:${FIRESTORE}`),
+  ],
+  [
+    // Found still on Firebase's 8080, which here is an SSH forward to somebody
+    // else's emulator. Missed because the list was written from memory, and
+    // this is the script nobody runs by hand.
+    "the restore script",
+    "scripts/restore.mjs",
+    (t) => expect(t).toContain(`127.0.0.1:${FIRESTORE}`),
+  ],
+  [
+    // Kept 8080 through the port move, so the one rehearsal standing behind
+    // every backup was aimed at another project's database.
+    "the round-trip rehearsal",
+    "firebase/rules-tests/seed-for-restore.mjs",
+    (t) => expect(t).toContain(`127.0.0.1:${FIRESTORE}`),
+  ],
+  [
+    // No env override here: it talks to the emulator or to nothing.
+    "the seed script",
+    "scripts/seed-emulator.mjs",
+    (t) => expect(t).toContain(FIRESTORE),
+  ],
+  [
+    "iOS",
+    "apps/ios/Gastos/Services/FirestoreService.swift",
+    (t) => {
+      expect(t).toContain(`port: ${AUTH}`);
+      expect(t).toContain(`settings.host = "localhost:${FIRESTORE}"`);
+    },
+  ],
+];
+
 describe("every copy of the emulator ports", () => {
   it("has ports to check in the first place", () => {
     // A config that stopped declaring them would make every assertion below
@@ -75,73 +145,65 @@ describe("every copy of the emulator ports", () => {
     expect(Number(FIRESTORE)).toBeGreaterThan(1024);
   });
 
-  it.each([
-    ["the web client", "apps/web/src/lib/firebase/client.ts"],
-    ["the Playwright config", "apps/web/playwright.config.ts"],
-    ["the e2e spec", "apps/web/e2e/app.spec.ts"],
-  ])("agrees with firebase.json — %s", (_label, path) => {
-    const text = read(path);
-    expect(text).toContain(`?? "${AUTH}"`);
-    expect(text).toContain(`?? "${FIRESTORE}"`);
-  });
-
-  it("agrees with firebase.json — CI's wait-on", () => {
-    // The one that got missed. It has no env override: the workflow starts the
-    // emulator from the same firebase.json and then waits on literals.
-    expect(read(".github/workflows/ci.yml")).toContain(
-      `wait-on tcp:${AUTH} tcp:${FIRESTORE}`,
-    );
-  });
-
-  it("agrees with firebase.json — the restore script", () => {
-    // Added after it was found still defaulting to Firebase's 8080, which on
-    // this machine is an SSH forward to somebody else's emulator. It was
-    // missed because the guard was written from a list of files somebody
-    // remembered, and restore.mjs is the one nobody runs.
-    expect(read("scripts/restore.mjs")).toContain(`127.0.0.1:${FIRESTORE}`);
-  });
-
-  it("agrees with firebase.json — the round-trip rehearsal", () => {
-    // The script that proves a backup can be restored. It kept 8080 through
-    // the port move, so the one rehearsal standing behind the backups was
-    // aimed at another project's emulator and said nothing about it.
-    expect(read("firebase/rules-tests/seed-for-restore.mjs")).toContain(
-      `127.0.0.1:${FIRESTORE}`,
-    );
-  });
-
-  it("agrees with firebase.json — the seed script", () => {
-    // No env override here: it talks to the emulator or to nothing.
-    expect(read("scripts/seed-emulator.mjs")).toContain(FIRESTORE);
-  });
-
-  it("agrees with firebase.json — iOS", () => {
-    const swift = read("apps/ios/Gastos/Services/FirestoreService.swift");
-    expect(swift).toContain(`port: ${AUTH}`);
-    expect(swift).toContain(`settings.host = "localhost:${FIRESTORE}"`);
-  });
-
-  it.each(DOCUMENTED.map((d) => [d[0], d[1]] as const))(
-    "agrees with firebase.json — the prose in %s",
-    (path, ports) => {
-      const text = read(path);
-      for (const port of ports) expect(text, `${path} must name :${port}`).toContain(port);
+  it.each(COPIES.map((c) => [c[0], c[1], c[2]] as const))(
+    "agrees with firebase.json — %s",
+    (_label, path, check) => {
+      check(read(path));
     },
   );
 
-  it("has no port in firebase.json that nothing documents", () => {
-    // The completeness half. Adding a seventh port to the config should fail
-    // here until somebody decides which sentence explains it, because the
-    // lesson of the `wait-on` was that a guard saying "every copy" has to be
-    // told what every copy is — and the number you believe is the one to
-    // distrust.
-    const declared = [
-      ...JSON.stringify(config.emulators).matchAll(/"(?:websocketPort|port)":(\d+)/g),
-    ].map((m) => m[1]);
-    expect(declared.length).toBe(6);
-    const documented = new Set(DOCUMENTED.flatMap((d) => d[1]));
-    for (const port of declared) {
-      expect(documented, `:${port} is in firebase.json but in no prose`).toContain(port);
+  it("knows about every file that repeats a port", () => {
+    // The completeness half, and the one the rest of this file cannot supply.
+    //
+    // Every assertion above is written against a hand-listed path, so together
+    // they prove that what the list NAMES agrees — not that the list names
+    // everything. Those are different claims, and the weaker one passes right
+    // up until somebody adds a copy. The Stock session ran this exact check on
+    // its own guard and found two: `expect.poll` calls added the week before,
+    // each carrying its own port default, neither on the list. The guard
+    // written to stop the ports drifting had drifted from itself.
+    //
+    // So this walks the tree instead. Any file that mentions a port and is not
+    // accounted for fails, by name.
+    const accounted = new Set([
+      // The source. Everything else is a copy of this.
+      "firebase/firebase.json",
+      // Narrates what the ports USED to be, on purpose — pinning it would
+      // forbid writing the history of the move down.
+      "docs/reglas.md",
+      ...COPIES.map(([, path]) => path),
+      ...DOCUMENTED.map(([path]) => path),
+    ]);
+
+    for (const port of [AUTH, FIRESTORE, WEBSOCKET, UI, HUB, LOGGING]) {
+      let files: string[] = [];
+      try {
+        // `-w`, because a port is a whole number and not four digits sitting
+        // inside something longer. Without it the hub's port matched a
+        // revision hash in Package.resolved and this reported a copy that is
+        // not one — and a guard that cries wolf gets an exclusion list bolted
+        // on, after which it is the exclusion list that goes stale.
+        //
+        // This file is deliberately NOT in `accounted`, which is why the
+        // sentence above cannot spell the number out. That is the right way
+        // round: a guard holding the ports must never hardcode one, so the
+        // moment it does, it fails on itself.
+        files = execFileSync("git", ["grep", "-wlI", port], {
+          cwd: ROOT,
+          encoding: "utf8",
+        })
+          .split("\n")
+          .filter((f) => f !== "");
+      } catch {
+        // No match at all means the port vanished from the repo, which the
+        // "has ports to check" test above would not notice either.
+        expect.fail(`no file mentions :${port} — not even firebase.json`);
+      }
+      const unknown = files.filter((f) => !accounted.has(f));
+      expect(
+        unknown,
+        `these repeat :${port} and nothing holds them to it:\n  ${unknown.join("\n  ")}`,
+      ).toEqual([]);
     }
   });
 
