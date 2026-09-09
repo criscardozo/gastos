@@ -90,7 +90,8 @@ async function main() {
   // rehearsed against production.
   const emulator = process.env.FIRESTORE_EMULATOR_HOST;
   const project = process.env.BACKUP_PROJECT_ID ?? PROJECT_ID;
-  if (emulator !== undefined && emulator !== "") {
+  const isEmulator = emulator !== undefined && emulator !== "";
+  if (isEmulator) {
     console.log(`reading the EMULATOR at ${emulator} (project "${project}")`);
     initializeApp({ projectId: project });
   } else {
@@ -105,6 +106,17 @@ async function main() {
   const rootCollections = await db.listCollections();
   const dump = {
     project,
+    // WHERE it was read from, which `project` cannot say.
+    //
+    // The emulator is started under the production project id on purpose (see
+    // docs/reglas.md: under any other id the rules resolve isMember()'s get()
+    // in an empty namespace and every subcollection reads back empty). The
+    // consequence is that a rehearsal dump declares `qcris-gastos-diarios` and
+    // is indistinguishable from the real thing — the check restore.mjs runs to
+    // protect production passes on a file full of seed data. Two of those are
+    // already in backups/, one with a household called "Casa" and a member
+    // called "C".
+    source: isEmulator ? "emulator" : "production",
     exportedAt: new Date().toISOString(),
     collections: {},
   };
@@ -117,7 +129,10 @@ async function main() {
   const dir = join(repoRoot, "backups");
   mkdirSync(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const file = join(dir, `gastos-${stamp}.json`);
+  // The source goes in the NAME too. A directory listing is how somebody looks
+  // for a backup on the day they need one, and until now the only way to tell
+  // a rehearsal from the real ledger was to open the file and count documents.
+  const file = join(dir, `gastos-${dump.source}-${stamp}.json`);
   writeFileSync(file, JSON.stringify(dump, null, 2));
   console.log(`\nBackup written to ${file}`);
 }

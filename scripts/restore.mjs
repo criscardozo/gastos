@@ -116,7 +116,10 @@ async function main() {
     process.exit(1);
   }
 
-  const emulator = process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080";
+  // 8390, this project's own block — not Firebase's default. On this machine
+  // SSH forwards hold 8080, so a restore pointed there would talk to somebody
+  // else's emulator. (The ports guard did not cover this file; it does now.)
+  const emulator = process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8390";
   if (production) {
     // The dump names the project it came from. Restoring a dump of one project
     // into another is never a thing anyone means to do, so it is refused
@@ -124,6 +127,30 @@ async function main() {
     if (dump.project !== PROJECT_ID) {
       console.error(
         `This dump is from "${dump.project}", not "${PROJECT_ID}". Refusing.`,
+      );
+      process.exit(1);
+    }
+    // And WHERE it was read from, which the check above cannot see.
+    //
+    // The emulator runs under the production project id on purpose, so a
+    // rehearsal dump passes that check while holding seed data — a household
+    // called "Casa" with one member called "C". Restoring one into production
+    // would not fail: it would succeed, and overwrite the ledger with a
+    // fixture. That is the worst outcome this script can produce, and until
+    // now nothing stood between it and a typed "sí".
+    //
+    // A dump with no `source` predates the field. Refused rather than assumed
+    // either way: guessing "production" would wave through exactly the files
+    // this exists to stop, and guessing "emulator" would block the real
+    // backups from before today.
+    if (dump.source !== "production") {
+      console.error(
+        dump.source === undefined
+          ? `This dump has no "source" field, so it predates the emulator/production\n` +
+            `marking and cannot be told apart from a rehearsal. Open it and look at\n` +
+            `collections.households[].data.name — the real one is "Merlines". Then\n` +
+            `add "source": "production" by hand if it is genuinely a production dump.`
+          : `This dump was read from the ${dump.source}, not production. Refusing.`,
       );
       process.exit(1);
     }

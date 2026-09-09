@@ -93,6 +93,14 @@ describe("every copy of the emulator ports", () => {
     );
   });
 
+  it("agrees with firebase.json — the restore script", () => {
+    // Added after it was found still defaulting to Firebase's 8080, which on
+    // this machine is an SSH forward to somebody else's emulator. It was
+    // missed because the guard was written from a list of files somebody
+    // remembered, and restore.mjs is the one nobody runs.
+    expect(read("scripts/restore.mjs")).toContain(`127.0.0.1:${FIRESTORE}`);
+  });
+
   it("agrees with firebase.json — the seed script", () => {
     // No env override here: it talks to the emulator or to nothing.
     expect(read("scripts/seed-emulator.mjs")).toContain(FIRESTORE);
@@ -137,6 +145,7 @@ describe("every copy of the emulator ports", () => {
       "apps/web/playwright.config.ts",
       "apps/web/e2e/app.spec.ts",
       "scripts/seed-emulator.mjs",
+      "scripts/restore.mjs",
       "apps/ios/Gastos/Services/FirestoreService.swift",
       ".github/workflows/ci.yml",
     ]) {
