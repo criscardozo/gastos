@@ -166,6 +166,37 @@ describe("every copy of the emulator ports", () => {
     expect(Number(FIRESTORE)).toBeGreaterThan(1024);
   });
 
+  it("still generates the checks it thinks it does", () => {
+    // Zero tests and passing tests look identical from outside.
+    //
+    // Both lists are fed to `it.each`, so an empty one produces no cases at
+    // all and the file reports success over nothing. And the `it.each` CALL
+    // can go missing too, which is not hypothetical: a refactor here replaced
+    // a range by index and took the prose block with it, the count went 15 →
+    // 11, and everything stayed green. Neither the sweep nor the two controls
+    // I had written noticed, because all three exercise whether a file is
+    // listed, and what had vanished was the part that reads it.
+    //
+    // So this asserts the shape of this very file. It is an odd thing for a
+    // test to do, and it is the only thing that catches a checker that
+    // silently stopped checking. Credit to the Stock session, which added the
+    // same idea from the other direction: assert the sweep found something.
+    expect(COPIES.length).toBeGreaterThan(6);
+    expect(DOCUMENTED.length).toBeGreaterThan(3);
+    // The needles are BUILT, not written. Spelled out as literals they would
+    // appear in this file by virtue of being written here, so the check would
+    // match its own source and could never fail — which is exactly what the
+    // first version of it did, passing green while the prose block was gone.
+    const self = read("apps/web/src/lib/emulator-ports.test.ts");
+    const generates = (list: string) => `it.${"each"}(${list}.map(`;
+    expect(self, "the COPIES cases are not generated").toContain(
+      generates("COPIES"),
+    );
+    expect(self, "the prose cases are not generated").toContain(
+      generates("DOCUMENTED"),
+    );
+  });
+
   it.each(COPIES.map((c) => [c[0], c[1], c[2]] as const))(
     "agrees with firebase.json — %s",
     (_label, path, check) => {
