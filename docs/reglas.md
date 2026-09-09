@@ -446,6 +446,39 @@ acaba de pedir.
   pendiente en el servidor. El primer test de recurrentes no asegura el contador
   del panel, así que ahí la pantalla se come el engaño entero. Nada más en la
   suite fija esa atomicidad.
+- **Una guarda va a rechazar la prosa de quien la escribe, y tiene que ganar la
+  guarda.** Pasó tres veces esta semana, con tres guardas distintas y en dos
+  proyectos: el comentario que explicaba por qué el id de proyecto viejo está
+  prohibido lo deletreaba; el que explicaba un falso positivo escribía el
+  puerto del hub adentro del propio test de puertos; y a la sesión Stock le
+  pasó con un puerto muerto que narraba para decir que estaba muerto. No es
+  descuido de nadie: **escribir la advertencia obliga a nombrar lo prohibido**,
+  y el que acaba de escribir la guarda es el primero que se cree la excepción,
+  en el mismo minuto en que se convenció de que las excepciones son malas. La
+  salida no es un marcador por línea —eso convierte la guarda en decoración en
+  tres meses— sino reescribir la oración para que no lo nombre, o mover la
+  historia a un archivo que el barrido no cubra. Cede la prosa.
+- **Una lista escrita a mano prueba que lo que nombra coincide, no que nombre
+  todo.** Son dos afirmaciones distintas y la débil pasa hasta el día que
+  alguien agrega una copia. La guarda de puertos enumeraba once archivos y
+  estaba completa — de casualidad, porque le había agregado dos a mano un rato
+  antes; el día anterior le faltaban justo los dos que además apuntaban al
+  puerto viejo. La versión que sirve contrasta la lista contra el árbol
+  (`git grep -w`, entero, que un puerto no son cuatro dígitos adentro de un
+  hash) y falla nombrando el archivo. Vale igual para una comparación: mi
+  round trip recorría las subcolecciones dinámicamente pero las colecciones
+  raíz estaban hardcodeadas, así que **comparó todo lo que había y no comparó
+  que hubiera todo**. Y para los conteos en prosa: la cabecera decía SEIS
+  archivos y estaba mal hacía días. Sacar el número, no corregirlo — la lista
+  es la cuenta.
+- **Y que falle no alcanza: tiene que fallar en el lugar correcto.** Es de la
+  sesión Stock y completa la regla de abajo. Su guarda nueva hacía que mover un
+  puerto rompiera un test de prosa y sólo ése, mientras la copia real vivía en
+  la CSP — así que el único rojo mandaba a arreglar una oración, la suite se
+  ponía verde, y el puerto viejo quedaba en la política. Una guarda que se pone
+  verde con un arreglo parcial no es cobertura incompleta, es una flecha al
+  arreglo equivocado, y eso es peor que no tenerla porque tiene forma de haber
+  funcionado. Al mutar, mirar **cuál** test cayó, no cuántos.
 - **Una medición que no puede dar el resultado contrario no es una medición.**
   Es la forma general de tres cosas que este archivo ya tenía anotadas por
   separado, y la frase es de la sesión Stock: el baseline que no asegura nada
