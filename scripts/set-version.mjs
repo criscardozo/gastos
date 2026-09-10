@@ -27,21 +27,36 @@ if (next === undefined || !/^\d+\.\d+\.\d+$/.test(next)) {
   process.exit(1);
 }
 
+// Read and validate EVERYTHING before writing anything.
+//
+// The first version of this wrote the web's package.json and only then
+// counted the iOS targets, so a bad count aborted with the web bumped and
+// iOS not — the exact divergence this script exists to prevent, produced by
+// the tool for preventing it. The Stock session found the identical order in
+// its own copy before running it; the order is just the one you write in.
 const pkgPath = join(root, "apps/web/package.json");
-const pkg = readFileSync(pkgPath, "utf8");
-const current = /"version":\s*"([^"]+)"/.exec(pkg)?.[1];
-writeFileSync(pkgPath, pkg.replace(/"version":\s*"[^"]+"/, `"version": "${next}"`));
-
 const ymlPath = join(root, "apps/ios/project.yml");
+const pkg = readFileSync(pkgPath, "utf8");
 const yml = readFileSync(ymlPath, "utf8");
-const marketing = /MARKETING_VERSION: "[^"]+"/g;
-const found = yml.match(marketing)?.length ?? 0;
-// The count is asserted, not assumed: a target added later would silently keep
-// the old version and only show up as a wrong number in Ajustes on the watch.
-if (found !== 3) {
-  console.error(`Expected 3 MARKETING_VERSION lines in project.yml, found ${found}.`);
+
+const current = /"version":\s*"([^"]+)"/.exec(pkg)?.[1];
+if (current === undefined) {
+  console.error(`No "version" field in ${pkgPath}. Refusing.`);
   process.exit(1);
 }
+
+const marketing = /MARKETING_VERSION: "[^"]+"/g;
+const found = yml.match(marketing)?.length ?? 0;
+// The count is asserted, not assumed: a target added later would silently
+// keep the old version and only show up as a wrong number in the watch app's
+// Ajustes, months from now.
+if (found !== 3) {
+  console.error(`Expected 3 MARKETING_VERSION lines in project.yml, found ${found}.`);
+  console.error("Nothing was written.");
+  process.exit(1);
+}
+
+writeFileSync(pkgPath, pkg.replace(/"version":\s*"[^"]+"/, `"version": "${next}"`));
 writeFileSync(ymlPath, yml.replace(marketing, `MARKETING_VERSION: "${next}"`));
 
 console.log(`${current ?? "?"} → ${next}`);
