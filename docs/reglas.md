@@ -10,6 +10,38 @@ en vez de repetirlas de memoria.
 
 ---
 
+
+## Versiones
+
+Decidido el 10 de septiembre de 2026, con 258 commits y ningún tag.
+
+- **v1.0.0 es hoy, y el historial anterior queda sin taggear.** Se podría
+  argumentar un número más alto contando las rupturas reales (la moneda de
+  visualización el 25/7, la entrada en doble moneda y todo el FX el 3/8, el
+  gasto por persona el 3/8, el bundle id el 7/9) y unos doce hitos de
+  funcionalidad. Pero **nunca hubo un release**: taggear ahora sería inventar
+  un historial de versiones que no ocurrió, que es la misma clase de registro
+  falso que este archivo viene coleccionando. No hay a qué volver, así que no
+  hay qué taggear.
+- **`major` significa una cosa concreta acá: un cliente viejo no puede seguir
+  andando contra los datos nuevos.** No "es un cambio grande". El iPhone y la
+  web comparten el mismo Firestore y el teléfono puede quedarse una semana
+  atrás — a veces más, porque la firma del team gratuito vence cada siete
+  días y reinstalar depende de que alguien lo haga. `minor` es una pantalla o
+  capacidad nueva; `patch` es un arreglo que no obliga a aprender nada.
+- **La versión se mueve con `node scripts/set-version.mjs <x.y.z>`, nunca a
+  mano.** Vive en cuatro lugares que no se leen entre sí: el `package.json` de
+  web (que `next.config.ts` publica como `NEXT_PUBLIC_APP_VERSION`, y se ve en
+  Ajustes y en la pantalla de error) y `MARKETING_VERSION` tres veces en
+  `project.yml`, para app, widget y watch. Ya habían divergido antes de que
+  alguien mirara: web decía `0.1.0` y iOS `1.0.0` el mismo día. Eso es peor que
+  no tener versión, porque las dos pantallas contestan con seguridad y una
+  captura de una no dice nada de la otra. Lo sujeta
+  `apps/web/src/lib/version-agrees.test.ts`.
+- **Después de mover la versión hay que correr `xcodegen`**, porque los
+  `Info.plist` se regeneran desde `project.yml` y si no el teléfono muestra el
+  número viejo.
+
 ## 1. Nada se publica sin que se pida
 
 > *"deja de asumir el deployar, solo deploya cuando te diga"*
