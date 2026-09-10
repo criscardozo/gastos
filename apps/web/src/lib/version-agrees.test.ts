@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -40,6 +41,44 @@ describe("the app version", () => {
     for (const value of [WEB as string, ...IOS]) {
       expect(value).toMatch(/^\d+\.\d+\.\d+$/);
     }
+  });
+
+  it("knows which package.json files are NOT the app's version", () => {
+    // The other manifests carry numbers and must never be dragged into this.
+    //
+    // `design-system/package.json` sits at 0.1.0 — the exact string the web
+    // app had until today — and `tools/gmail-bank-ingest` at 0.0.0. Neither is
+    // shown anywhere; they are private manifests that exist so pnpm has
+    // something to install against. The hazard is the obvious tidy-up: run
+    // `grep '"version"'`, find them, "sync" them, and now there are three more
+    // copies to keep in step forever.
+    //
+    // So they are listed as deliberately absent, and a NEW manifest with a
+    // version fails here until somebody says which kind it is. The Stock
+    // session raised this: a copy that deliberately does not participate has
+    // to be written down as such, or the guard teaches the opposite of what
+    // it means.
+    const NOT_THE_APP = [
+      "design-system/package.json",
+      "tools/gmail-bank-ingest/package.json",
+      "firebase/rules-tests/package.json",
+      "package.json",
+    ];
+    const manifests = execFileSync("git", ["ls-files", "*package.json"], {
+      cwd: ROOT,
+      encoding: "utf8",
+    })
+      .split("\n")
+      .filter((f) => f !== "" && !f.includes("node_modules"));
+
+    expect(manifests.length, "no manifests found at all").toBeGreaterThan(3);
+    const unknown = manifests.filter(
+      (f) => f !== "apps/web/package.json" && !NOT_THE_APP.includes(f),
+    );
+    expect(
+      unknown,
+      `these carry a version and nothing says whether it is the app's:\n  ${unknown.join("\n  ")}`,
+    ).toEqual([]);
   });
 
   it("is the same everywhere", () => {
