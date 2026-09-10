@@ -62,13 +62,9 @@ struct ExtendPeriodSheet: View {
             if input.isEmpty, let amount = model.household?.defaultBudget.amountCents {
                 input = .fromCents(amount)
             }
-            // Raise the keyboard once the field is in the hierarchy. `.task`
-            // is the modern shape and stays untried here for the same reason
-            // as in ExpenseFormView: nothing in this environment can tap, so
-            // "the keyboard still rises" cannot be checked. See the comment
-            // there.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { focused = true }
         }
+        // See ExpenseFormView for why this is `.task` and how it was checked.
+        .task { focused = true }
     }
 
     // MARK: Pieces

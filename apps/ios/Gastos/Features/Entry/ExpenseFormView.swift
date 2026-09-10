@@ -195,10 +195,31 @@ struct ExpenseFormView: View {
             // that silently stops appearing is a far worse outcome than a
             // DispatchQueue call that produces no warning and works. Enabling
             // any one of those three unblocks this in minutes.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                focus = .amount
-            }
         }
+        // `.task` rather than a guessed delay: it runs once the view is in the
+        // hierarchy, which is the condition the 0.35s was standing in for.
+        //
+        // VERIFIED on 10 Sep 2026, which is what the old note here could not
+        // do — `idb` arrived and can drive the simulator.
+        //
+        // How, so it can be redone: launch with `-useEmulators -devSignIn`
+        // against a seeded emulator (`simctl erase` first, or the keychain
+        // reports a stale session), open the sheet, and read the amount
+        // field's accessibility traits with `idb ui describe-all`. `IsEditing`
+        // means the field took focus, which is what raises the keyboard.
+        //
+        // All three focus delays were checked this way and all three keep the
+        // focus with `.task`: this sheet and VerifyExpenseSheet were measured
+        // BEFORE the change too, and read the same. ExtendPeriodSheet was only
+        // measured after, because reaching it needs a weekly period and the
+        // seed makes a fortnightly one — its "after" is what matters and it
+        // passes.
+        //
+        // The probe discriminates: on this very sheet it reports the note
+        // field as unfocused in the same breath as the amount field as
+        // focused, so a blanket "everything is focused" answer is not what is
+        // being read.
+        .task { focus = .amount }
     }
 
     // MARK: Pieces
