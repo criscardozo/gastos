@@ -1,26 +1,26 @@
 #!/bin/sh
-# The two checks that have actually caught something on the way out.
+# The two checks that broke CI, run before the push instead of after it.
 #
-# CI went red on three consecutive pushes over a design-system rule — a 17px
-# font size that eight places used and tokens.json did not sanction — and
-# nobody looked at the pipeline until the fourth. Both checks below run offline
-# in seconds; the rest of CI (tests, e2e, emulators) is too slow to be a gate
-# and is what CI is for.
+# CI went red three pushes in a row on `emit.py --verify` — a 17px outside the
+# scale — and each round trip cost a push, a wait, and a red badge. Both checks
+# here take seconds and need no network, which is the whole reason they are
+# worth running locally: anything slower gets skipped with --no-verify until
+# the hook is decoration.
 #
-# Enable once:
-#   git config core.hooksPath .githooks
+# Deliberately NOT here: the test suites, the build, the emulator. Those are
+# CI's job. A pre-push hook that takes a minute is one somebody learns to
+# bypass, and a hook that is always bypassed is worse than none — it looks
+# like a guard on the way in.
 #
-# Skip deliberately:
-#   git push --no-verify
+# Install once:  git config core.hooksPath .githooks
+# Skip once:     git push --no-verify
 
 set -e
 
-if command -v python3 >/dev/null 2>&1; then
-  printf 'design tokens... '
-  python3 design-system/emit.py --verify >/dev/null
-  printf 'ok\n'
-fi
+echo "pre-push: design tokens…"
+python3 design-system/emit.py --verify
 
-printf 'typecheck...     '
-pnpm --filter web typecheck >/dev/null
-printf 'ok\n'
+echo "pre-push: typecheck…"
+pnpm --filter web typecheck
+
+echo "pre-push: ok"

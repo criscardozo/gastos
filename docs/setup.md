@@ -3,6 +3,21 @@
 The Firebase project is `qcris-gastos-diarios`. Client config is public by design — the
 security boundary is `firebase/firestore.rules`, never config secrecy.
 
+
+## Hooks de git (una vez por clon)
+
+```
+git config core.hooksPath .githooks
+```
+
+`.githooks/pre-push` corre el verificador de tokens de diseño y el typecheck
+de web: los dos chequeos que dejaron el CI en rojo tres pushes seguidos, los
+dos en segundos y sin red. No corre tests ni build — eso es trabajo del CI, y
+un hook que tarda un minuto es uno que se aprende a saltear con `--no-verify`,
+que es peor que no tenerlo porque parece una guarda.
+
+Para saltearlo una vez: `git push --no-verify`.
+
 ## Firebase console
 
 1. **Firestore**: create the database in **Native mode** on the **`(default)`** database
