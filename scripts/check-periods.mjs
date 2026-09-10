@@ -53,9 +53,23 @@ function nextDay(date) {
 }
 
 async function main() {
+  // The credential decides which project this touches, so it is what gets
+  // checked — not PROJECT_ID, which is a constant somebody could have edited
+  // and which `projectId:` would happily accept alongside a key for something
+  // else. Same defect the backup carried until today, and it matters more
+  // here: with --fix this DELETES, and it deletes from production, which is
+  // the only database it can reach.
+  const serviceAccount = JSON.parse(readFileSync(credentialsPath(), "utf8"));
+  if (serviceAccount.project_id !== PROJECT_ID) {
+    console.error(
+      `The service-account key is for "${serviceAccount.project_id}", not ` +
+        `"${PROJECT_ID}". Refusing${fix ? " — nothing was deleted." : "."}`,
+    );
+    process.exit(1);
+  }
   initializeApp({
-    credential: cert(JSON.parse(readFileSync(credentialsPath(), "utf8"))),
-    projectId: PROJECT_ID,
+    credential: cert(serviceAccount),
+    projectId: serviceAccount.project_id,
   });
   const db = getFirestore();
   let problems = 0;
