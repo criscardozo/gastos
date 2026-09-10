@@ -638,6 +638,12 @@ struct SettingsView: View {
                 guard let code = model.inviteCode else { return }
                 UIPasteboard.general.string = code
                 withAnimation { copied = true }
+                // NOT one of the focus delays, despite being counted with
+                // them in the plan. Nothing here is guessing at when a field
+                // becomes focusable: 1.6s is how long "Copiado" should stay on
+                // screen, which is a designed duration and not a race. The
+                // only thing a `.task` would add is cancellation if the view
+                // went away mid-count, and the view is a button in Ajustes.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
                     withAnimation { copied = false }
                 }

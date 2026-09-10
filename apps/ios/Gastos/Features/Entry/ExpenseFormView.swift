@@ -177,13 +177,24 @@ struct ExpenseFormView: View {
             //
             // `.task { focus = .amount }` is the modern shape of this and was
             // tried — then put back, because it could not be VERIFIED. Seeing
-            // the keyboard rise needs the app inside a household, and the
-            // simulator cannot reach the emulator's data right now (the open
-            // investigation in docs/plan-mejoras.md; the auth emulator reports
-            // no accounts while the app believes it is signed in). Quick entry
-            // is the most-used screen in the app, and a keyboard that silently
-            // stops appearing is a far worse outcome than a DispatchQueue call
-            // that produces no warning and works.
+            // the keyboard rise needs the app inside a household AND a way to
+            // reach this sheet.
+            //
+            // The first half is solved as of 10 Sep 2026: the simulator does
+            // reach the emulator (the old note here blamed that, and it was
+            // the simulator keychain reporting a stale session — `simctl erase`
+            // and `-useEmulators -devSignIn` gets a real household, seed data
+            // and all). What is still missing is the second half: nothing in
+            // this environment can drive a tap. XcodeBuildMCP's UI-automation
+            // workflow is not enabled, `idb` is not installed, and System
+            // Events has no Accessibility permission. Even `simctl openurl
+            // gastos://nuevo` stops on an "Open in Gastos?" dialog that has to
+            // be tapped.
+            //
+            // Quick entry is the most-used screen in the app, and a keyboard
+            // that silently stops appearing is a far worse outcome than a
+            // DispatchQueue call that produces no warning and works. Enabling
+            // any one of those three unblocks this in minutes.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                 focus = .amount
             }

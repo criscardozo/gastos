@@ -13,6 +13,7 @@ import { useTranslations } from "next-intl";
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { useAppError } from "@/components/app-error";
 import { Icon } from "@/components/ui/icon";
+import { useExpenseFilters } from "@/components/use-expense-filters";
 import { Segmented } from "@/components/ui/segmented";
 import { BankChargesPanel } from "@/components/bank-charges-panel";
 import { ExpenseDetailDialog } from "@/components/expense-detail-dialog";
@@ -35,7 +36,6 @@ import {
   type FormState,
   type VerificationFilter,
 } from "./pieces";
-import { visibleExpenses } from "@/lib/expense-list";
 import { learnRate } from "@/lib/bank-match";
 import { claimsOfOneRule } from "@/lib/recurring";
 import { RecurringPrompt } from "@/components/recurring-prompt";
@@ -79,7 +79,6 @@ export default function ExpensesPage() {
   const { user } = useAuth();
   const { household, periods, currentPeriod, today } = useHousehold();
 
-  const [grouped, setGrouped] = useState<"grouped" | "flat">("grouped");
   /**
    * What the list is showing: a period's `startDate`, or `month:YYYY-MM` for a
    * calendar month. Null follows the current period, which is the default and
@@ -89,11 +88,6 @@ export default function ExpensesPage() {
    * would let the screen be in a state where both are set and neither wins.
    */
   const [selection, setSelection] = useState<string | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [personFilter, setPersonFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [verificationFilter, setVerificationFilter] =
-    useState<VerificationFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState | null>(null);
   /** Expense whose bank USD charge is being typed in, and the typed value. */
@@ -137,6 +131,16 @@ export default function ExpensesPage() {
     selected?.startDate ?? null,
     selected?.endDate ?? null,
   );
+
+  // The filter bar's five pieces of state and the rows they produce, as one
+  // thing — see components/use-expense-filters.ts.
+  //
+  // Called HERE, above the early return below, because that is where the five
+  // useStates it replaced were. Moving it down to where the rows get used
+  // read better and was wrong: a hook after a conditional return does not run
+  // on every render. Neither the unit tests nor the e2e caught it — the early
+  // return only fires while the household is still loading — and lint did.
+  const filters = useExpenseFilters(expenses);
   const { charges, loading: chargesLoading } = useBankCharges(
     household?.id ?? null,
   );
@@ -182,12 +186,7 @@ export default function ExpensesPage() {
   // charges panel matches with, off the expenses already in memory.
   const learnedRate = learnRate(expenses);
 
-  const { rows: sorted, days } = visibleExpenses(expenses, {
-    category: categoryFilter,
-    person: personFilter,
-    verification: verificationFilter,
-    search,
-  });
+  const { rows: sorted, days } = filters;
 
   /* Add-row suggestions — derived ONLY from the already-loaded period
      expenses (no extra Firestore reads). Notes ranked by frequency, amounts
@@ -653,8 +652,8 @@ export default function ExpensesPage() {
               { value: "grouped", label: t("groupedByDay") },
               { value: "flat", label: t("flatList") },
             ]}
-            value={grouped}
-            onChange={setGrouped}
+            value={filters.grouping}
+            onChange={filters.setGrouping}
           />
         </div>
       </div>
@@ -702,8 +701,8 @@ export default function ExpensesPage() {
         )}
         <PillSelect
           ariaLabel="category"
-          value={categoryFilter}
-          onChange={setCategoryFilter}
+          value={filters.category}
+          onChange={filters.setCategory}
           options={[
             { value: "all", label: t("categoryAll") },
             ...categories.map((c) => ({
@@ -714,8 +713,8 @@ export default function ExpensesPage() {
         />
         <PillSelect
           ariaLabel="verification"
-          value={verificationFilter}
-          onChange={(value) => setVerificationFilter(value as VerificationFilter)}
+          value={filters.verification}
+          onChange={(value) => filters.setVerification(value as VerificationFilter)}
           options={[
             { value: "all", label: t("verificationAll") },
             { value: "unverified", label: t("unverified") },
@@ -724,8 +723,8 @@ export default function ExpensesPage() {
         />
         <PillSelect
           ariaLabel="person"
-          value={personFilter}
-          onChange={setPersonFilter}
+          value={filters.person}
+          onChange={filters.setPerson}
           options={[
             { value: "all", label: t("personAll") },
             ...members.map((m) => ({
@@ -741,8 +740,8 @@ export default function ExpensesPage() {
           <Icon name="search" size={16} className="text-ink-3" />
           <input
             type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={filters.search}
+            onChange={(e) => filters.setSearch(e.target.value)}
             placeholder={t("searchPlaceholder")}
             className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none"
           />
@@ -940,7 +939,7 @@ export default function ExpensesPage() {
             </button>
           )}
         </div>
-      ) : grouped === "grouped" ? (
+      ) : filters.grouping === "grouped" ? (
         <div className="flex flex-col gap-3">
           {days.map((d) => {
             const title = dayTitle(d.date);
