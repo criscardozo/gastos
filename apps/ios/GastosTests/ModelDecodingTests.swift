@@ -279,3 +279,44 @@ final class ModelDecodingTests: XCTestCase {
         """, "an interval the type does not have must not decode")
     }
 }
+
+// MARK: - Filed from a charge
+
+extension ModelDecodingTests {
+    /// An expense filed from a charge is recognised by its id, not by a rule.
+    ///
+    /// `isAutomatic` used to read `autoRuleId`, which only a RULE sets. An
+    /// expense created with "Crear gasto" from a charge therefore counted as
+    /// typed: no undo on its row, while the charge sat in the discarded list
+    /// offering "Restaurar" — which would have left the expense behind and
+    /// counted the purchase twice.
+    func testFiledFromChargeIsReadOffTheId() {
+        var filed = Expense(amountCents: 2350, categoryId: "home", note: "Big W", date: "2026-09-11", createdBy: "u1")
+        filed.id = "auto_1a08ef8eda68f113"
+        XCTAssertEqual(filed.filedFromChargeId, "1a08ef8eda68f113")
+        XCTAssertTrue(filed.isAutomatic)
+
+        // Crucially, with no autoRuleId — the case that was broken.
+        XCTAssertNil(filed.autoRuleId)
+    }
+
+    func testTypedExpenseIsNotAutomatic() {
+        // The control: without this, a `filedFromChargeId` that always
+        // returned a value would pass the test above and break everything.
+        var typed = Expense(amountCents: 2350, categoryId: "home", note: "Big W", date: "2026-09-11", createdBy: "u1")
+        typed.id = "7ZqK1mN0pQ"
+        XCTAssertNil(typed.filedFromChargeId)
+        XCTAssertFalse(typed.isAutomatic)
+    }
+
+    /// The write side builds the id from `Expense.autoPrefix` rather than
+    /// spelling it again — FirestoreService is not in this target, so the
+    /// check that matters is that the constant is the single source both use.
+    /// EmulatorPorts-style: one declaration, everything else derived.
+    func testTheIdIsBuiltFromTheOnePrefix() {
+        var filed = Expense(amountCents: 1, categoryId: "other", note: "", date: "2026-09-11", createdBy: "u1")
+        filed.id = "\(Expense.autoPrefix)abc123"
+        XCTAssertEqual(filed.filedFromChargeId, "abc123")
+        XCTAssertEqual(Expense.autoPrefix, "auto_", "the write side hardcodes this shape in Firestore ids already in production")
+    }
+}

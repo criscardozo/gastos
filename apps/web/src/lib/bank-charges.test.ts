@@ -8,6 +8,7 @@ import {
   isPending,
   isRecoverable,
   partitionCharges,
+  wasFiledAsExpense,
 } from "./bank-charges";
 
 const NOW = new Date("2026-08-14T10:00:00Z");
@@ -127,5 +128,20 @@ describe("partitionCharges", () => {
       dismissed: [],
       expired: [],
     });
+  });
+});
+
+describe("a charge dismissed because it became an expense", () => {
+  it("is told apart from one somebody discarded", () => {
+    const filed = new Set(["gmail-1"]);
+    expect(wasFiledAsExpense("gmail-1", filed)).toBe(true);
+    expect(wasFiledAsExpense("gmail-2", filed)).toBe(false);
+  });
+
+  it("reports nothing as filed when no expense came from a charge", () => {
+    // The case that makes this worth a test rather than an inline `.has`: an
+    // empty set must not mean "everything was filed", which is what a
+    // negated check would have given.
+    expect(wasFiledAsExpense("gmail-1", new Set())).toBe(false);
   });
 });

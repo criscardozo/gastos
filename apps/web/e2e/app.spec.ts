@@ -2284,6 +2284,16 @@ test("a charge with nothing to match is created as its own expense", async ({
   await expect(page.getByText("US$ 32,50").first()).toBeVisible();
   await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
 
+  // And it is NOT listed as discarded.
+  //
+  // Filing stamps `dismissedAt` on the charge, the same field "Descartar"
+  // writes, so the charge landed in the discarded list offering "Restaurar" —
+  // which only clears the stamp. Pressing it would have returned the charge to
+  // pending and left this expense: the same purchase counted twice. Reported
+  // from the phone, with a Big W charge sitting under "4 descartados" while
+  // its expense showed verified a few rows below.
+  await expect(page.getByText(/descartados?$/)).toHaveCount(0);
+
   // The server's version of the same sentence. Third batch in this feature,
   // third poll — for the reasons listed on the first one, which are narrower
   // than "the screen cannot tell": while this stays one batch, the screen can

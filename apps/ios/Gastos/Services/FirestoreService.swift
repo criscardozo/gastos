@@ -939,12 +939,15 @@ final class FirestoreService {
     /// one writes the expense twice, and the second is indistinguishable from a
     /// real duplicate.
     static func autoExpenseId(chargeId: String) -> String {
-        String("auto_\(chargeId)".prefix(1500))
+        // The prefix lives on Expense, in Core, because the READ side needs it
+        // too and two copies of it is a purchase counted twice.
+        String("\(Expense.autoPrefix)\(chargeId)".prefix(1500))
     }
 
     /// The charge an auto-filed expense came from, or nil.
     static func chargeId(fromAutoExpense expenseId: String) -> String? {
-        expenseId.hasPrefix("auto_") ? String(expenseId.dropFirst(5)) : nil
+        expenseId.hasPrefix(Expense.autoPrefix)
+            ? String(expenseId.dropFirst(Expense.autoPrefix.count)) : nil
     }
 
     /// File a charge as an expense.

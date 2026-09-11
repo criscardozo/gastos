@@ -411,7 +411,19 @@ final class AppModel {
     /// Discarded in the last 48 hours, newest first: still one press from
     /// coming back. Past the window they are swept, so this list empties itself.
     var dismissedBankCharges: [BankCharge] {
-        BankChargeInbox.partition(myBankCharges, now: Date()).dismissed
+        // A charge that BECAME an expense carries the same `dismissedAt` as
+        // one somebody threw away, so it appeared here with the same
+        // "Restaurar" — which only clears the stamp. Pressing it returned the
+        // charge to pending and left the expense: the same purchase counted
+        // twice, with nothing on screen saying so.
+        //
+        // Told apart by the expense's id, which filing derives from the
+        // charge, so nothing had to be stored. The way back for a filed charge
+        // is the undo on the expense row, which deletes both.
+        let filed = Set(suggestionExpenses.compactMap(\.filedFromChargeId))
+        return BankChargeInbox.partition(myBankCharges, now: Date())
+            .dismissed
+            .filter { !filed.contains($0.id ?? "") }
     }
 
     /// One suggestion per pending charge, matched against the expenses already

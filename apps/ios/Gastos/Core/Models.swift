@@ -236,8 +236,27 @@ struct Expense: Codable, Identifiable, Equatable {
     /// Only an explicit `true` with a figure behind it counts as verified.
     var isVerified: Bool { verified == true && usdCents != nil }
 
-    /// Filed by a rule rather than typed.
-    var isAutomatic: Bool { autoRuleId != nil }
+    /// The bank charge this expense was filed from, or nil when somebody typed
+    /// it.
+    ///
+    /// Read off the id, which filing derives from the charge — NOT off
+    /// `autoRuleId`, which only a RULE sets. `isAutomatic` used to check that
+    /// field, so an expense created with "Crear gasto" from a charge counted
+    /// as typed: no undo offered on its row, while the charge sat in the
+    /// discarded list offering "Restaurar", which would have left the expense
+    /// behind and counted the purchase twice.
+    var filedFromChargeId: String? {
+        guard let id, id.hasPrefix(Expense.autoPrefix) else { return nil }
+        return String(id.dropFirst(Expense.autoPrefix.count))
+    }
+
+    /// Filed from a charge rather than typed, by a rule or by hand.
+    var isAutomatic: Bool { filedFromChargeId != nil }
+
+    /// The prefix filing puts on the expense id. The write side is
+    /// `FirestoreService.autoExpenseId`; both must agree, which
+    /// ModelDecodingTests checks.
+    static let autoPrefix = "auto_"
 
     /// Filed at a rate rather than at a stated amount.
     var isEstimated: Bool { autoEstimated == true }

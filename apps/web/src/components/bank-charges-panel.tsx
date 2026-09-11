@@ -23,6 +23,7 @@ import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   assignBankCharge,
   dismissBankCharge,
+  chargeIdFromAutoExpense,
   fileChargeAsExpense,
   requestBankIngest,
   restoreBankCharge,
@@ -33,7 +34,7 @@ import {
   suggestMatches,
   type BankCharge as MatchableCharge,
 } from "@/lib/bank-match";
-import { partitionCharges } from "@/lib/bank-charges";
+import { partitionCharges, wasFiledAsExpense } from "@/lib/bank-charges";
 import { belongsToExpenses } from "@/lib/cards";
 import { formatCents, formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
@@ -111,9 +112,32 @@ export function BankChargesPanel({
   );
   // The hook already dropped anything past the window, so `dismissed` here is
   // exactly what is still recoverable. `expired` is empty by construction.
-  const { pending, dismissed } = useMemo(
+  const { pending, dismissed: stamped } = useMemo(
     () => partitionCharges(mine, new Date()),
     [mine],
+  );
+
+  // A charge that BECAME an expense carries the same `dismissedAt` as one
+  // somebody threw away, so it was listed among the discarded with the same
+  // "Restaurar" — which only clears the stamp. Pressing it returned the charge
+  // to pending and left the expense: the same purchase counted twice, with
+  // nothing on screen saying so.
+  //
+  // They are told apart by the expense's id, which filing derives from the
+  // charge, so nothing had to be stored to fix this. The way back for a filed
+  // charge is the undo on the expense row, which deletes both.
+  const filedChargeIds = useMemo(
+    () =>
+      new Set(
+        expenses
+          .map((e) => chargeIdFromAutoExpense(e.id))
+          .filter((id): id is string => id !== null),
+      ),
+    [expenses],
+  );
+  const dismissed = useMemo(
+    () => stamped.filter((c) => !wasFiledAsExpense(c.id, filedChargeIds)),
+    [stamped, filedChargeIds],
   );
   // Derived, so a charge arriving after the first render opens the panel.
   const open = openedByHand ?? pending.length > 0;

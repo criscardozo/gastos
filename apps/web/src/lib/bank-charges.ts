@@ -79,3 +79,31 @@ export function partitionCharges<T extends Dismissable>(
 
   return { pending, dismissed, expired };
 }
+
+/**
+ * Dismissed because it BECAME an expense, rather than because somebody threw
+ * it away.
+ *
+ * `dismissedAt` does two jobs. "Descartar" stamps it to say the charge was not
+ * ours; filing the charge as an expense stamps the same field in the same
+ * batch, because that is also how it leaves the pending list. From the field
+ * alone the two are identical, and the discarded list showed them together
+ * with the same "Restaurar" button.
+ *
+ * That is not just a wrong label. Restoring only clears the stamp, so pressing
+ * it on a filed charge returns the charge to pending AND leaves the expense —
+ * the same purchase counted twice, with nothing saying so. The undo that is
+ * correct there deletes the expense too, and it lives on the expense row.
+ *
+ * Nothing is stored to tell them apart, and nothing needs to be: filing writes
+ * the expense under a deterministic id derived from the charge, so the link is
+ * already there to be read. Taking a set of ids keeps this module free of both
+ * Firebase and the id format.
+ */
+export function wasFiledAsExpense(
+  chargeId: string,
+  autoExpenseIds: ReadonlySet<string>,
+): boolean {
+  return autoExpenseIds.has(chargeId);
+}
+
