@@ -16,7 +16,7 @@ catalog:
   # supply-chain guard — refused 12.18.0 as too freshly published, and taking
   # it then meant writing 45 bypass entries into this file. Dependabot brought
   # it in once the quarantine let go, with no bypass. Same rule next time.
-  firebase: ^12.18.0
+  firebase: ^12.19.0
   # NOT 7.x, and the reason is not caution. TypeScript 7.0.2 passes typecheck,
   # the 257 web tests and the production build on this codebase — but
   # `typescript-eslint@8` peers on `typescript >=4.8.4 <6.1.0`, so
