@@ -226,6 +226,11 @@ extension AppModel {
         UserDefaults.standard.set(current.startDate, forKey: "seenPeriodStart.\(householdId)")
         showNewPeriodSheet = false
         setNewPeriodPrompt(manual: false)
+        // Answering clears the deferral now rather than waiting for
+        // `confirmedAt` to come back. Both are local decisions, and keying the
+        // release on the round-trip leaves a window where the period has been
+        // started and adding an expense is still refused.
+        clearDeferredPeriod()
     }
 
     /// Answer the start-period screen. `rolloverCents` is how much of

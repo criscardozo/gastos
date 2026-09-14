@@ -553,6 +553,12 @@ export function Providers({ children }: { children: ReactNode }) {
       setAckedStart(currentPeriod.startDate);
     }
     setManualStartPeriod(false);
+    // Answering clears the deferral HERE rather than waiting for `confirmed`
+    // to come back from the server. Both are local decisions, and keying the
+    // release on the round-trip left a window where the period had been
+    // started and adding an expense was still refused — invisible on this
+    // machine, and CI failed on it the first time it ran.
+    setDeferredStart(null);
   }, [householdId, currentPeriod]);
 
   const deferStartPeriod = useCallback(() => {

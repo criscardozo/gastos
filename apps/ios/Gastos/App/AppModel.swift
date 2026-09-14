@@ -83,6 +83,11 @@ final class AppModel {
     /// for good, which is the silent default the screen exists to prevent.
     private(set) var deferredPeriodStart: String?
 
+    /// The deferral is over — answered, so entry is allowed again at once.
+    func clearDeferredPeriod() {
+        deferredPeriodStart = nil
+    }
+
     /// Close the start-period screen WITHOUT answering it. Writes nothing.
     func deferNewPeriod() {
         deferredPeriodStart = currentPeriod?.startDate
