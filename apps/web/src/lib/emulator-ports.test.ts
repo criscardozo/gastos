@@ -279,6 +279,13 @@ describe("every copy of the emulator ports", () => {
     for (const port of [AUTH, FIRESTORE, WEBSOCKET, UI, HUB, LOGGING]) {
       let files: string[] = [];
       try {
+        // `--untracked` because the sweep claims to know every file that
+        // repeats a port, and `git grep` alone only reads TRACKED ones — so a
+        // file being added right now, which is exactly when a new copy of a
+        // port appears, was invisible to it. Measured: a new file holding the
+        // Firestore port passed this, and fails it with the flag. Ignored
+        // paths stay out, so node_modules is still not searched.
+        //
         // `-w`, because a port is a whole number and not four digits sitting
         // inside something longer. Without it the hub's port matched a
         // revision hash in Package.resolved and this reported a copy that is
@@ -289,7 +296,7 @@ describe("every copy of the emulator ports", () => {
         // sentence above cannot spell the number out. That is the right way
         // round: a guard holding the ports must never hardcode one, so the
         // moment it does, it fails on itself.
-        files = execFileSync("git", ["grep", "-wlI", port], {
+        files = execFileSync("git", ["grep", "--untracked", "-wlI", port], {
           cwd: ROOT,
           encoding: "utf8",
         })

@@ -29,7 +29,7 @@ describe("the Firebase project id", () => {
   /** Every tracked file's contents, via git so node_modules cannot leak in. */
   function grep(pattern: string): string[] {
     try {
-      return execFileSync("git", ["grep", "-nI", "-e", pattern], {
+      return execFileSync("git", ["grep", "--untracked", "-nI", "-e", pattern], {
         cwd: ROOT,
         encoding: "utf8",
       })
