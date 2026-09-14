@@ -35,6 +35,48 @@ describe("the app version", () => {
     expect(IOS, "project.yml should carry app, widget and watch").toHaveLength(3);
   });
 
+  it("is what the plist key actually reads, in every target", () => {
+    // MARKETING_VERSION is a build setting. The number a person SEES comes
+    // from CFBundleShortVersionString, and nothing forces one to reference
+    // the other — a target can set the key to a literal and the setting goes
+    // nowhere.
+    //
+    // The Stock session hit exactly that: its three MARKETING_VERSIONs agreed
+    // at 1.0.0, its version guard was green, and the app on the phone showed
+    // 0.1, because the app target's plist key was the literal '0.1'. The
+    // guard measured the setting, not the connection to the screen.
+    //
+    // So both ends are checked: the yml that declares the key, and the three
+    // tracked Info.plists it generates. Every one must DEFER to the setting.
+    const DEFERS = "$(MARKETING_VERSION)";
+    const yml = read("apps/ios/project.yml");
+
+    const keys = [...yml.matchAll(/CFBundleShortVersionString:\s*(.+)/g)].map(
+      (m) => m[1].trim(),
+    );
+    expect(
+      keys,
+      "every target that carries a MARKETING_VERSION must also state the key",
+    ).toHaveLength(IOS.length);
+    for (const value of keys) {
+      expect(value, `project.yml pins the shown version to ${value}`).toBe(DEFERS);
+    }
+
+    const plists = execFileSync("git", ["ls-files", "apps/ios/*/Info.plist"], {
+      cwd: ROOT,
+      encoding: "utf8",
+    })
+      .split("\n")
+      .filter((f) => f !== "");
+    expect(plists, "app, widget and watch each have one").toHaveLength(IOS.length);
+    for (const path of plists) {
+      const shown = /<key>CFBundleShortVersionString<\/key>\s*<string>([^<]*)<\/string>/.exec(
+        read(path),
+      )?.[1];
+      expect(shown, `${path} pins the shown version to ${shown}`).toBe(DEFERS);
+    }
+  });
+
   it("is semver, not something that looks like it", () => {
     // "v1.2" and "1.2.0" both read as a version to a human and sort
     // differently everywhere else.
