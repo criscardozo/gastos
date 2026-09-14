@@ -4,6 +4,28 @@ The Firebase project is `qcris-gastos-diarios`. Client config is public by desig
 security boundary is `firebase/firestore.rules`, never config secrecy.
 
 
+## Ver la pantalla de período nuevo en el simulador
+
+```
+xcrun simctl launch <udid> dev.cardozo.gastos -useEmulators -devSignIn -gd-force-new-period
+```
+
+Sin ese argumento la pantalla sólo aparece cuando el período arranca de verdad,
+y forzarla desde afuera significa cambiar el `UserDefaults` de la app, que
+falla de cuatro maneras distintas y todas silenciosas:
+
+- `simctl spawn <udid> defaults write` escribe el dominio global del simulador,
+  no el contenedor de la app;
+- el UUID del contenedor **cambia al reinstalar**, así que la ruta que anotaste
+  apunta a un contenedor muerto (`simctl get_app_container <udid> <bundle> data`
+  es la forma de preguntarlo);
+- `cfprefsd` sirve un valor cacheado por encima del archivo que escribiste
+  debajo;
+- y cada relectura usa el mismo canal equivocado que la escritura, así que la
+  verificación se confirma a sí misma.
+
+Costó una tarde. El argumento es la forma soportada, igual que `-gd-tab`.
+
 ## Hooks de git (una vez por clon)
 
 ```

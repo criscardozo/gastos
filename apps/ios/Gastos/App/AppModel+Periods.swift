@@ -81,14 +81,27 @@ extension AppModel {
         guard let current = currentPeriod, let householdId = attachedHouseholdId else { return }
         let key = "seenPeriodStart.\(householdId)"
         let seen = UserDefaults.standard.string(forKey: key)
-        guard seen != current.startDate else { return }
-        if seen == nil {
+        // `-gd-force-new-period` makes this ask regardless of what this device
+        // has already seen, so the screen can be reached in the simulator.
+        //
+        // It exists because reaching it any other way means changing the app's
+        // UserDefaults from outside, and that fought back four different ways:
+        // `simctl spawn defaults` writes the simulator's global domain and not
+        // the app's container; the container UUID changes when the app is
+        // reinstalled, so the path goes stale; cfprefsd serves a cached value
+        // over a file written underneath it; and every read-back used the same
+        // wrong channel as the write, so each attempt confirmed itself. Same
+        // family as `-gd-tab`, and for the same reason: the supported way in
+        // is a launch argument, not poking at state the app owns.
+        let forced = CommandLine.arguments.contains("-gd-force-new-period")
+        guard forced || seen != current.startDate else { return }
+        if seen == nil && !forced {
             // First launch with this household (e.g. right after onboarding or
             // joining): don't prompt, just mark as seen.
             UserDefaults.standard.set(current.startDate, forKey: key)
             return
         }
-        if current.isConfirmed {
+        if current.isConfirmed && !forced {
             UserDefaults.standard.set(current.startDate, forKey: key)
         } else if deferredPeriodStart != current.startDate {
             // A period actually starting: no way out but answering it, or
