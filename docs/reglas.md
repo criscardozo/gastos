@@ -139,6 +139,20 @@ Swift y la de TypeScript.
 > El padding "arreglado" que no se movía, dos veces seguidas, porque leí el
 > código en vez de medirlo.
 
+**Las formulaciones generales viven en
+[`kyber/docs/guardas.md`](../kyber/docs/guardas.md)** y `CLAUDE.md` las importa.
+Lo que sigue acá son los **casos**: cada regla con el artefacto concreto que la
+produjo — el emulador, los perfiles de firma, la CSP, los puertos. Esa mitad no
+viaja, y es la que hace que la otra se pueda aplicar a algo nuevo en vez de
+repetirla de memoria.
+
+**Las dos listas todavía no están cruzadas.** Comparar los encabezados palabra
+por palabra da **una** coincidencia sobre 57 contra 34, y ese número no es de
+fiar: allá están escritas en general y acá con el caso adentro, así que dos
+redacciones de la misma regla no se parecen como texto. Cruzarlas es una pasada
+de lectura, no de `difflib` — medir el parecido de los títulos es medir el
+proxy, que es justamente una de las reglas de las dos listas.
+
 - Un cambio visual se **mide o se mira** (captura, overflow en píxeles), no se
   deduce del CSS.
 - Un test de regresión vale lo que atrapa: **reintroducir el bug** y ver el test

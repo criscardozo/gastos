@@ -34,6 +34,6 @@ permissions:
 
 jobs:
   dump:
-    uses: criscardozo/kyber/.github/workflows/backup.yml@711d62a8077e95977ef859eae25b48de0ef58bf9
+    uses: criscardozo/kyber/.github/workflows/backup.yml@6f05cf1cc1a1f34d087aedaec1195c85c1a5cb77
     secrets:
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

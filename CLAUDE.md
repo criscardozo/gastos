@@ -39,6 +39,7 @@ fails silently.
 @kyber/docs/codigo.md
 @kyber/docs/secretos.md
 @kyber/docs/versiones.md
+@kyber/docs/guardas.md
 
 
 - **$0 infra budget** — see the imported `costo-cero`. For this project that means Firebase Spark (never Cloud Functions: they require Blaze) and Vercel Hobby.
