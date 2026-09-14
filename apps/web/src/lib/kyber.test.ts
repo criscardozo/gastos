@@ -114,6 +114,60 @@ describe("the kyber consumer config", () => {
       .toEqual([]);
   });
 
+  it("is reachable from the scripts and the tests, and from nothing the bundle ships", () => {
+    // Vercel cannot fetch a private submodule, and no permission changes that.
+    // Its own docs: submodules deploy "as long as the submodule is publicly
+    // accessible through the HTTP protocol. Git submodules that are private or
+    // requested over SSH will fail during the Build step." The deploy still
+    // goes GREEN — the clone reports one `Warning: Failed to fetch one or more
+    // git submodules` line and the build carries on without it.
+    //
+    // So kyber/ is absent in production and present everywhere else: CI checks
+    // it out with a deploy key, and scripts, hooks and these tests run on a
+    // machine where it exists. Nothing is broken while the bundle imports none
+    // of it — which is also why nothing would notice the day it does. The
+    // import would resolve locally, pass CI, deploy green, and fail in the
+    // browser with a cause weeks old.
+    //
+    // If the bundle ever genuinely needs code from kyber, the submodule is the
+    // wrong shape for it: make kyber public, or depend on it as a git package,
+    // which Vercel does support. Do not "fix" this guard.
+    const sources = execFileSync(
+      "git",
+      ["ls-files", "apps/web/src", "apps/web/next.config.ts"],
+      { cwd: ROOT, encoding: "utf8" },
+    )
+      .split("\n")
+      .filter((f) => /\.(ts|tsx|css)$/.test(f) && !/\.test\.tsx?$/.test(f));
+
+    // Without this the filter below would sweep an empty list and pass — the
+    // shape that has already let a deleted guard sit green in this repo.
+    expect(sources.length, "found no bundled sources to check").toBeGreaterThan(50);
+
+    const reaching = sources.filter((file) =>
+      /(?:^|\n)\s*(?:import|export)[^\n]*["'][^"'\n]*kyber|require\(\s*["'][^"'\n]*kyber|@(?:import|source)[^\n]*kyber/.test(
+        read(file),
+      ),
+    );
+    expect(
+      reaching,
+      "these ship to the browser and reach into kyber, which production does " +
+        `not have:\n  ${reaching.join("\n  ")}`,
+    ).toEqual([]);
+
+    // The other way in: an alias that lands inside kyber without naming it.
+    const tsconfig = read("apps/web/tsconfig.json").replace(/^\s*\/\/.*$/gm, "");
+    const paths: Record<string, string[]> =
+      JSON.parse(tsconfig).compilerOptions?.paths ?? {};
+    const aliased = Object.entries(paths).filter(([, targets]) =>
+      targets.some((t) => t.includes("kyber")),
+    );
+    expect(
+      aliased.map(([k]) => k),
+      "a tsconfig path alias resolves into kyber, which production does not have",
+    ).toEqual([]);
+  });
+
   it("states every key the first batch of shared scripts reads", () => {
     // Without this the assertions below would compare undefined against
     // undefined and pass — a missing key would read as agreement.
