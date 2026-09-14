@@ -45,25 +45,21 @@ Decidido el 10 de septiembre de 2026, con 258 commits y ningún tag.
 
 > *"deja de asumir el deployar, solo deploya cuando te diga"*
 
-**La regla general vive en
-[`kyber/docs/publicar.md`](../kyber/docs/publicar.md)**, que es la copia que
-comparten los tres proyectos. Acá hay una **excepción permanente** y dos hechos
-de este proyecto:
+**La regla vive en [`kyber/docs/publicar.md`](../kyber/docs/publicar.md)**, que
+es la copia que comparten los tres proyectos, y desde el **14/9/2026** está al
+derecho: publicar está autorizado y lo que reemplaza al permiso es el backup
+previo cuando el cambio mueve mucho dato. Acá sólo lo que es de éste:
 
-- **Este repo tiene autorización de pie para pushear y deployar** desde el
-  14/9/2026, sin pedirla en cada mensaje: *"podes pushear y deployar lo que
-  consideres necesario"*. La condición que sí sigue: **si el cambio modifica
-  mucho la base de datos, backup antes** (`pnpm backup`). La autorización es de
-  Gastos; los proyectos hermanos siguen bajo la regla compartida salvo que
-  Cristian diga lo contrario allá.
 - La rama es `main`, y cada push a `main` deploya la web por Vercel.
 - La app la usan **dos** personas de verdad, y una no soy yo ni Cristian.
-
-Lo que **no** cambió es por qué el momento importa, y por eso la excepción no
-es «pushear sin pensar»: se pushea con el trabajo terminado y en verde, se dice
-qué se publicó en vez de preguntarlo, y se sigue **midiendo lo que el deploy
-produjo** —el log del build, no el color— que es donde este repo ya encontró un
-submódulo que no se clonaba con el deploy en verde.
+- El backup de este proyecto es `pnpm backup`, que escribe en `backups/`
+  (gitignored) y lee producción con la clave de `firebase/service-account.json`.
+- Instalar en el teléfono es `./scripts/install-ios.sh`, **nunca** un build
+  normal: el perfil del team gratuito se reusa, así que instalar sin renovar la
+  firma gasta días del vencimiento viejo. Ver la sección 9.
+- El caso que la regla compartida cita sin nombrar el proyecto —un deploy verde
+  con un submódulo que no se clonaba— pasó acá, el mismo día que se invirtió la
+  regla, y es el motivo por el que «se mide el log, no el color» está escrito.
 
 ## 2. Cero gastos, sin excepciones
 
