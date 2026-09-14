@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -7,8 +8,8 @@ import { join } from "node:path";
  *
  * It is permanent: renaming the app to Gastos renamed the display name, the
  * repo, the bundle ids and the Vercel project, and could not rename this. The
- * rebranding pass shortened it anyway in `scripts/backup.mjs` and
- * `scripts/restore.mjs`, and nothing noticed for two Thursdays — until the
+ * rebranding pass shortened it anyway in the backup and restore scripts (now
+ * `kyber/scripts/`), and nothing noticed for two Thursdays — until the
  * weekly job failed with `Permission denied on resource project qcris-gastos`,
  * a project that does not exist.
  *
@@ -53,14 +54,35 @@ describe("the Firebase project id", () => {
     expect(wrong, `the project id is ${CORRECT}:\n${wrong.join("\n")}`).toEqual([]);
   });
 
-  it("is what the backup and restore scripts use", () => {
-    // Named on purpose rather than left to the sweep above: these two are the
-    // ones that broke, and they are the ones nobody runs by hand.
-    for (const script of ["scripts/backup.mjs", "scripts/restore.mjs"]) {
-      const hit = grep(`const PROJECT_ID = "${CORRECT}"`).filter((l) =>
-        l.startsWith(script),
-      );
-      expect(hit, `${script} must set PROJECT_ID to ${CORRECT}`).toHaveLength(1);
-    }
+  it("is what the shared scripts are handed", () => {
+    // The backup and restore that broke used to hold this id themselves. They
+    // are shared with two sibling projects now and hold nobody's — they read
+    // `.kyber/config.json`, which is the one place this project states it.
+    //
+    // Still named on purpose rather than left to the sweep above: the sweep
+    // only proves the WRONG id is absent, and an empty or missing config would
+    // satisfy it perfectly while sending the Thursday backup nowhere.
+    const config = JSON.parse(readFileSync(join(ROOT, ".kyber/config.json"), "utf8"));
+    expect(config.projectId, ".kyber/config.json is what the scripts read").toBe(
+      CORRECT,
+    );
+
+    // And the scripts must not have grown their own copy back.
+    const inKyber = (() => {
+      try {
+        return execFileSync("git", ["grep", "-lI", "-e", "qcris-"], {
+          cwd: join(ROOT, "kyber"),
+          encoding: "utf8",
+        })
+          .split("\n")
+          .filter((l) => l !== "");
+      } catch {
+        return [];
+      }
+    })();
+    expect(
+      inKyber,
+      `kyber is shared by three projects and must be handed this id, not hold it`,
+    ).toEqual([]);
   });
 });

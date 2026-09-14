@@ -94,6 +94,6 @@ All JS commands run from the repo root (pnpm workspace):
   `--production`, because a backup nobody has read back is a hope. The same
   script runs weekly on GitHub Actions (`.github/workflows/backup.yml`,
   Thursdays), keeping the dump as a 90-day artifact — Firestore's managed
-  export needs Blaze. That job also runs `scripts/check-rules-drift.mjs`, which
+  export needs Blaze. That job also runs `kyber/scripts/check-rules-drift.mjs`, which
   fails if the deployed ruleset is not the one in this repo.
 - One-time console setup (Firestore db creation, Google provider, Vercel): `docs/setup.md`. Distribution is free-account sideload (7-day signing expiry) until the Apple Developer decision (PLAN Phase 5).

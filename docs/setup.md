@@ -282,7 +282,7 @@ the only security boundary here, so a fix that was written, merged and never
 deployed reads as done everywhere anyone would look.
 
 ```sh
-node scripts/check-rules-drift.mjs   # needs the same service-account key
+node kyber/scripts/check-rules-drift.mjs   # needs the same service-account key
 ```
 
 It prints the serving ruleset and when it was released, or the first line that

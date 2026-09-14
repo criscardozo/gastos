@@ -139,14 +139,11 @@ const COPIES: readonly (readonly [string, string, (t: string) => void])[] = [
     ".github/workflows/ci.yml",
     (t) => expect(t).toContain(`wait-on tcp:${AUTH} tcp:${FIRESTORE}`),
   ],
-  [
-    // Found still on Firebase's 8080, which here is an SSH forward to somebody
-    // else's emulator. Missed because the list was written from memory, and
-    // this is the script nobody runs by hand.
-    "the restore script",
-    "scripts/restore.mjs",
-    (t) => expect(t).toContain(`127.0.0.1:${FIRESTORE}`),
-  ],
+  // The restore script left this list on 14/9/2026: it moved to the shared
+  // `kyber/` submodule and reads the port out of firebase.json rather than
+  // repeating it, so it stopped being a copy. Recorded rather than silently
+  // deleted — a list that shrinks with no reason attached looks exactly like
+  // one somebody trimmed to make a test pass.
   [
     // Kept 8080 through the port move, so the one rehearsal standing behind
     // every backup was aimed at another project's database.
@@ -320,7 +317,6 @@ describe("every copy of the emulator ports", () => {
       "apps/web/playwright.config.ts",
       "apps/web/e2e/app.spec.ts",
       "scripts/seed-emulator.mjs",
-      "scripts/restore.mjs",
       "firebase/rules-tests/seed-for-restore.mjs",
       "apps/ios/Gastos/Services/FirestoreService.swift",
       ".github/workflows/ci.yml",
