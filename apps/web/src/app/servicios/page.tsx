@@ -28,6 +28,7 @@ import type { ServiceDoc } from "@/lib/firebase/converters";
 import {
   addService,
   deleteService,
+  renameExpenseNote,
   updateService,
   type ServiceInput,
 } from "@/lib/firebase/mutations";
@@ -39,6 +40,7 @@ import {
   monthTotals,
   nextDueDate,
   serviceStatuses,
+  unmatchedServiceExpenses,
   SERVICES_CATEGORY_ID,
   type ServiceStatus,
 } from "@/lib/services";
@@ -88,6 +90,13 @@ export default function ServicesPage() {
         ? new Map<string, ServiceStatus>()
         : serviceStatuses(services, expenses, Number(today.slice(5, 7))),
     [services, expenses, today],
+  );
+
+  // The Servicios expenses of the month that name no service — offered next
+  // to whichever service is still waiting. See lib/services.ts.
+  const unmatched = useMemo(
+    () => unmatchedServiceExpenses(services, expenses),
+    [services, expenses],
   );
   const totals = useMemo(
     () => monthTotals(services, statuses),
@@ -323,6 +332,46 @@ export default function ServicesPage() {
                         {t("notChargedYet")}
                       </span>
                     </>
+                  )}
+
+                  {/* Nothing is stored to link a service to its expense: the
+                      NAME is the link. So an expense filed under Servicios
+                      with the note the bill uses — "Amaysim Internet Casa" for
+                      a service called "Internet Casa" — reads as never
+                      charged, with nothing saying why and no way to fix it
+                      from here. Reported exactly that way: "no encuentro la
+                      manera de vincularlos".
+
+                      Offering the unmatched ones next to the service that is
+                      waiting turns that into one press: it renames the
+                      expense's note to the service's name, which IS the
+                      link. */}
+                  {charged === null && unmatched.length > 0 && (
+                    <div className="mt-1.5 flex w-full flex-col gap-1.5 border-t border-soft pt-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wide text-ink-3">
+                        {t("linkTitle")}
+                      </span>
+                      {unmatched.map((e) => (
+                        <div key={e.id} className="flex items-center gap-2">
+                          <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-2">
+                            {e.note} ·{" "}
+                            {formatCents(e.amountCents, household.currency, locale)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              withDb((db) =>
+                                renameExpenseNote(db, household.id, e.id, service.name),
+                              )
+                            }
+                            className="rounded-full border border-line px-3 py-1 text-[11.5px] font-bold text-ink-2"
+                          >
+                            {t("linkAction")}
+                          </button>
+                        </div>
+                      ))}
+                      <span className="text-[11px] text-ink-3">{t("linkHint")}</span>
+                    </div>
                   )}
 
                   {/* The expense is what the bank did; the amount here is only

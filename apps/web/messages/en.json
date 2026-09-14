@@ -154,7 +154,10 @@
     "useCharged": "Use that amount",
     "noCategoryTitle": "The Services category is missing",
     "noCategoryBody": "Expenses in that category link by name to the services here.",
-    "noCategoryCta": "Create it"
+    "noCategoryCta": "Create it",
+    "linkTitle": "Did one of these pay for it?",
+    "linkHint": "An expense links up when its note is the service's name.",
+    "linkAction": "This one"
   },
   "cards": {
     "title": "Credit Cards",

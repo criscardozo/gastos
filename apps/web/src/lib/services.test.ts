@@ -10,6 +10,7 @@ import {
   serviceStatuses,
   type ChargeLike,
   type DueRule,
+  unmatchedServiceExpenses,
 } from "./services";
 
 const monthly = (dueDay: number): DueRule => ({ interval: "monthly", dueDay });
@@ -293,5 +294,54 @@ describe("monthTotals", () => {
     const totals = monthTotals(services, serviceStatuses(services, charges, 10));
     expect(totals.chargedAudCents).toBe(0);
     expect(totals.dueAudCents).toBe(2299);
+  });
+});
+
+describe("Servicios expenses that match no service", () => {
+  const services = [
+    { id: "s1", name: "Internet Casa", interval: "monthly" as const, dueDay: 7 },
+    { id: "s2", name: "YouTube Premium", interval: "monthly" as const, dueDay: 7 },
+  ];
+  const expense = (id: string, note: string, date: string, categoryId = "services") => ({
+    id,
+    note,
+    date,
+    categoryId,
+    amountCents: 5000,
+  });
+
+  it("finds the one whose note does not name a service", () => {
+    // The reported case, verbatim: a service called "Internet Casa" paid with
+    // an expense noted "Amaysim Internet Casa", which is what the bill says.
+    const out = unmatchedServiceExpenses(services, [
+      expense("e1", "Amaysim Internet Casa", "2026-09-13"),
+      expense("e2", "YouTube Premium", "2026-09-07"),
+    ]);
+    expect(out.map((e) => e.id)).toEqual(["e1"]);
+  });
+
+  it("ignores expenses outside the Servicios category", () => {
+    // Without this it would offer every unrelated expense as a candidate.
+    const out = unmatchedServiceExpenses(services, [
+      expense("e1", "Nafta", "2026-09-13", "transport"),
+    ]);
+    expect(out).toEqual([]);
+  });
+
+  it("matches the same way the link does — case and accents", () => {
+    const out = unmatchedServiceExpenses(services, [
+      expense("e1", "  internet casa  ", "2026-09-13"),
+    ]);
+    expect(out).toEqual([]);
+  });
+
+  it("returns nothing when every note names a service", () => {
+    // The control: a function that always returned its input would pass the
+    // first test and be useless.
+    expect(
+      unmatchedServiceExpenses(services, [
+        expense("e1", "Internet Casa", "2026-09-13"),
+      ]),
+    ).toEqual([]);
   });
 });

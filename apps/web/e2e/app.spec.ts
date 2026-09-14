@@ -2560,3 +2560,60 @@ test("the period can be left unstarted while the numbers are read", async ({
     })
     .toBe(1);
 });
+
+/**
+ * Linking a service to the expense that paid it, when the note says the bill.
+ *
+ * The link is the NAME and nothing is stored, so an expense filed under
+ * Servicios with the note printed on the invoice — "Amaysim Internet Casa"
+ * for a service registered as "Internet Casa" — reads as never charged, with
+ * nothing saying why. Reported verbatim: "no encuentro la manera de
+ * vincularlos". There was none.
+ */
+test("a service can be pointed at the expense that paid it", async ({
+  page,
+}) => {
+  const email = `e2e-link-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Link Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await page.getByRole("button", { name: "Agregar", exact: true }).click();
+  await page.getByLabel("Nombre").fill("Internet Casa");
+  await page.getByLabel("AUD").fill("50,00");
+  await page.getByLabel("Día de vencimiento").fill("13");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Todavía no se cobró")).toBeVisible();
+
+  // The expense, noted the way the bill reads.
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await page.getByPlaceholder("0,00").first().fill("50,00");
+  await page
+    .getByRole("combobox", { name: "Categoría: todas" })
+    .first()
+    .selectOption({ label: "Servicios" });
+  await page.getByPlaceholder("Nota (opcional)").fill("Amaysim Internet Casa");
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  // Servicios still says it was never charged — the note names no service.
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await expect(page.getByText("Todavía no se cobró")).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // ...and now it offers the expense instead of leaving you to guess.
+  await expect(page.getByText("¿Lo pagaste con alguno de estos?")).toBeVisible();
+  await expect(page.getByText(/Amaysim Internet Casa/)).toBeVisible();
+  await page.getByRole("button", { name: "Es este" }).click();
+
+  // One press links them: the service reads as charged.
+  await expect(page.getByText("Todavía no se cobró")).toHaveCount(0);
+  await expect(page.getByText("1 de 1 servicios del mes")).toBeVisible({
+    timeout: 20_000,
+  });
+});

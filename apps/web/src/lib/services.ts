@@ -285,3 +285,36 @@ export function monthTotals(
   }
   return totals;
 }
+
+/**
+ * Expenses filed under Servicios that match no service, for the month.
+ *
+ * The link is by name and nothing says so. Somebody registers "Internet Casa",
+ * pays it, files the expense with the note "Amaysim Internet Casa" because
+ * that is what the bill says — and the service goes on reading "Todavía no se
+ * cobró" with no hint of why. Reported exactly that way: "no encuentro la
+ * manera de vincularlos".
+ *
+ * There is no way to link them because nothing is stored to link: the name IS
+ * the link. So the fix is not a new field, it is showing these where the
+ * question gets asked, so the note can be pointed at the service in one press.
+ *
+ * Ordered like the rest of the screen — most recent first, id breaking ties —
+ * so the list is stable between renders rather than following whatever order
+ * the listener happened to deliver.
+ */
+export function unmatchedServiceExpenses<T extends ChargeLike>(
+  services: readonly ServiceLike[],
+  expenses: readonly T[],
+): T[] {
+  const known = new Set(services.map((s) => nameKey(s.name)));
+  return expenses
+    .filter(
+      (e) =>
+        e.categoryId === SERVICES_CATEGORY_ID && !known.has(nameKey(e.note)),
+    )
+    .sort((a, b) =>
+      a.date === b.date ? a.id.localeCompare(b.id) : b.date.localeCompare(a.date),
+    );
+}
+

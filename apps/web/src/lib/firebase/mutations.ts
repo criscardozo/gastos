@@ -1098,3 +1098,24 @@ export async function undoRecurringExpense(
   });
   await batch.commit();
 }
+
+/**
+ * Point an expense's note at a service, which is how the two get linked.
+ *
+ * Servicios reads the link off the name and stores nothing, so "linking" is
+ * literally renaming the note. One field, so a plain update rather than a
+ * batch — and reversible by editing the expense, which is where somebody
+ * would look to undo it.
+ */
+export async function renameExpenseNote(
+  db: Firestore,
+  householdId: string,
+  expenseId: string,
+  note: string,
+): Promise<void> {
+  await updateDoc(doc(db, "households", householdId, "expenses", expenseId), {
+    note,
+    updatedAt: serverTimestamp(),
+  });
+}
+

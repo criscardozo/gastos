@@ -154,7 +154,10 @@
     "useCharged": "Usar ese importe",
     "noCategoryTitle": "Falta la categoría Servicios",
     "noCategoryBody": "Los gastos de esta categoría se vinculan por nombre con los servicios de acá.",
-    "noCategoryCta": "Crearla"
+    "noCategoryCta": "Crearla",
+    "linkTitle": "¿Lo pagaste con alguno de estos?",
+    "linkHint": "Un gasto queda vinculado cuando su nota es el nombre del servicio.",
+    "linkAction": "Es este"
   },
   "cards": {
     "title": "Tarjetas de Crédito",
