@@ -1,6 +1,7 @@
-<img src="docs/assets/icon.png" alt="" width="88">
-
-# Gastos
+<h1 align="center">
+  <img src="docs/assets/icon.png" alt="" width="44" align="middle">
+  Gastos
+</h1>
 
 Household expense tracker for two people sharing one weekly/fortnightly budget.
 A SwiftUI iOS app for fast entry, a Next.js web app for everything you sit down
