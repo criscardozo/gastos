@@ -402,30 +402,46 @@ en `App/QuickEntryIntent.swift`; les falta el inglés).
 
 Cubierto en P3.
 
-### R5. `SWIFT_STRICT_CONCURRENCY: minimal` → `complete` (aparte, con tiempo)
+### R5. `SWIFT_STRICT_CONCURRENCY: minimal` → `complete`
 
-> **Medido el 14/9/2026, y frenado como dice la entrada.** Con `complete` el
-> build pasa pero deja **31 warnings**, justo en el umbral de «más de ~30,
-> reportá y frená». No son treinta y un problemas distintos: son cinco clases.
+> **Hecho el 14/9/2026.** `SWIFT_STRICT_CONCURRENCY: complete`, build limpio y
+> 163 tests en verde, verificado además corriendo la app.
 >
-> | clase | cuántos |
+> **Los «31 warnings» eran 5, y sólo 3 nuestros.** La medición de la mañana
+> contó líneas de log, no problemas. Deduplicando por archivo:línea:mensaje:
+>
+> | | |
 > |---|---|
-> | `cannot form key path that captures non-Sendable type` | 20 |
-> | `static property is not concurrency-safe` | 4 |
-> | `sending 'X' risks causing data races` | 2 |
-> | `capture of non-Sendable in a closure` | 2 |
-> | `nil coalescing sobre un no-opcional` | 2 |
+> | key path sobre `AttributeScopes` de SwiftUI | **2**, emitidos 10 veces cada uno, con `<unknown>:0` — son del SDK, no hay nada nuestro que tocar |
+> | `static property 'shared'` en `WatchSyncService` | **1**, reportado 4 veces |
+> | capture + sending de `self` en `WatchConnectivityModel:41` | **1 problema**, reportado de dos formas |
 >
-> Los últimos dos no eran de concurrencia sino código muerto propio, y se
-> arreglaron ese día. El bloque grande son los `\.propiedad` sobre tipos que
-> no son `Sendable`, que es una sola decisión repetida veinte veces.
+> Los tres nuestros salieron con el mismo arreglo: aislar la clase al main actor
+> y dejar la conformidad de `WCSessionDelegate` `nonisolated`, porque el
+> framework decide desde dónde llama. Cruza sólo lo que es `Sendable`: los
+> `[String: Any]` se leen del lado no aislado y sólo pasan los escalares, y se
+> usa `WCSession.default` en vez de cargar el parámetro.
 >
-> Se dejó en `minimal`. Cambiar aislamiento de actores puede mover
-> comportamiento en runtime, y la verificación en simulador está trabada por
-> otra cosa (la pantalla de período nuevo que no aparece), así que hacerlo
-> ahora sería cambiar concurrencia sin poder mirar la app. Merece su propio
-> rato.
-
+> **Y uno no era un warning sino una carrera real:** el `pendingContext` de
+> `WatchSyncService` se leía y escribía desde el main actor (`updateBudgetContext`)
+> y desde la cola de WatchConnectivity (el callback de activación) a la vez.
+>
+> Quedan 2 warnings, los dos de SwiftUI, más el aviso de AppIntents que ya
+> estaba. Ninguno es accionable desde este repo.
+>
+> **Cómo se verificó, porque el primer intento no medía nada:** con `-quiet` el
+> log no dice `BUILD SUCCEEDED`, y pasar el build por `tee | grep` devuelve el
+> código de grep — la trampa que este repo tiene documentada. Peor: el build
+> incremental reusó caché (`SwiftCompile: 0`), así que «cero warnings» era
+> compatible con «no se compiló nada». El número bueno salió de un build limpio
+> con 732 tareas de compilación.
+>
+> En el simulador el flujo completo anda: arranca, autentica, crea el hogar y
+> escribe en Firestore (`amountCents: 90000`). Una escritura falló primero y NO
+> era de este cambio — era el llavero del simulador sirviendo una credencial que
+> el emulador no conocía, que es exactamente lo que el mensaje de error de
+> `seed-emulator.mjs` predice. Se resolvió con `simctl erase`, y ése fue el
+> control.
 
 `apps/ios/project.yml:46`. Con Swift 5.10 en Xcode 26, `complete` muestra las
 carreras que Swift 6 va a convertir en errores. Hacelo en una rama, contá los
