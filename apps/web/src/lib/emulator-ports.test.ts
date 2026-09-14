@@ -89,6 +89,18 @@ const DOCUMENTED: readonly (readonly [string, readonly string[]])[] = [
   // Nothing is excluded from the sweep now except firebase.json, which is the
   // source rather than a copy.
   ["docs/reglas.md", [AUTH, FIRESTORE, WEBSOCKET, UI, HUB, LOGGING]],
+  // The setup guide tells a new machine which ports to expect and hands out a
+  // FIRESTORE_EMULATOR_HOST to paste. It sat on Firebase's DEFAULTS —
+  // 9099/8080/4000 — for as long as this project has had its own block, so
+  // following it pointed you at the SSH forwards that hold those numbers
+  // here, and the emulator "failing" looked like anything but a port.
+  //
+  // The sweep below could never have caught it, and the reason is worth
+  // keeping: it searches for the ports that are CURRENT. A file stating an
+  // obsolete one repeats nothing it looks for, so a guard that checks for
+  // right answers is blind to a confident wrong one. Listing the file is what
+  // fixes that — from here, the entry is the claim.
+  ["docs/setup.md", [AUTH, FIRESTORE, UI]],
 ];
 
 function read(path: string): string {

@@ -200,7 +200,7 @@ doesn't appear.
 
 ```sh
 pnpm install
-pnpm emulators          # Firebase emulator suite (Auth 9099, Firestore 8080, UI 4000)
+pnpm emulators          # Firebase emulator suite (Auth 9390, Firestore 8390, UI 4390)
 pnpm dev                # Next.js on :3000 — set NEXT_PUBLIC_USE_EMULATORS=1 to use emulators
 pnpm test:rules         # security-rules tests (starts its own emulator, needs a JDK 21+)
 pnpm test:web           # unit tests, incl. the shared period + bank-match vectors
@@ -245,7 +245,7 @@ pnpm restore backups/gastos-diarios-<stamp>.json
 
 # 3. Prove the round trip, which is the actual test: back the emulator up
 #    again and diff the two dumps. They should differ only in exportedAt.
-FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 pnpm backup
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8390 pnpm backup
 ```
 
 For the real thing, `pnpm restore --production <file>`. It refuses unless the
