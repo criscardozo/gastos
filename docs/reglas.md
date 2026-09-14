@@ -420,10 +420,13 @@ acaba de pedir.
   bloque: Auth 9390, Firestore 8390 (websocket 9490), UI 4390, hub 4690,
   logging 4790. Antes usaba los defaults, que es lo que agarra cualquier
   proyecto sin bloque explícito.
-- **Y ese número vive en SEIS lugares, cinco de los cuales no pueden leer el
-  sexto.** `firebase/firebase.json` decide; el cliente web, el config de
+- **Y ese número vive en varios lugares que no pueden leer el que decide.**
+  `firebase/firebase.json` decide; el cliente web, el config de
   Playwright, el spec del e2e, `seed-emulator.mjs` y el
-  `configureEmulatorsIfRequested()` de iOS lo repiten. Moverlos lo demostró:
+  `configureEmulatorsIfRequested()` de iOS lo repiten, entre otros — la lista
+  que vale es la de `emulator-ports.test.ts`, no esta oración. Decía SEIS
+  mientras la guarda sostenía siete, que es la regla de más abajo aplicada a
+  la prosa que la enuncia. Moverlos lo demostró:
   actualicé cinco y me olvidé del spec, y 15 de 18 e2e fallaron con
   `Cannot read properties of undefined (reading 'find')` — una llamada REST a
   un puerto que resulta que tiene un forward de SSH, contestando algo sin

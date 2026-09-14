@@ -67,8 +67,9 @@ All JS commands run from the repo root (pnpm workspace):
   8085, 9099, 9150 and 9199 — the whole default set — and 8085 is `stock`'s
   Firestore, so the defaults never bind and a neighbouring project would take
   whatever did. The numbers live in `firebase/firebase.json` and are mirrored
-  in four places that cannot read it: the web client, the Playwright config,
-  `scripts/seed-emulator.mjs` and iOS's `configureEmulatorsIfRequested()`.
+  in every copy that cannot read it — the list is in
+  `apps/web/src/lib/emulator-ports.test.ts`, which is also what holds them to
+  it. No count here: this line said "four" while that list held seven.
   Start it with **`--project qcris-gastos-diarios`** when an app will connect:
   under any other project id the rules resolve `isMember()`'s `get()` in a
   namespace with no household, which is an evaluation error, and every
