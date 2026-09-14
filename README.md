@@ -16,6 +16,7 @@ and **$0 infrastructure**.
 | 📐 Design | `docs/design/` — tokens + Claude Design reference |
 | 🗺 Plan | `docs/PLAN.md` — architecture decisions and phases |
 | 📜 Rules | `docs/reglas.md` — the project's constraints and the reasoning behind them |
+| 💎 Shared | `kyber/` — submodule: the tooling, rules and pinned versions this project shares with its siblings |
 
 ## What it does
 
@@ -32,6 +33,10 @@ upload are web-only for the same reason.
 ## Quick start
 
 ```sh
+git clone --recurse-submodules git@github.com:criscardozo/gastos.git
+# already cloned? `pnpm install` does NOT fetch submodules:
+git submodule update --init
+
 pnpm install
 pnpm dev            # web on :3000
 pnpm test           # web unit tests + Firestore rules (emulator, needs Java) + the email parser
