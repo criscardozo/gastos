@@ -89,7 +89,7 @@ jobs:
           pnpm --filter web exec playwright install --with-deps chromium
           pnpm --filter web exec next start -p 3112 &
           npx wait-on http://localhost:3112 --timeout 120000
-          pnpm --filter web verify:pwa
+          pnpm verify:pwa
 
   e2e:
     name: Web — Playwright E2E (emulators)

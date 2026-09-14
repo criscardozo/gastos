@@ -11,7 +11,7 @@
     "test:web": "pnpm --filter web test",
     "test:rules": "pnpm --filter rules-tests test",
     "test:ingest": "pnpm --filter gmail-bank-ingest test",
-    "verify:pwa": "pnpm --filter web verify:pwa",
+    "verify:pwa": "node kyber/scripts/verify-pwa.mjs",
     "emulators": "firebase emulators:start --config firebase/firebase.json --project qcris-gastos-diarios",
     "seed:emulator": "node scripts/seed-emulator.mjs",
     "backup": "node kyber/scripts/backup.mjs",

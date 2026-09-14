@@ -10,8 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "playwright test",
-    "verify:pwa": "node scripts/verify-pwa.mjs"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
