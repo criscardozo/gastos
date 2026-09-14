@@ -2467,3 +2467,96 @@ test("a recurring rule can be pointed at the service it pays", async ({
     timeout: 20_000,
   });
 });
+
+/**
+ * Looking at the numbers without starting the period.
+ *
+ * The start-period screen is deliberately not dismissable: swiping it away
+ * used to accept the default budget in silence, so the decision looked
+ * optional when it is not. Asked for from the phone: a third way out for
+ * "I want to check last period's figures before I choose".
+ *
+ * It writes nothing — the period stays materialized and unconfirmed, which is
+ * the state it was already in — so the question still stands. What makes that
+ * honest rather than a re-run of the old bug is the other half: adding an
+ * expense is refused while it lasts, and refused by bringing the question
+ * back rather than by failing quietly.
+ */
+test("the period can be left unstarted while the numbers are read", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-notyet-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("NotYet Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const householdId = (
+    ((await households.json()).documents as {
+      name: string;
+      fields: { name: { stringValue: string } };
+    }[]).find((d) => d.fields.name.stringValue === "Hogar de NotYet") as {
+      name: string;
+    }
+  ).name
+    .split("/")
+    .pop() as string;
+
+  // Make this look like a device that was here before the period started,
+  // which is what makes the screen come up by itself.
+  await page.evaluate(
+    ([id, older]) => localStorage.setItem(`gd:newPeriodAck:${id}`, older),
+    [householdId, "2000-01-01"],
+  );
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Repetir presupuesto/ })).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // The way out that is not an answer.
+  await page.getByRole("button", { name: "Todavía no arrancar" }).click();
+  await expect(page.getByRole("button", { name: /Repetir presupuesto/ })).toHaveCount(0);
+
+  // The app is usable — that is the whole request.
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  // And adding an expense brings the question back instead of writing.
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await page.getByPlaceholder("0,00").first().fill("12,00");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByRole("button", { name: /Repetir presupuesto/ })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect
+    .poll(async () => {
+      const res = await request.get(
+        `${REST}/households/${householdId}/expenses`,
+        { headers: admin },
+      );
+      return (((await res.json()).documents ?? []) as unknown[]).length;
+    })
+    .toBe(0);
+
+  // Answering it lets the expense through — the refusal was about the
+  // decision, not about the form. Typing it again and having it land is the
+  // proof; asserting the screen merely closed would not distinguish "allowed
+  // now" from "still refusing, quietly".
+  await page.getByRole("button", { name: /Repetir presupuesto/ }).click();
+  await expect(page.getByRole("button", { name: /Repetir presupuesto/ })).toHaveCount(0);
+  await page.getByPlaceholder("0,00").first().fill("12,00");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect
+    .poll(async () => {
+      const res = await request.get(
+        `${REST}/households/${householdId}/expenses`,
+        { headers: admin },
+      );
+      return (((await res.json()).documents ?? []) as unknown[]).length;
+    })
+    .toBe(1);
+});

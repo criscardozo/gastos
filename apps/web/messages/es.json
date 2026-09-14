@@ -353,7 +353,12 @@
     "stretchHint": "Elegí una fecha posterior al {date}.",
     "stretchConfirm": "Estirar el período",
     "later": "Ahora no",
-    "back": "Volver"
+    "back": "Volver",
+    "notYet": "Todavía no arrancar",
+    "notYetHelp": "Podés revisar los números. Para cargar un gasto hay que iniciar el período.",
+    "blockedTitle": "Falta iniciar el período",
+    "blockedBody": "Elegiste revisar sin arrancar. Iniciá el período y volvé a cargar el gasto.",
+    "blockedAction": "Iniciar el período"
   },
   "extendPeriod": {
     "title": "Extender a dos semanas",

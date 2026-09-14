@@ -90,8 +90,10 @@ extension AppModel {
         }
         if current.isConfirmed {
             UserDefaults.standard.set(current.startDate, forKey: key)
-        } else {
-            // A period actually starting: no way out but answering it.
+        } else if deferredPeriodStart != current.startDate {
+            // A period actually starting: no way out but answering it, or
+            // "Todavía no arrancar", which closes it for this launch and
+            // refuses expense entry until it IS answered.
             setNewPeriodPrompt(manual: false)
             showNewPeriodSheet = true
         }

@@ -24,6 +24,7 @@
 		20C112FA5B73240CA98EBDC5 /* LimitsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8649A56B638FCED8CE0B1F /* LimitsTests.swift */; };
 		233E325AA13DE6A39ABD69E9 /* RecurringRuleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54F5FBB8326951E806D6B65 /* RecurringRuleSheet.swift */; };
 		255BB020E5661AD8377D4465 /* BankMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C56B3C224BAFCF9A07789A /* BankMatch.swift */; };
+		29D21C347F93D7CFAA6A6E8C /* PeriodGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1794B1E43D9A741F78FA369D /* PeriodGate.swift */; };
 		2A2E1FB569B2EA5F024AFAC0 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57212F3BC92DF066F97A5D /* Models.swift */; };
 		30D92D31F664DCB5530BE1CE /* GastosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = DD7AB887D8188CBE39627CB9 /* GastosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		33995B0192977E89FBC7A87C /* NewExpenseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79B6689EAB6FFB913F05D50 /* NewExpenseButton.swift */; };
@@ -61,6 +62,7 @@
 		80A3C109218A10A989F3715B /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = DCB0E7E3A151F080F5FB5164 /* Localizable.xcstrings */; };
 		82AA08A8AB7428185A6C6D74 /* AmountInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDFDA56A24A7ED5CEC473556 /* AmountInput.swift */; };
 		84FB52B876A78622D060E238 /* MoneyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1648731F9FE441F1D1213CE1 /* MoneyFormatter.swift */; };
+		8C7EEBDB1C28B4539F79FA61 /* PeriodGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601A81E5C53F86FD1428EF30 /* PeriodGateTests.swift */; };
 		921160581B3C919EED509A2F /* UsdArsRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA50F487EE5CB5CB28419723 /* UsdArsRate.swift */; };
 		960B216F2EC4C75524BFE355 /* PeriodLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33010FD0D4F32F60CF103E5B /* PeriodLogic.swift */; };
 		97B2460951F9FCDDD42C322B /* CardLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 315F74278422350FB9D3B8F5 /* CardLogic.swift */; };
@@ -88,6 +90,7 @@
 		B9798564E916545FC596301B /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 938A0A8D757CDEFC35CF85FD /* GoogleSignInSwift */; };
 		B9F41D325A7FEB9EF54F5A66 /* CountLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6149E0BE1456D048D490F366 /* CountLabelTests.swift */; };
 		BA27BD0F25B35E9D7B97D9AB /* UsdArsRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA50F487EE5CB5CB28419723 /* UsdArsRate.swift */; };
+		BA55EAB3A8209FB479CA9104 /* PeriodGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1794B1E43D9A741F78FA369D /* PeriodGate.swift */; };
 		BA6104FEE86502169BAECA7D /* ServiceLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8043182EF7DF168D7084E96E /* ServiceLogicTests.swift */; };
 		BA7C85206BFA1C4737B5D6CD /* ServiceLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB1E0209EBF466D3AEEC77A /* ServiceLogic.swift */; };
 		BB8A293F405068FE03D1D24D /* WatchEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9DF8AB78E48D25CD17E3699 /* WatchEntryView.swift */; };
@@ -179,6 +182,7 @@
 		100EBDA8F0CF3F8E0FE41E98 /* BankChargeInboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargeInboxTests.swift; sourceTree = "<group>"; };
 		1648731F9FE441F1D1213CE1 /* MoneyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatter.swift; sourceTree = "<group>"; };
 		16F92C157275F9AA6D760455 /* recurring-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "recurring-vectors.json"; sourceTree = "<group>"; };
+		1794B1E43D9A741F78FA369D /* PeriodGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodGate.swift; sourceTree = "<group>"; };
 		1C8C08C8A0755F3F5424BA39 /* AppFontTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFontTests.swift; sourceTree = "<group>"; };
 		1E65928D5D49A9294DEEF332 /* TestFonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFonts.swift; sourceTree = "<group>"; };
 		235D10EDA6DEC652D26ECE10 /* categories.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = categories.json; sourceTree = "<group>"; };
@@ -187,7 +191,7 @@
 		2F1934B38A615BECC1D5E398 /* BudgetAmountEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetAmountEditor.swift; sourceTree = "<group>"; };
 		315F74278422350FB9D3B8F5 /* CardLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardLogic.swift; sourceTree = "<group>"; };
 		3185D8D0B36CD3028B6C8CBE /* CreateFromChargeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateFromChargeSheet.swift; sourceTree = "<group>"; };
-		326DE0250998DB6FD336ADB1 /* Gastos.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Gastos.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		326DE0250998DB6FD336ADB1 /* Gastos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Gastos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		33010FD0D4F32F60CF103E5B /* PeriodLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogic.swift; sourceTree = "<group>"; };
 		3B1186604B7C10DBF0F7B337 /* CategoriesManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesManagerView.swift; sourceTree = "<group>"; };
 		3F06395060DEFBF7F0F052DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -200,6 +204,7 @@
 		53931650482F664B2A869C76 /* RecurringPromptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringPromptSheet.swift; sourceTree = "<group>"; };
 		5A8D40315BC72C492DC7F612 /* CardsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardsView.swift; sourceTree = "<group>"; };
 		5D3927D960B921308F0339E5 /* BudgetWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetWidget.swift; sourceTree = "<group>"; };
+		601A81E5C53F86FD1428EF30 /* PeriodGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodGateTests.swift; sourceTree = "<group>"; };
 		6149E0BE1456D048D490F366 /* CountLabelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountLabelTests.swift; sourceTree = "<group>"; };
 		617A938BD68BDD5570598230 /* ServicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesView.swift; sourceTree = "<group>"; };
 		651AB99544B0D1A42041AE16 /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
@@ -411,6 +416,7 @@
 				F0756724E83AD6DEFC752D33 /* FontScalingPathTests.swift */,
 				AA8649A56B638FCED8CE0B1F /* LimitsTests.swift */,
 				B7EC5992D1786FDB955842A7 /* ModelDecodingTests.swift */,
+				601A81E5C53F86FD1428EF30 /* PeriodGateTests.swift */,
 				DB4FCA6646C9D9BB19D95B20 /* PeriodLogicTests.swift */,
 				9FF743F833087A8F15FFF83F /* RecurringRulesTests.swift */,
 				890A88734AEF52E42002B803 /* RichTextTests.swift */,
@@ -515,6 +521,7 @@
 				BB48A44A14A7CEAB4B8167C5 /* Limits.swift */,
 				4E57212F3BC92DF066F97A5D /* Models.swift */,
 				1648731F9FE441F1D1213CE1 /* MoneyFormatter.swift */,
+				1794B1E43D9A741F78FA369D /* PeriodGate.swift */,
 				33010FD0D4F32F60CF103E5B /* PeriodLogic.swift */,
 				8654B3054370D4BD6E8D1BCF /* RecurringRules.swift */,
 				0CB1E0209EBF466D3AEEC77A /* ServiceLogic.swift */,
@@ -678,7 +685,6 @@
 						ProvisioningStyle = Automatic;
 					};
 					D9D49D56DF3BD063E5674E1A = {
-						DevelopmentTeam = FA737M2U79;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -794,6 +800,8 @@
 				BF9CAD3298E7CB5B03E1AC41 /* ModelDecodingTests.swift in Sources */,
 				2A2E1FB569B2EA5F024AFAC0 /* Models.swift in Sources */,
 				6B26CF85F3FF249737F375D6 /* MoneyFormatter.swift in Sources */,
+				29D21C347F93D7CFAA6A6E8C /* PeriodGate.swift in Sources */,
+				8C7EEBDB1C28B4539F79FA61 /* PeriodGateTests.swift in Sources */,
 				620E9E198B310B8489B761C4 /* PeriodLogic.swift in Sources */,
 				B0BD3A859D155D97BF2C2E01 /* PeriodLogicTests.swift in Sources */,
 				CB805A0DE365F08D963B27F4 /* RecurringRules.swift in Sources */,
@@ -856,6 +864,7 @@
 				33995B0192977E89FBC7A87C /* NewExpenseButton.swift in Sources */,
 				DE03267C6769998D930153C4 /* NewPeriodScreen.swift in Sources */,
 				AB31DB5E6297D5AB58B90E92 /* OnboardingView.swift in Sources */,
+				BA55EAB3A8209FB479CA9104 /* PeriodGate.swift in Sources */,
 				960B216F2EC4C75524BFE355 /* PeriodLogic.swift in Sources */,
 				154F8083DBBB448148FD3B66 /* QuickEntryIntent.swift in Sources */,
 				428BB77473B7E3909EC1729D /* RecurringPromptSheet.swift in Sources */,
@@ -902,6 +911,7 @@
 				CODE_SIGN_ENTITLEMENTS = Gastos/Gastos.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FA737M2U79;
 				GD_INGEST_URL = "https://script.google.com/macros/s/AKfycbxq9Vn_eMC_fLdLV4itZFL0ABHr0BdMZCzZeOyA68vECKBawpVIHcikn48tdpHan4h9mw/exec";
 				INFOPLIST_FILE = Gastos/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1157,6 +1167,7 @@
 				CODE_SIGN_ENTITLEMENTS = Gastos/Gastos.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FA737M2U79;
 				GD_INGEST_URL = "https://script.google.com/macros/s/AKfycbxq9Vn_eMC_fLdLV4itZFL0ABHr0BdMZCzZeOyA68vECKBawpVIHcikn48tdpHan4h9mw/exec";
 				INFOPLIST_FILE = Gastos/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

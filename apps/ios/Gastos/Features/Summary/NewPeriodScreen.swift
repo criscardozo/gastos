@@ -208,13 +208,31 @@ struct NewPeriodScreen: View {
                 }
                 .buttonStyle(.plain)
             }
-            // Only when nobody was asked anything: the automatic prompt has no
-            // way out other than answering it.
+            // Two ways out that are not answers, and they are different.
+            // Cancel (manual only) says "I opened this myself, never mind" —
+            // nothing was asked, so nothing is owed. "Todavía no" is for the
+            // automatic prompt: the question stands, this closes it for THIS
+            // launch so the numbers can be read, and adding an expense is
+            // refused until it is answered. Without that refusal it would be
+            // the old swipe-away, which accepted the default budget in
+            // silence.
             if manual {
                 Button(l10n.t("common.cancel")) { model.markNewPeriodSeen() }
                     .appFont(14, .semibold)
                     .foregroundStyle(Theme.inkSecondary)
                     .padding(.top, 2)
+            } else {
+                VStack(spacing: 4) {
+                    Button(l10n.t("newPeriod.notYet")) { model.deferNewPeriod() }
+                        .appFont(14, .semibold)
+                        .foregroundStyle(Theme.inkSecondary)
+                    Text(l10n.t("newPeriod.notYetHelp"))
+                        .appFont(11.5)
+                        .foregroundStyle(Theme.inkTertiary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 2)
             }
         }
     }

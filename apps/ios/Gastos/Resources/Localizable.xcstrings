@@ -2143,6 +2143,38 @@
         }
       }
     },
+    "newPeriod.notYet": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todavía no arrancar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not yet"
+          }
+        }
+      }
+    },
+    "newPeriod.notYetHelp": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podés revisar los números. Para cargar un gasto hay que iniciar el período."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look at the numbers all you like. Adding an expense needs the period started."
+          }
+        }
+      }
+    },
     "newPeriod.custom": {
       "extractionState": "manual",
       "localizations": {

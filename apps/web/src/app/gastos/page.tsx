@@ -13,6 +13,7 @@ import { useTranslations } from "next-intl";
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { useAppError } from "@/components/app-error";
 import { Icon } from "@/components/ui/icon";
+import { canAddExpense } from "@/lib/period-gate";
 import { useExpenseFilters } from "@/components/use-expense-filters";
 import { Segmented } from "@/components/ui/segmented";
 import { BankChargesPanel } from "@/components/bank-charges-panel";
@@ -77,7 +78,8 @@ export default function ExpensesPage() {
   const { locale } = useLocale();
   const { write } = useAppError();
   const { user } = useAuth();
-  const { household, periods, currentPeriod, today } = useHousehold();
+  const { household, periods, currentPeriod, today, deferredStart, openStartPeriod } =
+    useHousehold();
 
   /**
    * What the list is showing: a period's `startDate`, or `month:YYYY-MM` for a
@@ -246,6 +248,14 @@ export default function ExpensesPage() {
   // back off the list, which is the honest signal. Same reasoning as iOS, which
   // has always written fire-and-forget.
   const submitAdd = () => {
+    // Refused while the period under way has not been started, which is the
+    // state "Todavía no arrancar" leaves behind. Without this the button
+    // would be the old swipe-away: an expense counted against a budget nobody
+    // chose, with the screen that would have asked already gone.
+    if (!canAddExpense({ currentPeriod, deferredStart })) {
+      openStartPeriod();
+      return;
+    }
     const fb = getFirebaseClient();
     const money = buildAmountFields(effectiveAddForm.amount, locale);
     if (fb === null || money === null || effectiveAddForm.date === "") return;

@@ -51,7 +51,8 @@ export function StartPeriodScreen({
   const t = useTranslations("newPeriod");
   const { locale } = useLocale();
   const { write } = useAppError();
-  const { household, periods, today, acknowledgeNewPeriod } = useHousehold();
+  const { household, periods, today, acknowledgeNewPeriod, deferStartPeriod } =
+    useHousehold();
 
   const [includeRollover, setIncludeRollover] = useState(
     household?.defaultBudget.rollover === true,
@@ -420,9 +421,15 @@ export function StartPeriodScreen({
                   {t("stretchAction")}
                 </button>
               )}
-              {/* Only when nobody was asked anything: the automatic prompt has
-                  no way out other than answering it. */}
-              {manual && (
+              {/* Two ways out that are not answers, and they are different.
+                  `later` (manual only) says "I opened this myself, never
+                  mind" — nothing was asked, so nothing is owed. `notYet` is
+                  for the automatic prompt: the question stands, this closes
+                  it for THIS visit so the numbers can be read, and adding an
+                  expense is refused until it is answered. Without that
+                  refusal it would be the old swipe-away, which accepted the
+                  default budget in silence. */}
+              {manual ? (
                 <button
                   type="button"
                   onClick={acknowledgeNewPeriod}
@@ -430,6 +437,19 @@ export function StartPeriodScreen({
                 >
                   {t("later")}
                 </button>
+              ) : (
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={deferStartPeriod}
+                    className="h-11 text-sm font-semibold text-ink-2"
+                  >
+                    {t("notYet")}
+                  </button>
+                  <span className="max-w-[280px] text-center text-[11.5px] text-ink-3">
+                    {t("notYetHelp")}
+                  </span>
+                </div>
               )}
             </>
           )}

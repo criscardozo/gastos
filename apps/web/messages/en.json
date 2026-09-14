@@ -353,7 +353,12 @@
     "stretchHint": "Pick a date after {date}.",
     "stretchConfirm": "Stretch the period",
     "later": "Not now",
-    "back": "Back"
+    "back": "Back",
+    "notYet": "Not yet",
+    "notYetHelp": "Look at the numbers all you like. Adding an expense needs the period started.",
+    "blockedTitle": "The period has not started",
+    "blockedBody": "You chose to look without starting it. Start the period and the expense will go through.",
+    "blockedAction": "Start the period"
   },
   "extendPeriod": {
     "title": "Extend to two weeks",

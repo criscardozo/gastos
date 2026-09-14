@@ -74,6 +74,30 @@ final class AppModel {
     func setNewPeriodPrompt(manual: Bool) {
         newPeriodPromptIsManual = manual
     }
+
+    /// The period start somebody pressed "Todavía no arrancar" on.
+    ///
+    /// In memory ONLY, so it lasts this launch and the question comes back
+    /// next time the app opens. Not UserDefaults — the key there means "this
+    /// device predates the period" and reusing it would silence the question
+    /// for good, which is the silent default the screen exists to prevent.
+    private(set) var deferredPeriodStart: String?
+
+    /// Close the start-period screen WITHOUT answering it. Writes nothing.
+    func deferNewPeriod() {
+        deferredPeriodStart = currentPeriod?.startDate
+        showNewPeriodSheet = false
+    }
+
+    /// Refused while somebody chose to look without starting the period. See
+    /// Core/PeriodGate.swift for why this reads the decision and not the data.
+    var canAddExpense: Bool {
+        PeriodGate.canAddExpense(
+            currentPeriodStart: currentPeriod?.startDate,
+            currentPeriodConfirmed: currentPeriod?.isConfirmed ?? false,
+            deferredStart: deferredPeriodStart
+        )
+    }
     var authError: String?
     var isSigningIn = false
     /// A write the server REFUSED, in the user's words. Never set by being
@@ -817,6 +841,12 @@ final class AppModel {
         note: String,
         date: CalendarDate?
     ) {
+        // Refused while the period under way was deferred, and refused by
+        // bringing the question back rather than by failing quietly.
+        guard canAddExpense else {
+            openNewPeriodPrompt()
+            return
+        }
         guard let householdId = attachedHouseholdId, let uid else { return }
         firestore.createExpense(
             householdId: householdId,
@@ -834,6 +864,11 @@ final class AppModel {
     private static let watchProcessedKey = "watchProcessedClientIds"
 
     func saveExpenseFromWatch(clientId: String, amountCents: Int, categoryId: String, dateYMD: String) {
+        // The watch cannot show the start-period screen, so it cannot be sent
+        // there — but writing anyway would file the expense into a period
+        // nobody started, which is the whole thing being prevented. Dropped,
+        // and the phone asks the next time it is opened.
+        guard canAddExpense else { return }
         guard let householdId = attachedHouseholdId, let uid else { return }
         guard amountCents > 0, CalendarDate(dateYMD) != nil else { return }
 

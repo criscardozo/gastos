@@ -17,6 +17,7 @@ import { Icon } from "@/components/ui/icon";
 import { MAX_NOTE_CHARACTERS } from "@/lib/limits";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { addExpense } from "@/lib/firebase/mutations";
+import { canAddExpense } from "@/lib/period-gate";
 import { useExpensesRange } from "@/lib/firebase/hooks";
 import {
   categoryCircleBg,
@@ -39,7 +40,7 @@ export default function QuickEntryPage() {
   const { locale } = useLocale();
   const { write } = useAppError();
   const { user } = useAuth();
-  const { household, currentPeriod, today } = useHousehold();
+  const { household, currentPeriod, today, deferredStart, openStartPeriod } = useHousehold();
 
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -99,6 +100,12 @@ export default function QuickEntryPage() {
   // second tap that would follow is how you end up with two of them.
   const save = () => {
     const fb = getFirebaseClient();
+    // Refused while the period under way has not been started — see
+    // lib/period-gate.ts and the same guard on the Gastos screen.
+    if (!canAddExpense({ currentPeriod, deferredStart })) {
+      openStartPeriod();
+      return;
+    }
     if (fb === null || !canSave || audCents === null) return;
     write(
       addExpense(fb.db, household.id, user.uid, {

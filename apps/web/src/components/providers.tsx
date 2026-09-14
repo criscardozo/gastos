@@ -137,6 +137,17 @@ interface HouseholdContextValue {
    * opened by hand (which is the only case it may be closed unanswered). */
   startPeriodPrompt: { period: PeriodBudget; manual: boolean } | null;
   acknowledgeNewPeriod: () => void;
+  /**
+   * Close the start-period screen WITHOUT answering it, for this visit only.
+   *
+   * Writes nothing: the period stays materialized and unconfirmed, exactly as
+   * it was. `canAddExpense` in lib/period-gate.ts refuses entry meanwhile,
+   * which is what keeps this from being the old swipe-away that accepted the
+   * default budget in silence.
+   */
+  /** The period start "Todavía no arrancar" was pressed on, this visit. */
+  deferredStart: string | null;
+  deferStartPeriod: () => void;
   /** Re-open the screen for the period under way — Ajustes' "Iniciar la
    * semana", for when it was answered by accident. */
   openStartPeriod: () => void;
@@ -151,6 +162,8 @@ const HouseholdContext = createContext<HouseholdContextValue>({
   currentPeriod: null,
   startPeriodPrompt: null,
   acknowledgeNewPeriod: () => undefined,
+  deferredStart: null,
+  deferStartPeriod: () => undefined,
   openStartPeriod: () => undefined,
 });
 
@@ -392,6 +405,7 @@ export function Providers({ children }: { children: ReactNode }) {
   /* Lazy cascade materialization of missing periods. */
   /** The period the user has already answered for, hydrated from storage.
    * `undefined` means "not read yet" — distinct from "nothing stored". */
+  const [deferredStart, setDeferredStart] = useState<string | null>(null);
   const [ackedStart, setAckedStart] = useState<string | null | undefined>(
     undefined,
   );
@@ -541,6 +555,11 @@ export function Providers({ children }: { children: ReactNode }) {
     setManualStartPeriod(false);
   }, [householdId, currentPeriod]);
 
+  const deferStartPeriod = useCallback(() => {
+    if (currentPeriod !== null) setDeferredStart(currentPeriod.startDate);
+    setManualStartPeriod(false);
+  }, [currentPeriod]);
+
   const openStartPeriod = useCallback(() => {
     if (currentPeriod !== null) setManualStartPeriod(true);
   }, [currentPeriod]);
@@ -562,8 +581,15 @@ export function Providers({ children }: { children: ReactNode }) {
     if (ackedStart === null || ackedStart === currentPeriod.startDate) {
       return null;
     }
+    // "Todavía no arrancar": in memory ONLY, so it lasts this visit and the
+    // question comes back next time the app opens. Not localStorage — that
+    // key means "this device predates the period" and reusing it would
+    // silence the question for good, which is the silent default the screen
+    // exists to prevent. Adding an expense is refused meanwhile; see
+    // lib/period-gate.ts.
+    if (deferredStart === currentPeriod.startDate) return null;
     return { period: currentPeriod, manual: false };
-  }, [currentPeriod, ackedStart, manualStartPeriod]);
+  }, [currentPeriod, ackedStart, manualStartPeriod, deferredStart]);
 
   const householdValue = useMemo<HouseholdContextValue>(
     () => ({
@@ -575,6 +601,8 @@ export function Providers({ children }: { children: ReactNode }) {
       currentPeriod,
       startPeriodPrompt,
       acknowledgeNewPeriod,
+      deferredStart,
+      deferStartPeriod,
       openStartPeriod,
     }),
     [
@@ -586,6 +614,8 @@ export function Providers({ children }: { children: ReactNode }) {
       currentPeriod,
       startPeriodPrompt,
       acknowledgeNewPeriod,
+      deferredStart,
+      deferStartPeriod,
       openStartPeriod,
     ],
   );
