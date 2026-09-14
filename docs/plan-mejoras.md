@@ -63,6 +63,10 @@ Las letras agrupan; dentro de un grupo el orden importa, entre grupos no.
 
 ### C1. `concurrency` y `timeout-minutes` en `ci.yml`
 
+> **Hecho el 4/9/2026** (`74b977f`). `concurrency` con `cancel-in-progress` a
+> nivel workflow y `timeout-minutes` en los tres jobs — 20, 20 y 15, contra los
+> 10,6 / 9,7 / 4,6 medidos.
+
 **Evidencia.** Último run: 10,6 min (typecheck/lint/test/build) + 9,7 min
 (Playwright) + 4,6 min (reglas) = **~25 min por push**. Free tier privado:
 2.000 min/mes → ~80 pushes. `.github/workflows/ci.yml` no tiene `concurrency`
@@ -84,6 +88,10 @@ NO — esperá a que Cristian pushee algo real y confirmá en el run que aparece
 
 ### C2. Caché de `.next/cache` en el job de build
 
+> **Hecho el 4/9/2026** (`74b977f`). `actions/cache@v6` sobre
+> `apps/web/.next/cache`, con la key por lockfile + fuentes y el `restore-keys`
+> que cae al caché más nuevo del mismo lockfile.
+
 **Evidencia.** El job de build tarda 10,6 min y `grep -c "\.next/cache"
 .github/workflows/ci.yml` da 0. Next.js con Turbopack reutiliza esa carpeta
 entre builds si se la guardás.
@@ -99,6 +107,10 @@ de fuentes. Ponelo justo antes de `pnpm --filter web build`.
 
 ### C3. Medir el job de build y decidir si se parte
 
+> **Abierto, y condicionado**: la entrada dice «sólo si C2 no alcanza». C2 está
+> puesto y nadie comparó las duraciones antes y después, que es lo que decidiría
+> si esto hace falta. Medir primero, no partir.
+
 Sólo si C2 no alcanza. El job encadena install, typecheck, lint, vitest, tests
 del ingest, build y dos pasos de Python. Medir con `gh api
 repos/criscardozo/gastos/actions/runs/<id>/jobs` los `steps[].started_at
@@ -110,6 +122,10 @@ su propio install (~1 min).
 ## I — iOS: lo que hoy se traga errores
 
 ### I1. Tres listeners que descartan el error
+
+> **Hecho el 7/9/2026** (`148370f`). No queda ningún
+> `addSnapshotListener { snapshot, _ in }`: los ocho reportan con
+> `Self.reportListen`.
 
 **Evidencia.** `apps/ios/Gastos/Services/FirestoreService.swift`:
 ```
@@ -162,6 +178,9 @@ rechazo y ver el alert; si no, decir en el reporte que no se pudo ver.
 
 ### W1. Headers de seguridad HTTP
 
+> **Hecho el 4/9/2026** (`2dfaa7e`). Los cuatro headers en `next.config.ts`.
+> CSP sigue deliberadamente afuera, y el porqué está escrito ahí.
+
 **Evidencia.** `apps/web/next.config.ts` no emite ningún header de seguridad
 (`grep -nE "headers|Content-Security|X-Frame|Referrer|Permissions-Policy"` da
 vacío). CSP es difícil con el popup de Firebase Auth y el handler same-origin
@@ -181,6 +200,9 @@ un browser real — `X-Frame-Options: DENY` no lo afecta (el handler no va en
 iframe), pero verificalo, no lo asumas.
 
 ### W2. Los 19 warnings de lint, que son uno solo
+
+> **Hecho.** `pnpm --filter web lint` da **0 warnings**; cero de
+> `react-hooks/set-state-in-effect`.
 
 **Evidencia.** `pnpm --filter web lint`: 19 warnings, **todos**
 `react-hooks/set-state-in-effect` ("Calling setState synchronously within an
@@ -206,6 +228,11 @@ emuladores) si tocaste `providers.tsx` o `hooks.ts`.
 
 ### V1. Web: guardas en `converters.ts`
 
+> **Hecho.** Las guardas viven en `apps/web/src/lib/firebase/shape.ts`
+> (`isCalendarDate`, `isInt`, `isObject`, `isOneOf`, `isPositiveInt`,
+> `isMaybeEmptyString`) y `converters.ts` las usa. Sin `zod`, como pedía la
+> entrada. Los casts bajaron de 56 a 25.
+
 **Evidencia.** `apps/web/src/lib/firebase/converters.ts` tiene **56 casts
 `as`** y **cero** validación en runtime. Un documento con un campo mal
 (escrito por un cliente viejo, por el seed, o a mano) decodifica en un valor
@@ -228,6 +255,11 @@ falso que se muestra como bueno. Precedente: el seed escribió `users/{uid}` sin
 
 ### V2. iOS: los documentos que desaparecen
 
+> **Hecho.** `FirestoreService.decode(_:as:in:)` hace `do/catch` y loguea la
+> colección, el id del documento y el error en vez de descartarlo. Se llama
+> `decode`, no `decodeOrReport`. `GastosTests/ModelDecodingTests.swift` tiene 19
+> tests.
+
 **Evidencia.** `FirestoreService.swift` decodifica con
 `try? $0.data(as: X.self)` + `compactMap` en todos los listeners: un doc que no
 decodifica **desaparece sin rastro**. `Core/Models.swift` (451 líneas) no tiene
@@ -242,6 +274,10 @@ simulador, medido). Reemplazar los `compactMap { try? ... }`.
 **Verificar.** V3.
 
 ### V3. Tests de round-trip para los dos decodificadores
+
+> **Hecho.** `apps/web/src/lib/firebase/converters.test.ts`, 34 tests, y afirman
+> los rechazos —monto que no es entero positivo, fecha que no es de calendario,
+> período con límites al revés— no sólo el camino feliz.
 
 **Evidencia.** Sin tests: web `converters.ts` (319), `hooks.ts` (576),
 `mutations.ts` (886), `export/pdf.ts` + `spreadsheet.ts` (470); iOS
@@ -265,6 +301,11 @@ reporte (hoy: 270 TS, 94 Swift).
 ## B — Backup
 
 ### B1. `scripts/restore.mjs`
+
+> **Hecho, y desde el 14/9/2026 el script es compartido**
+> (`kyber/scripts/restore.mjs`): restaura al emulador salvo `--production`, que
+> además rechaza un dump de otro proyecto, uno que no se leyó de producción, y
+> pide tipear el id.
 
 **Evidencia.** `scripts/backup.mjs` vuelca todo semanalmente (artifact 90 días
 en `backup.yml`). **No existe restore** (`ls scripts/ | grep -i restore` →
@@ -290,6 +331,10 @@ emulador (el script de backup acepta host? si no, extendelo con la misma
 Documentá el procedimiento en `docs/setup.md`.
 
 ### B2. Chequeo semanal de drift de las reglas
+
+> **Hecho el 4/9/2026** (`542d547`). El job semanal corre
+> `check-rules-drift` con la misma credencial y falla si el ruleset desplegado no
+> es el del repo.
 
 **Evidencia.** El deploy de reglas es manual (`firebase deploy --only
 firestore:rules ...`) y nada comprueba que lo publicado sea lo que está en
@@ -329,6 +374,10 @@ core.hooksPath .githooks` en `docs/setup.md`. Sin herramientas nuevas
 
 ### P2. `pnpm test:rules` cuando el 8080 está ocupado
 
+> **Hecho, y desde el 14/9/2026 en kyber.** El runner pide el puerto propio
+> primero y cae a uno efímero sólo si está tomado; `FIRESTORE_EMULATOR_PORT` lo
+> fija y, si está ocupado, **falla nombrándolo** en vez de correr en otro lado.
+
 **Evidencia.** `firebase/rules-tests` corre `firebase emulators:exec --config
 ../firebase.json` con el puerto 8080 fijo; si está tomado, falla con "port
 taken". Pasó dos veces el 4/9.
@@ -341,6 +390,12 @@ de Auth si el e2e lo necesita. Documentar en `CLAUDE.md` → Commands.
 
 ### P3. Docs desactualizadas
 
+> **Hecho.** El README de iOS ya dice «it is not a tab any more» y `CLAUDE.md`
+> lleva el `--project qcris-gastos-diarios` con su motivo. El 14/9/2026 se
+> corrigieron además `docs/setup.md` —mandaba a los puertos default viejos, que
+> acá son forwards de SSH— y el README, que seguía diciendo que Servicios y
+> Tarjetas eran sólo web.
+
 - `apps/ios/README.md:60`: "opens straight into the **quick-entry tab**" —
   ya no hay tab; el intent abre un modal sobre la pantalla actual.
 - `CLAUDE.md` → Commands: agregar la línea del emulador con
@@ -352,6 +407,11 @@ de Auth si el e2e lo necesita. Documentar en `CLAUDE.md` → Commands.
 ## R — iOS: deuda visible en el build
 
 ### R1. Warnings de iOS 26
+
+> **Hecho.** Build limpio del 14/9/2026 con `SWIFT_STRICT_CONCURRENCY: complete`
+> y 732 tareas de compilación: quedan 2 warnings de `AttributeScopes` de SwiftUI
+> —del SDK, con `<unknown>:0`— y el aviso de AppIntents. Ninguno accionable
+> desde este repo.
 
 **Evidencia** (build limpio del 4/9):
 - **7×** `'+' was deprecated in iOS 26.0: Use string interpolation on Text` —
@@ -392,6 +452,8 @@ que se intentó y por qué falló.
 
 ### R3. Cinco cadenas incompletas en `Localizable.xcstrings`
 
+> **Hecho.** Cero cadenas en estado `new` en `Localizable.xcstrings`.
+
 **Evidencia.** `' · %@ '`, `'$'`, `'%@ · %@'` (literales de formato extraídos
 por accidente: buscá dónde se usan y, si son `Text("...")` con
 interpolación, marcá con `Text(verbatim:)` o sacalos del catálogo) y
@@ -399,6 +461,8 @@ interpolación, marcá con `Text(verbatim:)` o sacalos del catálogo) y
 en `App/QuickEntryIntent.swift`; les falta el inglés).
 
 ### R4. README de iOS
+
+> **Hecho.** Cubierto en P3.
 
 Cubierto en P3.
 
@@ -454,6 +518,8 @@ warnings, arreglá los de `FirestoreService`/`AppModel` primero. Si son más de
 
 ### D1. `periodBudgets` sin cota
 
+> **Hecho.** El listener de `periodBudgets` lleva `limit`.
+
 **Evidencia.** Los dos clientes escuchan la colección completa:
 `apps/web/src/components/providers.tsx:322` (`orderBy("startDate", "desc")`,
 sin `limit`) y `FirestoreService.swift:~100` (`.order(by: "startDate")`). A
@@ -474,6 +540,8 @@ mismo commit** y `shared/schema.md` lo documenta. Corré los vectores
 
 ### G1. Partir `AppModel.swift`
 
+> **Abierto.** `AppModel.swift` sigue en **1.094 líneas**.
+
 **Evidencia.** 1.336 líneas, 18 secciones `MARK` (auth, onboarding, períodos,
 gastos, cargos bancarios, ajustes, categorías, widget). `ServicesStore` y
 `CardsStore` (en `Features/Services/ServicesView.swift` y
@@ -487,6 +555,9 @@ todo depende de ellos. Un commit por store extraído, tests en verde en cada
 uno. **No cambies comportamiento** mientras partís.
 
 ### G2. Partir `apps/web/src/app/gastos/page.tsx` y `datos/page.tsx`
+
+> **Sigue abierto tras el parcial.** Medido el 14/9/2026: `gastos/page.tsx` 983
+> líneas, `datos/page.tsx` 579.
 
 > **Parcial el 10/9/2026** (`ef90439`). Se extrajo `useExpenseFilters`, que es
 > el hook que esta entrada nombra: mejora la cohesión y NO el tamaño (974 →
