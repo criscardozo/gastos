@@ -28,8 +28,10 @@ Decidido el 10 de septiembre de 2026, con 258 commits y ningún tag.
   `major`, que acá no quiere decir "cambio grande" sino que un cliente viejo no
   puede seguir contra los datos nuevos. Vale igual para los tres proyectos:
   todos tienen un teléfono que puede quedarse atrás.
-- **La versión se mueve con `node scripts/set-version.mjs <x.y.z>`, nunca a
-  mano.** Vive en cuatro lugares que no se leen entre sí: el `package.json` de
+- **La versión se mueve con `pnpm version:set <x.y.z>`, nunca a mano.** El
+  script es el compartido (`kyber/scripts/set-version.mjs`) y rechaza **antes
+  de escribir** si falta un target de los nombrados, si uno no nombrado lleva
+  versión, o si algún `CFBundleShortVersionString` es un literal. Vive en cuatro lugares que no se leen entre sí: el `package.json` de
   web (que `next.config.ts` publica como `NEXT_PUBLIC_APP_VERSION`, y se ve en
   Ajustes y en la pantalla de error) y `MARKETING_VERSION` tres veces en
   `project.yml`, para app, widget y watch. Ya habían divergido antes de que
@@ -757,10 +759,11 @@ claves de este proyecto, que es lo que no viaja:
   importa desde `CLAUDE.md`. Una regla entra ahí cuando **se ganó en dos
   proyectos**, no cuando suena general: sin ese filtro, en seis meses es una
   lista de deseos.
-- **Pendiente de mudarse** (segunda tanda): `scripts/set-version.mjs` con su
-  guarda, `.githooks/pre-push`, el método de `design-system/emit.py` con
+- **Pendiente de mudarse** (segunda tanda): el método de `design-system/emit.py` con
   `tokens.json` partido —tipografía, radios y espaciados compartidos, la paleta
-  de cada app en su repo—, y la parte transferible de la sección 7. De esa
+  de cada app en su repo—, y la parte transferible de la sección 7. `set-version`
+  y `verify-pwa` **ya se mudaron**; `.githooks/pre-push` **no entra**: sólo
+  existe acá, así que está ganado en un proyecto y no en dos. De esa
   sección viaja el método, no el caso: si al sacarle el artefacto concreto la
   regla deja de decir algo, todavía no estaba lista para viajar. Por eso la
   prosa compartida **no nombra un puerto**.

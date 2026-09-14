@@ -7,5 +7,26 @@
   "rulesTestsDir": "firebase/rules-tests",
   "restore": {
     "legacyIsoTimestamps": true
+  },
+  "iosTargets": [
+    "Gastos",
+    "GastosWidget",
+    "GastosWatch"
+  ],
+  "pwa": {
+    "port": 3112,
+    "entry": "/",
+    "precachedRoutes": [
+      "/",
+      "/nuevo",
+      "/gastos",
+      "/estadisticas",
+      "/ajustes",
+      "/datos"
+    ],
+    "minStaticAssets": 10,
+    "offlineText": "Gastos",
+    "deepRoute": "/nuevo",
+    "signedOutText": "Continuar con Google"
   }
 }

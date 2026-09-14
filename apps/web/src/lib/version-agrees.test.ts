@@ -16,7 +16,10 @@ import { join } from "node:path";
  * no version at all, because both screens answer confidently and a screenshot
  * of one says nothing about the other.
  *
- * Move them with `node scripts/set-version.mjs <x.y.z>`, never by hand.
+ * Move them with `pnpm version:set <x.y.z>` (kyber/scripts/set-version.mjs),
+ * never by hand. That script refuses before writing anything if a named target
+ * is missing, if an unnamed one carries a version, or if any plist key is a
+ * literal — so the checks below are the ones a change can still walk past.
  */
 describe("the app version", () => {
   const ROOT = join(import.meta.dirname, "../../../..");
@@ -24,8 +27,12 @@ describe("the app version", () => {
 
   const WEB = /"version":\s*"([^"]+)"/.exec(read("apps/web/package.json"))?.[1];
 
-  /** The iOS targets that carry a version, BY NAME, in project.yml order. */
-  const IOS_TARGETS = ["Gastos", "GastosWidget", "GastosWatch"] as const;
+  /**
+   * The iOS targets that carry a version, BY NAME — from the same place the
+   * shared script reads them, not a second list beside it. Two lists of target
+   * names is the shape this whole file exists to complain about.
+   */
+  const IOS_TARGETS: string[] = JSON.parse(read(".kyber/config.json")).iosTargets;
 
   /** `{ Gastos: "1.1.0", ... }` — which target says what, not how many say it. */
   const IOS: Record<string, string> = (() => {
@@ -63,7 +70,7 @@ describe("the app version", () => {
     ).toEqual([]);
 
     const unexpected = Object.keys(IOS).filter(
-      (t) => !IOS_TARGETS.includes(t as (typeof IOS_TARGETS)[number]),
+      (t) => !IOS_TARGETS.includes(t),
     );
     expect(
       unexpected,
@@ -82,7 +89,7 @@ describe("the app version", () => {
     // pushed — which is to say it depended on somebody remembering, and the
     // script that moves the four copies never mentioned git at all.
     //
-    // Flow: `node scripts/set-version.mjs x.y.z`, commit, `git tag -a vx.y.z`,
+    // Flow: `pnpm version:set x.y.z`, commit, `git tag -a vx.y.z`,
     // `git push --follow-tags`. Forget the tag and this goes red.
     const tags = execFileSync("git", ["tag", "-l"], { cwd: ROOT, encoding: "utf8" })
       .split("\n")
