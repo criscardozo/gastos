@@ -55,7 +55,7 @@ All JS commands run from the repo root (pnpm workspace):
 - Exports live in `apps/web/src/lib/export/`: `pdf.ts` (jsPDF) and `spreadsheet.ts` (exceljs) render the SAME payload, so Excel/Sheets mirror the PDF. Every export carries both money columns (AUD + the bank's USD, blank when unverified) and a range with unverified expenses is only exported after the consent checkbox is ticked; `drive.ts` uploads the workbook to Drive converted to a Google Sheet (needs the Drive API enabled — see `docs/setup.md`). Both libraries are dynamically imported to stay out of the first-load bundle.
 - `pnpm verify:pwa` — PWA smoke check (service worker + offline cold start). Needs a PRODUCTION build already serving: `pnpm build && pnpm --filter web exec next start -p 3112`.
 - `pnpm test:rules` — Firestore rules tests. Picks a FREE port rather than
-  insisting on one (`firebase/rules-tests/run-tests.mjs`) — it tries the
+  insisting on one (`kyber/scripts/run-rules-tests.mjs`, shared) — it tries the
   project's own port first and falls back only if it is taken, because on this
   machine a port is often held by a Docker stack or a leftover emulator and the
   failure read as a broken test run. Pin one with `FIRESTORE_EMULATOR_PORT`.

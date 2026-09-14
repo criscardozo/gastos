@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node run-tests.mjs"
+    "test": "node ../../kyber/scripts/run-rules-tests.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",

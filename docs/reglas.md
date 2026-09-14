@@ -580,7 +580,8 @@ acaba de pedir.
   describirlo —Firestore, `UIFontMetrics`, un forward de SSH, la caché
   optimista— y ninguna sobre su propio código. Acá el reparto es mitad y mitad:
   dos sobre herramientas (la caché de Firestore, la spec de CSP) y dos sobre
-  artefactos nuestros (el mensaje de `run-tests.mjs` y la cabecera del spec).
+  artefactos nuestros (el mensaje del runner de rules —hoy en kyber— y la
+  cabecera del spec).
   Así que la protección no es «desconfiá de lo que digas sobre una herramienta»:
   las dos nuestras eran datos que fueron ciertos y dejaron de serlo, que es un
   modo de falla distinto y no lo arregla ninguna medición inicial. A ésas las
