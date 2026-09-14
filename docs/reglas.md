@@ -752,6 +752,28 @@ claves de este proyecto, que es lo que no viaja:
   sección viaja el método, no el caso: si al sacarle el artefacto concreto la
   regla deja de decir algo, todavía no estaba lista para viajar. Por eso la
   prosa compartida **no nombra un puerto**.
+- **Nada de `apps/web` puede venir de kyber mientras kyber sea privado.** Vercel
+  no clona un submódulo privado —lo dice su documentación y lo medimos dos veces
+  en deploys reales— y **no avisa fuerte**: una línea de `Warning:` y el build
+  sigue en verde sin el submódulo. Hoy no molesta porque el bundle no importa
+  nada de ahí; lo sostiene `apps/web/src/lib/kyber.test.ts`, que falla si algo
+  empieza a alcanzarlo por import, por `@source` de Tailwind o por un alias del
+  tsconfig. Scripts, hooks, tests y CI no se ven afectados: corren donde el
+  submódulo sí está.
+- **`dates.ts` NO es candidato, y no por lo de arriba.** Nuestro `dates.ts` es
+  formateo; el de Stock, que se llama igual, es aritmética de calendario. Cero
+  nombres exportados en común: son dos módulos distintos con el mismo nombre de
+  archivo. Lo que sí se parece es nuestro `periods.ts` contra ese `dates.ts`
+  —`addDays` y `daysBetween` idénticos, más `todayInTimezone`/`todayIn`,
+  `containsDate`/`isWithin`, `periodLengthDays`/`lengthInDays`—, y tampoco viaja:
+  esas primitivas están entretejidas con `cascadeMaterialization` y
+  `stretchPeriodTo`, que se validan contra `shared/period-test-vectors.json`
+  junto con su gemelo Swift. Sacarlas partiría algo que los vectores sostienen
+  entero, para deduplicar unas pocas líneas.
+
+  La comparación por **nombre de archivo** decía cero solapamiento y la
+  comparación por **concepto** encontró cinco. La conclusión no cambió; el
+  motivo sí, y era el que iba a quedar escrito.
 
 ## Referencias
 
