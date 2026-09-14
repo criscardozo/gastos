@@ -7,10 +7,21 @@
 # worth running locally: anything slower gets skipped with --no-verify until
 # the hook is decoration.
 #
-# Deliberately NOT here: the test suites, the build, the emulator. Those are
-# CI's job. A pre-push hook that takes a minute is one somebody learns to
-# bypass, and a hook that is always bypassed is worse than none — it looks
-# like a guard on the way in.
+# The web suite joined them on 15/9/2026, and the reason it had been left out no
+# longer held. That reason was time — "a hook that takes a minute is one
+# somebody learns to bypass" — and it was written about a hypothetical.
+# Measured: the 472 tests take ONE second, typecheck one, the token check under
+# one. The whole hook is about three.
+#
+# What put it here is a push that should not have happened. The suite was run,
+# it was red, and the commit and the push went out anyway, because they were
+# chained with `;` instead of `&&` — so the failure never reached the step it
+# should have stopped. Running a check before an action is not the same as the
+# action depending on the check. A hook is where it depends.
+#
+# Still NOT here: the build, the emulator, the e2e. Those cost minutes and are
+# CI's job. A hook that is always bypassed is worse than none — it looks like a
+# guard on the way in.
 #
 # Install once:  git config core.hooksPath .githooks
 # Skip once:     git push --no-verify
@@ -22,5 +33,8 @@ python3 design-system/emit.py --verify
 
 echo "pre-push: typecheck…"
 pnpm --filter web typecheck
+
+echo "pre-push: tests…"
+pnpm --filter web test
 
 echo "pre-push: ok"
