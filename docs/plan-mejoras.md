@@ -107,9 +107,25 @@ de fuentes. Ponelo justo antes de `pnpm --filter web build`.
 
 ### C3. Medir el job de build y decidir si se parte
 
-> **Abierto, y condicionado**: la entrada dice «sólo si C2 no alcanza». C2 está
-> puesto y nadie comparó las duraciones antes y después, que es lo que decidiría
-> si esto hace falta. Medir primero, no partir.
+> **Medido el 14/9/2026, y la respuesta es NO partir.** La entrada estaba
+> condicionada a «sólo si C2 no alcanza», y alcanzó de sobra:
+>
+> | | el plan decía | medido hoy |
+> |---|---|---|
+> | web (typecheck, lint, test, build) | 10,6 min | **2,0** |
+> | Playwright e2e | 9,7 min | **3,2** |
+> | reglas | 4,6 min | **1,1** |
+> | **total por push** | **~25 min** | **6,4** |
+>
+> Los pasos del job de build, del run más reciente: PWA 38s, lint 17s, install
+> 16s, typecheck 9s, tests 7s y **build 7s** — que es el caché de C2 haciendo su
+> trabajo. Partirlo agregaría un install (~16s) por job nuevo para repartir dos
+> minutos, o sea que costaría más de lo que ahorra.
+>
+> Vale anotar por qué el número del plan estaba tan lejos: se midió **antes** de
+> C1 y C2 y nunca se volvió a medir, así que la entrada que decidía si partir un
+> job razonaba sobre un job que ya no existía. Es la misma forma que tenía el
+> resto de este documento.
 
 Sólo si C2 no alcanza. El job encadena install, typecheck, lint, vitest, tests
 del ingest, build y dos pasos de Python. Medir con `gh api
