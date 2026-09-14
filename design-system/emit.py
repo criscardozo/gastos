@@ -20,6 +20,17 @@ REPO = ROOT.parents[0]
 TOKENS = json.loads((ROOT / "tokens.json").read_text())
 CSS = REPO / "apps/web/src/app/globals.css"
 SWIFT = REPO / "apps/ios/Gastos/Design/Theme.swift"
+# The widget is a THIRD copy of these values and was outside the generator, so
+# nothing held it: its target deliberately depends on nothing from the app, so
+# it carries its own `Color.widgetHex` with the same signature. Measured on
+# 14/9/2026 it matched the app hex for hex — which is to say somebody was tidy
+# once, the same guarantee the web PNGs had before this script existed.
+#
+# It carries a SUBSET (bg, ink, inkSecondary, inkTertiary, track); the rewrite
+# below is a no-op for a token a file does not name, so the subset needs no
+# list of its own to go stale.
+WIDGET = REPO / "apps/ios/GastosWidget/WidgetTheme.swift"
+SWIFT_TARGETS = ((SWIFT, "Color.hex"), (WIDGET, "Color.widgetHex"))
 
 
 def flat() -> list[tuple[str, dict]]:
@@ -37,14 +48,14 @@ def css_value(v) -> str:
     return f"rgba({r}, {g}, {b}, {v['alpha']})"
 
 
-def swift_value(entry: dict) -> str | None:
+def swift_value(entry: dict, helper: str = "Color.hex") -> str | None:
     name = entry.get("$extensions", {}).get("gastos.swift")
     if not name:
         return None
     lv, dv = entry["$value"]["light"], entry["$value"]["dark"]
     if isinstance(lv, str):
-        return f'static let {name} = Color.hex(light: "{lv.upper()}", dark: "{dv.upper()}")'
-    return (f'static let {name} = Color.hex(light: "{lv["base"].upper()}", '
+        return f'static let {name} = {helper}(light: "{lv.upper()}", dark: "{dv.upper()}")'
+    return (f'static let {name} = {helper}(light: "{lv["base"].upper()}", '
             f'dark: "{dv["base"].upper()}", lightAlpha: {lv["alpha"]:.2f}, '
             f'darkAlpha: {dv["alpha"]:.2f})')
 
@@ -94,7 +105,8 @@ def coverage() -> list[str]:
 
 def verify() -> int:
     """Every emitted declaration must appear verbatim in the file it targets."""
-    css_text, swift_text = CSS.read_text(), SWIFT.read_text()
+    css_text = CSS.read_text()
+    swift_texts = {path: path.read_text() for path, _ in SWIFT_TARGETS}
     missing = []
     light, dark = emit_css()
     for line in light + dark:
@@ -102,11 +114,19 @@ def verify() -> int:
         # so compare on the stripped declaration.
         if line.strip() not in css_text:
             missing.append(f"CSS    {line.strip()}")
+    swift_checked = 0
     for _, entry in flat():
-        line = swift_value(entry)
-        if line and line not in swift_text:
-            missing.append(f"Swift  {line}")
-    total = len(light) + len(dark) + sum(1 for _, e in flat() if swift_value(e))
+        name = entry.get("$extensions", {}).get("gastos.swift")
+        for path, helper in SWIFT_TARGETS:
+            line = swift_value(entry, helper)
+            # Only what the file actually names: the widget carries a subset,
+            # and demanding the full set there would make this fail on a truth.
+            if not line or not name or f"static let {name} = {helper}(" not in swift_texts[path]:
+                continue
+            swift_checked += 1
+            if line not in swift_texts[path]:
+                missing.append(f"{path.name}  {line}")
+    total = len(light) + len(dark) + swift_checked
     if missing:
         print(f"  {len(missing)} de {total} declaraciones NO coinciden con el código:")
         for m in missing:
@@ -138,7 +158,8 @@ def write() -> int:
     "regenerate and see that nothing changed", which is stronger than comparing
     text because it proves the files can be rebuilt, not merely that they match.
     """
-    css, swift = CSS.read_text(), SWIFT.read_text()
+    css = CSS.read_text()
+    swift = {path: path.read_text() for path, _ in SWIFT_TARGETS}
 
     for css_name, entry in flat():
         lv = css_value(entry["$value"]["light"])
@@ -157,15 +178,22 @@ def write() -> int:
             out.append(line)
         css = "\n".join(out)
 
-        line = swift_value(entry)
-        if line:
+        for path, helper in SWIFT_TARGETS:
+            line = swift_value(entry, helper)
+            if not line:
+                continue
             name = entry["$extensions"]["gastos.swift"]
-            swift = re.sub(rf"^(\s*)static let {name} = Color\.hex\([^)]*\)$",
-                           lambda m: m.group(1) + line, swift, flags=re.M)
+            # A no-op where the file does not name this token, which is how the
+            # widget's subset stays a subset without a list to maintain.
+            swift[path] = re.sub(
+                rf"^(\s*)static let {name} = {re.escape(helper)}\([^)]*\)$",
+                lambda m: m.group(1) + line, swift[path], flags=re.M)
 
     CSS.write_text(css)
-    SWIFT.write_text(swift)
-    print(f"  reescritos desde tokens.json:\n    {CSS.relative_to(REPO)}\n    {SWIFT.relative_to(REPO)}")
+    for path, _ in SWIFT_TARGETS:
+        path.write_text(swift[path])
+    written = "\n    ".join(str(p.relative_to(REPO)) for p in (CSS, *(p for p, _ in SWIFT_TARGETS)))
+    print(f"  reescritos desde tokens.json:\n    {written}")
     return 0
 
 

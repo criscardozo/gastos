@@ -68,7 +68,8 @@ jobs:
             ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-
             ${{ runner.os }}-next-
       - run: pnpm --filter web build
-      # globals.css and Theme.swift are GENERATED from design-system/tokens.json.
+      # globals.css, Theme.swift and WidgetTheme.swift are GENERATED from
+      # design-system/tokens.json.
       # Regenerating must be a no-op: if it is not, someone edited a token in one
       # of the two platforms by hand, which is how the dark warning text ended up
       # under the AA contrast floor on web only. Stronger than comparing text,
@@ -77,7 +78,7 @@ jobs:
       - name: Design tokens rebuild both platforms unchanged
         run: |
           python3 design-system/emit.py --write
-          git diff --exit-code apps/web/src/app/globals.css apps/ios/Gastos/Design/Theme.swift
+          git diff --exit-code apps/web/src/app/globals.css apps/ios/Gastos/Design/Theme.swift apps/ios/GastosWidget/WidgetTheme.swift
       - name: Component anatomy is attributable and representative
         run: python3 design-system/emit.py --verify
       # The PWA is how the app stays on the phone, so "does it still start with

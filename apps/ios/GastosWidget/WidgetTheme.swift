@@ -40,7 +40,7 @@ enum WidgetTheme {
     static let inkSecondary = Color.widgetHex(light: "#8F8272", dark: "#A2937F")
     static let inkTertiary = Color.widgetHex(light: "#B4A794", dark: "#6E6153")
     /// Progress track (light .08 / dark .09 per design).
-    static let track = Color.widgetHex(light: "#241A10", dark: "#F6EEE2", lightAlpha: 0.08, darkAlpha: 0.09)
+    static let track = Color.widgetHex(light: "#241A10", dark: "#F6EEE2", lightAlpha: 0.08, darkAlpha: 0.08)
     static let red = Color(hex: "#E5484D")
     /// Brand coral and the cream that sits on it (the mark's two colours).
     static let accent = Color(hex: "#FF5C39")
