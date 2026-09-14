@@ -29,7 +29,7 @@ catalog:
   # @types/node 26 would describe APIs this Node does not have — the types
   # would compile and the program would not. `pnpm outdated` calls this stale;
   # it is aligned. Move it when the Node version moves.
-  '@types/node': ^24.13.3
+  '@types/node': ^24.13.4
 allowBuilds:
   '@firebase/util': true
   '@parcel/watcher': true
