@@ -26,7 +26,7 @@ OUT = Path(__file__).parent / "out"
 FONT = Path(__file__).parents[3] / "apps/ios/Gastos/Resources/Fonts/Outfit-Variable.ttf"
 
 H = 256  # banner height; the mark is inset from it
-PAD = 28
+PAD = 34
 
 
 def wordmark(text: str, fill: str, size: float, x: float, y: float) -> str:
@@ -61,15 +61,72 @@ def wordmark(text: str, fill: str, size: float, x: float, y: float) -> str:
     return "\n  ".join(out), pen_x * s
 
 
+def ink_box() -> dict:
+    """Where the mark's INK actually falls on the 96 grid, measured.
+
+    `CONTENT` in build-icon.py is the mark's geometry — "tail to snout" — and
+    the tail is a 4.2-wide stroke with round caps, so the drawing reaches about
+    five units further left than the box says. Laying out from `CONTENT` gave a
+    left inset of 27px against 47 top and bottom: tight on one side, and for a
+    reason nothing in the numbers showed.
+    """
+    import tempfile
+
+    s = 8.1
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" '
+        f'viewBox="0 0 1024 1024">{mark(CREAM, CORAL, s)}</svg>'
+    )
+    with tempfile.TemporaryDirectory() as d:
+        Path(d, "m.svg").write_text(svg)
+        subprocess.run(
+            ["rsvg-convert", "-w", "1024", f"{d}/m.svg", "-o", f"{d}/m.png"], check=True
+        )
+        px = subprocess.run(
+            ["magick", f"{d}/m.png", "-trim", "-format", "%[fx:page.x] %w %[fx:page.y] %h", "info:"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
+    x, w, y, h = (float(v) for v in px)
+    cx = (CONTENT["x0"] + CONTENT["x1"]) / 2
+    cy = (CONTENT["y0"] + CONTENT["y1"]) / 2
+    # `mark` puts the CONTENT centre at 512,512 and scales by `s`; invert that.
+    return {
+        "x0": cx + (x - 512) / s,
+        "x1": cx + (x + w - 512) / s,
+        "y0": cy + (y - 512) / s,
+        "y1": cy + (y + h - 512) / s,
+    }
+
+
 def banner(variant: str) -> str:
     """Three shapes, one mark. See the README of this directory for the choice."""
-    scale = (H - 2 * PAD) / (CONTENT["y1"] - CONTENT["y0"])
-    # `mark` centres on a 1024 canvas; re-centre it on a square of side H.
-    tile = f'<g transform="translate({-512 + H / 2:.2f} {-512 + H / 2:.2f})">{mark(*MARKS[variant], scale)}</g>'
+    # Every inset is stated, not inherited, and measured rather than assumed.
+    ink = ink_box()
+    box = H - 2 * PAD
+    cw = ink["x1"] - ink["x0"]
+    ch = ink["y1"] - ink["y0"]
+    scale = min(box / ch, box / cw)
+    mw = cw * scale
+    # `mark` centres its CONTENT box on 512,512; the ink's centre sits elsewhere,
+    # so the offset between the two is what has to be taken out.
+    cx = (CONTENT["x0"] + CONTENT["x1"]) / 2
+    cy = (CONTENT["y0"] + CONTENT["y1"]) / 2
+    drift_x = ((ink["x0"] + ink["x1"]) / 2 - cx) * scale
+    drift_y = ((ink["y0"] + ink["y1"]) / 2 - cy) * scale
+    place = (
+        f"translate({PAD + mw / 2 - 512 - drift_x:.2f} {H / 2 - 512 - drift_y:.2f})"
+    )
+    tile = f'<g transform="{place}">{mark(*MARKS[variant], scale)}</g>'
+    GAP = PAD  # between mark and word, same as the edges
+
+    text_x = PAD + mw + GAP
+    baseline = H / 2 + 46
 
     if variant == "a":  # coral field, cream mark and word — the app icon, widened
-        text, w = wordmark("Gastos", CREAM, 132, H + 8, H / 2 + 46)
-        total = H + 8 + w + PAD * 2
+        text, w = wordmark("Gastos", CREAM, 132, text_x, baseline)
+        total = text_x + w + PAD
         return _svg(
             total,
             f'<rect width="{total}" height="{H}" rx="{H / 5:.0f}" fill="url(#bg)"/>',
@@ -78,15 +135,13 @@ def banner(variant: str) -> str:
         )
 
     if variant == "b":  # transparent field, coral mark, ink word
-        text, w = wordmark("Gastos", INK, 132, H + 8, H / 2 + 46)
-        total = H + 8 + w
-        return _svg(total, "", tile + "\n  " + text, bg=None)
+        text, w = wordmark("Gastos", INK, 132, text_x, baseline)
+        return _svg(text_x + w, "", tile + "\n  " + text, bg=None)
 
     # "c": rounded coral tile beside an ink word, on nothing
-    text, w = wordmark("Gastos", INK, 132, H + 24, H / 2 + 46)
-    total = H + 24 + w
+    text, w = wordmark("Gastos", INK, 132, text_x, baseline)
     tile_bg = f'<rect width="{H}" height="{H}" rx="{H * 0.2237:.1f}" fill="url(#bg)"/>'
-    return _svg(total, "", tile_bg + "\n  " + tile + "\n  " + text, bg=(CORAL, CORAL_DEEP))
+    return _svg(text_x + w, "", tile_bg + "\n  " + tile + "\n  " + text, bg=(CORAL, CORAL_DEEP))
 
 
 MARKS = {
