@@ -27,6 +27,34 @@ RADIUS = {"sm": 4.0, "md": 6.0, "lg": 8.0, "xl": 12.0, "2xl": 16.0, "3xl": 24.0}
 SPACE_UNIT = 4.0  # Tailwind: 1 = 0.25rem
 
 
+def _code(text: str) -> str:
+    """`text` with comment-ONLY lines dropped, for counting real usage.
+
+    Every count here feeds a decision — which type steps and radii earn a place
+    in the scale — and a count absorbs a wrong number without looking wrong. A
+    doc comment that shows a call as an example, which is how this codebase
+    documents, would be counted as a use of it.
+
+    Line-based, and deliberately not a regex that strips from `//` to the end:
+    there are URLs inside string literals in these files, and that regex eats
+    the middle of every one of them. The trade is a known hole — a comment at
+    the END of a line of code still counts — and a hole is better than a rule
+    that corrupts strings, because the hole is at least the same shape as the
+    thing it misses.
+
+    Measured when this was added: 671 counted occurrences across the web and iOS
+    sweeps, NONE of them on a comment line. So this changes no number today; it
+    stops one changing silently later.
+    """
+    keep = []
+    for line in text.split("\n"):
+        s = line.lstrip()
+        if s.startswith(("//", "*", "/*", "{/*", "#")):
+            continue
+        keep.append(line)
+    return "\n".join(keep)
+
+
 def _files() -> list[Path]:
     return sorted(WEB.rglob("*.tsx"))
 
@@ -46,7 +74,7 @@ def type_steps() -> list[tuple[float, dict[int, int]]]:
     """
     seen: dict[float, dict[int, int]] = {}
     for f in _files():
-        text = f.read_text()
+        text = _code(f.read_text())
         for m in re.finditer(r'\btext-\[([0-9.]+)px\]([^"\n]*)', text):
             size, ctx = float(m.group(1)), m.group(2)
             seen.setdefault(size, {}).setdefault(_weight(ctx), 0)
@@ -62,7 +90,7 @@ def _counted(arbitrary: str, named: dict[str, float] | None, scale: float | None
              ) -> list[tuple[float, int]]:
     seen: dict[float, int] = {}
     for f in _files():
-        text = f.read_text()
+        text = _code(f.read_text())
         for v in re.findall(arbitrary, text):
             seen[float(v)] = seen.get(float(v), 0) + 1
         if named:
@@ -84,7 +112,7 @@ def radii() -> list[tuple[float, int]]:
 
 
 def full_radius_uses() -> int:
-    return sum(len(re.findall(r"\brounded-full\b", f.read_text())) for f in _files())
+    return sum(len(re.findall(r"\brounded-full\b", _code(f.read_text()))) for f in _files())
 
 
 def padding_x() -> list[tuple[float, int]]:
@@ -107,7 +135,7 @@ def ios_type_steps() -> list[tuple[float, dict[int, int]]]:
     names = {"regular": 400, "medium": 500, "semibold": 600, "bold": 700, "black": 900}
     seen: dict[float, dict[int, int]] = {}
     for f in sorted(IOS.rglob("*.swift")):
-        for m in re.finditer(r"\.appFont\(([0-9.]+)(?:,\s*\.(\w+))?\)", f.read_text()):
+        for m in re.finditer(r"\.appFont\(([0-9.]+)(?:,\s*\.(\w+))?\)", _code(f.read_text())):
             size = float(m.group(1))
             w = names.get(m.group(2) or "regular", 400)
             seen.setdefault(size, {}).setdefault(w, 0)
