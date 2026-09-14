@@ -404,6 +404,29 @@ Cubierto en P3.
 
 ### R5. `SWIFT_STRICT_CONCURRENCY: minimal` → `complete` (aparte, con tiempo)
 
+> **Medido el 14/9/2026, y frenado como dice la entrada.** Con `complete` el
+> build pasa pero deja **31 warnings**, justo en el umbral de «más de ~30,
+> reportá y frená». No son treinta y un problemas distintos: son cinco clases.
+>
+> | clase | cuántos |
+> |---|---|
+> | `cannot form key path that captures non-Sendable type` | 20 |
+> | `static property is not concurrency-safe` | 4 |
+> | `sending 'X' risks causing data races` | 2 |
+> | `capture of non-Sendable in a closure` | 2 |
+> | `nil coalescing sobre un no-opcional` | 2 |
+>
+> Los últimos dos no eran de concurrencia sino código muerto propio, y se
+> arreglaron ese día. El bloque grande son los `\.propiedad` sobre tipos que
+> no son `Sendable`, que es una sola decisión repetida veinte veces.
+>
+> Se dejó en `minimal`. Cambiar aislamiento de actores puede mover
+> comportamiento en runtime, y la verificación en simulador está trabada por
+> otra cosa (la pantalla de período nuevo que no aparece), así que hacerlo
+> ahora sería cambiar concurrencia sin poder mirar la app. Merece su propio
+> rato.
+
+
 `apps/ios/project.yml:46`. Con Swift 5.10 en Xcode 26, `complete` muestra las
 carreras que Swift 6 va a convertir en errores. Hacelo en una rama, contá los
 warnings, arreglá los de `FirestoreService`/`AppModel` primero. Si son más de

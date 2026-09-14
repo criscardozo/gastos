@@ -452,7 +452,7 @@ final class AppModel {
         let filed = Set(suggestionExpenses.compactMap(\.filedFromChargeId))
         return BankChargeInbox.partition(myBankCharges, now: Date())
             .dismissed
-            .filter { !filed.contains($0.id ?? "") }
+            .filter { !filed.contains($0.id) }
     }
 
     /// One suggestion per pending charge, matched against the expenses already
