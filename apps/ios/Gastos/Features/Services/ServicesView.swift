@@ -58,12 +58,7 @@ struct ServicesView: View {
                             candidates: store.statuses[service.id]?.charge == nil
                                 ? store.unmatchedExpenses : [],
                             onLink: { expense in
-                                store.linkExpense(
-                                    expense,
-                                    to: service,
-                                    householdId: model.household?.id,
-                                    db: model.db
-                                )
+                                store.linkExpense(expense, to: service, model: model)
                             }
                         )
                     }
@@ -375,15 +370,22 @@ final class ServicesStore {
     }
 
     /// Point an expense's note at a service. Renaming the note IS the link.
+    ///
+    /// Through `model.write` rather than a bare `Task { try? ... }`: a write
+    /// the rules refuse is applied in the local cache and dropped by the
+    /// server, so swallowing the error makes the app show a link that does not
+    /// exist. `write` raises the same alert every other write in the app does.
+    /// I wrote this the silent way first, in the same session as reading the
+    /// plan entry that says not to.
     func linkExpense(
         _ expense: Expense,
         to service: ServiceDoc,
-        householdId: String?,
-        db: FirestoreService
+        model: AppModel
     ) {
-        guard let householdId, let expenseId = expense.id else { return }
-        Task {
-            try? await db.renameExpenseNote(
+        guard let householdId = model.household?.id, let expenseId = expense.id
+        else { return }
+        model.write {
+            try await model.db.renameExpenseNote(
                 householdId: householdId,
                 expenseId: expenseId,
                 note: service.name

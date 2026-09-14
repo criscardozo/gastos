@@ -133,6 +133,14 @@ Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO`. Los 94 tests:
 
 ### I2. Una escritura rechazada que no dice nada
 
+> **Hecho el 14/9/2026.** `useChargedAmount` ya reportaba por
+> `onWriteRejected` cuando se escribió esta entrada — la evidencia de arriba
+> (`try? await`) quedó vieja. Lo que sí faltaba apareció el mismo día: el
+> vincular servicio↔gasto que se agregó esa mañana usaba `Task { try? ... }`,
+> escrito por quien estaba leyendo esta entrada. Ahora va por `model.write`.
+> Barrido: no queda ninguna escritura de datos con el error tragado.
+
+
 **Evidencia.** `apps/ios/Gastos/Features/Services/ServicesView.swift:312`:
 `try? await db.updateServiceAmount(...)` dentro de un `Task {}`. Si las reglas
 rechazan la escritura, la caché local la muestra aplicada y el servidor la
@@ -305,6 +313,11 @@ efectivamente falla — sin deployar nada.
 
 ### P1. Hook de pre-push con el chequeo que rompió CI
 
+> **Hecho el 10/9/2026** (`d729148`). `.githooks/pre-push`, instalado con
+> `git config core.hooksPath .githooks` y documentado en `docs/setup.md`.
+> Encontró de paso que el token `info` no estaba en `tokens.json`.
+
+
 **Evidencia.** CI estuvo rojo tres pushes seguidos por
 `python3 design-system/emit.py --verify` (un `17px` fuera de escala). Tarda
 segundos y no necesita red.
@@ -357,6 +370,12 @@ de Auth si el e2e lo necesita. Documentar en `CLAUDE.md` → Commands.
 aparte porque puede abrir decenas de warnings.
 
 ### R2. Los cuatro `asyncAfter`
+
+> **Hecho el 10/9/2026** (`29afe9f`), y medido: `idb` permite manejar el
+> simulador, así que los tres delays de foco son `.task` y se verificó que el
+> campo sigue tomando el foco en los tres. El cuarto no era un delay de foco —
+> el 1,6s de «Copiado» es una duración de diseño y queda.
+
 
 **Evidencia.** `DispatchQueue.main.asyncAfter` para forzar foco/teclado en
 `Features/Entry/ExpenseFormView.swift:177`,
@@ -429,6 +448,13 @@ todo depende de ellos. Un commit por store extraído, tests en verde en cada
 uno. **No cambies comportamiento** mientras partís.
 
 ### G2. Partir `apps/web/src/app/gastos/page.tsx` y `datos/page.tsx`
+
+> **Parcial el 10/9/2026** (`ef90439`). Se extrajo `useExpenseFilters`, que es
+> el hook que esta entrada nombra: mejora la cohesión y NO el tamaño (974 →
+> 973 líneas). El corte siguiente serían ~90 líneas de JSX a cambio de pasar
+> diez props, que empeora la legibilidad — no se hizo y no debería hacerse
+> así. `datos/page.tsx` sigue entero.
+
 
 **Evidencia.** `gastos/page.tsx`: 981 líneas, 13 `useState`, 3 componentes.
 `datos/page.tsx`: 837 / 12. `estadisticas/page.tsx`: 653 con 0 componentes
