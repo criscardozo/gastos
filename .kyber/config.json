@@ -1,0 +1,11 @@
+{
+  "name": "gastos",
+  "projectId": "qcris-gastos-diarios",
+  "rulesTestsProjectId": "demo-gastos",
+  "emulatorProjectId": "qcris-gastos-diarios",
+  "firebaseDir": "firebase",
+  "rulesTestsDir": "firebase/rules-tests",
+  "restore": {
+    "legacyIsoTimestamps": true
+  }
+}
