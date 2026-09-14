@@ -2673,13 +2673,22 @@ test("repeating the budget without the leftover is not an adjustment", async ({
   );
   expect(defaultCents).toBeGreaterThan(0);
 
-  const periods = await request.get(
-    `${REST}/households/${householdId}/periodBudgets`,
-    { headers: admin },
-  );
-  const start = (((await periods.json()).documents as { name: string }[])[0].name
-    .split("/")
-    .pop() as string);
+  // POLLED, not read once. The period is materialized lazily by the client
+  // after onboarding, so reading straight through gets a response with no
+  // `documents` at all and `[0].name` throws — which is how this failed on
+  // CI while every local run passed, the runner being slower than the read.
+  let start = "";
+  await expect
+    .poll(async () => {
+      const res = await request.get(
+        `${REST}/households/${householdId}/periodBudgets`,
+        { headers: admin },
+      );
+      const docs = ((await res.json()).documents ?? []) as { name: string }[];
+      start = docs[0]?.name.split("/").pop() ?? "";
+      return docs.length;
+    })
+    .toBeGreaterThan(0);
 
   // Make the screen come up by itself, with a leftover to decline: the period
   // is put at the usual amount PLUS something, the way a carrying household

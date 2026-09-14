@@ -3110,6 +3110,38 @@
         }
       }
     },
+    "services.linkTitle": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Lo pagaste con alguno de estos?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Did one of these pay for it?"
+          }
+        }
+      }
+    },
+    "services.linkAction": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es este"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This one"
+          }
+        }
+      }
+    },
     "services.notThisMonth": {
       "extractionState": "manual",
       "localizations": {

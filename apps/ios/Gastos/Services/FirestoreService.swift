@@ -1229,3 +1229,24 @@ final class FirestoreService {
         batch.commit(completion: reportingCompletion())
     }
 }
+
+extension FirestoreService {
+    /// Point an expense's note at a service, which is how the two get linked.
+    ///
+    /// Servicios reads the link off the name and stores nothing, so "linking"
+    /// is literally renaming the note. Reversible by editing the expense,
+    /// which is where somebody would look to undo it.
+    func renameExpenseNote(
+        householdId: String,
+        expenseId: String,
+        note: String
+    ) async throws {
+        try await db.collection("households").document(householdId)
+            .collection("expenses").document(expenseId)
+            .updateData([
+                "note": note,
+                "updatedAt": FieldValue.serverTimestamp(),
+            ])
+    }
+}
+

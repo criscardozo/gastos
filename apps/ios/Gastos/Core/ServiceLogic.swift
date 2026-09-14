@@ -226,3 +226,32 @@ extension ServiceLogic {
         }
     }
 }
+
+extension ServiceLogic {
+    /// Expenses filed under Servicios that match no service, for the month.
+    ///
+    /// The link is by name and nothing says so. Somebody registers "Internet
+    /// Casa", pays it, files the expense noted "Amaysim Internet Casa" because
+    /// that is what the bill says — and the service goes on reading "Todavía
+    /// no se cobró" with no hint of why. Reported exactly that way: "no
+    /// encuentro la manera de vincularlos".
+    ///
+    /// There is no way to link them because nothing is stored to link: the
+    /// name IS the link. So the fix is not a new field, it is showing these
+    /// where the question gets asked. The TypeScript twin is
+    /// `unmatchedServiceExpenses` in apps/web/src/lib/services.ts.
+    static func unmatchedExpenses(
+        services: [ServiceDoc],
+        expenses: [Expense]
+    ) -> [Expense] {
+        let known = Set(services.map { nameKey($0.name) })
+        return expenses
+            .filter { $0.categoryId == categoryId && !known.contains(nameKey($0.note)) }
+            .sorted {
+                $0.date == $1.date
+                    ? ($0.id ?? "") < ($1.id ?? "")
+                    : $0.date > $1.date
+            }
+    }
+}
+

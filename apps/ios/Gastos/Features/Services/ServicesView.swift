@@ -50,6 +50,20 @@ struct ServicesView: View {
                                     householdId: model.household?.id,
                                     db: model.db
                                 )
+                            },
+                            // Only for a service still waiting: an expense
+                            // filed under Servicios whose note names no
+                            // service. Nothing links them but the name, so
+                            // this is how the two are put together.
+                            candidates: store.statuses[service.id]?.charge == nil
+                                ? store.unmatchedExpenses : [],
+                            onLink: { expense in
+                                store.linkExpense(
+                                    expense,
+                                    to: service,
+                                    householdId: model.household?.id,
+                                    db: model.db
+                                )
                             }
                         )
                     }
@@ -156,6 +170,10 @@ private struct ServiceRow: View {
     let l10n: L10n
     let timeZone: TimeZone
     let onUseCharged: (Int) -> Void
+    /// Servicios expenses that name no service, offered when this one is still
+    /// waiting. Empty otherwise.
+    var candidates: [Expense] = []
+    var onLink: ((Expense) -> Void)?
 
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -262,6 +280,31 @@ private struct ServiceRow: View {
             }
             Spacer(minLength: 0)
         }
+        // Nothing links a service to its expense but the NAME, so an expense
+        // noted the way the bill reads — "Amaysim Internet Casa" for a service
+        // called "Internet Casa" — leaves the service saying it was never
+        // charged, with no way to fix it from here. Offering the unmatched
+        // ones turns that into one press: it renames the note, which IS the
+        // link.
+        if !candidates.isEmpty, let onLink {
+            VStack(alignment: .leading, spacing: 6) {
+                SectionLabel(text: l10n.t("services.linkTitle"))
+                ForEach(candidates) { expense in
+                    HStack(spacing: 8) {
+                        Text(expense.note)
+                            .appFont(12.5)
+                            .foregroundStyle(Theme.inkSecondary)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        Button(l10n.t("services.linkAction")) { onLink(expense) }
+                            .appFont(11.5, .bold)
+                            .foregroundStyle(Theme.inkSecondary)
+                            .buttonStyle(.plain)
+                    }
+                }
+            }
+            .padding(.top, 6)
+        }
     }
 }
 
@@ -325,6 +368,29 @@ final class ServicesStore {
     /// the new amount as saved. `onWriteRejected` is the same channel every
     /// fire-and-forget write in the service already uses, and it raises the
     /// alert the rest of the app raises.
+    /// Servicios expenses of the month that name no service — offered beside
+    /// whichever service is still waiting. See ServiceLogic.unmatchedExpenses.
+    var unmatchedExpenses: [Expense] {
+        ServiceLogic.unmatchedExpenses(services: services, expenses: monthExpenses)
+    }
+
+    /// Point an expense's note at a service. Renaming the note IS the link.
+    func linkExpense(
+        _ expense: Expense,
+        to service: ServiceDoc,
+        householdId: String?,
+        db: FirestoreService
+    ) {
+        guard let householdId, let expenseId = expense.id else { return }
+        Task {
+            try? await db.renameExpenseNote(
+                householdId: householdId,
+                expenseId: expenseId,
+                note: service.name
+            )
+        }
+    }
+
     func useChargedAmount(
         service: ServiceDoc,
         amountAudCents: Int,

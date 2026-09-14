@@ -191,3 +191,59 @@ final class ServiceLogicTests: XCTestCase {
         XCTAssertEqual(totals.dueAudCents, 2_299)
     }
 }
+
+// MARK: - Unmatched Servicios expenses
+
+extension ServiceLogicTests {
+    private func svc(_ id: String, _ name: String) -> ServiceDoc {
+        var s = ServiceDoc(name: name, interval: .monthly, dueDay: 7, paidWith: .debit, createdBy: "u1")
+        s.docId = id
+        return s
+    }
+
+    private func exp(_ id: String, _ note: String, _ date: String, category: String = "services") -> Expense {
+        var e = Expense(
+            amountCents: 5000, categoryId: category, note: note, date: date, createdBy: "u1"
+        )
+        e.id = id
+        return e
+    }
+
+    /// The reported case, verbatim: a service called "Internet Casa" paid with
+    /// an expense noted "Amaysim Internet Casa", which is what the bill says.
+    func testFindsTheExpenseWhoseNoteNamesNoService() {
+        let out = ServiceLogic.unmatchedExpenses(
+            services: [svc("s1", "Internet Casa"), svc("s2", "YouTube Premium")],
+            expenses: [
+                exp("e1", "Amaysim Internet Casa", "2026-09-13"),
+                exp("e2", "YouTube Premium", "2026-09-07"),
+            ]
+        )
+        XCTAssertEqual(out.map(\.id), ["e1"])
+    }
+
+    func testIgnoresExpensesOutsideServicios() {
+        let out = ServiceLogic.unmatchedExpenses(
+            services: [svc("s1", "Internet Casa")],
+            expenses: [exp("e1", "Nafta", "2026-09-13", category: "transport")]
+        )
+        XCTAssertTrue(out.isEmpty)
+    }
+
+    func testMatchesTheSameWayTheLinkDoes() {
+        let out = ServiceLogic.unmatchedExpenses(
+            services: [svc("s1", "Internet Casa")],
+            expenses: [exp("e1", "  internet casa  ", "2026-09-13")]
+        )
+        XCTAssertTrue(out.isEmpty)
+    }
+
+    /// The control: a function returning its input would pass the first test.
+    func testReturnsNothingWhenEveryNoteNamesAService() {
+        let out = ServiceLogic.unmatchedExpenses(
+            services: [svc("s1", "Internet Casa")],
+            expenses: [exp("e1", "Internet Casa", "2026-09-13")]
+        )
+        XCTAssertTrue(out.isEmpty)
+    }
+}
