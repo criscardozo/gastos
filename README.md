@@ -1,3 +1,5 @@
+<img src="docs/assets/icon.png" alt="" width="88">
+
 # Gastos
 
 Household expense tracker for two people sharing one weekly/fortnightly budget.
@@ -26,9 +28,12 @@ client suggests which expense it paid for, learning the rate from pairs already
 verified.
 
 **Servicios** (recurring bills) and **Tarjetas de Crédito** (card charges grouped
-into statements) are **web-only on purpose** — they are sat-down-with tasks, not
-things you do at a checkout. Statistics, CSV/PDF/Excel exports and the Drive
-upload are web-only for the same reason.
+into statements) are on both too, behind a fourth tab on the phone. They were
+web-only on purpose for a while — sat-down-with tasks rather than things you do
+at a checkout — and that stopped being true on 3/9/2026.
+
+Statistics, CSV/PDF/Excel exports and the Drive upload are still web-only, and
+for that original reason.
 
 ## Quick start
 
