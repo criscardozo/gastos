@@ -606,6 +606,7 @@ test("starting a period asks, and carries the leftover", async ({
   await expect(page.getByText("Ahora no")).toBeVisible();
   await page.getByText("Ahora no").click();
   await expect(page.getByText(/Repetir presupuesto/)).toHaveCount(0);
+
 });
 
 
@@ -2616,4 +2617,110 @@ test("a service can be pointed at the expense that paid it", async ({
   await expect(page.getByText("1 de 1 servicios del mes")).toBeVisible({
     timeout: 20_000,
   });
+});
+
+/**
+ * The usual figure is not "adjusted", even when the carry-over is declined.
+ *
+ * Reported from the phone, reading a period that said "Semanal · $170
+ * (ajustado)": "si siempre es 170, no está ajustado, sólo no acarreamos la
+ * semana anterior". Exactly right — the badge sat beside the household's own
+ * weekly figure and called it unusual.
+ *
+ * The cause was that `source` recorded which WRITE happened rather than what
+ * the figure was. A household whose default carries the leftover materializes
+ * the period at the usual amount plus whatever was left, so declining the
+ * carry writes a different amount than the materialized one, took the
+ * set-by-hand path, and stamped `custom`.
+ */
+test("repeating the budget without the leftover is not an adjustment", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-source-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Source Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const householdId = (
+    ((await households.json()).documents as {
+      name: string;
+      fields: { name: { stringValue: string } };
+    }[]).find((d) => d.fields.name.stringValue === "Hogar de Source") as {
+      name: string;
+    }
+  ).name
+    .split("/")
+    .pop() as string;
+
+  // The default amount, whatever onboarding chose.
+  const hh = await request.get(`${REST}/households/${householdId}`, {
+    headers: admin,
+  });
+  const defaultCents = Number(
+    ((await hh.json()) as {
+      fields: {
+        defaultBudget: {
+          mapValue: { fields: { amountCents: { integerValue: string } } };
+        };
+      };
+    }).fields.defaultBudget.mapValue.fields.amountCents.integerValue,
+  );
+  expect(defaultCents).toBeGreaterThan(0);
+
+  const periods = await request.get(
+    `${REST}/households/${householdId}/periodBudgets`,
+    { headers: admin },
+  );
+  const start = (((await periods.json()).documents as { name: string }[])[0].name
+    .split("/")
+    .pop() as string);
+
+  // Make the screen come up by itself, with a leftover to decline: the period
+  // is put at the usual amount PLUS something, the way a carrying household
+  // materializes it.
+  await request.patch(
+    `${REST}/households/${householdId}/periodBudgets/${start}` +
+      `?updateMask.fieldPaths=amountCents&updateMask.fieldPaths=rolloverCents`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          amountCents: { integerValue: String(defaultCents + 20000) },
+          rolloverCents: { integerValue: "20000" },
+        },
+      },
+    },
+  );
+  await page.evaluate(
+    ([id]) => localStorage.setItem(`gd:newPeriodAck:${id}`, "2000-01-01"),
+    [householdId],
+  );
+  await page.reload();
+
+  // Decline the carry — the row is a toggle and it starts ticked off here, so
+  // repeating gives the household's plain figure.
+  await page.getByRole("button", { name: /Repetir presupuesto/ }).click();
+
+  // The figure is the usual one, so the period is NOT marked adjusted.
+  await expect
+    .poll(async () => {
+      const res = await request.get(
+        `${REST}/households/${householdId}/periodBudgets/${start}`,
+        { headers: admin },
+      );
+      const f = ((await res.json()) as {
+        fields: {
+          amountCents: { integerValue: string };
+          source: { stringValue: string };
+        };
+      }).fields;
+      return `${f.amountCents.integerValue}/${f.source.stringValue}`;
+    })
+    .toBe(`${defaultCents}/default`);
 });

@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useHousehold, useLocale } from "@/components/providers";
+import { periodSource } from "@/lib/period-source";
 import { useAppError } from "@/components/app-error";
 import { Icon } from "@/components/ui/icon";
 import { AmountInput } from "@/components/ui/amount-input";
@@ -122,6 +123,14 @@ export function StartPeriodScreen({
   // whoever answers it offline, on the one screen with no way out, while the
   // write sits queued and applied locally.
   const confirm = (amountCents: number, rolloverCents: number) => {
+    // The badge reads beside the figure, so it keys on the figure: the usual
+    // amount is not "adjusted" whoever typed it, and an amount carrying a
+    // leftover is, because it is not comparable to the other periods. See
+    // lib/period-source.ts.
+    const source = periodSource(
+      amountCents,
+      household.defaultBudget.amountCents,
+    );
     const fb = getFirebaseClient();
     if (fb !== null && amountCents > 0) {
       // Two shapes, and the difference is not cosmetic. Changing the amount
@@ -140,6 +149,7 @@ export function StartPeriodScreen({
             period.startDate,
             amountCents,
             rolloverCents,
+            source,
           ),
         );
       } else if (!period.confirmed) {
@@ -380,7 +390,10 @@ export function StartPeriodScreen({
               <button
                 type="button"
                 onClick={() =>
-                  confirm(repeatAmount, includeRollover ? (leftover ?? 0) : 0)
+                  confirm(
+                    repeatAmount,
+                    includeRollover ? (leftover ?? 0) : 0,
+                  )
                 }
                 disabled={repeatAmount <= 0}
                 className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-base font-bold text-white shadow-[0_8px_20px_rgba(255,92,57,.35)] disabled:opacity-60"

@@ -250,7 +250,13 @@ extension AppModel {
                     householdId: householdId,
                     startDate: current.startDate,
                     amountCents: amountCents,
-                    rolloverCents: rolloverCents
+                    rolloverCents: rolloverCents,
+                    // The badge reads beside the figure, so it keys on the
+                    // figure — see Core/PeriodSource.swift.
+                    source: PeriodSource.of(
+                        amountCents: amountCents,
+                        defaultAmountCents: self.household?.defaultBudget.amountCents ?? amountCents
+                    )
                 )
             }
         } else if !current.isConfirmed {

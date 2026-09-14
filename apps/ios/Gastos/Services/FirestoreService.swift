@@ -473,12 +473,23 @@ final class FirestoreService {
         householdId: String,
         startDate: String,
         amountCents: Int,
-        rolloverCents: Int? = nil
+        rolloverCents: Int? = nil,
+        /// Where the figure came from — the household's default, or somebody
+        /// typing one. Defaults to "custom" for the caller that only ever sets
+        /// an amount by hand (Ajustes).
+        ///
+        /// It used to be hardcoded, which made the badge lie: declining the
+        /// carry-over writes a DIFFERENT amount than the materialized one —
+        /// 170 instead of 170 plus the leftover — so it took this path and the
+        /// period came out marked "Ajustado" while reading the usual figure.
+        /// Not inferable from the numbers either: 170 can be the default with
+        /// the carry declined, or a typed figure that happens to match.
+        source: String = "custom"
     ) async throws {
         var data: [String: Any] = [
             "amountCents": amountCents,
-            "source": "custom",
-            // Setting the amount by hand IS answering for this period.
+            "source": source,
+            // Answering the screen with a figure IS answering for this period.
             "confirmedAt": FieldValue.serverTimestamp(),
             "updatedAt": FieldValue.serverTimestamp(),
         ]

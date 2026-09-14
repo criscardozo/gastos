@@ -232,14 +232,32 @@ export async function updatePeriodAmount(
    * whose amount moved without it would claim a carry-over it no longer has.
    */
   rolloverCents?: number,
+  /**
+   * Where the figure came from — the household's default, or somebody typing
+   * one. Defaults to "custom" for the callers that only ever set an amount by
+   * hand (Ajustes).
+   *
+   * It used to be hardcoded to "custom" here, which made the badge lie in a
+   * way that took a while to spot. Declining the carry-over writes a DIFFERENT
+   * amount than the materialized one — 170 instead of 170 plus the leftover —
+   * so it took this path and the period came out marked "Ajustado" while
+   * reading exactly the usual figure. Reported that way: "si siempre es 170,
+   * no está ajustado, sólo no acarreamos la semana anterior".
+   *
+   * The two answers on the start-period screen are the two sources, and the
+   * screen knows which button was pressed. It is not inferable from the
+   * numbers: 170 can be the default (carry declined) or a typed figure that
+   * happens to match.
+   */
+  source: "default" | "custom" = "custom",
 ): Promise<void> {
   await updateDoc(
     doc(db, "households", householdId, "periodBudgets", startDate),
     {
       amountCents,
-      source: "custom",
+      source,
       ...(rolloverCents === undefined ? {} : { rolloverCents }),
-      // Setting the amount by hand IS answering for this period.
+      // Answering the screen with a figure IS answering for this period.
       confirmedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     },

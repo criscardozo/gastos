@@ -39,6 +39,7 @@
 		4D4AAC47A43A3EA75447AE54 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E587EB83789FCE993DF108A /* AuthService.swift */; };
 		4E69B79E88B780D632924EC8 /* Limits.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB48A44A14A7CEAB4B8167C5 /* Limits.swift */; };
 		53090F6F3B88DF29978FB3C3 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = DF6155B3FADEBC0E995FFDAB /* GoogleSignIn */; };
+		574AA03DE657B924BDDD05FE /* PeriodSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA19DA21A068D1858A9CFA06 /* PeriodSourceTests.swift */; };
 		579E9B6AACDA3892F25CA4D1 /* Suggestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7391D78A935825853AF82E8 /* Suggestions.swift */; };
 		57BB0825D7E2949E5C9C47E0 /* RecurringRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FF743F833087A8F15FFF83F /* RecurringRulesTests.swift */; };
 		59C9D7828AB360CD08F63705 /* BudgetEntryAmountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C014102B7593E463B1877C /* BudgetEntryAmountTests.swift */; };
@@ -52,6 +53,7 @@
 		6D94CE730F3742DE498DC4AC /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9FDB8AC9B42DEF1653002135 /* GoogleService-Info.plist */; };
 		6DA14E99E2D79C4632755E9A /* RecurringRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8654B3054370D4BD6E8D1BCF /* RecurringRules.swift */; };
 		6F7E58DA7BCD71F86E3B1527 /* FontLoadingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C345B9D45487CD25B1E84632 /* FontLoadingTests.swift */; };
+		72AD37083B76A25BD836FC09 /* PeriodSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 378F62DF3E02BBAC41FDD81B /* PeriodSource.swift */; };
 		75E2AC551C0C64DF1557688E /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = DCB0E7E3A151F080F5FB5164 /* Localizable.xcstrings */; };
 		75EBE046089788B568A04A51 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 9DB8A352BB1E1E129697174D /* Localizable.xcstrings */; };
 		76052EFDB664130C6E1AE31E /* AppModel+Recurring.swift in Sources */ = {isa = PBXBuildFile; fileRef = B502D07A5EEBE31204742E4B /* AppModel+Recurring.swift */; };
@@ -122,6 +124,7 @@
 		E9849EFE9B41C08E868E0B2A /* ExpenseVerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5FE12DED78A2224848A67D /* ExpenseVerificationTests.swift */; };
 		EE0860D11928B5D6DFC5EE02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FBB29AD844640CDBD8A2F72C /* Assets.xcassets */; };
 		EF6688BDED2B7DEDB93EDEAD /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E9DDEF9ED1920FC461324CC /* Theme.swift */; };
+		F25F3EAEFBF172CB54826325 /* PeriodSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 378F62DF3E02BBAC41FDD81B /* PeriodSource.swift */; };
 		F47A79C1807A872C98696652 /* BankChargesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E486313C81537C3CA7DA1B /* BankChargesPanel.swift */; };
 		F8B6DBB9BA7AD6EEC0C6543D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D15701C61114BACDF847A50C /* Localizable.xcstrings */; };
 		FD84AB7E81CC025C1FEF85D3 /* CategoriesManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B1186604B7C10DBF0F7B337 /* CategoriesManagerView.swift */; };
@@ -193,6 +196,7 @@
 		3185D8D0B36CD3028B6C8CBE /* CreateFromChargeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateFromChargeSheet.swift; sourceTree = "<group>"; };
 		326DE0250998DB6FD336ADB1 /* Gastos.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Gastos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		33010FD0D4F32F60CF103E5B /* PeriodLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogic.swift; sourceTree = "<group>"; };
+		378F62DF3E02BBAC41FDD81B /* PeriodSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodSource.swift; sourceTree = "<group>"; };
 		3B1186604B7C10DBF0F7B337 /* CategoriesManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesManagerView.swift; sourceTree = "<group>"; };
 		3F06395060DEFBF7F0F052DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3FE4481C1E27B95BC2F45054 /* WatchSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSyncService.swift; sourceTree = "<group>"; };
@@ -243,6 +247,7 @@
 		B7EB984FFC789B226CD9BCAE /* VerifyExpenseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyExpenseSheet.swift; sourceTree = "<group>"; };
 		B7EC5992D1786FDB955842A7 /* ModelDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDecodingTests.swift; sourceTree = "<group>"; };
 		B851FD043A5C0E4296596D5B /* WatchConnectivityModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityModel.swift; sourceTree = "<group>"; };
+		BA19DA21A068D1858A9CFA06 /* PeriodSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodSourceTests.swift; sourceTree = "<group>"; };
 		BB48A44A14A7CEAB4B8167C5 /* Limits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Limits.swift; sourceTree = "<group>"; };
 		C0C014102B7593E463B1877C /* BudgetEntryAmountTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetEntryAmountTests.swift; sourceTree = "<group>"; };
 		C279ABE8D939C232994D4A78 /* BudgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetSnapshot.swift; sourceTree = "<group>"; };
@@ -418,6 +423,7 @@
 				B7EC5992D1786FDB955842A7 /* ModelDecodingTests.swift */,
 				601A81E5C53F86FD1428EF30 /* PeriodGateTests.swift */,
 				DB4FCA6646C9D9BB19D95B20 /* PeriodLogicTests.swift */,
+				BA19DA21A068D1858A9CFA06 /* PeriodSourceTests.swift */,
 				9FF743F833087A8F15FFF83F /* RecurringRulesTests.swift */,
 				890A88734AEF52E42002B803 /* RichTextTests.swift */,
 				8043182EF7DF168D7084E96E /* ServiceLogicTests.swift */,
@@ -523,6 +529,7 @@
 				1648731F9FE441F1D1213CE1 /* MoneyFormatter.swift */,
 				1794B1E43D9A741F78FA369D /* PeriodGate.swift */,
 				33010FD0D4F32F60CF103E5B /* PeriodLogic.swift */,
+				378F62DF3E02BBAC41FDD81B /* PeriodSource.swift */,
 				8654B3054370D4BD6E8D1BCF /* RecurringRules.swift */,
 				0CB1E0209EBF466D3AEEC77A /* ServiceLogic.swift */,
 				A7391D78A935825853AF82E8 /* Suggestions.swift */,
@@ -805,6 +812,8 @@
 				8C7EEBDB1C28B4539F79FA61 /* PeriodGateTests.swift in Sources */,
 				620E9E198B310B8489B761C4 /* PeriodLogic.swift in Sources */,
 				B0BD3A859D155D97BF2C2E01 /* PeriodLogicTests.swift in Sources */,
+				F25F3EAEFBF172CB54826325 /* PeriodSource.swift in Sources */,
+				574AA03DE657B924BDDD05FE /* PeriodSourceTests.swift in Sources */,
 				CB805A0DE365F08D963B27F4 /* RecurringRules.swift in Sources */,
 				57BB0825D7E2949E5C9C47E0 /* RecurringRulesTests.swift in Sources */,
 				CABCDE7AC6FBE5B196153B33 /* RichText.swift in Sources */,
@@ -867,6 +876,7 @@
 				AB31DB5E6297D5AB58B90E92 /* OnboardingView.swift in Sources */,
 				BA55EAB3A8209FB479CA9104 /* PeriodGate.swift in Sources */,
 				960B216F2EC4C75524BFE355 /* PeriodLogic.swift in Sources */,
+				72AD37083B76A25BD836FC09 /* PeriodSource.swift in Sources */,
 				154F8083DBBB448148FD3B66 /* QuickEntryIntent.swift in Sources */,
 				428BB77473B7E3909EC1729D /* RecurringPromptSheet.swift in Sources */,
 				233E325AA13DE6A39ABD69E9 /* RecurringRuleSheet.swift in Sources */,
