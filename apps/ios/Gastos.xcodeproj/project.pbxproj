@@ -191,7 +191,7 @@
 		2F1934B38A615BECC1D5E398 /* BudgetAmountEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetAmountEditor.swift; sourceTree = "<group>"; };
 		315F74278422350FB9D3B8F5 /* CardLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardLogic.swift; sourceTree = "<group>"; };
 		3185D8D0B36CD3028B6C8CBE /* CreateFromChargeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateFromChargeSheet.swift; sourceTree = "<group>"; };
-		326DE0250998DB6FD336ADB1 /* Gastos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Gastos.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		326DE0250998DB6FD336ADB1 /* Gastos.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Gastos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		33010FD0D4F32F60CF103E5B /* PeriodLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogic.swift; sourceTree = "<group>"; };
 		3B1186604B7C10DBF0F7B337 /* CategoriesManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesManagerView.swift; sourceTree = "<group>"; };
 		3F06395060DEFBF7F0F052DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -685,6 +685,7 @@
 						ProvisioningStyle = Automatic;
 					};
 					D9D49D56DF3BD063E5674E1A = {
+						DevelopmentTeam = FA737M2U79;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -911,14 +912,13 @@
 				CODE_SIGN_ENTITLEMENTS = Gastos/Gastos.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FA737M2U79;
 				GD_INGEST_URL = "https://script.google.com/macros/s/AKfycbxq9Vn_eMC_fLdLV4itZFL0ABHr0BdMZCzZeOyA68vECKBawpVIHcikn48tdpHan4h9mw/exec";
 				INFOPLIST_FILE = Gastos/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.cardozo.gastos;
 				PRODUCT_NAME = Gastos;
@@ -993,7 +993,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GastosWatch/Info.plist;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.cardozo.gastos.watchkitapp;
 				PRODUCT_NAME = GastosWatch;
 				SDKROOT = watchos;
@@ -1014,7 +1014,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.cardozo.gastos.widget;
 				PRODUCT_NAME = GastosWidget;
 				SDKROOT = iphoneos;
@@ -1133,7 +1133,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.cardozo.gastos.widget;
 				PRODUCT_NAME = GastosWidget;
 				SDKROOT = iphoneos;
@@ -1150,7 +1150,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = GastosWatch/Info.plist;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.cardozo.gastos.watchkitapp;
 				PRODUCT_NAME = GastosWatch;
 				SDKROOT = watchos;
@@ -1167,14 +1167,13 @@
 				CODE_SIGN_ENTITLEMENTS = Gastos/Gastos.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FA737M2U79;
 				GD_INGEST_URL = "https://script.google.com/macros/s/AKfycbxq9Vn_eMC_fLdLV4itZFL0ABHr0BdMZCzZeOyA68vECKBawpVIHcikn48tdpHan4h9mw/exec";
 				INFOPLIST_FILE = Gastos/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.cardozo.gastos;
 				PRODUCT_NAME = Gastos;
