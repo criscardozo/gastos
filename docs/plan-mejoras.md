@@ -591,8 +591,23 @@ uno. **No cambies comportamiento** mientras partís.
 
 ### G2. Partir `apps/web/src/app/gastos/page.tsx` y `datos/page.tsx`
 
-> **Sigue abierto tras el parcial.** Medido el 14/9/2026: `gastos/page.tsx` 983
-> líneas, `datos/page.tsx` 579.
+> **Segundo corte el 14/9/2026: `gastos/page.tsx` 983 → 934**, con `rows.tsx`
+> (143). 472 tests y los 22 e2e en verde.
+>
+> **Lo que hizo posible el corte fue medir por qué el anterior no rindió.**
+> `renderRow` eran 265 líneas que necesitaban **dieciocho** valores de la página.
+> Levantarlo entero —el corte obvio— habría enhebrado dieciocho props, que es
+> más difícil de leer que la función larga: es exactamente la objeción que quedó
+> escrita el 10/9 y por la que este ítem se frenó.
+>
+> Las dieciocho eran el síntoma. La causa es que `renderRow` renderizaba **tres
+> cosas con un nombre**: verificar, editar y la fila común. Partido por modo,
+> cada pieza toma **seis o siete** props y nombra una cosa entera.
+>
+> Las dos que salieron son formularios y se llevaron sus props explícitas; la
+> fila común se queda, porque es la única que no es un formulario y porque
+> alcanza las acciones de la fila en vez de recibirlas. `datos/page.tsx` (579)
+> sigue sin tocar: no se midió si tiene un corte equivalente.
 
 > **Parcial el 10/9/2026** (`ef90439`). Se extrajo `useExpenseFilters`, que es
 > el hook que esta entrada nombra: mejora la cohesión y NO el tamaño (974 →

@@ -37,6 +37,7 @@ import {
   type FormState,
   type VerificationFilter,
 } from "./pieces";
+import { EditExpenseRow, VerifyExpenseRow } from "./rows";
 import { learnRate } from "@/lib/bank-match";
 import { claimsOfOneRule } from "@/lib/recurring";
 import { RecurringPrompt } from "@/components/recurring-prompt";
@@ -381,91 +382,41 @@ export default function ExpensesPage() {
       categories.find((c) => c.id === e.categoryId)?.label ?? tCat("deleted");
 
     if (verifyingId === e.id) {
-      const typed = parseAmountToCents(verifyAmount, locale);
       return (
-        <div
+        <VerifyExpenseRow
           key={e.id}
-          className="flex flex-wrap items-center gap-x-3 gap-y-2 py-[9px]"
-        >
-          {/* On a phone the note takes its own line so the controls below it
-              keep their full width instead of truncating to two letters. */}
-          <span className="w-full truncate text-sm font-semibold text-ink sm:w-auto sm:min-w-0 sm:flex-1">
-            {e.note !== "" ? e.note : catLabel}
-          </span>
-          <span className="tnum text-sm font-bold text-ink">
-            {formatCents(e.amountCents, household.currency, locale)}
-          </span>
-          <label className="flex items-center gap-2">
-            <span className="text-[13px] font-semibold text-ink-3">US$</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              autoFocus
-              value={verifyAmount}
-              onChange={(event) => setVerifyAmount(event.target.value)}
-              placeholder={t("amountPlaceholder")}
-              aria-label={t("bankUsd")}
-              className="tnum w-24 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] font-semibold text-ink outline-none"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => submitVerify(typed)}
-            disabled={typed === null}
-            className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
-          >
-            {t("markVerified")}
-          </button>
-          {e.verified && (
-            <button
-              type="button"
-              onClick={() => submitVerify(null)}
-              className="text-[13px] font-semibold text-ink-2"
-            >
-              {t("clearVerification")}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              setVerifyingId(null);
-              setVerifyAmount("");
-            }}
-            className="text-[13px] font-semibold text-ink-2"
-          >
-            {t("cancel")}
-          </button>
-        </div>
+          expense={e}
+          household={household}
+          locale={locale}
+          catLabel={catLabel}
+          verifyAmount={verifyAmount}
+          setVerifyAmount={setVerifyAmount}
+          submitVerify={submitVerify}
+          cancelVerify={() => {
+            setVerifyingId(null);
+            setVerifyAmount("");
+          }}
+          t={t}
+        />
       );
     }
 
     if (editingId === e.id && editForm !== null) {
       return (
-        <div key={e.id} className="flex flex-wrap items-center gap-3 py-[9px]">
-          <ExpenseFormFields
-            form={editForm}
-            setForm={setEditForm}
-            categories={categories}
-            noteSuggestions={noteSuggestions}
-          />
-          <button
-            type="button"
-            onClick={submitEdit}
-            className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
-          >
-            {t("save")}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setEditingId(null);
-              setEditForm(null);
-            }}
-            className="text-[13px] font-semibold text-ink-2"
-          >
-            {t("cancel")}
-          </button>
-        </div>
+        <EditExpenseRow
+          key={e.id}
+          expense={e}
+          editForm={editForm}
+          setEditForm={setEditForm}
+          categories={categories}
+          noteSuggestions={noteSuggestions}
+          submitEdit={submitEdit}
+          cancelEdit={() => {
+            setEditingId(null);
+            setEditForm(null);
+          }}
+          t={t}
+        />
       );
     }
 
