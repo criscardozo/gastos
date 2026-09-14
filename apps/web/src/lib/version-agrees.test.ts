@@ -23,16 +23,52 @@ describe("the app version", () => {
   const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
 
   const WEB = /"version":\s*"([^"]+)"/.exec(read("apps/web/package.json"))?.[1];
-  const IOS = [
-    ...read("apps/ios/project.yml").matchAll(/MARKETING_VERSION: "([^"]+)"/g),
-  ].map((m) => m[1]);
 
-  it("is stated at all, and by every target", () => {
+  /** The iOS targets that carry a version, BY NAME, in project.yml order. */
+  const IOS_TARGETS = ["Gastos", "GastosWidget", "GastosWatch"] as const;
+
+  /** `{ Gastos: "1.1.0", ... }` — which target says what, not how many say it. */
+  const IOS: Record<string, string> = (() => {
+    // Split on two-space keys and look inside each block. A single regex
+    // spanning from a key to the next MARKETING_VERSION reads across block
+    // boundaries and attributes the version to whatever key came first —
+    // `deploymentTarget`, here. Same mistake as counting: it produced an
+    // answer, and the answer was about the wrong thing.
+    const out: Record<string, string> = {};
+    let current: string | null = null;
+    for (const line of read("apps/ios/project.yml").split("\n")) {
+      const header = /^ {2}(\w+):\s*$/.exec(line);
+      if (header) current = header[1];
+      const version = /^\s+MARKETING_VERSION: "([^"]+)"/.exec(line);
+      if (version && current) out[current] = version[1];
+    }
+    return out;
+  })();
+
+  it("is stated at all, and by every target that should carry it", () => {
     // Without this the comparison below would hold undefined against an empty
     // list and pass — and a target added later that forgot the key would only
     // surface as a wrong number in the watch app's Ajustes.
     expect(WEB, "apps/web/package.json has no version").toBeDefined();
-    expect(IOS, "project.yml should carry app, widget and watch").toHaveLength(3);
+
+    // Named, not counted. This used to assert `toHaveLength(3)`, which survives
+    // a SUBSTITUTION: add a target and remove another and there are still
+    // three, while the version is now written somewhere nobody expects. A total
+    // answers "how many" to a question that was "which ones" — and the sibling
+    // project's copy of this had the identical hole, as did the script.
+    const missing = IOS_TARGETS.filter((t) => IOS[t] === undefined);
+    expect(
+      missing,
+      `these targets are supposed to carry MARKETING_VERSION and do not:\n  ${missing.join("\n  ")}`,
+    ).toEqual([]);
+
+    const unexpected = Object.keys(IOS).filter(
+      (t) => !IOS_TARGETS.includes(t as (typeof IOS_TARGETS)[number]),
+    );
+    expect(
+      unexpected,
+      `these carry MARKETING_VERSION and nothing says they should:\n  ${unexpected.join("\n  ")}`,
+    ).toEqual([]);
   });
 
   it("has a git tag, because a version with nothing to check out is a number", () => {
@@ -89,7 +125,7 @@ describe("the app version", () => {
     expect(
       keys,
       "every target that carries a MARKETING_VERSION must also state the key",
-    ).toHaveLength(IOS.length);
+    ).toHaveLength(IOS_TARGETS.length);
     for (const value of keys) {
       expect(value, `project.yml pins the shown version to ${value}`).toBe(DEFERS);
     }
@@ -100,7 +136,9 @@ describe("the app version", () => {
     })
       .split("\n")
       .filter((f) => f !== "");
-    expect(plists, "app, widget and watch each have one").toHaveLength(IOS.length);
+    expect(plists, "app, widget and watch each have one").toHaveLength(
+      IOS_TARGETS.length,
+    );
     for (const path of plists) {
       const shown = /<key>CFBundleShortVersionString<\/key>\s*<string>([^<]*)<\/string>/.exec(
         read(path),
@@ -112,7 +150,7 @@ describe("the app version", () => {
   it("is semver, not something that looks like it", () => {
     // "v1.2" and "1.2.0" both read as a version to a human and sort
     // differently everywhere else.
-    for (const value of [WEB as string, ...IOS]) {
+    for (const value of [WEB as string, ...Object.values(IOS)]) {
       expect(value).toMatch(/^\d+\.\d+\.\d+$/);
     }
   });
@@ -156,11 +194,12 @@ describe("the app version", () => {
   });
 
   it("is the same everywhere", () => {
-    for (const [index, value] of IOS.entries()) {
-      expect(
-        value,
-        `project.yml target #${index + 1} says ${value}, the web says ${WEB}`,
-      ).toBe(WEB);
+    for (const [target, value] of Object.entries(IOS)) {
+      // Named rather than indexed, so the failure says which target disagrees
+      // instead of "#2" — and "#2" moves when a target is added above it.
+      expect(value, `project.yml's ${target} says ${value}, the web says ${WEB}`).toBe(
+        WEB,
+      );
     }
   });
 });
