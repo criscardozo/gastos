@@ -28,5 +28,8 @@
     "offlineText": "Gastos",
     "deepRoute": "/nuevo",
     "signedOutText": "Continuar con Google"
-  }
+  },
+  "bundleId": "dev.cardozo.gastos",
+  "iosScheme": "Gastos",
+  "iosDevice": "Kylo 👾"
 }

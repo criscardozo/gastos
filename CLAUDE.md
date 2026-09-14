@@ -95,7 +95,7 @@ All JS commands run from the repo root (pnpm workspace):
   directly instead of depending on the app — the app embeds the watchOS app, so
   the old `-scheme Gastos` needed the watchOS platform installed to run a
   unit test. Use `-scheme Gastos` to build or run the app itself.
-- `./scripts/install-ios.sh` — build + **renovación forzada de la firma** +
+- `pnpm install:ios` — build + **renovación forzada de la firma** +
   install en el iPhone. Instalar siempre renueva: el perfil del team gratuito se
   reusa, así que un build normal conserva el vencimiento viejo y cada instalación
   gasta días del mismo perfil. El script aparta los tres perfiles juntos (app,

@@ -56,7 +56,7 @@ previo cuando el cambio mueve mucho dato. Acá sólo lo que es de éste:
 - La app la usan **dos** personas de verdad, y una no soy yo ni Cristian.
 - El backup de este proyecto es `pnpm backup`, que escribe en `backups/`
   (gitignored) y lee producción con la clave de `firebase/service-account.json`.
-- Instalar en el teléfono es `./scripts/install-ios.sh`, **nunca** un build
+- Instalar en el teléfono es `pnpm install:ios`, **nunca** un build
   normal: el perfil del team gratuito se reusa, así que instalar sin renovar la
   firma gasta días del vencimiento viejo. Ver la sección 9.
 - El caso que la regla compartida cita sin nombrar el proyecto —un deploy verde
@@ -352,7 +352,7 @@ Swift y la de TypeScript.
   por qué la lista de cuentas queda vacía. La lista vacía es la consecuencia.
   Leerla como la causa mandó dos veces a la instrucción equivocada. Descartado
   con evidencia: no es el keychain bloqueado (está en `no-timeout`) ni el
-  script (nunca escribe al keychain). `install-ios.sh` lo detecta leyendo el
+  script (nunca escribe al keychain). `install-ios.mjs` lo detecta leyendo el
   LOG y dice qué falta.
 - **Y el chequeo "prolijo" de eso estaba mal: la credencial no se puede ver
   desde el CLI.** Puse un pre-flight con
@@ -639,7 +639,7 @@ claves de este proyecto, que es lo que no viaja:
   qué proceso es.
 - No dejar emuladores ni servidores de dev corriendo al terminar.
 - **Instalar la app SIEMPRE incluye renovar la firma**, y para eso está
-  `scripts/install-ios.sh`: hace el procedimiento entero, así no depende de
+  `kyber/scripts/install-ios.mjs`: hace el procedimiento entero, así no depende de
   recordarlo. No es una decisión que se tome según cuánto quede — **mirar
   cuánto queda es justamente lo que lleva a saltearlo** ("quedan 23 horas,
   todavía anda"). Se fuerza, sin preguntar, en cada instalación.
@@ -706,7 +706,7 @@ claves de este proyecto, que es lo que no viaja:
   semana antes — a un paso de dar por verificado un binario anterior al cambio.
   El remedio de siempre ("borrá DerivedData") tiene esa forma peligrosa. En
   bash, `shopt -s nullglob`; en zsh, `(N)`; o mejor, no borrar nada:
-  `install-ios.sh` compila en un `mktemp -d` nuevo cada vez, así que no hay
+  `install-ios.mjs` compila en un `mktemp -d` nuevo cada vez, así que no hay
   caché que limpiar ni bundle viejo que leer.
 - **`xcodebuild ... | grep` devuelve el exit code de GREP, no del build.**
   Medido: un esquema inexistente sale con 65 por su cuenta y con **0** a través

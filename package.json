@@ -17,7 +17,8 @@
     "backup": "node kyber/scripts/backup.mjs",
     "restore": "node kyber/scripts/restore.mjs",
     "periods:check": "node scripts/check-periods.mjs",
-    "version:set": "node kyber/scripts/set-version.mjs"
+    "version:set": "node kyber/scripts/set-version.mjs",
+    "install:ios": "node kyber/scripts/install-ios.mjs"
   },
   "devDependencies": {
     "firebase-admin": "^14.4.0"
