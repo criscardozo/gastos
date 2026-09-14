@@ -237,6 +237,57 @@ final class AppModel {
     private var bankChargesListener: ListenerRegistration?
     private var recurringRulesListener: ListenerRegistration?
     /// Charges already handed to the sweep, so it never asks twice.
+    /// True while a manual fetch is in flight — gates the double tap. What tells
+    /// the user it worked is a charge appearing, which the listener does.
+    ///
+    /// Lives here, with the two functions that WRITE it, rather than in
+    /// AppModel+BankCharges.swift. An extension cannot hold stored state, and
+    /// `private(set)` is per-file — so moving a writer across would have meant
+    /// widening this to the whole module. The split gave way instead: the
+    /// extension holds what reads and what acts, the mutators stay with what
+    /// they mutate.
+    private(set) var isFetchingCharges = false
+
+    /// Delete dismissals past the 48-hour window. Without Cloud Functions there
+    /// is nothing server-side to expire them, so whichever client is listening
+    /// does it — which makes the window a display rule rather than a retention
+    /// guarantee. Nothing depends on this running: every reader already hides
+    /// what it would delete.
+    private func sweepExpiredDismissals(_ charges: [BankCharge], householdId: String) {
+        let expired = BankChargeInbox.partition(charges, now: Date()).expired
+        for charge in expired where !charge.id.isEmpty {
+            // Asked once per launch: our own delete fires the listener again,
+            // and re-issuing it would be a write per round trip.
+            guard sweptChargeIds.insert(charge.id).inserted else { continue }
+            write {
+                try await self.firestore.deleteBankCharge(
+                    householdId: householdId,
+                    chargeId: charge.id
+                )
+            }
+        }
+    }
+
+    func requestBankIngest() {
+        guard let householdId = attachedHouseholdId, !isFetchingCharges else { return }
+        isFetchingCharges = true
+        write {
+            defer {
+                // Long enough that a charge has a chance to arrive before the
+                // button invites another go.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(4))
+                    self.isFetchingCharges = false
+                }
+            }
+            try await self.firestore.requestBankIngest(
+                householdId: householdId,
+                endpoint: Self.ingestEndpoint
+            )
+        }
+    }
+
+    /// Charges already swept this launch.
     private var sweptChargeIds: Set<String> = []
     private var viewedExpensesListener: ListenerRegistration?
     private var currentListenerRange: (String, String)?
@@ -410,158 +461,6 @@ final class AppModel {
         }
     }
 
-    // MARK: Bank charges
-
-    /// The bank's rate as the household's own verified expenses reveal it. Read
-    /// from what is already in memory (current + viewed period), so it costs
-    /// nothing — and it is what every suggestion is judged against.
-    var learnedBankRate: Double? {
-        BankMatch.learnRate(suggestionExpenses)
-    }
-
-    /// The charges this screen is concerned with: the debit card's, plus any
-    /// whose card the household has not identified. A credit-card charge is not
-    /// an expense waiting for its USD figure — it is a line on a card statement,
-    /// and belongs to the web's Tarjetas screen. Until cards are configured in
-    /// Ajustes this is every charge, exactly as it was before.
-    ///
-    /// Dismissed ones are still in here; `expenseBankCharges` is the pending
-    /// half and `dismissedBankCharges` the recoverable one.
-    private var myBankCharges: [BankCharge] {
-        guard let household else { return bankCharges }
-        return bankCharges.filter { household.belongsToExpenses(cardLast4: $0.cardLast4) }
-    }
-
-    /// Waiting to be matched — what the sheet works through.
-    var expenseBankCharges: [BankCharge] {
-        BankChargeInbox.partition(myBankCharges, now: Date()).pending
-    }
-
-    /// Discarded in the last 48 hours, newest first: still one press from
-    /// coming back. Past the window they are swept, so this list empties itself.
-    var dismissedBankCharges: [BankCharge] {
-        // A charge that BECAME an expense carries the same `dismissedAt` as
-        // one somebody threw away, so it appeared here with the same
-        // "Restaurar" — which only clears the stamp. Pressing it returned the
-        // charge to pending and left the expense: the same purchase counted
-        // twice, with nothing on screen saying so.
-        //
-        // Told apart by the expense's id, which filing derives from the
-        // charge, so nothing had to be stored. The way back for a filed charge
-        // is the undo on the expense row, which deletes both.
-        let filed = Set(suggestionExpenses.compactMap(\.filedFromChargeId))
-        return BankChargeInbox.partition(myBankCharges, now: Date())
-            .dismissed
-            .filter { !filed.contains($0.id) }
-    }
-
-    /// One suggestion per pending charge, matched against the expenses already
-    /// loaded — which is where a charge from the last day or two lands.
-    var bankChargeSuggestions: [BankMatch.Suggestion] {
-        BankMatch.suggestMatches(
-            charges: expenseBankCharges,
-            expenses: suggestionExpenses,
-            referenceRate: learnedBankRate
-        )
-    }
-
-    /// The unverified expenses a charge may be assigned to, most recent first.
-    var unverifiedExpenses: [Expense] {
-        suggestionExpenses
-            .filter { !$0.isVerified }
-            .sorted { ($0.date, $0.createdAt ?? .distantPast) > ($1.date, $1.createdAt ?? .distantPast) }
-    }
-
-    /// Confirm a suggestion: the expense takes the charge's USD and the charge
-    /// leaves the list, in one batch.
-    func assignBankCharge(_ charge: BankCharge, to expenseId: String) {
-        guard let householdId = attachedHouseholdId, !charge.id.isEmpty else { return }
-        write {
-            try await self.firestore.assignBankCharge(
-                householdId: householdId,
-                chargeId: charge.id,
-                expenseId: expenseId,
-                usdCents: charge.usdCents
-            )
-        }
-    }
-
-    /// The Apps Script web app that runs the ingestion, from Info.plist.
-    /// nil when it is not configured, which hides the button rather than
-    /// offering one that cannot work.
-    static let ingestEndpoint: URL? = {
-        guard let raw = Bundle.main.object(forInfoDictionaryKey: "GDIngestURL") as? String,
-              !raw.isEmpty,
-              let url = URL(string: raw)
-        else { return nil }
-        return url
-    }()
-
-    /// True while a manual fetch is in flight — gates the double tap. What tells
-    /// the user it worked is a charge appearing, which the listener does.
-    private(set) var isFetchingCharges = false
-
-    func requestBankIngest() {
-        guard let householdId = attachedHouseholdId, !isFetchingCharges else { return }
-        isFetchingCharges = true
-        write {
-            defer {
-                // Long enough that a charge has a chance to arrive before the
-                // button invites another go.
-                Task { @MainActor in
-                    try? await Task.sleep(for: .seconds(4))
-                    self.isFetchingCharges = false
-                }
-            }
-            try await self.firestore.requestBankIngest(
-                householdId: householdId,
-                endpoint: Self.ingestEndpoint
-            )
-        }
-    }
-
-    /// Discard a charge that is not ours to match. Recoverable for 48 hours —
-    /// which is why there is no confirmation prompt on the way in.
-    func discardBankCharge(_ charge: BankCharge) {
-        guard let householdId = attachedHouseholdId, !charge.id.isEmpty else { return }
-        write {
-            try await self.firestore.dismissBankCharge(
-                householdId: householdId,
-                chargeId: charge.id
-            )
-        }
-    }
-
-    /// Undo a discard: the charge goes back to the pending list.
-    func restoreBankCharge(_ charge: BankCharge) {
-        guard let householdId = attachedHouseholdId, !charge.id.isEmpty else { return }
-        write {
-            try await self.firestore.restoreBankCharge(
-                householdId: householdId,
-                chargeId: charge.id
-            )
-        }
-    }
-
-    /// Delete dismissals past the 48-hour window. Without Cloud Functions there
-    /// is nothing server-side to expire them, so whichever client is listening
-    /// does it — which makes the window a display rule rather than a retention
-    /// guarantee. Nothing depends on this running: every reader already hides
-    /// what it would delete.
-    private func sweepExpiredDismissals(_ charges: [BankCharge], householdId: String) {
-        let expired = BankChargeInbox.partition(charges, now: Date()).expired
-        for charge in expired where !charge.id.isEmpty {
-            // Asked once per launch: our own delete fires the listener again,
-            // and re-issuing it would be a write per round trip.
-            guard sweptChargeIds.insert(charge.id).inserted else { continue }
-            write {
-                try await self.firestore.deleteBankCharge(
-                    householdId: householdId,
-                    chargeId: charge.id
-                )
-            }
-        }
-    }
 
     /// What the period before the current one left over — negative when it was
     /// overspent. nil when there is no previous period, or the read failed.

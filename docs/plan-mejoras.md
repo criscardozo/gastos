@@ -556,7 +556,26 @@ mismo commit** y `shared/schema.md` lo documenta. Corré los vectores
 
 ### G1. Partir `AppModel.swift`
 
-> **Abierto.** `AppModel.swift` sigue en **1.094 líneas**.
+> **Primer corte el 14/9/2026: 1.094 → 993**, con `AppModel+BankCharges.swift`
+> (128 líneas). Build limpio y 163 tests.
+>
+> **Y el corte encontró un límite que cambia lo que conviene hacer con el
+> resto.** `private` y `private(set)` en Swift son **por archivo**, no por tipo,
+> así que mover a otro archivo cualquier función que escriba estado privado
+> obliga a ensanchar ese estado a todo el módulo. Acá pasó con dos:
+> `requestBankIngest` escribe `isFetchingCharges` y `sweepExpiredDismissals`
+> escribe `sweptChargeIds`. Se resolvió **dejándolas atrás** —la extensión se
+> lleva lo que lee y lo que actúa, los mutadores se quedan con lo que mutan— en
+> vez de ensanchar los dos accesos.
+>
+> Eso funciona una vez y envejece mal repetido: cada sección siguiente dejaría
+> su mitad mutadora en el archivo original, y terminaríamos con seis archivos
+> donde leer una función obliga a abrir dos. **Partir por extensiones da
+> rendimientos decrecientes**; lo que la entrada pedía —stores por feature, como
+> `ServicesStore`— sigue siendo la forma correcta, y sigue siendo un cambio de
+> comportamiento: cargos bancarios lee `expenses`, `household` y `periods`, así
+> que un store tiene que poseerlos o duplicar listeners. Eso merece su propia
+> sesión con verificación en simulador, no ir cayendo de a pedazos.
 
 **Evidencia.** 1.336 líneas, 18 secciones `MARK` (auth, onboarding, períodos,
 gastos, cargos bancarios, ajustes, categorías, widget). `ServicesStore` y
