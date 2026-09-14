@@ -29,10 +29,11 @@ import { getFirebaseClient } from "@/lib/firebase/client";
 import { expenseConverter, type Expense } from "@/lib/firebase/converters";
 import { decoded } from "@/lib/firebase/shape";
 import { formatCents, formatUsd } from "@/lib/money";
-import { formatPeriodRange, formatShortDate } from "@/lib/dates";
+import { formatShortDate } from "@/lib/dates";
 import { addDays, type PeriodRange } from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
 import { exportExpensesPdf, type PdfExportOptions } from "@/lib/export/pdf";
+import { buildExportPayload } from "@/lib/export/payload";
 import {
   buildExpensesWorkbook,
   downloadWorkbook,
@@ -263,65 +264,35 @@ export default function DataPage() {
     downloadCsv(`${fileBase}.csv`, csv);
   };
 
-  /** The one payload every branded export renders — PDF, Excel and Sheets. */
-  const buildExportPayload = (extension: string): PdfExportOptions | null => {
-    if (range === null) return null;
-    const totalsMap = new Map<string, { aud: number; usd: number }>();
-    for (const e of rows) {
-      const prev = totalsMap.get(e.categoryId) ?? { aud: 0, usd: 0 };
-      totalsMap.set(e.categoryId, {
-        aud: prev.aud + e.amountCents,
-        usd: prev.usd + (e.usdCents ?? 0),
-      });
-    }
-    const categoryTotals = [...totalsMap.entries()]
-      .map(([id, sums]) => ({
-        label: catLabelOf(id),
-        amountCents: sums.aud,
-        usdCents: sums.usd,
-      }))
-      .sort((a, b) => b.amountCents - a.amountCents);
-    return {
-      filename: `${fileBase}.${extension}`,
-      title: "Gastos",
-      householdName: household.name,
-      rangeLabel: `${formatPeriodRange(range.startDate, range.endDate, locale, "short")} ${range.endDate.slice(0, 4)}`,
-      rows: rows.map((e) => ({
-        date: e.date,
-        categoryLabel: catLabelOf(e.categoryId),
-        note: e.note,
-        memberLabel: memberNames[e.createdBy] ?? e.createdBy,
-        amountCents: e.amountCents,
-        usdCents: e.usdCents,
-      })),
-      categoryTotals,
-      grandTotalCents: total,
-      grandTotalUsdCents: totalUsd,
-      unverifiedCount,
-      currency: household.currency,
-      locale,
-      labels: {
-        date: t("colDate"),
-        category: t("colCategory"),
-        note: t("colNote"),
-        person: t("colPerson"),
-        amount: t("colAmount"),
-        amountUsd: t("colAmountUsd"),
-        byCategory: t("byCategory"),
-        total: t("total"),
-        countLine: t("expensesCount", { count: rows.length }),
-        unverifiedNotice: t("unverifiedNotice", { count: unverifiedCount }),
-      },
-    };
-  };
+  /**
+   * `null` when there is no range yet: the three branded exports need one and
+   * the CSV does not, which is why this is the only one that can refuse.
+   */
+  const payloadFor = (extension: string): PdfExportOptions | null =>
+    range === null
+      ? null
+      : buildExportPayload({
+          rows,
+          range,
+          fileBase,
+          extension,
+          household,
+          memberNames,
+          catLabelOf,
+          locale,
+          totalCents: total,
+          totalUsdCents: totalUsd,
+          unverifiedCount,
+          t,
+        });
 
   const exportPdf = async () => {
-    const payload = buildExportPayload("pdf");
+    const payload = payloadFor("pdf");
     if (payload !== null) await exportExpensesPdf(payload);
   };
 
   const exportExcel = async () => {
-    const payload = buildExportPayload("xlsx");
+    const payload = payloadFor("xlsx");
     if (payload === null) return;
     setExportPhase("excel");
     try {
@@ -333,7 +304,7 @@ export default function DataPage() {
   };
 
   const exportDrive = async () => {
-    const payload = buildExportPayload("xlsx");
+    const payload = payloadFor("xlsx");
     const fb = getFirebaseClient();
     if (payload === null || fb === null) return;
     setExportPhase("drive");

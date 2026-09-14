@@ -606,8 +606,21 @@ uno. **No cambies comportamiento** mientras partís.
 >
 > Las dos que salieron son formularios y se llevaron sus props explícitas; la
 > fila común se queda, porque es la única que no es un formulario y porque
-> alcanza las acciones de la fila en vez de recibirlas. `datos/page.tsx` (579)
-> sigue sin tocar: no se midió si tiene un corte equivalente.
+> alcanza las acciones de la fila en vez de recibirlas.
+>
+> **`datos/page.tsx` medido el 15/9/2026: 580 → 550**, con
+> `lib/export/payload.ts` (98) y seis tests. Acá el corte bueno tampoco era el
+> más grande. El grupo entero de exportación son 107 líneas pero necesita
+> **diez** valores de la página, y `exportPhase` se usa en el JSX, así que
+> sacarlo entero movía estado sin cerrar nada. Adentro, en cambio,
+> `buildExportPayload` es **pura** —sin IO ni estado de React— y es la única
+> parte del camino de exportación con aritmética: los totales por categoría, que
+> los tres exports con marca muestran y ninguno recalcula. Un error ahí está mal
+> en los tres y no se ve en el código de ninguno.
+>
+> Vive al lado de `csv.ts`, que ya se testeaba así. Cinco mutaciones en rojo:
+> ordenar al revés, sumar el USD dentro del AUD, reordenar las filas por fecha,
+> sacar el fallback al uid y el nombre de archivo sin extensión.
 
 > **Parcial el 10/9/2026** (`ef90439`). Se extrajo `useExpenseFilters`, que es
 > el hook que esta entrada nombra: mejora la cohesión y NO el tamaño (974 →
