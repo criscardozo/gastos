@@ -54,15 +54,13 @@ describe("the kyber consumer config", () => {
     // one, phrased as if a copy had drifted. Failing is not enough; it has to
     // fail in the right place.
     //
-    // (Nor can this comment spell a port out. The sweep reads every file that
-    // is not on its list, including this one, so quoting its message verbatim
-    // put this file on the list it describes. That happened, here, while
-    // writing the paragraph above.)
-    // The ports come from firebase.json rather than being spelled out. Not
-    // tidiness: emulator-ports.test.ts sweeps the tree for files repeating a
-    // port with nothing holding them to it, and a literal here put THIS file
-    // on that list. A guard about ports that hardcodes one fails on itself,
-    // which is the right way round.
+    // Which is also why the needles come from firebase.json and why nothing
+    // here spells a port out. That sweep reads every file not on its list,
+    // including this one, so both a literal in the needles AND a quote of the
+    // sweep's own message put this file on the list it describes. Both
+    // happened, here, the second while writing the sentence explaining the
+    // first. A guard about ports that hardcodes one fails on itself, which is
+    // the right way round.
     const emulators = JSON.parse(read(join(config.firebaseDir, "firebase.json")))
       .emulators as Record<string, { port?: number; websocketPort?: number }>;
     const ports = Object.values(emulators).flatMap((e) =>
@@ -112,60 +110,6 @@ describe("the kyber consumer config", () => {
     const dead = links.filter((rel) => !existsSync(join(ROOT, "docs", rel)));
     expect(dead, `docs/reglas.md links to files that do not exist:\n${dead.join("\n")}`)
       .toEqual([]);
-  });
-
-  it("is reachable from the scripts and the tests, and from nothing the bundle ships", () => {
-    // Vercel cannot fetch a private submodule, and no permission changes that.
-    // Its own docs: submodules deploy "as long as the submodule is publicly
-    // accessible through the HTTP protocol. Git submodules that are private or
-    // requested over SSH will fail during the Build step." The deploy still
-    // goes GREEN — the clone reports one `Warning: Failed to fetch one or more
-    // git submodules` line and the build carries on without it.
-    //
-    // So kyber/ is absent in production and present everywhere else: CI checks
-    // it out with a deploy key, and scripts, hooks and these tests run on a
-    // machine where it exists. Nothing is broken while the bundle imports none
-    // of it — which is also why nothing would notice the day it does. The
-    // import would resolve locally, pass CI, deploy green, and fail in the
-    // browser with a cause weeks old.
-    //
-    // If the bundle ever genuinely needs code from kyber, the submodule is the
-    // wrong shape for it: make kyber public, or depend on it as a git package,
-    // which Vercel does support. Do not "fix" this guard.
-    const sources = execFileSync(
-      "git",
-      ["ls-files", "apps/web/src", "apps/web/next.config.ts"],
-      { cwd: ROOT, encoding: "utf8" },
-    )
-      .split("\n")
-      .filter((f) => /\.(ts|tsx|css)$/.test(f) && !/\.test\.tsx?$/.test(f));
-
-    // Without this the filter below would sweep an empty list and pass — the
-    // shape that has already let a deleted guard sit green in this repo.
-    expect(sources.length, "found no bundled sources to check").toBeGreaterThan(50);
-
-    const reaching = sources.filter((file) =>
-      /(?:^|\n)\s*(?:import|export)[^\n]*["'][^"'\n]*kyber|require\(\s*["'][^"'\n]*kyber|@(?:import|source)[^\n]*kyber/.test(
-        read(file),
-      ),
-    );
-    expect(
-      reaching,
-      "these ship to the browser and reach into kyber, which production does " +
-        `not have:\n  ${reaching.join("\n  ")}`,
-    ).toEqual([]);
-
-    // The other way in: an alias that lands inside kyber without naming it.
-    const tsconfig = read("apps/web/tsconfig.json").replace(/^\s*\/\/.*$/gm, "");
-    const paths: Record<string, string[]> =
-      JSON.parse(tsconfig).compilerOptions?.paths ?? {};
-    const aliased = Object.entries(paths).filter(([, targets]) =>
-      targets.some((t) => t.includes("kyber")),
-    );
-    expect(
-      aliased.map(([k]) => k),
-      "a tsconfig path alias resolves into kyber, which production does not have",
-    ).toEqual([]);
   });
 
   it("states every key the first batch of shared scripts reads", () => {

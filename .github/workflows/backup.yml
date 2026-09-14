@@ -30,27 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      # kyber is a PRIVATE sibling repo, so the checkout above deliberately
-      # does NOT ask for submodules: GITHUB_TOKEN is scoped to this repository
-      # alone, and `submodules: true` would fail the whole step trying to
-      # reach another one. A read-only deploy key fetches it instead, in its
-      # own step rather than as `ssh-key:` on the checkout above — that key
-      # cannot clone THIS repo, and one deploy key cannot be registered on two
-      # repositories anyway.
-      #
-      # Only first-party actions: the single place in this project that holds
-      # a credential is not somewhere to add a third-party action.
-      #
-      # The ref comes from the gitlink, so CI builds the exact commit this
-      # repo recorded, and the log prints the sha it fetched.
-      - id: kyber
-        run: echo "sha=$(git rev-parse HEAD:kyber)" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v7
         with:
-          repository: criscardozo/kyber
-          ref: ${{ steps.kyber.outputs.sha }}
-          ssh-key: ${{ secrets.KYBER_DEPLOY_KEY }}
-          path: kyber
+          # kyber is a public sibling repo, so the checkout fetches it
+          # at the commit this repo recorded, with no credential.
+          submodules: true
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:

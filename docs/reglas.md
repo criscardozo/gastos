@@ -614,9 +614,11 @@ claves de este proyecto, que es lo que no viaja:
 - La del **backup** y la de la **ingesta de Gmail** son distintas a propósito,
   para poder revocar una sin romper la otra.
 - La ingesta pide permiso de Gmail **de sólo lectura** (`appsscript.json`).
-- `KYBER_DEPLOY_KEY` es de sólo lectura sobre `kyber` y vive como secret en
-  este repo y en el de Stock. Es de kyber, no de los consumidores: una deploy
-  key no puede clonar el repo que la guarda.
+- **Ya no hace falta ninguna credencial para kyber.** Existió un
+  `KYBER_DEPLOY_KEY` de sólo lectura mientras el repo era privado; desde que es
+  público, `actions/checkout` lo trae con `submodules: true` y sin secret. El
+  secret y la deploy key quedan para borrar — una credencial que ya no se usa
+  sigue siendo una credencial.
 
 ## 9. La máquina de Cristian
 
@@ -752,14 +754,16 @@ claves de este proyecto, que es lo que no viaja:
   sección viaja el método, no el caso: si al sacarle el artefacto concreto la
   regla deja de decir algo, todavía no estaba lista para viajar. Por eso la
   prosa compartida **no nombra un puerto**.
-- **Nada de `apps/web` puede venir de kyber mientras kyber sea privado.** Vercel
-  no clona un submódulo privado —lo dice su documentación y lo medimos dos veces
-  en deploys reales— y **no avisa fuerte**: una línea de `Warning:` y el build
-  sigue en verde sin el submódulo. Hoy no molesta porque el bundle no importa
-  nada de ahí; lo sostiene `apps/web/src/lib/kyber.test.ts`, que falla si algo
-  empieza a alcanzarlo por import, por `@source` de Tailwind o por un alias del
-  tsconfig. Scripts, hooks, tests y CI no se ven afectados: corren donde el
-  submódulo sí está.
+- **`apps/web` ya puede consumir de kyber, y esa restricción duró una tarde.**
+  Vercel no clona un submódulo **privado** —lo dice su documentación y lo
+  medimos dos veces en deploys reales— y no falla: imprime una línea de
+  `Warning:` y sigue en verde sin el submódulo. Durante unas horas eso se
+  sostuvo con una guarda que impedía que algo del bundle alcanzara `kyber/`.
+  Kyber es público desde el 14/9/2026, así que la condición **se eliminó en vez
+  de vigilarse** y la guarda se borró con ella: una guarda que sobrevive a su
+  motivo enseña algo que ya no es cierto. De las tres salidas —leer el log,
+  guardar la condición, eliminarla— la última es la única que no depende de que
+  alguien se acuerde.
 - **`dates.ts` NO es candidato, y no por lo de arriba.** Nuestro `dates.ts` es
   formateo; el de Stock, que se llama igual, es aritmética de calendario. Cero
   nombres exportados en común: son dos módulos distintos con el mismo nombre de
