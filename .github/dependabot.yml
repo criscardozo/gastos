@@ -6,6 +6,13 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Leave the declared range alone when it already admits the new release.
+    # npm's default is `increase`, which moved the catalog's @types/node from
+    # ^24.13.3 to ^24.13.4 — a range that already allowed 24.13.4, so the
+    # lockfile would have taken it with no manifest change at all. The catalog
+    # is mirrored in kyber's stack.json, so that turned a no-op into a review
+    # across three repositories.
+    versioning-strategy: increase-if-necessary
     groups:
       # One PR for the routine churn.
       minor-and-patch:
