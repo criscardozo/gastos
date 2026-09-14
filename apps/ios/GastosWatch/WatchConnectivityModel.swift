@@ -5,6 +5,11 @@ import WatchConnectivity
 /// `transferUserInfo` (queues and delivers even when the phone app is
 /// backgrounded/asleep — offline-on-the-watch) and receives the budget
 /// snapshot the phone pushes via `updateApplicationContext`.
+/// Main-actor isolated: `budget` drives the view, and the WatchConnectivity
+/// callbacks that feed it arrive on a background queue. Isolating the class and
+/// marking the delegate `nonisolated` puts the hop in one place instead of
+/// leaving it to each call site to remember.
+@MainActor
 final class WatchConnectivityModel: NSObject, ObservableObject {
 
     @Published var budget: WatchBudget?
@@ -30,7 +35,9 @@ final class WatchConnectivityModel: NSObject, ObservableObject {
         ])
     }
 
-    private func apply(_ context: [String: Any]) {
+    /// Parses off the main actor — the dictionary is not Sendable, so it is
+    /// read here and only the resulting value crosses.
+    nonisolated private func apply(_ context: [String: Any]) {
         guard let remaining = context["remainingCents"] as? Int else { return }
         let budget = WatchBudget(
             remainingCents: remaining,
@@ -38,12 +45,12 @@ final class WatchConnectivityModel: NSObject, ObservableObject {
             state: context["state"] as? String ?? "comfortable",
             currency: context["currency"] as? String ?? "AUD"
         )
-        DispatchQueue.main.async { self.budget = budget }
+        Task { @MainActor in self.budget = budget }
     }
 }
 
 extension WatchConnectivityModel: WCSessionDelegate {
-    func session(
+    nonisolated func session(
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
@@ -51,7 +58,7 @@ extension WatchConnectivityModel: WCSessionDelegate {
         apply(session.receivedApplicationContext)
     }
 
-    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+    nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         apply(applicationContext)
     }
 }

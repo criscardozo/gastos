@@ -11,6 +11,14 @@ import WatchConnectivity
 /// It also pushes the current budget snapshot to the watch via
 /// `updateApplicationContext` (app groups do NOT cross the phone/watch device
 /// boundary, so the widget's app-group snapshot is not readable there).
+/// Main-actor isolated. `pendingContext` was read and written from two places
+/// at once — `updateBudgetContext`, called from the model, and the activation
+/// callback, which arrives on WatchConnectivity's own queue. That is a real
+/// race, not only a warning: the context could be cleared between the guard and
+/// the send. Isolating the class puts every touch of it on one actor, and the
+/// delegate conformance is `nonisolated` because the framework decides where it
+/// calls from.
+@MainActor
 final class WatchSyncService: NSObject {
 
     static let shared = WatchSyncService()
@@ -71,7 +79,11 @@ final class WatchSyncService: NSObject {
 
     #if canImport(WatchConnectivity)
     /// Routes a received expense payload to the authenticated phone app.
-    private func handle(userInfo: [String: Any]) {
+    ///
+    /// `nonisolated` and reading the dictionary here on purpose: `[String: Any]`
+    /// is not Sendable, so it is unpacked where it arrives and only the four
+    /// scalars cross to the main actor.
+    nonisolated private func handle(userInfo: [String: Any]) {
         guard
             let amountCents = userInfo[Key.amountCents] as? Int,
             let categoryId = userInfo[Key.categoryId] as? String,
@@ -94,22 +106,28 @@ final class WatchSyncService: NSObject {
 #if canImport(WatchConnectivity)
 extension WatchSyncService: WCSessionDelegate {
 
-    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        guard activationState == .activated, let context = pendingContext else { return }
-        pendingContext = nil
-        try? session.updateApplicationContext(context)
+    nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        guard activationState == .activated else { return }
+        // `WCSession.default` rather than the parameter: the session is not
+        // Sendable, so it is fetched again on the other side instead of being
+        // carried across. It is the same object.
+        Task { @MainActor in
+            guard let context = pendingContext else { return }
+            pendingContext = nil
+            try? WCSession.default.updateApplicationContext(context)
+        }
     }
 
-    func sessionDidBecomeInactive(_ session: WCSession) {}
+    nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
 
-    func sessionDidDeactivate(_ session: WCSession) {
+    nonisolated func sessionDidDeactivate(_ session: WCSession) {
         // Re-activate so a re-paired / switched watch keeps working.
         session.activate()
     }
 
     /// Delivered even if the phone app was backgrounded/suspended when the
     /// watch queued the transfer — this is what gives offline-on-the-watch.
-    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
         handle(userInfo: userInfo)
     }
 }
