@@ -36,6 +36,11 @@ jobs:
           # kyber is a public sibling repo, so the checkout fetches it
           # at the commit this repo recorded, with no credential.
           submodules: true
+          # The checkout is shallow and would arrive with no tags at all, which
+          # version-agrees.test.ts cannot tell apart from a version nobody
+          # tagged — so it would fail here on every release commit and pass
+          # nowhere useful.
+          fetch-tags: true
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:

@@ -35,6 +35,38 @@ describe("the app version", () => {
     expect(IOS, "project.yml should carry app, widget and watch").toHaveLength(3);
   });
 
+  it("has a git tag, because a version with nothing to check out is a number", () => {
+    // The four copies can agree perfectly and still leave nothing to go back
+    // to. A tag is what makes a version a thing rather than a string: it is
+    // what `git checkout v1.1.0` needs, what a bisect walks, and what tells you
+    // which commit the phone is running when Ajustes says 1.1.0 and the bug
+    // report is a week old.
+    //
+    // It was being done by hand — v1.0.0 and v1.1.0 both exist, annotated and
+    // pushed — which is to say it depended on somebody remembering, and the
+    // script that moves the four copies never mentioned git at all.
+    //
+    // Flow: `node scripts/set-version.mjs x.y.z`, commit, `git tag -a vx.y.z`,
+    // `git push --follow-tags`. Forget the tag and this goes red.
+    const tags = execFileSync("git", ["tag", "-l"], { cwd: ROOT, encoding: "utf8" })
+      .split("\n")
+      .filter((t) => t !== "");
+
+    // Told apart on purpose: no tags AT ALL is a shallow checkout, and
+    // reporting that as "this version is untagged" sends you to tag something
+    // that is already tagged. CI passes fetch-tags for this reason.
+    expect(
+      tags.length,
+      "no tags in this checkout at all — it is shallow, not untagged",
+    ).toBeGreaterThan(0);
+
+    expect(
+      tags,
+      `${WEB} is declared everywhere and has no tag. Commit, then:\n` +
+        `  git tag -a v${WEB} -m "v${WEB}" && git push --follow-tags`,
+    ).toContain(`v${WEB}`);
+  });
+
   it("is what the plist key actually reads, in every target", () => {
     // MARKETING_VERSION is a build setting. The number a person SEES comes
     // from CFBundleShortVersionString, and nothing forces one to reference
