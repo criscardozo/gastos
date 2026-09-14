@@ -25,15 +25,30 @@ pnpm workspaces for the JS side (web + rules-tests). Swift and TS share no code 
 > — are collected in [`docs/reglas.md`](docs/reglas.md). This section stays the
 > authoritative short form for the technical ones.
 
+The ones that are not specific to this project live in the `kyber` submodule,
+shared with its sibling projects, and are imported here rather than restated —
+a second copy of a rule is a rule that can disagree with itself. If these read
+as missing, the submodule is not checked out (`git submodule update --init`);
+`apps/web/src/lib/kyber.test.ts` is what notices, because a broken import here
+fails silently.
 
-- **$0 infra budget.** Firebase Spark plan only — never introduce Cloud Functions (they require the paid Blaze plan). Vercel Hobby for web hosting. No paid services.
+@kyber/docs/publicar.md
+@kyber/docs/costo-cero.md
+@kyber/docs/idiomas.md
+@kyber/docs/firestore-free-tier.md
+@kyber/docs/codigo.md
+@kyber/docs/secretos.md
+@kyber/docs/versiones.md
+
+
+- **$0 infra budget** — see the imported `costo-cero`. For this project that means Firebase Spark (never Cloud Functions: they require Blaze) and Vercel Hobby.
 - **No custom backend.** Both clients talk directly to Firebase (Auth + Firestore). **Firestore security rules are the only security boundary** — client-side route gating is cosmetic.
 - **Money is integer cents** (Swift `Int`, TS `number`). Never floats, never decimal strings. Format with `NumberFormatter` / `Intl.NumberFormat`.
 - **Single currency (AUD).** `expense.amountCents` is the household currency (AUD) — the only currency anyone types and the only one any total/budget/sum reads, so the ledger stays deterministic and offline-safe. The **ledger** converts nothing (the old AUD|USD entry switch, `entryCurrency`/`entryAmountCents` and the frankfurter snapshot were removed). The one FX call in the project is the Tarjetas screen estimating the ARS cost of a card statement (`apps/web/src/lib/usd-rate.ts`, dolarapi oficial, with a hand-entered fallback on the household) — displayed only, never stored, never summed. A USD figure only ever comes from the bank — the amount it actually charged for the expense — and lives in its own field. See `shared/schema.md`.
 - **Expense dates are `"YYYY-MM-DD"` strings computed in the household's timezone** (stored on the household doc, default `Australia/Sydney`) — never the device timezone, never UTC bucketing.
 - **Google Sign-In only** on both platforms (one provider per person — mixing Apple/Google creates two distinct Firebase UIDs for the same person). Web serves Firebase's auth handler same-origin (`next.config.ts` rewrites `/__/auth/*`; `authDomain` = the serving host) so BOTH flows work under Safari ITP: popup in a browser tab, `signInWithRedirect` when running as an installed PWA, where a popup's handshake back to a standalone window is unreliable. Adding a domain requires whitelisting `https://<domain>/__/auth/handler` as an OAuth redirect URI — see `docs/setup.md`.
-- **Bounded Firestore listeners only** — every expense query must be range-limited by date (`where date >= periodStart && date <= periodEnd`). In React, always return the unsubscribe from `useEffect` (StrictMode double-mount duplicating `onSnapshot` burns the free tier).
-- **Source code and comments in English.** Both apps localized in Spanish and English (iOS: String Catalogs; web: next-intl). Conversation with the user is in Spanish (Argentina).
+- **Bounded Firestore listeners only** — see the imported `firestore-free-tier`. Here that means every expense query is range-limited by date (`where date >= periodStart && date <= periodEnd`); StrictMode double-mount duplicating `onSnapshot` is what burns the free tier.
+- **Source code and comments in English** — see the imported `idiomas`. Both apps are localized in Spanish and English (iOS: String Catalogs; web: next-intl).
 - MIT license.
 
 ## Key design decisions (rationale in PLAN.md)

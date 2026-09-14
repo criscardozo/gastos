@@ -90,6 +90,30 @@ describe("the kyber consumer config", () => {
     ).toEqual([]);
   });
 
+  it("is imported by CLAUDE.md, and every one of those resolves", () => {
+    // Claude Code resolves `@path` imports relative to the file, and a path
+    // that does not exist is simply not imported — no warning, no error. So an
+    // agent working in a checkout without the submodule would run without the
+    // shared rules and have no way to tell. Nothing else in this repo notices.
+    const claude = read("CLAUDE.md");
+    const imports = [...claude.matchAll(/^@(\S+)$/gm)].map((m) => m[1]);
+    expect(imports.length, "CLAUDE.md imports nothing from kyber").toBeGreaterThan(
+      3,
+    );
+    const missing = imports.filter((path) => !existsSync(join(ROOT, path)));
+    expect(missing, `CLAUDE.md imports files that do not exist:\n${missing.join("\n")}`)
+      .toEqual([]);
+
+    // Links in reglas.md are the same hazard with a different renderer: a dead
+    // relative link is a 404 nobody clicks until they need the rule.
+    const reglas = read("docs/reglas.md");
+    const links = [...reglas.matchAll(/\]\((\.\.\/kyber\/[^)]+)\)/g)].map((m) => m[1]);
+    expect(links.length, "reglas.md points at nothing in kyber").toBeGreaterThan(3);
+    const dead = links.filter((rel) => !existsSync(join(ROOT, "docs", rel)));
+    expect(dead, `docs/reglas.md links to files that do not exist:\n${dead.join("\n")}`)
+      .toEqual([]);
+  });
+
   it("states every key the first batch of shared scripts reads", () => {
     // Without this the assertions below would compare undefined against
     // undefined and pass — a missing key would read as agreement.

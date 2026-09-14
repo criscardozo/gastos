@@ -23,12 +23,11 @@ Decidido el 10 de septiembre de 2026, con 258 commits y ningún tag.
   un historial de versiones que no ocurrió, que es la misma clase de registro
   falso que este archivo viene coleccionando. No hay a qué volver, así que no
   hay qué taggear.
-- **`major` significa una cosa concreta acá: un cliente viejo no puede seguir
-  andando contra los datos nuevos.** No "es un cambio grande". El iPhone y la
-  web comparten el mismo Firestore y el teléfono puede quedarse una semana
-  atrás — a veces más, porque la firma del team gratuito vence cada siete
-  días y reinstalar depende de que alguien lo haga. `minor` es una pantalla o
-  capacidad nueva; `patch` es un arreglo que no obliga a aprender nada.
+- **Qué significa cada número está en
+  [`kyber/docs/versiones.md`](../kyber/docs/versiones.md)** — sobre todo
+  `major`, que acá no quiere decir "cambio grande" sino que un cliente viejo no
+  puede seguir contra los datos nuevos. Vale igual para los tres proyectos:
+  todos tienen un teléfono que puede quedarse atrás.
 - **La versión se mueve con `node scripts/set-version.mjs <x.y.z>`, nunca a
   mano.** Vive en cuatro lugares que no se leen entre sí: el `package.json` de
   web (que `next.config.ts` publica como `NEXT_PUBLIC_APP_VERSION`, y se ve en
@@ -46,45 +45,29 @@ Decidido el 10 de septiembre de 2026, con 258 commits y ningún tag.
 
 > *"deja de asumir el deployar, solo deploya cuando te diga"*
 
-- **Commitear: libre.** Terminar el trabajo y dejarlo commiteado es lo esperado.
-- **`git push`, `firebase deploy` e instalar en el iPhone: sólo cuando se pide,
-  en ese mensaje.** Un permiso dado ayer no vale hoy.
-- Al terminar, decir qué quedó sin pushear y qué implicaría publicarlo.
+**La regla vive en [`kyber/docs/publicar.md`](../kyber/docs/publicar.md)**, que
+es la copia que comparten los tres proyectos. Acá sólo lo que es de éste:
 
-**Por qué:** cada push a `main` deploya la web a producción por Vercel, y la app
-la usan dos personas de verdad.
-
-**Dos excepciones, y son para avisar fuerte, no para decidir solo:** cuando algo
-ya vivo en producción está *roto* por un cambio sin deployar (pasó con las
-reglas de Firestore), y cuando deployar es el único modo de completar lo que se
-acaba de pedir.
+- La rama es `main`, y cada push a `main` deploya la web por Vercel.
+- La app la usan **dos** personas de verdad, y una no soy yo ni Cristian.
 
 ## 2. Cero gastos, sin excepciones
 
-- **Firebase Spark.** Nunca Cloud Functions: exigen Blaze.
-- **Vercel Hobby.** Nada de servicios pagos.
-- **GitHub Actions no puede costar nada.** Los runners de macOS facturan a 10x,
-  así que **no hay pipeline de iOS** — se compila y testea local antes de cada
-  cambio. Todo lo que corre en Actions es Ubuntu.
-- Si algo sólo se resuelve pagando, se dice y se propone la alternativa gratis;
-  no se contrata nada.
+**Entera en [`kyber/docs/costo-cero.md`](../kyber/docs/costo-cero.md)** — no
+hay nada de este proyecto que agregarle. Lo más caro que se puede hacer sin
+darse cuenta es un runner que no sea Ubuntu.
 
 ## 3. Idiomas
 
-- **Conversación:** español rioplatense.
-- **Código, comentarios y nombres:** inglés.
-- **Mensajes de commit:** inglés australiano, en formato **conventional
-  commits** (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `test:`,
-  `build:`, `ci:`, con scope opcional entre paréntesis).
+**La regla vive en [`kyber/docs/idiomas.md`](../kyber/docs/idiomas.md)**,
+incluido el «nunca `Co-Authored-By: Claude`». Acá sólo lo de este proyecto:
 
-  **Por qué:** el historial venía mezclado —94 de los primeros 100 commits eran
-  frases en imperativo sin prefijo, y sólo 6 seguían la convención—, así que
-  Cristian la fijó el 14/8/2026. Rige de ahí en adelante; **el historial viejo
-  no se reescribe**, porque ya está pusheado y no vale el riesgo. El cuerpo del
-  mensaje sigue explicando el *por qué*, que es lo que un prefijo no dice.
-- **Nunca** el trailer `Co-Authored-By: Claude` (ni ninguna coautoría). Es una
-  preferencia global y pisa cualquier default del harness.
-- Las dos apps se localizan en español e inglés (String Catalogs / next-intl).
+- Las dos apps se localizan en español e inglés (String Catalogs en iOS,
+  next-intl en la web).
+- Cristian fijó los conventional commits el **14/8/2026**. Antes de esa fecha el
+  historial venía mezclado: 94 de los primeros 100 commits eran frases en
+  imperativo sin prefijo y sólo 6 seguían la convención. Ese tramo no se
+  reescribe.
 
 ## 4. Los datos, antes que la pantalla
 
@@ -112,47 +95,32 @@ acaba de pedir.
 
 ## 5. Firestore: el free tier es parte del diseño
 
-- **Todo listener acotado por rango de fechas**, y en React siempre devolver el
-  unsubscribe desde el `useEffect`.
+**La regla vive en
+[`kyber/docs/firestore-free-tier.md`](../kyber/docs/firestore-free-tier.md)** —
+listeners acotados, `getDocs` para lo que se visita, no esperar la promesa de
+una escritura, y qué le pasa a los campos que una escritura parcial no nombra.
+
+Acá, los casos concretos con los que se ganó cada una:
+
+- **Todo listener de gastos acotado por rango de fechas** (`date >= periodStart
+  && date <= periodEnd`). En React, devolver el unsubscribe desde el
+  `useEffect`: en StrictMode el doble montaje duplica el `onSnapshot`.
 - Para totales históricos, una agregación `sum()` (1 lectura) en vez de traer
   los documentos.
-- Una página que se *visita* usa lectura única (`getDocs`); una pantalla en la
-  que se *vive* usa listener.
-- **No esperar la promesa de una escritura para mover la UI.** Firestore sólo la
-  resuelve cuando el servidor confirma: `await` congela el formulario mientras
-  no hay señal, aunque el dato ya esté guardado local. Escribir y seguir.
-- **Una escritura parcial tiene que decir qué le pasa a los campos que NO
-  menciona**, y la respuesta tiene que estar escrita donde se escribe.
-
-  Las dos puntas de la misma regla, cada una con su bug:
-
-  - **Reemplaza**: escribir un mapa entero (`{"defaultBudget": {...}}`) lo
-    sustituye. El payload de iOS nunca llevaba `rollover`, así que cambiar el
-    monto del presupuesto **apagaba el arrastre del sobrante** y el período
-    siguiente se materializaba sin él. Estaba vivo en producción.
-  - **Mergea**: escribir campo por campo deja intacto lo que no nombra. En la
-    app Stock, un switch que se apagaba dejaba de mandar su campo y el
-    documento se quedaba con el valor viejo — un apagado invisible.
-
-  El reemplazo **no es** el error: `categories.{id}` en Gastos escribe la
-  entrada completa **a propósito**, porque así desaparece `countsToBudget:
-  false` cuando la categoría vuelve a contar. La diferencia entre ese caso y el
-  de `defaultBudget` no es la técnica, es que uno estaba decidido y comentado y
-  el otro no.
-
-  Fijado con un test que afirma lo que Firestore hace con cada forma, no lo que
-  las reglas permiten (aceptan las dos).
+- El bug de **reemplaza**: el payload de iOS nunca llevaba `rollover`, así que
+  cambiar el monto del presupuesto **apagaba el arrastre del sobrante** y el
+  período siguiente se materializaba sin él. Estaba vivo en producción.
+- El reemplazo deliberado: `categories.{id}` escribe la entrada completa **a
+  propósito**, para que `countsToBudget: false` desaparezca cuando la categoría
+  vuelve a contar.
 
 ## 6. Código
 
-- **Sin librerías de gráficos.** Las barras son divs y las líneas SVG a mano.
-- **Lógica duplicada entre plataformas ⇒ vectores compartidos.** Si algo se
-  implementa dos veces (aritmética de períodos, matcher del banco), los casos
-  viven en `shared/*-vectors.json` y **las dos implementaciones los corren**. Se
-  cambia primero el vector.
-- Comentar el **por qué**, no el qué; sobre todo cuando la decisión fue contra
-  la opción obvia.
-- Sin subagentes ni workflows salvo pedido explícito.
+**Entera en [`kyber/docs/codigo.md`](../kyber/docs/codigo.md).** Los vectores
+de este proyecto son `shared/period-test-vectors.json`,
+`shared/bank-match-vectors.json`, `shared/recurring-vectors.json` y
+`shared/service-name-vectors.json`; los corren las dos implementaciones, la de
+Swift y la de TypeScript.
 
 ## 7. Verificar, no suponer
 
@@ -640,11 +608,15 @@ acaba de pedir.
 
 ## 8. Secretos
 
-- Las claves de service account **nunca** entran al repo (gitignored) y cada
-  una tiene su propio alcance: la del backup y la de la ingesta de Gmail son
-  distintas a propósito, para poder revocar una sin romper la otra.
+**La regla vive en [`kyber/docs/secretos.md`](../kyber/docs/secretos.md).** Las
+claves de este proyecto, que es lo que no viaja:
+
+- La del **backup** y la de la **ingesta de Gmail** son distintas a propósito,
+  para poder revocar una sin romper la otra.
 - La ingesta pide permiso de Gmail **de sólo lectura** (`appsscript.json`).
-- La config pública de Firebase **es** pública: la seguridad son las reglas.
+- `KYBER_DEPLOY_KEY` es de sólo lectura sobre `kyber` y vive como secret en
+  este repo y en el de Stock. Es de kyber, no de los consumidores: una deploy
+  key no puede clonar el repo que la guarda.
 
 ## 9. La máquina de Cristian
 
@@ -761,6 +733,25 @@ acaba de pedir.
   signifique algo.
 
 ---
+
+## Lo que no está acá
+
+- **La sección 9 (la máquina de Cristian)** describe la máquina, no el proyecto:
+  los forwards de SSH, los perfiles del team gratuito, `xcodegen`, los globs de
+  zsh. Se queda por ahora, pero su lugar es el repo `dotfiles` — vale para
+  cualquier proyecto que se toque desde esta máquina y para ninguno en
+  particular.
+- **Lo compartido con los proyectos hermanos vive en `kyber/docs/`** y se
+  importa desde `CLAUDE.md`. Una regla entra ahí cuando **se ganó en dos
+  proyectos**, no cuando suena general: sin ese filtro, en seis meses es una
+  lista de deseos.
+- **Pendiente de mudarse** (segunda tanda): `scripts/set-version.mjs` con su
+  guarda, `.githooks/pre-push`, el método de `design-system/emit.py` con
+  `tokens.json` partido —tipografía, radios y espaciados compartidos, la paleta
+  de cada app en su repo—, y la parte transferible de la sección 7. De esa
+  sección viaja el método, no el caso: si al sacarle el artefacto concreto la
+  regla deja de decir algo, todavía no estaba lista para viajar. Por eso la
+  prosa compartida **no nombra un puerto**.
 
 ## Referencias
 
