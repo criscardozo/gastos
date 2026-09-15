@@ -15,6 +15,7 @@ redefines `--color-*`, so spacing stays at 1 unit = 4px and the named type and
 radius steps are stock.
 """
 import re
+import subprocess
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -55,8 +56,41 @@ def _code(text: str) -> str:
     return "\n".join(keep)
 
 
+def _sources(root: Path, suffix: str) -> list[Path]:
+    """Source files under `root`: tracked, plus new ones git does not ignore.
+
+    The file set is part of the measurement and gets stated here rather than
+    defaulted, because both ways of defaulting are wrong and each has drawn
+    blood:
+
+      - walking the filesystem sweeps BUILD OUTPUT. `apps/ios/build/` and
+        `build-device/` are gitignored, and they hold the dependencies' own
+        sources. Kyber hit this counting radii in the sibling project: 2246
+        files instead of 53, and three of the five values it reported did not
+        exist in that code. It does not bite here today only because nothing
+        has been compiled without cleaning.
+      - listing only what is TRACKED misses a file written a minute ago, which
+        is exactly when it exists: you write it, run the sweep, stage it after.
+        A new screen with ten uses of an off-scale radius would pass.
+
+    `--cached --others --exclude-standard` is both halves at once, and it is
+    the same answer this repo reached from the other direction for the sweeps
+    that claim completeness.
+    """
+    out = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z",
+         "--", str(root.relative_to(REPO))],
+        cwd=REPO, capture_output=True, text=True, check=True,
+    ).stdout
+    return sorted(REPO / p for p in out.split("\0") if p.endswith(suffix))
+
+
 def _files() -> list[Path]:
-    return sorted(WEB.rglob("*.tsx"))
+    return _sources(WEB, ".tsx")
+
+
+def _ios_files() -> list[Path]:
+    return _sources(IOS, ".swift")
 
 
 def _weight(context: str) -> int:
@@ -134,13 +168,38 @@ def ios_type_steps() -> list[tuple[float, dict[int, int]]]:
     """
     names = {"regular": 400, "medium": 500, "semibold": 600, "bold": 700, "black": 900}
     seen: dict[float, dict[int, int]] = {}
-    for f in sorted(IOS.rglob("*.swift")):
+    for f in _ios_files():
         for m in re.finditer(r"\.appFont\(([0-9.]+)(?:,\s*\.(\w+))?\)", _code(f.read_text())):
             size = float(m.group(1))
             w = names.get(m.group(2) or "regular", 400)
             seen.setdefault(size, {}).setdefault(w, 0)
             seen[size][w] += 1
     return sorted(seen.items(), key=lambda kv: -sum(kv[1].values()))
+
+
+def ios_radii() -> list[tuple[float, int]]:
+    """The same measurement `radii()` does for web, on the other client.
+
+    Reported by Kyber: `coverage()` only ever called `radii()`, which walks
+    `_files()` — web `.tsx` only — so a corner radius with no web equivalent
+    was invisible to the off-scale check while the message still read as if
+    it covered both platforms. iOS spells this `RoundedRectangle(cornerRadius:
+    N, style: .continuous)`; a variable (`cornerRadius: radius`) is not a
+    literal and does not match, same reasoning as excluding `rounded-full` from
+    `radii()` — a shape rule, not a number.
+    """
+    seen: dict[float, int] = {}
+    for f in _ios_files():
+        for m in re.finditer(r"cornerRadius:\s*([0-9.]+)", _code(f.read_text())):
+            v = float(m.group(1))
+            seen[v] = seen.get(v, 0) + 1
+    return sorted(seen.items(), key=lambda kv: -kv[1])
+
+
+def ios_full_radius_uses() -> int:
+    """iOS spells the shape rule `Capsule()`; web spells it `rounded-full`."""
+    return sum(len(re.findall(r"\bCapsule\(\)", _code(f.read_text())))
+               for f in _ios_files())
 
 
 if __name__ == "__main__":

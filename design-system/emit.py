@@ -147,7 +147,8 @@ def coverage() -> list[str]:
     check("type iOS", ios, type_px)
 
     radius_px = {e["$value"] for k, e in TOKENS.get("radius", {}).items() if isinstance(e, dict)}
-    check("radius", usage.radii(), radius_px)
+    check("radius web", usage.radii(), radius_px)
+    check("radius iOS", usage.ios_radii(), radius_px)
 
     sp = TOKENS.get("spacing", {})
     check("padding", usage.padding_x(),

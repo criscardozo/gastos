@@ -54,13 +54,30 @@ def main() -> None:
         **steps,
     }
 
+    # Both clients, like the type block above — this read web only, so the two
+    # radii iOS reaches for most (14 at 25 uses, 20 at 14) were not in the scale
+    # and nothing said so: `coverage()` called `radii()`, which walks `.tsx`.
+    # Reported by Kyber. A radius earns its place on the COMBINED count, and the
+    # entry records each platform separately, because 14 is the most used radius
+    # on one client and near-absent on the other, and a single total would hide
+    # exactly that.
+    web_r, ios_r = dict(usage.radii()), dict(usage.ios_radii())
+    radii = {}
+    for r in sorted(set(web_r) | set(ios_r),
+                    key=lambda z: -(web_r.get(z, 0) + ios_r.get(z, 0))):
+        w, i = web_r.get(r, 0), ios_r.get(r, 0)
+        if w + i < MIN_USES:
+            continue
+        radii[f"r{r:g}"] = {"$type": "dimension", "$value": f"{r:g}px",
+                            "$extensions": {"gastos.uses": {"web": w, "ios": i}}}
     doc["radius"] = {
-        "$description": "Explicit corner radii in use. `full` is a shape rule, not a number.",
-        **{f"r{r:g}": {"$type": "dimension", "$value": f"{r:g}px",
-                       "$extensions": {"gastos.uses": n}}
-           for r, n in usage.radii() if n >= MIN_USES},
+        "$description": "Explicit corner radii in use, counted per platform. `full` is a "
+                        "shape rule, not a number — `rounded-full` on web, `Capsule()` "
+                        "on iOS.",
+        **radii,
         "full": {"$type": "dimension", "$value": "9999px",
-                 "$extensions": {"gastos.uses": usage.full_radius_uses()}},
+                 "$extensions": {"gastos.uses": {"web": usage.full_radius_uses(),
+                                                 "ios": usage.ios_full_radius_uses()}}},
     }
 
     doc["spacing"] = {
@@ -75,7 +92,12 @@ def main() -> None:
                 for g, n in usage.gaps() if n >= MIN_USES},
     }
 
-    TOKENS.write_text(json.dumps(doc, indent=2) + "\n")
+    # `ensure_ascii=False`: the default escapes the em-dashes in the
+    # descriptions to `—`, so re-running turned characters the file
+    # already had into escapes and produced a diff that was not a value
+    # change. A generator that cannot reproduce its own output is one nobody
+    # re-runs.
+    TOKENS.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
     print(f"  type: {len(steps)} peldaños · radius: {len(doc['radius']) - 1} + full · "
           f"spacing: {len(doc['spacing']['padding'])} padding, {len(doc['spacing']['gap'])} gaps")
 
