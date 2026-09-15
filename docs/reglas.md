@@ -641,6 +641,27 @@ claves de este proyecto, que es lo que no viaja:
 
 ## 9. La máquina de Cristian
 
+- **El backup semanal lo corre un launchd de esta máquina desde el 15/9/2026**,
+  `~/Library/LaunchAgents/dev.cardozo.gastos.backup.plist`, jueves 06:00, log en
+  `~/Library/Logs/gastos-backup.log`. No se sumó al de Actions: lo **reemplaza**
+  mientras Actions no pueda correr, porque el free tier de este mes se agotó —
+  2382 minutos contra los 2000 que da un repo privado, medido en la API de
+  facturación, y los jobs dejaron de conseguir runner (`runner_id: 0`, cero
+  pasos, muertos a los dos segundos). El ciclo resetea el 1 de octubre y ahí los
+  dos hacen lo mismo y sobra uno.
+
+  Dos cosas que costaron una corrida cada una, y las dos son la misma:
+  **probarlo a mano no lo prueba.** La primera versión llamaba a `pnpm` y
+  funcionaba perfecto desde una terminal; bajo launchd dio `command not found`,
+  porque una terminal ya trae el PATH que armó nvm y launchd arranca de un
+  entorno mínimo donde un login shell ni siquiera lee `.zshrc`. Se vio sólo por
+  dispararlo con `launchctl kickstart` en vez de confiar. Y el `node` que quedó
+  es el symlink de brew y no el de nvm, que lleva el número de versión en la
+  ruta y se rompe solo la semana que esa versión cambie.
+
+  Probado por las dos mitades, que es lo que lo hace una guarda y no una
+  intención: con el script en su lugar escribe el dump (19 archivos → 20), y
+  apartándolo escribe en el log **qué** falta y no escribe ningún dump.
 - **No tocar el stack de Docker propio (`ecko`/`holocron`, puerto 8080).** El
   emulador de Firestore usa ese mismo puerto: antes de matar algo ahí, verificar
   qué proceso es.
