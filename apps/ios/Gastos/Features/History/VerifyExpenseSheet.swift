@@ -58,9 +58,9 @@ struct VerifyExpenseSheet: View {
             }
             .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
             .background(Theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                     .strokeBorder(Theme.border, lineWidth: 1)
             )
 

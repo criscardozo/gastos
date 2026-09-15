@@ -144,9 +144,9 @@ struct OnboardingView: View {
         .padding(18)
         .frame(maxWidth: .infinity)
         .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
     }
@@ -206,9 +206,9 @@ struct OnboardingView: View {
             }
             .padding(18)
             .background(Theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                     .strokeBorder(Theme.accent, lineWidth: 2)
             )
             .shadow(color: Color(hex: "#FF5C39", alpha: 0.15), radius: 9, y: 6)
@@ -248,9 +248,9 @@ struct OnboardingView: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
                     .background(Theme.bg)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.notice, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: Theme.notice, style: .continuous)
                             .strokeBorder(joinFailed ? Theme.red : Theme.borderPill, lineWidth: 1)
                     )
                 Button {
@@ -282,9 +282,9 @@ struct OnboardingView: View {
         }
         .padding(18)
         .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                 .strokeBorder(Theme.borderPill, lineWidth: 1)
         )
     }
@@ -378,9 +378,9 @@ private struct BudgetSetupStep: View {
             }
             .padding(EdgeInsets(top: 22, leading: 18, bottom: 22, trailing: 18))
             .background(Theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                     .strokeBorder(Theme.borderPill, lineWidth: 1)
             )
             .padding(.bottom, 14)

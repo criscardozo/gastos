@@ -177,9 +177,9 @@ struct SummaryView: View {
         }
         .padding(EdgeInsets(top: 22, leading: 20, bottom: 22, trailing: 20))
         .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.sheet, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.sheet, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
     }
@@ -285,9 +285,9 @@ struct SummaryView: View {
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                     .strokeBorder(Theme.border, lineWidth: 1)
             )
         }
@@ -322,9 +322,9 @@ struct SummaryView: View {
         .padding(14)
         .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
         .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
     }
@@ -523,9 +523,9 @@ struct AdjustPeriodBudgetSheet: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .background(Theme.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                         .strokeBorder(Theme.border, lineWidth: 1)
                 )
 

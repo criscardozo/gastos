@@ -213,7 +213,7 @@ struct CardsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(10)
                         .background(Theme.amberBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.notice, style: .continuous))
                     }
                 }
                 .padding(.vertical, 8)

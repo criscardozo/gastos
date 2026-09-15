@@ -118,9 +118,9 @@ struct ExtendPeriodSheet: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
                 .background(Theme.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                         .strokeBorder(Theme.border, lineWidth: 1)
                 )
             Text(l10n.t("extendPeriod.addAmountHelp"))
@@ -150,7 +150,7 @@ struct ExtendPeriodSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
             .background(Theme.amberBg)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.notice, style: .continuous))
     }
 
     /// Not `PrimaryCTA`: this button has to turn amber on the second press, and

@@ -154,9 +154,9 @@ struct NewPeriodScreen: View {
             }
             .padding(EdgeInsets(top: 13, leading: 15, bottom: 13, trailing: 15))
             .background(Theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                     .strokeBorder(includeRollover ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1)
             )
             .contentShape(Rectangle())
