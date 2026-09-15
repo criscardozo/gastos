@@ -467,6 +467,26 @@ mirar.
   pendiente en el servidor. El primer test de recurrentes no asegura el contador
   del panel, así que ahí la pantalla se come el engaño entero. Nada más en la
   suite fija esa atomicidad.
+- **Tokenizar un valor apaga la guarda que lo vigilaba.** La de fuera-de-escala
+  pregunta si un valor que el código usa mucho está en `tokens.json`; no
+  pregunta si el call site pasa por el token. Así que en el momento en que un
+  literal repetido entra a la escala, deja de ser un hallazgo y pasa a estar
+  "en regla" escrito a mano en cada lugar donde estaba. Medido con las dos
+  mitades, porque una sola no distingue: ocho usos de un radio que no es token
+  lo delatan por nombre; los **mismos ocho** con un valor que sí es token no
+  producen ninguna salida. Hoy hay 25 `cornerRadius: 14` en iOS y la guarda
+  está en verde, que es exactamente el estado que describe. La consecuencia
+  para la pasada de radios: la afirmación que reemplaza a ésta —que no haya
+  literales fuera del bloque generado— se escribe **antes** de que existan los
+  tokens, para que su primera corrida falle sola con los 71 literales adentro;
+  escrita después nace en verde y no se sabe si mira algo. Y tiene que
+  distinguir chrome de dibujo, o los `cornerRadius: 8.5 * s` de la marca del
+  widget la vuelven inaplicable.
+
+  El primer intento de medir esto no midió nada: planté **un** literal fuera
+  de escala y la guarda no dijo nada, porque tiene un piso de ocho usos y un
+  valor suelto no es un peldaño. El control no discriminaba, y se veía igual
+  que un control que pasa.
 - **Una guarda va a rechazar la prosa de quien la escribe, y tiene que ganar la
   guarda.** Pasó tres veces esta semana, con tres guardas distintas y en dos
   proyectos: el comentario que explicaba por qué el id de proyecto viejo está
