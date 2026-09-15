@@ -146,6 +146,25 @@ enum Theme {
         case .over: return redBg
         }
     }
+
+    /// Corner radii, by ROLE — what the value is for, not what it is.
+    ///
+    /// Generated from `design-system/tokens.json`, like the colours above, but
+    /// by replacing the whole region between the two markers rather than each
+    /// line: the colours already existed here to be found, and these did not.
+    /// Everything outside the markers is hand-written and left alone.
+    ///
+    ///     python3 design-system/emit.py --write
+    ///
+    /// The markers are placed by hand, once, because where generated code goes
+    /// is a decision. Do not delete them: the emitter fails rather than
+    /// guessing where the block belongs.
+    // kyber:radius start
+    static let card: CGFloat = 18
+    static let notice: CGFloat = 12
+    static let field: CGFloat = 10
+    static let sheet: CGFloat = 24
+    // kyber:radius end
 }
 
 // MARK: - Outfit font

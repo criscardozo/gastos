@@ -23,6 +23,26 @@ TOKENS = ROOT / "tokens.json"
 # what happened when 14.5 (5 uses) was in and 14 (25) was out.
 MIN_USES = 8
 
+# What each radius is FOR. Declared, not derived — this is the one thing in
+# this file that a measurement cannot produce, because counting sees how often
+# a number appears and never what it is doing there. The card proved it: it was
+# 18, 22 and 16 on web and 20 on iOS, all with the same signature of classes,
+# and no count could say which was right. Cristian decided the card is 18; the
+# other three came out of the sweep without a tie.
+#
+# The signature each one was read from, so the next person can check rather
+# than trust: card = a surface panel (`bg-surface`, usually with `border-line`;
+# `Theme.surface` + `Theme.border` on iOS), sheet = the dialog shell, field =
+# an input (`border-pill` + `bg-bg`), notice = a state callout (`bg-*-bg`).
+RADIUS_ROLES = {
+    "card": 18.0,
+    "sheet": 24.0,
+    "field": 10.0,
+    "notice": 12.0,
+}
+ROLES_BY_VALUE = {v: k for k, v in RADIUS_ROLES.items()}
+assert len(ROLES_BY_VALUE) == len(RADIUS_ROLES), "dos roles con el mismo valor"
+
 
 def main() -> None:
     doc = json.loads(TOKENS.read_text())
@@ -68,12 +88,23 @@ def main() -> None:
         w, i = web_r.get(r, 0), ios_r.get(r, 0)
         if w + i < MIN_USES:
             continue
-        radii[f"r{r:g}"] = {"$type": "dimension", "$value": f"{r:g}px",
-                            "$extensions": {"gastos.uses": {"web": w, "ios": i}}}
+        name = ROLES_BY_VALUE.get(r, f"r{r:g}")
+        radii[name] = {"$type": "dimension", "$value": f"{r:g}px",
+                       "$extensions": {"gastos.uses": {"web": w, "ios": i}}}
+
+    # A role that names a value nothing draws with is a role somebody retired
+    # and forgot to delete, and it would be emitted as a constant anyway.
+    orphans = [k for k, v in RADIUS_ROLES.items() if ROLES_BY_VALUE.get(v) not in radii]
+    assert not orphans, f"estos roles apuntan a un radio que ya no se usa: {orphans}"
+
     doc["radius"] = {
-        "$description": "Explicit corner radii in use, counted per platform. `full` is a "
-                        "shape rule, not a number — `rounded-full` on web, `Capsule()` "
-                        "on iOS.",
+        "$description": "Corner radii. The four with a NAME are roles — what the value is "
+                        "for — and a role is a decision, which is why they are declared in "
+                        "extend.py and not derived: counting cannot see what a number is "
+                        "for, and the card was four different numbers with nobody having "
+                        "chosen any. The `rNN` ones are values still in use that no role "
+                        "claims. `full` is a shape rule, not a number — `rounded-full` on "
+                        "web, `Capsule()` on iOS.",
         **radii,
         "full": {"$type": "dimension", "$value": "9999px",
                  "$extensions": {"gastos.uses": {"web": usage.full_radius_uses(),

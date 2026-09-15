@@ -58,6 +58,8 @@ def swift_declarations(path: Path, helper: str):
     text = path.read_text(encoding="utf-8")
 
     def decls(name: str, entry: dict) -> list[str]:
+        if entry.get("$type") != "color":
+            return []
         target = swift_name(entry)
         if not target or f"static let {target} = {helper}(" not in text:
             return []
@@ -75,6 +77,8 @@ def swift_declarations(path: Path, helper: str):
 
 def swift_pattern(helper: str):
     def pattern(name: str, entry: dict) -> re.Pattern | None:
+        if entry.get("$type") != "color":
+            return None
         target = swift_name(entry)
         if not target:
             return None
@@ -97,6 +101,8 @@ def css_declarations(name: str, entry: dict) -> list[str]:
     indented) — both are returned so `--write` rewrites both instead of
     leaving the second stale after the values list runs out.
     """
+    if entry.get("$type") != "color":
+        return []
     css_name = f"--{name}"
     lv = kyber_tokens.css_value(entry["$value"]["light"])
     dv = kyber_tokens.css_value(entry["$value"]["dark"])
@@ -106,12 +112,37 @@ def css_declarations(name: str, entry: dict) -> list[str]:
     return [light_line, f"    {css_name}: {dv};", f"  {css_name}: {dv};"]
 
 
-def css_pattern(name: str, entry: dict) -> re.Pattern:
+def css_pattern(name: str, entry: dict) -> re.Pattern | None:
     # `[ \t]*`, not `\s*` (see the note on `swift_pattern`): the same greedy
     # cross-line match happened here first, eating the blank line before
     # `--good` in both dark blocks.
+    if entry.get("$type") != "color":
+        return None
     css_name = f"--{name}"
     return re.compile(rf"^[ \t]*{re.escape(css_name)}:[ \t]*[^;]+;$", re.M)
+
+
+def radius_declarations(name: str, entry: dict) -> list[str]:
+    """Only the radii that have a ROLE — `card`, not `r16`.
+
+    A value nothing has decided a use for has no name worth writing into a
+    theme: `Theme.r16` would be the same bare number with an alias, and the
+    next person would still have to guess which one a card takes. The rNN
+    entries stay in tokens.json as what they are, an inventory of what the
+    code still draws with.
+
+    The indentation is written here rather than derived from the anchor: the
+    emitter owning the margin would mean it silently re-indents lines a person
+    wrote, which is the class of thing this whole file exists to remove.
+    """
+    if entry.get("$type") != "dimension":
+        return []
+    if name.startswith("r") and name[1:].isdigit():
+        return []
+    if name == "full":
+        return []  # a shape rule (Capsule), not a number
+    px = entry["$value"].removesuffix("px")
+    return [f"    static let {name}: CGFloat = {px}"]
 
 
 DESTINATIONS = [
@@ -120,7 +151,14 @@ DESTINATIONS = [
                               swift_pattern("Color.hex"), label="Theme.swift"),
     kyber_tokens.Destination(WIDGET, swift_declarations(WIDGET, "Color.widgetHex"),
                               swift_pattern("Color.widgetHex"), label="WidgetTheme.swift"),
+    kyber_tokens.Block(SWIFT, radius_declarations,
+                       "// kyber:radius start", "// kyber:radius end",
+                       label="Theme.swift (radios)"),
 ]
+
+# The colour path walks `color`; the radius block walks `radius`. One pass over
+# both, so a mismatch anywhere is one report and one exit code.
+GROUPS = ["color", "radius"]
 
 
 def coverage() -> list[str]:
@@ -158,7 +196,7 @@ def coverage() -> list[str]:
 
 
 def verify() -> int:
-    code = kyber_tokens.verify(TOKENS, DESTINATIONS)
+    code = kyber_tokens.verify(TOKENS, DESTINATIONS, GROUPS)
     if code != 0:
         return code
     off = coverage()
@@ -183,10 +221,10 @@ def main() -> int:
         print(usage_line)
         return 0
     if "--write" in args:
-        return kyber_tokens.write(TOKENS, DESTINATIONS)
+        return kyber_tokens.write(TOKENS, DESTINATIONS, GROUPS)
     if "--verify" in args:
         return verify()
-    return kyber_tokens.show(TOKENS, DESTINATIONS)
+    return kyber_tokens.show(TOKENS, DESTINATIONS, GROUPS)
 
 
 if __name__ == "__main__":
