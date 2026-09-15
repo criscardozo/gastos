@@ -56,7 +56,7 @@ def _code(text: str) -> str:
     return "\n".join(keep)
 
 
-def _sources(root: Path, suffix: str) -> list[Path]:
+def _sources(root: Path, suffixes: tuple[str, ...]) -> list[Path]:
     """Source files under `root`: tracked, plus new ones git does not ignore.
 
     The file set is part of the measurement and gets stated here rather than
@@ -82,15 +82,19 @@ def _sources(root: Path, suffix: str) -> list[Path]:
          "--", str(root.relative_to(REPO))],
         cwd=REPO, capture_output=True, text=True, check=True,
     ).stdout
-    return sorted(REPO / p for p in out.split("\0") if p.endswith(suffix))
+    return sorted(REPO / p for p in out.split("\0") if p.endswith(suffixes))
 
 
 def _files() -> list[Path]:
-    return _sources(WEB, ".tsx")
+    # `.ts` as well as `.tsx`: the class strings every dialog in the app shares
+    # live in `components/ui/dialog-shell.ts`, which has no JSX in it and so
+    # was outside a `.tsx`-only sweep. The sheet's 24px radius, its 12px field
+    # radius and its type size were all invisible for that reason alone.
+    return _sources(WEB, (".tsx", ".ts"))
 
 
 def _ios_files() -> list[Path]:
-    return _sources(IOS, ".swift")
+    return _sources(IOS, (".swift",))
 
 
 def _weight(context: str) -> int:
@@ -120,41 +124,57 @@ def type_steps() -> list[tuple[float, dict[int, int]]]:
     return sorted(seen.items(), key=lambda kv: -sum(kv[1].values()))
 
 
-def _counted(arbitrary: str, named: dict[str, float] | None, scale: float | None
-             ) -> list[tuple[float, int]]:
+def _counted(utility: str, arbitrary: str, named: dict[str, float] | None,
+             scale: float | None) -> list[tuple[float, int]]:
+    """Count one utility's values, in all three spellings it can be written.
+
+    `utility` is passed in rather than sliced out of `arbitrary`. It used to be
+    derived (`arbitrary.split("-")[0]`), which is a derivation that breaks the
+    moment the arbitrary pattern grows a `-` of its own — and it did, when the
+    radius pattern had to allow `rounded-t-[24px]`. It would not have raised:
+    the named sweep would have quietly started matching nothing.
+    """
     seen: dict[float, int] = {}
     for f in _files():
         text = _code(f.read_text())
         for v in re.findall(arbitrary, text):
             seen[float(v)] = seen.get(float(v), 0) + 1
         if named:
-            for k in re.findall(r'\b' + arbitrary.split("-")[0].lstrip(r"\b")
-                                + r"-(" + "|".join(map(re.escape, named)) + r")\b", text):
+            for k in re.findall(r"\b" + utility + r"-(" + "|".join(map(re.escape, named))
+                                + r")\b", text):
                 seen[named[k]] = seen.get(named[k], 0) + 1
         if scale:
-            prefix = arbitrary.split("-")[0].lstrip(r"\b")
-            for v in re.findall(r'\b' + prefix + r'-([0-9]+(?:\.5)?)\b', text):
+            for v in re.findall(r"\b" + utility + r"-([0-9]+(?:\.5)?)\b", text):
                 px = float(v) * scale
                 seen[px] = seen.get(px, 0) + 1
     return sorted(seen.items(), key=lambda kv: -kv[1])
 
 
+# `rounded-t-[24px]`, `rounded-b-[4px]`: the side is which corners get the
+# radius, not a different radius. Counting only the undirected spelling hid
+# the dialog top — 24px — which is on every sheet in the app and was one use
+# short of being a rung. Same shape as this module's founding bug, where
+# `text-sm` was invisible beside `text-[14px]`.
+SIDE = r"(?:-(?:[trbl]|[tb][lr]|[xy]|[se]|[tb][se]|[se][se]))?"
+
+
 def radii() -> list[tuple[float, int]]:
     """Explicit radii in px. `rounded-full` is counted separately — it is a
     shape rule, not a number."""
-    return _counted(r"\brounded-\[([0-9.]+)px\]", RADIUS, None)
+    return _counted("rounded", r"\brounded" + SIDE + r"-\[([0-9.]+)px\]", RADIUS, None)
 
 
 def full_radius_uses() -> int:
-    return sum(len(re.findall(r"\brounded-full\b", _code(f.read_text()))) for f in _files())
+    return sum(len(re.findall(r"\brounded" + SIDE + r"-full\b", _code(f.read_text())))
+               for f in _files())
 
 
 def padding_x() -> list[tuple[float, int]]:
-    return _counted(r"\bpx-\[([0-9.]+)px\]", None, SPACE_UNIT)
+    return _counted("px", r"\bpx-\[([0-9.]+)px\]", None, SPACE_UNIT)
 
 
 def gaps() -> list[tuple[float, int]]:
-    return _counted(r"\bgap-\[([0-9.]+)px\]", None, SPACE_UNIT)
+    return _counted("gap", r"\bgap-\[([0-9.]+)px\]", None, SPACE_UNIT)
 
 
 def ios_type_steps() -> list[tuple[float, dict[int, int]]]:
