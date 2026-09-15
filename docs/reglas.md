@@ -146,20 +146,18 @@ produjo — el emulador, los perfiles de firma, la CSP, los puertos. Esa mitad n
 viaja, y es la que hace que la otra se pueda aplicar a algo nuevo en vez de
 repetirla de memoria.
 
-**Las dos listas todavía no están cruzadas.** Comparar los encabezados palabra
-por palabra da **una** coincidencia sobre 57 contra 34, y ese número no es de
-fiar: allá están escritas en general y acá con el caso adentro, así que dos
-redacciones de la misma regla no se parecen como texto. Cruzarlas es una pasada
-de lectura, no de `difflib` — medir el parecido de los títulos es medir el
-proxy, que es justamente una de las reglas de las dos listas.
+**Las dos listas están cruzadas**, leyéndolas, que era la única manera: el
+intento anterior comparó encabezados con `difflib` y dio una coincidencia, un
+número que no medía nada porque allá están escritas en general y acá con el
+caso adentro. Del cruce salieron cuatro entradas que eran copia **literal** del
+preámbulo de kyber sin ningún caso propio, y están borradas — eran las cuatro
+con las que abría esta sección. Lo que queda son los casos, que es lo que el
+párrafo de arriba dice que esto es.
 
-- Un cambio visual se **mide o se mira** (captura, overflow en píxeles), no se
-  deduce del CSS.
-- Un test de regresión vale lo que atrapa: **reintroducir el bug** y ver el test
-  fallar antes de darlo por bueno.
-- Si algo no se pudo verificar, **decirlo** en el reporte. "Compila" no es
-  "funciona".
-- Lo que dice un paso de CI en verde no reemplaza mirar el artefacto.
+No lleva la cuenta de cuántas hay de cada lado a propósito: un total en prosa
+que nadie acopla se vence solo, y ésta lo tuvo vencido hasta que alguien fue a
+mirar.
+
 - **Verificar el caso que se te ocurrió no es verificar el que pasa.** El
   arreglo del parser de montos en iOS traía un test que cubría el caso
   imaginado (pegar `1.050`) y nunca el real: tipear `90.12` con la app en
