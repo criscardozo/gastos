@@ -641,6 +641,34 @@ claves de este proyecto, que es lo que no viaja:
 
 ## 9. La máquina de Cristian
 
+- **Sin CI, "lo corrí local" no es lo mismo que verde, y la lista de en qué
+  difiere vale más que la frase.** Mientras Actions no pueda correr, la pasada
+  entera es: `pnpm typecheck && pnpm lint && pnpm test:web && pnpm test:rules`,
+  `pnpm --filter web test:e2e` con los emuladores en `demo-gastos-diarios`,
+  `pnpm build` + `next start -p 3112` + `pnpm verify:pwa`, `python3
+  design-system/emit.py --verify`, y `xcodebuild -scheme Gastos` para iOS.
+
+  Lo que una corrida de acá **no** puede decirte, que es el punto: CI es
+  `ubuntu-latest` y esto es macOS con filesystem insensible a mayúsculas (un
+  import mal capitalizado anda acá y falla allá); CI instala de cero y acá
+  `--frozen-lockfile` contesta sobre un `node_modules` tibio; CI baja el
+  Chromium que fija el lockfile y acá corre el instalado; CI corre los tres
+  jobs en paralelo en máquinas separadas y acá van en serie sobre los mismos
+  puertos. Medido hoy: **local corre Node 24 y el workflow pide 22** — dos
+  majors distintos, los dos válidos para el `>=22` que declara kyber.
+
+  Dos que sí se cierran de este lado y conviene cerrar cada vez: que `git -C
+  kyber status` esté limpio y el gitlink sea el sha commiteado —el submódulo
+  acá es un working tree en el que uno estuvo haciendo `checkout` a mano—, y
+  correr la suite bajo otro huso. Un test que ordena por fecha local pasa a
+  las 14:00 y falla a las 22:00, y eso después se llama flake: verificado hoy
+  con `TZ=UTC`, `Pacific/Kiritimati` (+14), `Pacific/Midway` (-11) y Buenos
+  Aires, 478 en verde en los cuatro.
+
+  Y el error que la otra app cometió y conviene no repetir: venían pusheando
+  verificando **subconjuntos distintos cada vez**, y los dos pasos que siempre
+  se salteaban eran los que dependen de un build de producción — justo los que
+  más se parecen a lo que CI hacía y ellos no.
 - **El backup semanal lo corre un launchd de esta máquina desde el 15/9/2026**,
   `~/Library/LaunchAgents/dev.cardozo.gastos.backup.plist`, jueves 06:00, log en
   `~/Library/Logs/gastos-backup.log`. No se sumó al de Actions: lo **reemplaza**
