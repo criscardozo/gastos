@@ -149,7 +149,7 @@ export default function DashboardPage() {
         <h1 className="text-[22px] font-bold text-ink">
           {t("dashboard.title")}
         </h1>
-        <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5">
+        <div className="flex items-center gap-3 rounded-[18px] border border-line bg-surface px-4 py-3.5">
           <Icon name="flag" size={24} className="text-ink-3" />
           <div className="flex flex-col gap-px">
             <span className="text-[13.5px] font-bold text-ink">
@@ -285,7 +285,7 @@ export default function DashboardPage() {
 
       {/* Hero + the two spend readouts */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr]">
-        <div className="flex flex-col gap-[13px] rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6 lg:py-[22px]">
+        <div className="flex flex-col gap-[13px] rounded-[18px] border border-line bg-surface px-5 py-5 lg:px-6 lg:py-[22px]">
           <div className="flex items-center justify-between">
             <span className="text-[13px] font-semibold text-ink-2">
               {t("dashboard.remaining")}
@@ -381,7 +381,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-4">
           {/* How much we've spent this period — the figure asked for at a
               glance, so it gets its own card and its own big number. */}
-          <div className="flex flex-col gap-1 rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6">
+          <div className="flex flex-col gap-1 rounded-[18px] border border-line bg-surface px-5 py-5 lg:px-6">
             <span className="text-[13px] font-semibold text-ink-2">
               {t(
                 selected.period === "weekly"
@@ -398,7 +398,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Same, for the calendar month. */}
-          <div className="flex flex-col gap-1 rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6">
+          <div className="flex flex-col gap-1 rounded-[18px] border border-line bg-surface px-5 py-5 lg:px-6">
             <span className="text-[13px] font-semibold text-ink-2">
               {t("dashboard.spentThisMonth")}
             </span>
@@ -449,7 +449,7 @@ export default function DashboardPage() {
 
       {/* Category breakdown + trend */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_1.35fr]">
-        <div className="flex flex-col gap-1 rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6">
+        <div className="flex flex-col gap-1 rounded-[18px] border border-line bg-surface px-5 py-5 lg:px-6">
           <span className="mb-2 text-[13px] font-semibold text-ink-2">
             {t("dashboard.byCategory")}
           </span>
@@ -518,7 +518,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        <div className="flex flex-col gap-2.5 rounded-[22px] border border-line bg-surface px-5 py-5 lg:px-6">
+        <div className="flex flex-col gap-2.5 rounded-[18px] border border-line bg-surface px-5 py-5 lg:px-6">
           <div className="flex items-baseline justify-between">
             <span className="text-[13px] font-semibold text-ink-2">
               {t("dashboard.trend")}

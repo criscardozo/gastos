@@ -151,7 +151,7 @@ function ChooseStep({ onCreate }: { onCreate: () => void }) {
       <button
         type="button"
         onClick={onCreate}
-        className="mb-3 flex items-center gap-3.5 rounded-[22px] border-2 border-accent bg-surface p-[18px] text-left shadow-[0_6px_18px_rgba(255,92,57,.15)]"
+        className="mb-3 flex items-center gap-3.5 rounded-[18px] border-2 border-accent bg-surface p-[18px] text-left shadow-[0_6px_18px_rgba(255,92,57,.15)]"
       >
         <div className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-2xl bg-accent-soft">
           <Icon name="home" size={23} className="text-accent" />
@@ -165,7 +165,7 @@ function ChooseStep({ onCreate }: { onCreate: () => void }) {
         <Icon name="arrow_forward" size={20} className="text-accent" />
       </button>
 
-      <div className="flex flex-col gap-3 rounded-[22px] border border-pill bg-surface p-[18px]">
+      <div className="flex flex-col gap-3 rounded-[18px] border border-pill bg-surface p-[18px]">
         <div className="flex items-center gap-3.5">
           <div
             className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-2xl"
@@ -262,7 +262,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
         {t("budgetHint")}
       </p>
 
-      <div className="flex flex-col gap-[18px] rounded-[22px] border border-pill bg-surface px-[18px] py-[22px]">
+      <div className="flex flex-col gap-[18px] rounded-[18px] border border-pill bg-surface px-[18px] py-[22px]">
         <input
           type="text"
           value={name}

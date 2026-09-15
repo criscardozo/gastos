@@ -436,7 +436,7 @@ export function HeadlineStat({
   meta?: string;
 }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-[16px] border border-line bg-surface px-4 py-3">
+    <div className="flex flex-col gap-0.5 rounded-[18px] border border-line bg-surface px-4 py-3">
       <span className="flex items-center gap-1">
         <span className="text-[11.5px] font-semibold text-ink-2">{label}</span>
         {info !== undefined && <InfoHint text={info} />}

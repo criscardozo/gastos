@@ -285,9 +285,9 @@ struct SummaryView: View {
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .strokeBorder(Theme.border, lineWidth: 1)
             )
         }
@@ -322,9 +322,9 @@ struct SummaryView: View {
         .padding(14)
         .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
         .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
     }
@@ -523,9 +523,9 @@ struct AdjustPeriodBudgetSheet: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .background(Theme.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .strokeBorder(Theme.border, lineWidth: 1)
                 )
 

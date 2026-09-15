@@ -16,7 +16,7 @@ struct SectionLabel: View {
 
 /// Card container: surface bg, radius 20, 1px hairline, no shadow.
 struct Card<Content: View>: View {
-    var radius: CGFloat = 20
+    var radius: CGFloat = 18
     var padding: EdgeInsets = EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16)
     @ViewBuilder var content: Content
 

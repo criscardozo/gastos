@@ -103,9 +103,9 @@ struct ServiceNoteField: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(Theme.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .strokeBorder(Theme.border, lineWidth: 1)
                 )
             }
@@ -115,9 +115,9 @@ struct ServiceNoteField: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 11)
                     .background(Theme.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .strokeBorder(Theme.border, lineWidth: 1)
                     )
             }

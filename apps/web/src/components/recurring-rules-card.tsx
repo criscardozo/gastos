@@ -127,7 +127,7 @@ export function RecurringRulesCard({
       </div>
       <p className="px-1 text-[11.5px] text-ink-3">{t("subtitle")}</p>
 
-      <div className="flex flex-col rounded-[20px] border border-line bg-surface">
+      <div className="flex flex-col rounded-[18px] border border-line bg-surface">
         {rules.length === 0 ? (
           <p className="px-4 py-4 text-[13px] text-ink-3">{t("empty")}</p>
         ) : (

@@ -306,7 +306,7 @@ export default function StatsPage() {
 
       {stats !== null && !state.loading && !state.failed && (
         rows.length === 0 ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5">
+          <div className="flex items-center gap-3 rounded-[18px] border border-line bg-surface px-4 py-3.5">
             <Icon name="bar_chart" size={24} className="text-ink-3" />
             <div className="flex flex-col gap-px">
               <span className="text-[13.5px] font-bold text-ink">

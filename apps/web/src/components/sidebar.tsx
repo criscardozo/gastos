@@ -78,7 +78,7 @@ export function Sidebar() {
       })}
 
       {household !== null && (
-        <div className="mt-auto flex items-center gap-2.5 rounded-[14px] border border-line bg-surface px-3 py-2.5">
+        <div className="mt-auto flex items-center gap-2.5 rounded-[18px] border border-line bg-surface px-3 py-2.5">
           <AvatarPair members={members} size={28} />
           <div className="flex min-w-0 flex-col">
             <span className="truncate text-[12.5px] font-bold text-ink">

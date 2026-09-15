@@ -820,7 +820,7 @@ export default function ExpensesPage() {
 
       {/* Inline add row (desktop: five controls on one line) */}
       <div
-        className="hidden flex-col gap-2 rounded-2xl bg-surface px-4 py-2.5 lg:flex"
+        className="hidden flex-col gap-2 rounded-[18px] bg-surface px-4 py-2.5 lg:flex"
         style={{ border: "2px dashed rgba(255,92,57,.4)" }}
       >
         <div className="flex flex-wrap items-center gap-3">
@@ -872,7 +872,7 @@ export default function ExpensesPage() {
 
       {/* Rows */}
       {sorted.length === 0 ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5">
+        <div className="flex items-center gap-3 rounded-[18px] border border-line bg-surface px-4 py-3.5">
           <Icon
             name={expenses.length === 0 ? "receipt_long" : "search_off"}
             size={24}
@@ -917,7 +917,7 @@ export default function ExpensesPage() {
                     {formatCents(d.totalCents, household.currency, locale)}
                   </span>
                 </div>
-                <div className="divide-y divide-soft rounded-2xl border border-line bg-surface px-[18px] py-0.5">
+                <div className="divide-y divide-soft rounded-[18px] border border-line bg-surface px-[18px] py-0.5">
                   {d.rows.map((e) => renderRow(e, false))}
                 </div>
               </div>
@@ -925,7 +925,7 @@ export default function ExpensesPage() {
           })}
         </div>
       ) : (
-        <div className="divide-y divide-soft rounded-2xl border border-line bg-surface px-[18px] py-0.5">
+        <div className="divide-y divide-soft rounded-[18px] border border-line bg-surface px-[18px] py-0.5">
           {sorted.map((e) => renderRow(e, true))}
         </div>
       )}

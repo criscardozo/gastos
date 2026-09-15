@@ -97,7 +97,7 @@ export function ExportMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-1.5 flex w-[260px] flex-col gap-1 rounded-[16px] border border-line bg-surface p-1.5 shadow-[0_12px_30px_rgba(0,0,0,.14)]"
+          className="absolute right-0 z-30 mt-1.5 flex w-[260px] flex-col gap-1 rounded-[18px] border border-line bg-surface p-1.5 shadow-[0_12px_30px_rgba(0,0,0,.14)]"
         >
           {unverifiedCount > 0 && (
             <label className="m-0.5 flex items-start gap-2 rounded-[12px] bg-warn-bg px-3 py-2.5">
@@ -216,7 +216,7 @@ export function CategoryFilter({
       </button>
 
       {open && (
-        <div className="absolute left-0 z-30 mt-1 flex w-[200px] flex-col gap-0.5 rounded-[14px] border border-line bg-surface p-1.5 shadow-[0_12px_30px_rgba(0,0,0,.14)]">
+        <div className="absolute left-0 z-30 mt-1 flex w-[200px] flex-col gap-0.5 rounded-[18px] border border-line bg-surface p-1.5 shadow-[0_12px_30px_rgba(0,0,0,.14)]">
           <button
             type="button"
             onClick={() => onChange(null)}

@@ -451,7 +451,7 @@ export default function CardsPage() {
           // dropping one of them.
           <div
             key={charge.id}
-            className="flex items-center gap-3 rounded-[16px] border border-line bg-surface px-4 py-3"
+            className="flex items-center gap-3 rounded-[18px] border border-line bg-surface px-4 py-3"
           >
             <button
               type="button"

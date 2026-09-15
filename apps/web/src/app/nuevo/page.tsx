@@ -149,7 +149,7 @@ export default function QuickEntryPage() {
       </div>
 
       {/* Hero amount — native decimal keypad */}
-      <div className="flex flex-col items-center gap-3 rounded-[22px] border border-line bg-surface px-5 py-6">
+      <div className="flex flex-col items-center gap-3 rounded-[18px] border border-line bg-surface px-5 py-6">
         <div className="tnum flex w-full items-baseline justify-center gap-1.5">
           <span className="text-[26px] font-semibold text-ink-3">$</span>
           <input
@@ -214,7 +214,7 @@ export default function QuickEntryPage() {
       </div>
 
       {/* Note + date */}
-      <div className="flex items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-3">
+      <div className="flex items-center gap-2 rounded-[18px] border border-line bg-surface px-4 py-3">
         <Icon name="edit" size={17} className="flex-none text-ink-3" />
         <input
           type="text"
@@ -225,7 +225,7 @@ export default function QuickEntryPage() {
           className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none"
         />
       </div>
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3">
+      <div className="flex items-center justify-between gap-3 rounded-[18px] border border-line bg-surface px-4 py-3">
         <span className="flex items-center gap-2 text-[13.5px] font-semibold text-ink-2">
           <Icon name="calendar_today" size={16} className="text-ink-3" />
           {effectiveDate === today

@@ -58,9 +58,9 @@ struct CreateFromChargeSheet: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 12)
                         .background(Theme.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
                                 .strokeBorder(Theme.border, lineWidth: 1)
                         )
                         if let rate = model.learnedBankRate {
@@ -91,9 +91,9 @@ struct CreateFromChargeSheet: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Theme.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
                                 .strokeBorder(Theme.border, lineWidth: 1)
                         )
                     }
