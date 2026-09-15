@@ -7,67 +7,120 @@
 `--verify` is the whole point, and it is what decides when this layer is ready
 to become the source rather than a mirror: when it emits, character for
 character, what two people wrote by hand across two languages, then it provably
-contains everything those files say. Until then it is a claim; after that it is
-a diff. Wire it into CI and the two can never drift again.
+contains everything those files say. Wired into CI and the pre-push hook, so
+the two can never drift.
+
+The walking-the-document, spelling-a-value, rewrite-in-place and verify/write
+machinery lives in `kyber/design/tokens.py` — Stock had written the same thing
+independently, down to the same reasoning in the comments, once its own
+emitter existed. What stays HERE, because it is this project's own shape and
+not the other's:
+
+  - CSS omits a dark declaration entirely when it repeats the light one
+    (`--accent`, `--warn`, `--over`, `--over-text` never appear in either dark
+    block) rather than writing it redundantly, which is how Stock's stylesheet
+    does it.
+  - Two Swift destinations with two different helpers (`Color.hex` for the
+    app, `Color.widgetHex` for the widget target, which deliberately depends
+    on nothing from the app and so cannot share its type).
+  - `coverage()`, checking type/radius/spacing usage against the scale — there
+    is no equivalent on the other side yet, so it does not qualify for the
+    shared layer.
 """
-import json
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[0]
-TOKENS = json.loads((ROOT / "tokens.json").read_text())
+
+sys.path.insert(0, str(REPO / "kyber" / "design"))
+import tokens as kyber_tokens  # noqa: E402
+
+TOKENS = kyber_tokens.load(ROOT / "tokens.json")
 CSS = REPO / "apps/web/src/app/globals.css"
 SWIFT = REPO / "apps/ios/Gastos/Design/Theme.swift"
 # The widget is a THIRD copy of these values and was outside the generator, so
 # nothing held it: its target deliberately depends on nothing from the app, so
-# it carries its own `Color.widgetHex` with the same signature. Measured on
-# 14/9/2026 it matched the app hex for hex — which is to say somebody was tidy
-# once, the same guarantee the web PNGs had before this script existed.
-#
-# It carries a SUBSET (bg, ink, inkSecondary, inkTertiary, track); the rewrite
-# below is a no-op for a token a file does not name, so the subset needs no
-# list of its own to go stale.
+# it carries its own `Color.widgetHex` with the same signature. It carries a
+# SUBSET (bg, ink, inkSecondary, inkTertiary, track); `swift_declarations`
+# below declines a token the file does not already name, which is how the
+# subset stays a subset without a list of its own to go stale.
 WIDGET = REPO / "apps/ios/GastosWidget/WidgetTheme.swift"
-SWIFT_TARGETS = ((SWIFT, "Color.hex"), (WIDGET, "Color.widgetHex"))
 
 
-def flat() -> list[tuple[str, dict]]:
-    """Every token as (css-name, entry), in file order."""
-    return [(f"--{name}", entry)
-            for group in TOKENS["color"].values()
-            for name, entry in group.items()]
+def swift_name(entry: dict) -> str | None:
+    return entry.get("$extensions", {}).get("gastos.swift")
 
 
-def css_value(v) -> str:
-    """A token's CSS spelling: a hex, or rgba() when it carries opacity."""
-    if isinstance(v, str):
-        return v
-    r, g, b = (int(v["base"][i:i + 2], 16) for i in (1, 3, 5))
-    return f"rgba({r}, {g}, {b}, {v['alpha']})"
+def swift_declarations(path: Path, helper: str):
+    """Declines a token this file does not already name — the subset rule."""
+    text = path.read_text(encoding="utf-8")
+
+    def decls(name: str, entry: dict) -> list[str]:
+        target = swift_name(entry)
+        if not target or f"static let {target} = {helper}(" not in text:
+            return []
+        lv, dv = entry["$value"]["light"], entry["$value"]["dark"]
+        if isinstance(lv, str):
+            line = f'static let {target} = {helper}(light: "{lv.upper()}", dark: "{dv.upper()}")'
+        else:
+            line = (f'static let {target} = {helper}(light: "{lv["base"].upper()}", '
+                    f'dark: "{dv["base"].upper()}", lightAlpha: {lv["alpha"]:.2f}, '
+                    f'darkAlpha: {dv["alpha"]:.2f})')
+        return [f"    {line}"]
+
+    return decls
 
 
-def swift_value(entry: dict, helper: str = "Color.hex") -> str | None:
-    name = entry.get("$extensions", {}).get("gastos.swift")
-    if not name:
-        return None
-    lv, dv = entry["$value"]["light"], entry["$value"]["dark"]
-    if isinstance(lv, str):
-        return f'static let {name} = {helper}(light: "{lv.upper()}", dark: "{dv.upper()}")'
-    return (f'static let {name} = {helper}(light: "{lv["base"].upper()}", '
-            f'dark: "{dv["base"].upper()}", lightAlpha: {lv["alpha"]:.2f}, '
-            f'darkAlpha: {dv["alpha"]:.2f})')
+def swift_pattern(helper: str):
+    def pattern(name: str, entry: dict) -> re.Pattern | None:
+        target = swift_name(entry)
+        if not target:
+            return None
+        # `[ \t]*`, not `\s*`: the latter also matches `\n`, so anchored at the
+        # start of a blank line it can swallow that blank line into the match
+        # and the replacement — which does not repeat it — silently deletes
+        # it. Measured: it ate the paragraph breaks between token groups in
+        # the dark blocks on the first `--write`.
+        return re.compile(rf"^[ \t]*static let {re.escape(target)} = {re.escape(helper)}\([^)]*\)$", re.M)
+
+    return pattern
 
 
-def emit_css() -> tuple[list[str], list[str]]:
-    light, dark = [], []
-    for css_name, entry in flat():
-        light.append(f"  {css_name}: {css_value(entry['$value']['light'])};")
-        dv = css_value(entry["$value"]["dark"])
-        if dv != css_value(entry["$value"]["light"]):
-            dark.append(f"  {css_name}: {dv};")
-    return light, dark
+def css_declarations(name: str, entry: dict) -> list[str]:
+    """Light, then dark — but ONLY if dark differs, because the stylesheet
+    never redeclares a token whose dark value repeats the light one.
+
+    When it does differ, the dark value appears in two physical places (the
+    media-query block, 4-space indented, and the manual override, 2-space
+    indented) — both are returned so `--write` rewrites both instead of
+    leaving the second stale after the values list runs out.
+    """
+    css_name = f"--{name}"
+    lv = kyber_tokens.css_value(entry["$value"]["light"])
+    dv = kyber_tokens.css_value(entry["$value"]["dark"])
+    light_line = f"  {css_name}: {lv};"
+    if dv == lv:
+        return [light_line]
+    return [light_line, f"    {css_name}: {dv};", f"  {css_name}: {dv};"]
+
+
+def css_pattern(name: str, entry: dict) -> re.Pattern:
+    # `[ \t]*`, not `\s*` (see the note on `swift_pattern`): the same greedy
+    # cross-line match happened here first, eating the blank line before
+    # `--good` in both dark blocks.
+    css_name = f"--{name}"
+    return re.compile(rf"^[ \t]*{re.escape(css_name)}:[ \t]*[^;]+;$", re.M)
+
+
+DESTINATIONS = [
+    kyber_tokens.Destination(CSS, css_declarations, css_pattern, label="globals.css"),
+    kyber_tokens.Destination(SWIFT, swift_declarations(SWIFT, "Color.hex"),
+                              swift_pattern("Color.hex"), label="Theme.swift"),
+    kyber_tokens.Destination(WIDGET, swift_declarations(WIDGET, "Color.widgetHex"),
+                              swift_pattern("Color.widgetHex"), label="WidgetTheme.swift"),
+]
 
 
 def coverage() -> list[str]:
@@ -104,35 +157,9 @@ def coverage() -> list[str]:
 
 
 def verify() -> int:
-    """Every emitted declaration must appear verbatim in the file it targets."""
-    css_text = CSS.read_text()
-    swift_texts = {path: path.read_text() for path, _ in SWIFT_TARGETS}
-    missing = []
-    light, dark = emit_css()
-    for line in light + dark:
-        # The dark blocks are indented one level deeper inside the media query,
-        # so compare on the stripped declaration.
-        if line.strip() not in css_text:
-            missing.append(f"CSS    {line.strip()}")
-    swift_checked = 0
-    for _, entry in flat():
-        name = entry.get("$extensions", {}).get("gastos.swift")
-        for path, helper in SWIFT_TARGETS:
-            line = swift_value(entry, helper)
-            # Only what the file actually names: the widget carries a subset,
-            # and demanding the full set there would make this fail on a truth.
-            if not line or not name or f"static let {name} = {helper}(" not in swift_texts[path]:
-                continue
-            swift_checked += 1
-            if line not in swift_texts[path]:
-                missing.append(f"{path.name}  {line}")
-    total = len(light) + len(dark) + swift_checked
-    if missing:
-        print(f"  {len(missing)} de {total} declaraciones NO coinciden con el código:")
-        for m in missing:
-            print(f"    · {m}")
-        return 1
-    print(f"  las {total} declaraciones emitidas coinciden con el código, carácter por carácter")
+    code = kyber_tokens.verify(TOKENS, DESTINATIONS)
+    if code != 0:
+        return code
     off = coverage()
     if off:
         print(f"\n  {len(off)} valores fuera de escala:")
@@ -143,69 +170,23 @@ def verify() -> int:
     return 0
 
 
-def write() -> int:
-    """Rewrite each token's declaration in place, from tokens.json.
-
-    Line-level rather than block-level on purpose: the declarations are
-    interleaved with comments and with tokens that do not live here (the
-    category palette, --visa, --key-shadow). Replacing a region would either
-    drop those or force them into this file; replacing a line leaves every
-    other character exactly where its author put it.
-
-    This is the switch. Before it, tokens.json mirrored the two files and CI
-    checked they had not drifted. After it, the files are written FROM
-    tokens.json and drift is not a thing that can happen — the check becomes
-    "regenerate and see that nothing changed", which is stronger than comparing
-    text because it proves the files can be rebuilt, not merely that they match.
-    """
-    css = CSS.read_text()
-    swift = {path: path.read_text() for path, _ in SWIFT_TARGETS}
-
-    for css_name, entry in flat():
-        lv = css_value(entry["$value"]["light"])
-        dv = css_value(entry["$value"]["dark"])
-        # The light block is the first declaration; the dark ones follow. Each
-        # is rewritten where it already sits, so indentation is preserved.
-        seen = 0
-        out = []
-        for line in css.split("\n"):
-            m = re.match(rf"^(\s*){re.escape(css_name)}:\s*[^;]+;(.*)$", line)
-            if m:
-                indent, tail = m.group(1), m.group(2)
-                value = lv if seen == 0 else dv
-                line = f"{indent}{css_name}: {value};{tail}"
-                seen += 1
-            out.append(line)
-        css = "\n".join(out)
-
-        for path, helper in SWIFT_TARGETS:
-            line = swift_value(entry, helper)
-            if not line:
-                continue
-            name = entry["$extensions"]["gastos.swift"]
-            # A no-op where the file does not name this token, which is how the
-            # widget's subset stays a subset without a list to maintain.
-            swift[path] = re.sub(
-                rf"^(\s*)static let {name} = {re.escape(helper)}\([^)]*\)$",
-                lambda m: m.group(1) + line, swift[path], flags=re.M)
-
-    CSS.write_text(css)
-    for path, _ in SWIFT_TARGETS:
-        path.write_text(swift[path])
-    written = "\n    ".join(str(p.relative_to(REPO)) for p in (CSS, *(p for p, _ in SWIFT_TARGETS)))
-    print(f"  reescritos desde tokens.json:\n    {written}")
-    return 0
+def main() -> int:
+    args = sys.argv[1:]
+    known = {"--write", "--verify", "--help", "-h"}
+    unknown = [a for a in args if a not in known]
+    usage_line = "uso: emit.py [--verify | --write]"
+    if unknown:
+        print(f"no entiendo {' '.join(unknown)}.\n{usage_line}", file=sys.stderr)
+        return 1
+    if "--help" in args or "-h" in args:
+        print(usage_line)
+        return 0
+    if "--write" in args:
+        return kyber_tokens.write(TOKENS, DESTINATIONS)
+    if "--verify" in args:
+        return verify()
+    return kyber_tokens.show(TOKENS, DESTINATIONS)
 
 
 if __name__ == "__main__":
-    if "--write" in sys.argv:
-        sys.exit(write())
-    if "--verify" in sys.argv:
-        sys.exit(verify())
-    light, dark = emit_css()
-    print("/* light */");  print("\n".join(light))
-    print("\n/* dark */"); print("\n".join(dark))
-    print("\n// Swift")
-    for _, entry in flat():
-        if (line := swift_value(entry)):
-            print("    " + line)
+    sys.exit(main())
