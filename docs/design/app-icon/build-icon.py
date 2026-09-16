@@ -158,6 +158,51 @@ SHIPPED = {
 }
 
 
+# The one raster that is not a PNG. `/favicon.ico` was a 404 in production:
+# this app only ever offered an SVG favicon plus an apple-touch icon, and the
+# crawlers that build site icons — 1Password's asks for a 120px PNG — start at
+# `/favicon.ico` and do not read SVG. Browsers do not need it; crawlers and
+# anything older than SVG favicons do.
+#
+# Several sizes in one file because an ICO is a container: a 16 for the tab, a
+# 32 for the bookmark bar, and a 128 so whoever wants a big one is not scaling
+# up a 32.
+#
+# In `public/`, not in `app/`. Next treats an `app/favicon.ico` as a metadata
+# file and decodes it, and its ICO decoder refuses anything that is not RGBA —
+# `rsvg-convert` writes 8-bit RGB for an opaque drawing, so the build failed
+# with "The PNG is not in RGBA format!". From `public/` the file is served
+# byte for byte and nothing parses it, which is what a favicon wants: the
+# `<link rel="icon">` in the HTML still comes from `app/icon.svg`, and this is
+# for whoever asks for `/favicon.ico` without reading any HTML.
+ICO = ("b-coral-on-cream", [16, 32, 48, 128], "apps/web/public/favicon.ico")
+
+
+def ico(pngs: list[tuple[int, bytes]]) -> bytes:
+    """Pack rendered PNGs into an ICO, without a second system dependency.
+
+    ImageMagick would do this in one line and is installed on this machine,
+    which is the argument against it: the script says it needs `rsvg-convert`
+    and that stays true. An ICO may carry PNG data directly (Vista onwards),
+    so the container is a 6-byte header plus a 16-byte entry each, and that is
+    the whole format. The trade is readers older than that, which want BMP —
+    written down rather than discovered, and not a trade this project pays for.
+    """
+    import struct
+
+    header = struct.pack("<HHH", 0, 1, len(pngs))
+    offset = len(header) + 16 * len(pngs)
+    entries, blobs = b"", b""
+    for size, data in pngs:
+        # 0 means 256 in this field, which is why it is a single byte.
+        entries += struct.pack(
+            "<BBBBHHII", size % 256, size % 256, 0, 0, 1, 32, len(data), offset
+        )
+        blobs += data
+        offset += len(data)
+    return header + entries + blobs
+
+
 def render(name: str, kwargs: dict, size: int) -> Path:
     src = OUT / f"{name}.svg"
     src.write_text(svg(**kwargs))
@@ -185,6 +230,13 @@ def main() -> None:
             target = REPO / dest
             target.write_bytes(png.read_bytes())
             print(f"  {size:>4}  {dest}")
+
+    if preview_only:
+        return
+    name, sizes, dest = ICO
+    packed = ico([(s, render(name, VARIANTS[name], s).read_bytes()) for s in sizes])
+    (REPO / dest).write_bytes(packed)
+    print(f"  {'+'.join(map(str, sizes))}  {dest}")
 
 
 if __name__ == "__main__":
