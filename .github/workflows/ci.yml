@@ -6,10 +6,13 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Ubuntu only, by design. macOS runners bill at a 10x minute multiplier, so
-# there is no iOS job here and no iOS workflow anywhere: that app is built and
-# tested locally on a simulator before each change lands (see docs/setup.md).
-# Keep it that way — the whole project runs on $0 of infrastructure.
+# Ubuntu only, by design, and the design outlives its arithmetic. While this
+# repo is private a macOS runner bills at a 10x minute multiplier; a public one
+# bills nothing for standard runners at all. Neither number decides this: there
+# is no iOS job here and no iOS workflow anywhere because that app is built and
+# tested locally on a simulator before each change lands (see docs/setup.md),
+# and adding a non-Linux runner is a thing to ask about, not to conclude from a
+# price. Keep it that way — the whole project runs on $0 of infrastructure.
 
 # One run per branch, and the older one is cancelled.
 #

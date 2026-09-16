@@ -341,10 +341,14 @@ open Gastos.xcodeproj
 ```
 
 - Requires Xcode 16+. Dependencies (Firebase, GoogleSignIn) resolve via SPM on first open.
-- **iOS has no CI at all, on purpose.** macOS runners bill at a 10x minute
-  multiplier, and this project's rule is that Actions never costs anything, so
+- **iOS has no CI at all, on purpose — a decision, not a consequence of the
+  price.** The price is real while this repo is private (macOS runners bill at
+  a 10x minute multiplier, and Actions here never costs anything); a public
+  repo bills nothing for standard runners, so that half expires with the
+  visibility and this bullet would otherwise start lying. What does not expire:
   the iOS app is built and tested locally against a simulator before each
-  change lands:
+  change lands, and a non-Linux runner gets asked about rather than inferred
+  from an allowance:
   `xcodebuild test -project Gastos.xcodeproj -scheme GastosTests -destination 'platform=iOS Simulator,name=<iPhone>'`.
   That scheme builds ONLY the test bundle, which compiles `Gastos/Core`
   directly instead of depending on the app — the app embeds the watchOS app, so

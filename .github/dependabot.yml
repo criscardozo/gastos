@@ -42,9 +42,15 @@ updates:
   # iOS Swift Package Manager dependencies (Firebase, GoogleSignIn)
   # Swift, with a warning attached.
   #
-  # There is NO iOS CI — a private repo bills macOS runners at 10x against one
-  # free allowance, which this project does not spend — so the green ticks on a
-  # Swift PR here are the web's and the rules' checks. They mean "the web still
+  # There is NO iOS CI, and that is a DECISION, not only a bill. The bill is
+  # real while this repo is private — macOS runners cost 10x against one free
+  # allowance — but a public repo bills nothing for standard runners, macOS
+  # included, so that reason expires the day visibility changes and the
+  # decision does not: adding a non-Linux runner is asked for first either way.
+  # Written this way on purpose, because the sentence that carried only the
+  # billing reason would have read as a live restriction after the switch.
+  #
+  # So the green ticks on a Swift PR here are the web's and the rules' checks. They mean "the web still
   # works" and nothing else. A Swift bump is verified by building and running
   # the 143 Swift tests on Cristian's machine, which is where every other iOS
   # thing is verified too.

@@ -691,7 +691,10 @@ claves de este proyecto, que es lo que no viaja:
   2382 minutos contra los 2000 que da un repo privado, medido en la API de
   facturación, y los jobs dejaron de conseguir runner (`runner_id: 0`, cero
   pasos, muertos a los dos segundos). El ciclo resetea el 1 de octubre y ahí los
-  dos hacen lo mismo y sobra uno.
+  dos hacen lo mismo y sobra uno. Y si el repo pasa a público antes, el techo
+  desaparece del todo: un repo público no factura runners estándar. Las dos
+  salidas terminan en el mismo lugar, así que esto es un estado con fecha y no
+  una restricción permanente.
 
   Dos cosas que costaron una corrida cada una, y las dos son la misma:
   **probarlo a mano no lo prueba.** La primera versión llamaba a `pnpm` y
