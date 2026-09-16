@@ -289,36 +289,29 @@ It prints the serving ruleset and when it was released, or the first line that
 differs and the command to deploy — and exits non-zero, which is how the weekly
 workflow turns a drift into an email.
 
-### Weekly, without a machine of your own (GitHub Actions)
+### Weekly, without a machine of your own
 
-`.github/workflows/backup.yml` runs the same script every **Thursday morning in
-Sydney** (20:00 UTC Wednesday — the offset is baked in so it stays Thursday
-across DST) and keeps the dump as a build artifact for 90 days. A run costs a
-couple of the 2,000 free Actions minutes a month.
+**Not in this repo.** The weekly dump lives in the private
+`criscardozo/my-apps-backups`, which checks this repo out (with submodules, so
+it runs the kyber that THIS repo pins), takes the dump, commits it, and runs
+`check-rules-drift` alongside.
 
-One-time: add the backup key as a repository secret.
+It moved for one reason: a workflow artifact on a **public** repository is
+downloadable by anyone, and the key that takes a dump is a production admin
+credential. Both the workflow and the `FIREBASE_SERVICE_ACCOUNT` secret were
+removed from here, so publishing this repo cannot publish either.
 
-```sh
-gh secret set FIREBASE_SERVICE_ACCOUNT --repo criscardozo/gastos \
-  < firebase/service-account.json
-```
+On this machine, `~/Library/LaunchAgents/dev.cardozo.gastos.backup.plist` takes
+one every Thursday as well — see `docs/reglas.md` §9.
 
-(Or paste the JSON at *Settings → Secrets and variables → Actions → New
-repository secret*.) The workflow writes it to a temp file outside the
-workspace, points `GOOGLE_APPLICATION_CREDENTIALS` at it, and deletes it after —
-though the runner is discarded regardless. Without the secret the job fails
-immediately with a message saying so, rather than half-running.
 
-Then check it: `gh workflow run Backup` → *Actions → Backup* → download the
-artifact.
-
-Two things to know:
-
-- **Artifacts expire after 90 days** (the free-plan ceiling), so this keeps
-  roughly the last three months of Thursdays. Download one if you want to keep it
-  forever.
-- GitHub disables scheduled workflows in repositories with **60 days of no
-  activity**, and emails you before doing it.
+One thing to know, and it is why the dump is now COMMITTED rather than kept as
+an artifact: artifacts expire after 90 days on the free plan. The ten this repo
+had were preserved into that repository before being deleted — verified by
+decoding each one, not by listing them: ten files, ten distinct hashes,
+document counts rising 32 → 119 with no gap. Eight of them predate the tagged
+dump format and need `restore.legacyIsoTimestamps`, which is why that path
+cannot be removed from kyber.
 
 ## Bank charge ingestion (Gmail → Firestore, free)
 

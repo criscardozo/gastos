@@ -107,9 +107,14 @@ All JS commands run from the repo root (pnpm workspace):
 - Deploy rules: `firebase deploy --only firestore:rules,firestore:indexes --config firebase/firebase.json --project qcris-gastos-diarios`.
 - `pnpm backup` dumps the whole project to `backups/` (gitignored), and
   `pnpm restore <file>` puts one back — into the EMULATOR unless
-  `--production`, because a backup nobody has read back is a hope. The same
-  script runs weekly on GitHub Actions (`.github/workflows/backup.yml`,
-  Thursdays), keeping the dump as a 90-day artifact — Firestore's managed
-  export needs Blaze. That job also runs `kyber/scripts/check-rules-drift.mjs`, which
-  fails if the deployed ruleset is not the one in this repo.
+  `--production`, because a backup nobody has read back is a hope.
+  **The weekly run does NOT live here any more.** It moved to the private
+  `criscardozo/my-apps-backups`, which commits the dump instead of keeping it
+  as an artifact, and runs `check-rules-drift` with it. The reason is the
+  reason this repo can be public: a workflow artifact on a public repository is
+  downloadable by anyone, and the credential that takes the dump is a
+  production admin key. Neither the workflow nor the
+  `FIREBASE_SERVICE_ACCOUNT` secret is in this repo now.
+  On this machine a launchd agent also takes one every Thursday — see
+  [`docs/reglas.md`](docs/reglas.md) §9.
 - One-time console setup (Firestore db creation, Google provider, Vercel): `docs/setup.md`. Distribution is free-account sideload (7-day signing expiry) until the Apple Developer decision (PLAN Phase 5).
