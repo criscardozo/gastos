@@ -487,6 +487,21 @@ mirar.
   de escala y la guarda no dijo nada, porque tiene un piso de ocho usos y un
   valor suelto no es un peldaño. El control no discriminaba, y se veía igual
   que un control que pasa.
+- **Una exención por cercanía no es una exención por identidad.** La guarda que
+  sostiene esos nombres tiene que dejar pasar cuatro sitios que dibujan el
+  número de un rol sin ser ese rol, y los identificaba buscando el fondo que
+  los delata —`Theme.accentSoft`, `Theme.ink`— **en una ventana de tres
+  líneas**. `Theme.ink` es el color de texto de la app, así que está a tres
+  líneas de casi cualquier tarjeta: la guarda se eximía sola y pasó en verde
+  con **ocho** literales sin convertir adelante. Una ventana se satisface con
+  cualquier cosa que caiga adentro, incluida justo la que había que atrapar.
+  Ahora mira la única línea que pone el fondo que esa forma recorta.
+
+  Y lo agarró el control positivo, no leerla: la escribí después de convertir,
+  así que su primera corrida pasó, y sólo al revertir un archivo a propósito
+  —esperando rojo— se vio que seguía verde. Es la segunda vez en el mismo
+  trabajo que una guarda escrita con cuidado no medía nada y la diferencia la
+  hizo mutar, no releer.
 - **Una guarda va a rechazar la prosa de quien la escribe, y tiene que ganar la
   guarda.** Pasó tres veces esta semana, con tres guardas distintas y en dos
   proyectos: el comentario que explicaba por qué el id de proyecto viejo está
