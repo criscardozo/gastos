@@ -708,6 +708,16 @@ claves de este proyecto, que es lo que no viaja:
   Probado por las dos mitades, que es lo que lo hace una guarda y no una
   intención: con el script en su lugar escribe el dump (19 archivos → 20), y
   apartándolo escribe en el log **qué** falta y no escribe ningún dump.
+
+  **Y lleva la ruta del repo escrita adentro, así que mudar la carpeta lo
+  rompe.** Pasó el 16/9/2026 al mover el repo a `~/dev/my-apps/gastos`: el
+  plist seguía apuntando a `~/dev/personal/gastos-diarios`, que ya no existía.
+  La guarda del script faltante no ayuda ahí — el `cd` falla antes, así que el
+  chequeo ni corre — y el único rastro habría sido una línea en un log que
+  nadie abre hasta que hace falta un respaldo. **Un archivo fuera del repo con
+  una ruta del repo adentro no se entera de un `git mv` ni de una mudanza**, y
+  no hay nada en el árbol que pueda notarlo. Al mover la carpeta, esto se
+  actualiza a mano y se dispara con `launchctl kickstart` para verlo escribir.
 - **No tocar el stack de Docker propio (`ecko`/`holocron`, puerto 8080).** El
   emulador de Firestore usa ese mismo puerto: antes de matar algo ahí, verificar
   qué proceso es.
