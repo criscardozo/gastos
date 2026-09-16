@@ -135,8 +135,15 @@ const nextConfig: NextConfig = {
    * anything. Stock shipped the policy first and got the failure pointed at
    * the wrong file for a while; this note is so we do not.
    *
-   * X-Frame-Options does not affect sign-in: the handler is a top-level
-   * navigation (popup or redirect), never an iframe.
+   * X-Frame-Options DOES affect sign-in, and the sentence that used to sit
+   * here saying it did not was wrong for months — nothing executes a comment.
+   * It said the handler is a top-level navigation and never an iframe. True of
+   * `/__/auth/handler`, and the SDK also loads `/__/auth/iframe`, which is one,
+   * same-origin, and `DENY` refuses same-origin framing too. Reported from
+   * Firefox with the browser saying it in those words: "The loading of
+   * .../__/auth/iframe in a frame is denied by X-Frame-Options directive set
+   * to deny". So the auth paths get `SAMEORIGIN` below — still no third party
+   * can frame them, and the app's own iframe loads.
    */
   async headers() {
     return [
@@ -151,6 +158,13 @@ const nextConfig: NextConfig = {
             value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
           },
         ],
+      },
+      {
+        // AFTER the rule above on purpose: when two rules match a path and set
+        // the same key, the last one wins. So this narrows X-Frame-Options for
+        // the auth paths and leaves the other three headers as they are.
+        source: "/__/auth/:path*",
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
       },
     ];
   },
