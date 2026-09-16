@@ -135,6 +135,16 @@ const nextConfig: NextConfig = {
    * anything. Stock shipped the policy first and got the failure pointed at
    * the wrong file for a while; this note is so we do not.
    *
+   * And one more for whoever writes it, which is this file's own bug waiting
+   * to happen a second time: a CSP's `frame-ancestors` is the same refusal as
+   * X-Frame-Options, and the fix below does NOT cover it. Declare
+   * `frame-ancestors 'none'` on `/:path*` and sign-in breaks again, by the
+   * same mechanism, with X-Frame-Options looking correct. The sibling project
+   * has exactly that today and is only saved by its policy being Report-Only,
+   * which is a state that exists in order to be promoted. The test beside this
+   * file fails if a `frame-ancestors` appears without the auth paths getting
+   * their own.
+   *
    * X-Frame-Options DOES affect sign-in, and the sentence that used to sit
    * here saying it did not was wrong for months — nothing executes a comment.
    * It said the handler is a top-level navigation and never an iframe. True of

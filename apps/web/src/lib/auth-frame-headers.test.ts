@@ -50,4 +50,39 @@ describe("the auth handler's frame headers", () => {
     // not a decision to let the app be framed.
     expect(CONFIG.slice(blanket, auth)).toMatch(/X-Frame-Options"[^}]*DENY/);
   });
+
+  it("would catch the same bug arriving as a CSP instead", () => {
+    // `frame-ancestors` is the same refusal wearing another header, and the
+    // rule above does not cover it. There is no CSP here today — the config
+    // says at length why not — so this asserts nothing about the present: it
+    // is armed for the day somebody writes one, which that same comment
+    // contemplates. Reported by the sibling project, which serves
+    // `frame-ancestors 'none'` over its own auth rewrite and is saved only by
+    // the policy being Report-Only, a state whose purpose is to be promoted.
+    //
+    // Deliberately vacuous until then. The alternative — a note in a document
+    // — is the weakest of the three ways to hold a latent failure, by this
+    // repo's own rule, and this one costs a line.
+    // Inside a header VALUE, not anywhere in the file: the prose above
+    // explaining this trap names `frame-ancestors` three times, and the first
+    // version of this armed itself on that and failed with no CSP in sight.
+    // A pattern inside a comment is not the thing the pattern names.
+    const DECLARED = /value:\s*["'`][^"'`]*frame-ancestors/;
+    if (!DECLARED.test(CONFIG)) return;
+
+    // From the blanket rule, not from the top: `source: "/__/auth/:path*"` is
+    // in this file TWICE — the rewrite declares the same path — and a bare
+    // indexOf finds the rewrite, near line one. Everything after that is the
+    // whole file, so the assertion was satisfied by the comment explaining
+    // this very trap. It passed the control it was written for.
+    const auth = CONFIG.indexOf(
+      `source: "/__/auth/:path*"`,
+      CONFIG.indexOf(`source: "/:path*"`),
+    );
+    expect(
+      CONFIG.slice(auth),
+      "a CSP declares frame-ancestors and the /__/auth rule does not override it — " +
+        "sign-in will break exactly as it did with X-Frame-Options",
+    ).toMatch(/frame-ancestors/);
+  });
 });
