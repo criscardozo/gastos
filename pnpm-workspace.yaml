@@ -11,7 +11,7 @@ packages:
 # app compiled with. This is the cheap way to make that impossible rather than
 # unlikely.
 catalog:
-  vitest: ^4.1.11
+  vitest: ^5.0.1
   # Held at 12.17.1 for two days: pnpm's release-age quarantine — a
   # supply-chain guard — refused 12.18.0 as too freshly published, and taking
   # it then meant writing 45 bypass entries into this file. Dependabot brought
