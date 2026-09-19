@@ -669,8 +669,14 @@ claves de este proyecto, que es lo que no viaja:
   `--frozen-lockfile` contesta sobre un `node_modules` tibio; CI baja el
   Chromium que fija el lockfile y acá corre el instalado; CI corre los tres
   jobs en paralelo en máquinas separadas y acá van en serie sobre los mismos
-  puertos. Medido hoy: **local corre Node 24 y el workflow pide 22** — dos
-  majors distintos, los dos válidos para el `>=22` que declara kyber.
+  puertos. Hubo una cuarta, y su final es el ejemplo de para qué sirve
+  anotarlas: **local corría Node 24 y el workflow pedía 22**, dos majors
+  distintos, los dos válidos para el `>=22` que declaraba kyber entonces. Quedó
+  escrita acá como sospechosa número uno para el día que algo no reprodujera, y
+  cuatro días después kyber declaró node 24 —el argumento fue justamente que
+  todo decía 22 mientras la máquina que hace el trabajo corre 24— y los tres
+  jobs se alinearon. Una divergencia anotada se cierra; una no anotada se
+  discute desde cero cada vez que muerde.
 
   Dos que sí se cierran de este lado y conviene cerrar cada vez: que `git -C
   kyber status` esté limpio y el gitlink sea el sha commiteado —el submódulo
