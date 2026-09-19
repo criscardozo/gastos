@@ -66,6 +66,16 @@ Las letras agrupan; dentro de un grupo el orden importa, entre grupos no.
 > **Hecho el 4/9/2026** (`74b977f`). `concurrency` con `cancel-in-progress` a
 > nivel workflow y `timeout-minutes` en los tres jobs — 20, 20 y 15, contra los
 > 10,6 / 9,7 / 4,6 medidos.
+>
+> **La aritmética de la evidencia caducó dos veces, en direcciones opuestas.**
+> El 15/9 los 2.000 minutos del mes se agotaron —2.382 gastados— y CI dejó de
+> conseguir runner; el 16/9 el repo pasó a público y un repo público no factura
+> runners estándar, así que el techo desapareció. El «~80 pushes» ya no acota
+> nada. Lo que sigue en pie es el resto: `concurrency` evita dos corridas
+> completas por dos pushes seguidos, y `timeout-minutes` evita que un emulador
+> colgado corra seis horas. Eso nunca fue sobre el precio. Y el `backup.yml`
+> que la evidencia pone de ejemplo ya no está en este repo — el estilo a copiar
+> vive ahora en `criscardozo/my-apps-backups`.
 
 **Evidencia.** Último run: 10,6 min (typecheck/lint/test/build) + 9,7 min
 (Playwright) + 4,6 min (reglas) = **~25 min por push**. Free tier privado:
@@ -322,6 +332,14 @@ reporte (hoy: 270 TS, 94 Swift).
 > (`kyber/scripts/restore.mjs`): restaura al emulador salvo `--production`, que
 > además rechaza un dump de otro proyecto, uno que no se leyó de producción, y
 > pide tipear el id.
+>
+> **El `ls scripts/` de la evidencia era el directorio correcto el 4/9**, y hoy
+> devuelve nada por otro motivo: los scripts se mudaron a kyber el 14/9
+> (`fe06c6d`). Se deja escrito porque la frase quedó pareciendo un error de
+> método —medir el directorio equivocado— y no lo fue; alguien con la regla del
+> conjunto de archivos en la mano la aplica un nivel de más y «corrige» un
+> registro que era exacto cuando se escribió. Lo que caducó es el árbol, no la
+> medición.
 
 **Evidencia.** `scripts/backup.mjs` vuelca todo semanalmente (artifact 90 días
 en `backup.yml`). **No existe restore** (`ls scripts/ | grep -i restore` →
@@ -351,6 +369,15 @@ Documentá el procedimiento en `docs/setup.md`.
 > **Hecho el 4/9/2026** (`542d547`). El job semanal corre
 > `check-rules-drift` con la misma credencial y falla si el ruleset desplegado no
 > es el del repo.
+>
+> **Y desde el 16/9/2026 ese job no vive acá.** Los `Pasos` de abajo mandan a
+> agregar un paso en `backup.yml`, y ese archivo se borró de este repo junto
+> con el secret `FIREBASE_SERVICE_ACCOUNT`: un artefacto de workflow en un
+> repo público lo baja cualquiera, y la clave que toma el volcado es de
+> administrador de producción. El job —volcado y drift— corre en el repo
+> privado `criscardozo/my-apps-backups`, que checkoutea éste con submódulos.
+> No sigas esos pasos: llevan a un archivo que no existe, y recrearlo acá
+> reintroduce exactamente lo que se sacó.
 
 **Evidencia.** El deploy de reglas es manual (`firebase deploy --only
 firestore:rules ...`) y nada comprueba que lo publicado sea lo que está en
