@@ -31,6 +31,15 @@ enum RichText {
     /// Separate from `text(_:)` so it can be asserted on: what a test can check
     /// is that the pieces and their attributes are what was asked for, which is
     /// most of what the old `+` chains could get wrong.
+    /// The two setters below are the only warnings this target emits under
+    /// `SWIFT_STRICT_CONCURRENCY: complete`, and they are not ours to fix:
+    /// setting an attribute forms a key path into `AttributeScopes`
+    /// `.SwiftUIAttributes`, whose types are not `Sendable`, so the compiler
+    /// reports "cannot form key path that captures non-Sendable type" and adds
+    /// that it becomes an error in the Swift 6 language mode. It is the
+    /// documented way to style an `AttributedString`; the fix is Apple's.
+    /// Written down because otherwise the next person reads two warnings on an
+    /// otherwise clean build as something left undone.
     static func attributed(_ runs: [Run]) -> AttributedString {
         var result = AttributedString()
         for run in runs {

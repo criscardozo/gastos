@@ -95,7 +95,15 @@ targets:
         # Copied from CLIENT_ID in Resources/GoogleService-Info.plist, and it
         # must be re-copied whenever a new iOS app is registered in Firebase:
         # a new app gets a NEW OAuth client, so swapping only the plist leaves
-        # sign-in refused with no hint as to why. Checked by GastosTests.
+        # sign-in refused with no hint as to why.
+        #
+        # That last sentence said "Checked by GastosTests" for as long as it
+        # existed and no test in that bundle ever named this value — a comment
+        # asserting a guard into being. The guard is real now and is
+        # apps/web/src/lib/oauth-scheme.test.ts, which runs on every push: it
+        # reads REVERSED_CLIENT_ID out of GoogleService-Info.plist and requires
+        # both this file and the generated Info.plist to carry it. It is over
+        # there rather than in GastosTests because it needs no simulator.
         GIDClientID: 56331687585-o1vn25s25vv682tgqc34uq03hucklc89.apps.googleusercontent.com
         # The Apps Script web app that runs the Gmail ingestion on demand.
         # Empty until it is deployed (docs/setup.md) — with no URL the "traer
