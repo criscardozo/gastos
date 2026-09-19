@@ -90,7 +90,17 @@ All JS commands run from the repo root (pnpm workspace):
   under any other project id the rules resolve `isMember()`'s `get()` in a
   namespace with no household, which is an evaluation error, and every
   subcollection reads back empty with no error at all (`docs/reglas.md`).
-- iOS: `cd apps/ios && xcodegen && open Gastos.xcodeproj`. CLI tests:
+- iOS: `cd apps/ios && xcodegen && open Gastos.xcodeproj`. **Two tracked files
+  get dirtied by routine commands and neither diff means anything — do not
+  commit them.** `xcodegen` rewrites `project.pbxproj` with fresh object UUIDs
+  every run: measured on a clean tree, 35 lines out and 35 in, same content,
+  different identifiers. And `xcodebuild` rewrites
+  `xcshareddata/xcschemes/GastosWatch.xcscheme` from format `1.7` down to
+  `1.3`. Both are the generated side of `project.yml`; a diff that never means
+  a change is the thing that teaches people to skim the ones that do, so
+  `git checkout -- apps/ios/Gastos.xcodeproj/` after building is part of the
+  loop until someone decides whether that directory should be tracked at all.
+  CLI tests:
   `xcodebuild test -project Gastos.xcodeproj -scheme GastosTests -destination 'platform=iOS Simulator,name=<iPhone>'`.
   That scheme builds ONLY the test bundle, which compiles `Gastos/Core`
   directly instead of depending on the app — the app embeds the watchOS app, so
