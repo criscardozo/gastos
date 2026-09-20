@@ -51,17 +51,34 @@ struct HistoryView: View {
             verificationBar
                 .padding(.horizontal, 20)
 
-            // The charges as a PANEL, not behind a chip: a chip is easy not to
-            // notice, and a charge nobody looks at is a purchase missing from
-            // the ledger. It collapses to one line when nothing is waiting, so
-            // the prominence costs the list nothing on a quiet day.
-            BankChargesPanel()
-                .padding(.horizontal, 20)
-                .padding(.bottom, 10)
-            if dayGroups.isEmpty {
-                emptyState
-            } else {
-                List {
+            List {
+                // The charges as a PANEL, not behind a chip: a chip is easy not
+                // to notice, and a charge nobody looks at is a purchase missing
+                // from the ledger. It collapses to one line when nothing is
+                // waiting, so the prominence costs the list nothing on a quiet
+                // day.
+                //
+                // INSIDE the list, not above it. As a sibling of the list in a
+                // VStack it took the height it needed and the list scrolled in
+                // whatever was left, so a third waiting charge squeezed the
+                // expenses into a short pane with a scroll of its own — two
+                // scrolling regions on one screen, and the charges could not be
+                // scrolled away at all. One list means one scroll, and the
+                // panel travels with the rows it belongs to.
+                Section {
+                    BankChargesPanel()
+                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 10, trailing: 20))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
+                if dayGroups.isEmpty {
+                    Section {
+                        emptyState
+                            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
+                } else {
                     ForEach(dayGroups) { group in
                         Section {
                             ForEach(group.items) { item in
@@ -117,10 +134,10 @@ struct HistoryView: View {
                         }
                     }
                 }
-                .listStyle(.insetGrouped)
-                .scrollContentBackground(.hidden)
-                .environment(\.defaultMinListHeaderHeight, 10)
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .environment(\.defaultMinListHeaderHeight, 10)
         }
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: $editingItem) { item in
