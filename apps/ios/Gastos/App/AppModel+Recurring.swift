@@ -154,7 +154,20 @@ extension AppModel {
         // Asking is the opposite: re-opening a question somebody has already
         // postponed is the app nagging, so that half is `fresh` only.
         let ids = Set(fresh.map(\.id))
-        let ready = recurringReady
+        // Everything claimable EXCEPT what this launch already filed.
+        //
+        // Undo deliberately puts the charge back in the pending list — that is
+        // the point of the window, and the rule would claim it again the
+        // instant anything re-triggered the run, filing straight back what
+        // somebody just took back. The web hit exactly this and its e2e caught
+        // it: press undo, and the expense was there again.
+        //
+        // Not the same set as `evaluatedChargeIds`, and the difference is the
+        // whole reason there are two: a charge that was merely SEEN and could
+        // not be priced must stay a candidate, because the rate is learned
+        // later. One that was FILED must not.
+        let alreadyFiled = Set(recurringFiled.map(\.charge.id))
+        let ready = recurringReady.filter { !alreadyFiled.contains($0.charge.id) }
         let asking = recurringAsking.filter { ids.contains($0.charge.id) }
         guard !ready.isEmpty || !asking.isEmpty else { return }
 

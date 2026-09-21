@@ -4,6 +4,7 @@
 // list, inline edit and delete per row.
 
 import {
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -124,6 +125,17 @@ export default function ExpensesPage() {
   const [answeredChargeIds, setAnsweredChargeIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+  // Whether the prompt is up, kept SEPARATELY from whether there is anything
+  // unanswered.
+  //
+  // Deriving the first from the second looks equivalent and is not: filing is
+  // the prompt's whole job, and a filed charge stops being pending, so the
+  // condition that opened it goes false while it is still working. The prompt
+  // then unmounts a beat before it can report, and the expense is filed
+  // correctly and silently — which is the one thing that dialog exists to
+  // prevent, and is written in its own file. Caught by the e2e, not by
+  // checking Firestore afterwards: the write was right, the telling was gone.
+  const [promptOpen, setPromptOpen] = useState(false);
   const { rules: recurringRules, loading: rulesLoading } = useRecurringRules(
     household?.id ?? null,
   );
@@ -164,6 +176,18 @@ export default function ExpensesPage() {
   // being decided three times — and the fourth caller is the one that decides
   // whether the prompt is shown at all.
   const pendingCharges = charges.filter(isPending);
+
+  // Opens the prompt whenever something arrives that it has not answered for.
+  // Above the early return, like every other hook here — see the note on
+  // useExpenseFilters for what putting one below it costs.
+  const hasUnanswered = pendingCharges.some((c) => !answeredChargeIds.has(c.id));
+  useEffect(() => {
+    // Disabled for the same reason the prompt's own latch is: the cascade IS
+    // the job. Something arrived that nobody has answered for, and the render
+    // after this one is the one that puts the dialog up.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (hasUnanswered) setPromptOpen(true);
+  }, [hasUnanswered]);
 
   const [addForm, setAddForm] = useState<FormState>({
     amount: "",
@@ -803,15 +827,20 @@ export default function ExpensesPage() {
           conclude there was nothing to say and close itself a moment before
           the data arrived. Same trap the charges listener already documents:
           a read in flight is not a read that came back empty. */}
-      {pendingCharges.some((c) => !answeredChargeIds.has(c.id)) &&
-        !chargesLoading &&
-        !rulesLoading && (
+      {promptOpen && !chargesLoading && !rulesLoading && (
         <RecurringPrompt
           charges={pendingCharges}
           rules={recurringRules}
           learnedRate={learnedRate}
           locale={locale}
           onFile={async (charge, rule, amountAudCents, estimated) => {
+            // Answered the moment it is filed, not only when the prompt is
+            // dismissed. Undo puts the charge back in the pending list on
+            // purpose — that is the whole point of the window — and without
+            // this the rule would claim it again on the next render and file
+            // it straight back. Caught by the e2e, which presses undo and
+            // then looks for the expense: it was there again.
+            setAnsweredChargeIds((seen) => new Set([...seen, charge.id]));
             const fb = getFirebaseClient();
             if (fb === null || user === null) return;
             await fileRecurringExpense(
@@ -824,12 +853,16 @@ export default function ExpensesPage() {
               estimated,
             );
           }}
-          onDismissed={() =>
+          onDismissed={() => {
+            setPromptOpen(false);
+            // Whatever is STILL pending at this point is what nobody answered,
+            // and that is what must not be asked again. The filed ones are
+            // already gone from this list, which is why it is read here rather
+            // than captured when the prompt opened.
             setAnsweredChargeIds(
-              (seen) =>
-                new Set([...seen, ...pendingCharges.map((c) => c.id)]),
-            )
-          }
+              (seen) => new Set([...seen, ...pendingCharges.map((c) => c.id)]),
+            );
+          }}
         />
       )}
 
