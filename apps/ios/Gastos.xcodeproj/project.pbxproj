@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		006421298CDDC23FD4BB86E1 /* bank-match-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 0F52461B7F382959DAB51CFE /* bank-match-vectors.json */; };
-		0136B57384891501AB30D8CB /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = 235D10EDA6DEC652D26ECE10 /* categories.json */; };
 		05133EDB5A9E8AA481E01189 /* ServiceNotePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F785322FFCA80A43799A194 /* ServiceNotePicker.swift */; };
 		07B717A9D9DABA180AD11271 /* WatchSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FE4481C1E27B95BC2F45054 /* WatchSyncService.swift */; };
 		08FCA24204BD661A13812566 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E9DDEF9ED1920FC461324CC /* Theme.swift */; };
@@ -20,12 +18,14 @@
 		19DD24E4558B20EC4C9DCC2B /* ExtendPeriodSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D4600AE62B3542F20C1794 /* ExtendPeriodSheet.swift */; };
 		1AE976DD96ED02426D7C4DBF /* GastosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2455C66D49C163A08191D086 /* GastosApp.swift */; };
 		1D4542D6CA092C4B18F3D93D /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651AB99544B0D1A42041AE16 /* SummaryView.swift */; };
+		1E11D4E50D77E3C6C675E502 /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = 3D90613288B486DE309FFB3D /* categories.json */; };
 		1F0CA448B675342FD4A222FB /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3735D65DE5E5F8A566E14E5 /* RootView.swift */; };
 		20C112FA5B73240CA98EBDC5 /* LimitsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8649A56B638FCED8CE0B1F /* LimitsTests.swift */; };
 		233E325AA13DE6A39ABD69E9 /* RecurringRuleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54F5FBB8326951E806D6B65 /* RecurringRuleSheet.swift */; };
 		255BB020E5661AD8377D4465 /* BankMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C56B3C224BAFCF9A07789A /* BankMatch.swift */; };
 		29D21C347F93D7CFAA6A6E8C /* PeriodGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1794B1E43D9A741F78FA369D /* PeriodGate.swift */; };
 		2A2E1FB569B2EA5F024AFAC0 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57212F3BC92DF066F97A5D /* Models.swift */; };
+		2DE1DE12D6BF40DD00984A94 /* bank-match-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 4B0E6306FDAAF1E4A42E3EFB /* bank-match-vectors.json */; };
 		30D92D31F664DCB5530BE1CE /* GastosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = DD7AB887D8188CBE39627CB9 /* GastosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		33995B0192977E89FBC7A87C /* NewExpenseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79B6689EAB6FFB913F05D50 /* NewExpenseButton.swift */; };
 		360A4A33883A51281C53AB3E /* SigningExpiryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E21225B8D0199186BA4D194 /* SigningExpiryTests.swift */; };
@@ -39,6 +39,7 @@
 		4D4AAC47A43A3EA75447AE54 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E587EB83789FCE993DF108A /* AuthService.swift */; };
 		4E69B79E88B780D632924EC8 /* Limits.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB48A44A14A7CEAB4B8167C5 /* Limits.swift */; };
 		53090F6F3B88DF29978FB3C3 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = DF6155B3FADEBC0E995FFDAB /* GoogleSignIn */; };
+		53C5E2429E74903F201BB3C7 /* period-test-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = C72033E74D4C64FA8D3A9CDF /* period-test-vectors.json */; };
 		574AA03DE657B924BDDD05FE /* PeriodSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA19DA21A068D1858A9CFA06 /* PeriodSourceTests.swift */; };
 		579E9B6AACDA3892F25CA4D1 /* Suggestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7391D78A935825853AF82E8 /* Suggestions.swift */; };
 		57BB0825D7E2949E5C9C47E0 /* RecurringRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FF743F833087A8F15FFF83F /* RecurringRulesTests.swift */; };
@@ -48,7 +49,6 @@
 		6587E8BD10B23844E480A3EE /* AmountInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDFDA56A24A7ED5CEC473556 /* AmountInput.swift */; };
 		695114A1FAA0BCE9396E711E /* WatchConnectivityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B851FD043A5C0E4296596D5B /* WatchConnectivityModel.swift */; };
 		6B26CF85F3FF249737F375D6 /* MoneyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1648731F9FE441F1D1213CE1 /* MoneyFormatter.swift */; };
-		6BB7A16E3F9DF0A6BD5309AC /* period-test-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 6B6ABFCA2CCF14D38B8BDAED /* period-test-vectors.json */; };
 		6CA1551A6B3267D7207ED3D9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 1DADFAE9D104A64E62CA0628 /* FirebaseAuth */; };
 		6D94CE730F3742DE498DC4AC /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9FDB8AC9B42DEF1653002135 /* GoogleService-Info.plist */; };
 		6DA14E99E2D79C4632755E9A /* RecurringRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8654B3054370D4BD6E8D1BCF /* RecurringRules.swift */; };
@@ -68,15 +68,18 @@
 		8C7EEBDB1C28B4539F79FA61 /* PeriodGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601A81E5C53F86FD1428EF30 /* PeriodGateTests.swift */; };
 		921160581B3C919EED509A2F /* UsdArsRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA50F487EE5CB5CB28419723 /* UsdArsRate.swift */; };
 		960B216F2EC4C75524BFE355 /* PeriodLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33010FD0D4F32F60CF103E5B /* PeriodLogic.swift */; };
+		975427C455495F48C9D2C1AF /* BankCharges.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868AE72F589D8CFE1362F1E2 /* BankCharges.swift */; };
 		97B2460951F9FCDDD42C322B /* CardLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 315F74278422350FB9D3B8F5 /* CardLogic.swift */; };
 		98955B639EAC7AA2850D9E4F /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD817EFBEB4088ABF190588B /* Components.swift */; };
 		9931C3B0C653B02F0148E994 /* AppFontTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C8C08C8A0755F3F5424BA39 /* AppFontTests.swift */; };
 		993C79A798814EDFC5506F46 /* ServiceLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB1E0209EBF466D3AEEC77A /* ServiceLogic.swift */; };
 		998988C00C2EF7DFF3021301 /* Limits.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB48A44A14A7CEAB4B8167C5 /* Limits.swift */; };
+		99A6637FBF3FC99E6A7A2479 /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = 3D90613288B486DE309FFB3D /* categories.json */; };
 		9B80C656E63162C79F9E2BB9 /* GastosWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5286F43846B5610F65AC6162 /* GastosWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		9CB1FD757657B5B123CDBC61 /* ServiceNameVectorsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08F5C7217DFB5D8D3FBF2A0F /* ServiceNameVectorsTests.swift */; };
 		9E788961B4A6AF7EB55E67B1 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C60ADD48A6501D6D9659577 /* L10n.swift */; };
 		A1855EDBAC366037CD601811 /* CardTaxesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8A35F7729A25C4D60FCE2F8 /* CardTaxesTests.swift */; };
+		A25CCCDCE1331AD83E4AB6F8 /* service-name-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 85508AFE6645D7929BD59991 /* service-name-vectors.json */; };
 		A26E522293A59DCF406CE539 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 82AA9BE64B0ED51CC48EFEBE /* Outfit-Variable.ttf */; };
 		A63A3492DD9D441082FB7708 /* SigningExpiryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F48EB2F9D4CAA9FE6E32A0 /* SigningExpiryService.swift */; };
 		A691750E725335D247FFD9DF /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01CB733D4BFFA92DAF919CF9 /* AppModel.swift */; };
@@ -84,11 +87,8 @@
 		A786E2B4EA2124453BB668EC /* RichTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 890A88734AEF52E42002B803 /* RichTextTests.swift */; };
 		A7C406274742F83ED929D08A /* AppModel+Periods.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE730A72F4AA0D8F074B730C /* AppModel+Periods.swift */; };
 		A8C6F65D77989462924749CC /* CreateFromChargeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3185D8D0B36CD3028B6C8CBE /* CreateFromChargeSheet.swift */; };
-		AB171D2591A0614D298B0B26 /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = 235D10EDA6DEC652D26ECE10 /* categories.json */; };
 		AB31DB5E6297D5AB58B90E92 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 816764347B74B6B002EF8A25 /* OnboardingView.swift */; };
 		B0BD3A859D155D97BF2C2E01 /* PeriodLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB4FCA6646C9D9BB19D95B20 /* PeriodLogicTests.swift */; };
-		B2AB891DADC45E8012159EC4 /* recurring-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 16F92C157275F9AA6D760455 /* recurring-vectors.json */; };
-		B2F891C7A519EB661A46721A /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = 235D10EDA6DEC652D26ECE10 /* categories.json */; };
 		B8B8678F8DD712F649924559 /* GastosWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FEE4AD40A266ADA23A1B99 /* GastosWatchApp.swift */; };
 		B9798564E916545FC596301B /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 938A0A8D757CDEFC35CF85FD /* GoogleSignInSwift */; };
 		B9F41D325A7FEB9EF54F5A66 /* CountLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6149E0BE1456D048D490F366 /* CountLabelTests.swift */; };
@@ -97,7 +97,6 @@
 		BA6104FEE86502169BAECA7D /* ServiceLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8043182EF7DF168D7084E96E /* ServiceLogicTests.swift */; };
 		BA7C85206BFA1C4737B5D6CD /* ServiceLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB1E0209EBF466D3AEEC77A /* ServiceLogic.swift */; };
 		BB8A293F405068FE03D1D24D /* WatchEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9DF8AB78E48D25CD17E3699 /* WatchEntryView.swift */; };
-		BE9B776B989667236A6D2EAB /* service-name-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 02020E3EEBB0438CA4F9B9DD /* service-name-vectors.json */; };
 		BF9CAD3298E7CB5B03E1AC41 /* ModelDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7EC5992D1786FDB955842A7 /* ModelDecodingTests.swift */; };
 		C04366713899D7FEDDED3F31 /* ReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D321AA370E8BB907F772691 /* ReminderService.swift */; };
 		C238BB660BCF1C05CFEE5C03 /* WatchSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA6AD3615C464D47F7851C01 /* WatchSupport.swift */; };
@@ -119,14 +118,15 @@
 		DBF92DBA2ED8F4D03BD56082 /* FontScalingPathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0756724E83AD6DEFC752D33 /* FontScalingPathTests.swift */; };
 		DC8BD7C083E062E2413F394E /* FirestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB1A5ECB05DBEE86FA7547C1 /* FirestoreService.swift */; };
 		DE03267C6769998D930153C4 /* NewPeriodScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76BD8EE1A3CD15AE790130E5 /* NewPeriodScreen.swift */; };
+		DE1A7C2E02284B6A0914E9D0 /* recurring-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 153CB5414EDED4D3AA02CAED /* recurring-vectors.json */; };
 		DF66130CA4A9CBFC15E279A7 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C60ADD48A6501D6D9659577 /* L10n.swift */; };
 		DFEEC44DB527057E39883E8F /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 067C280D5CF24508EBF0B210 /* HistoryView.swift */; };
 		E05C09F46DEA0AA043642715 /* QuickEntryIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FEDE9F8A530ADDCFB8FA1C5 /* QuickEntryIntent.swift */; };
+		E15BA17BEE14A62823E87874 /* categories.json in Resources */ = {isa = PBXBuildFile; fileRef = 3D90613288B486DE309FFB3D /* categories.json */; };
 		E9849EFE9B41C08E868E0B2A /* ExpenseVerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5FE12DED78A2224848A67D /* ExpenseVerificationTests.swift */; };
 		EE0860D11928B5D6DFC5EE02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FBB29AD844640CDBD8A2F72C /* Assets.xcassets */; };
 		EF6688BDED2B7DEDB93EDEAD /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E9DDEF9ED1920FC461324CC /* Theme.swift */; };
 		F25F3EAEFBF172CB54826325 /* PeriodSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 378F62DF3E02BBAC41FDD81B /* PeriodSource.swift */; };
-		F47A79C1807A872C98696652 /* BankChargesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E486313C81537C3CA7DA1B /* BankChargesPanel.swift */; };
 		F8B6DBB9BA7AD6EEC0C6543D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D15701C61114BACDF847A50C /* Localizable.xcstrings */; };
 		FD84AB7E81CC025C1FEF85D3 /* CategoriesManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B1186604B7C10DBF0F7B337 /* CategoriesManagerView.swift */; };
 		FE11495AB34CC08635326593 /* BankChargeInboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100EBDA8F0CF3F8E0FE41E98 /* BankChargeInboxTests.swift */; };
@@ -177,20 +177,17 @@
 /* Begin PBXFileReference section */
 		01CB733D4BFFA92DAF919CF9 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		01D4600AE62B3542F20C1794 /* ExtendPeriodSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtendPeriodSheet.swift; sourceTree = "<group>"; };
-		02020E3EEBB0438CA4F9B9DD /* service-name-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "service-name-vectors.json"; sourceTree = "<group>"; };
 		067C280D5CF24508EBF0B210 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		08F5C7217DFB5D8D3FBF2A0F /* ServiceNameVectorsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceNameVectorsTests.swift; sourceTree = "<group>"; };
 		0963262547EEBAC0E33FC206 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		0A08A562899EA9A00F9120A7 /* AppModel+BankCharges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+BankCharges.swift"; sourceTree = "<group>"; };
 		0CB1E0209EBF466D3AEEC77A /* ServiceLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLogic.swift; sourceTree = "<group>"; };
-		0F52461B7F382959DAB51CFE /* bank-match-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "bank-match-vectors.json"; sourceTree = "<group>"; };
 		100EBDA8F0CF3F8E0FE41E98 /* BankChargeInboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargeInboxTests.swift; sourceTree = "<group>"; };
+		153CB5414EDED4D3AA02CAED /* recurring-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "recurring-vectors.json"; sourceTree = "<group>"; };
 		1648731F9FE441F1D1213CE1 /* MoneyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatter.swift; sourceTree = "<group>"; };
-		16F92C157275F9AA6D760455 /* recurring-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "recurring-vectors.json"; sourceTree = "<group>"; };
 		1794B1E43D9A741F78FA369D /* PeriodGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodGate.swift; sourceTree = "<group>"; };
 		1C8C08C8A0755F3F5424BA39 /* AppFontTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFontTests.swift; sourceTree = "<group>"; };
 		1E65928D5D49A9294DEEF332 /* TestFonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFonts.swift; sourceTree = "<group>"; };
-		235D10EDA6DEC652D26ECE10 /* categories.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = categories.json; sourceTree = "<group>"; };
 		2455C66D49C163A08191D086 /* GastosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GastosApp.swift; sourceTree = "<group>"; };
 		2818DB6ADEF5F20A81A5F111 /* Gastos.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Gastos.entitlements; sourceTree = "<group>"; };
 		2F1934B38A615BECC1D5E398 /* BudgetAmountEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetAmountEditor.swift; sourceTree = "<group>"; };
@@ -200,10 +197,12 @@
 		33010FD0D4F32F60CF103E5B /* PeriodLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodLogic.swift; sourceTree = "<group>"; };
 		378F62DF3E02BBAC41FDD81B /* PeriodSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodSource.swift; sourceTree = "<group>"; };
 		3B1186604B7C10DBF0F7B337 /* CategoriesManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesManagerView.swift; sourceTree = "<group>"; };
+		3D90613288B486DE309FFB3D /* categories.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = categories.json; sourceTree = "<group>"; };
 		3F06395060DEFBF7F0F052DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3FE4481C1E27B95BC2F45054 /* WatchSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSyncService.swift; sourceTree = "<group>"; };
 		41B16DC6515AA26D9A69421B /* PiggyMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiggyMark.swift; sourceTree = "<group>"; };
 		4971A2A2D262FEEC93A402EB /* GastosTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GastosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B0E6306FDAAF1E4A42E3EFB /* bank-match-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "bank-match-vectors.json"; sourceTree = "<group>"; };
 		4DCBB00769A8B0E6C9C14C7B /* RichText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichText.swift; sourceTree = "<group>"; };
 		4E57212F3BC92DF066F97A5D /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		5286F43846B5610F65AC6162 /* GastosWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = GastosWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -215,7 +214,6 @@
 		617A938BD68BDD5570598230 /* ServicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesView.swift; sourceTree = "<group>"; };
 		651AB99544B0D1A42041AE16 /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
 		68E187C5D17DA1271983CA93 /* ExpenseDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseDetailSheet.swift; sourceTree = "<group>"; };
-		6B6ABFCA2CCF14D38B8BDAED /* period-test-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "period-test-vectors.json"; sourceTree = "<group>"; };
 		6E21225B8D0199186BA4D194 /* SigningExpiryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningExpiryTests.swift; sourceTree = "<group>"; };
 		6E587EB83789FCE993DF108A /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		72F48EB2F9D4CAA9FE6E32A0 /* SigningExpiryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningExpiryService.swift; sourceTree = "<group>"; };
@@ -227,7 +225,9 @@
 		8043182EF7DF168D7084E96E /* ServiceLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLogicTests.swift; sourceTree = "<group>"; };
 		816764347B74B6B002EF8A25 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		82AA9BE64B0ED51CC48EFEBE /* Outfit-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Outfit-Variable.ttf"; sourceTree = "<group>"; };
+		85508AFE6645D7929BD59991 /* service-name-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "service-name-vectors.json"; sourceTree = "<group>"; };
 		8654B3054370D4BD6E8D1BCF /* RecurringRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRules.swift; sourceTree = "<group>"; };
+		868AE72F589D8CFE1362F1E2 /* BankCharges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankCharges.swift; sourceTree = "<group>"; };
 		88697FE91DBCB7A2DF861AA3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		890A88734AEF52E42002B803 /* RichTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichTextTests.swift; sourceTree = "<group>"; };
 		8C60ADD48A6501D6D9659577 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
@@ -255,6 +255,7 @@
 		C279ABE8D939C232994D4A78 /* BudgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetSnapshot.swift; sourceTree = "<group>"; };
 		C345B9D45487CD25B1E84632 /* FontLoadingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontLoadingTests.swift; sourceTree = "<group>"; };
 		C35B975BAE3FF62A1F8C5C5B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C72033E74D4C64FA8D3A9CDF /* period-test-vectors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "period-test-vectors.json"; sourceTree = "<group>"; };
 		CB1A5ECB05DBEE86FA7547C1 /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
 		CD7C71A5F1048ED2C6C10DC1 /* ExpenseFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseFormView.swift; sourceTree = "<group>"; };
 		CD817EFBEB4088ABF190588B /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
@@ -270,7 +271,6 @@
 		E8A35F7729A25C4D60FCE2F8 /* CardTaxesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardTaxesTests.swift; sourceTree = "<group>"; };
 		E9DF8AB78E48D25CD17E3699 /* WatchEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchEntryView.swift; sourceTree = "<group>"; };
 		F0756724E83AD6DEFC752D33 /* FontScalingPathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontScalingPathTests.swift; sourceTree = "<group>"; };
-		F2E486313C81537C3CA7DA1B /* BankChargesPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankChargesPanel.swift; sourceTree = "<group>"; };
 		F467DEFAA7E6B9516B432350 /* WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
 		F48919FA9322AB500AE8BC68 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FA6AD3615C464D47F7851C01 /* WatchSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSupport.swift; sourceTree = "<group>"; };
@@ -338,7 +338,7 @@
 			isa = PBXGroup;
 			children = (
 				03F258BDD13D22A03D58D585 /* Gastos */,
-				99BC582DEFAF7D16CCD06FCA /* gastos-diarios */,
+				991914D955B62C9977E5B320 /* gastos */,
 				8A245770656600DF1B57BA34 /* GastosTests */,
 				C76BBAC85C831B01C8DBBA3E /* GastosWatch */,
 				9FB68AA63AFC6C404C51E94C /* GastosWidget */,
@@ -438,12 +438,12 @@
 			path = GastosTests;
 			sourceTree = "<group>";
 		};
-		99BC582DEFAF7D16CCD06FCA /* gastos-diarios */ = {
+		991914D955B62C9977E5B320 /* gastos */ = {
 			isa = PBXGroup;
 			children = (
-				CF9593D0A5617875EBB92753 /* shared */,
+				F2255F3D3F334972C47E3148 /* shared */,
 			);
-			name = "gastos-diarios";
+			name = gastos;
 			path = ../..;
 			sourceTree = "<group>";
 		};
@@ -497,7 +497,7 @@
 		BDC18B9421CF7353BCDE3A2B /* History */ = {
 			isa = PBXGroup;
 			children = (
-				F2E486313C81537C3CA7DA1B /* BankChargesPanel.swift */,
+				868AE72F589D8CFE1362F1E2 /* BankCharges.swift */,
 				68E187C5D17DA1271983CA93 /* ExpenseDetailSheet.swift */,
 				067C280D5CF24508EBF0B210 /* HistoryView.swift */,
 				B7EB984FFC789B226CD9BCAE /* VerifyExpenseSheet.swift */,
@@ -541,18 +541,6 @@
 			path = Core;
 			sourceTree = "<group>";
 		};
-		CF9593D0A5617875EBB92753 /* shared */ = {
-			isa = PBXGroup;
-			children = (
-				0F52461B7F382959DAB51CFE /* bank-match-vectors.json */,
-				235D10EDA6DEC652D26ECE10 /* categories.json */,
-				6B6ABFCA2CCF14D38B8BDAED /* period-test-vectors.json */,
-				16F92C157275F9AA6D760455 /* recurring-vectors.json */,
-				02020E3EEBB0438CA4F9B9DD /* service-name-vectors.json */,
-			);
-			path = shared;
-			sourceTree = "<group>";
-		};
 		DBC2F5C1779BA6F0FA96F090 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -561,6 +549,18 @@
 				0963262547EEBAC0E33FC206 /* SettingsView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		F2255F3D3F334972C47E3148 /* shared */ = {
+			isa = PBXGroup;
+			children = (
+				4B0E6306FDAAF1E4A42E3EFB /* bank-match-vectors.json */,
+				3D90613288B486DE309FFB3D /* categories.json */,
+				C72033E74D4C64FA8D3A9CDF /* period-test-vectors.json */,
+				153CB5414EDED4D3AA02CAED /* recurring-vectors.json */,
+				85508AFE6645D7929BD59991 /* service-name-vectors.json */,
+			);
+			path = shared;
 			sourceTree = "<group>";
 		};
 		F949E456748300C2A83AE9F1 /* Resources */ = {
@@ -742,11 +742,11 @@
 			files = (
 				75E2AC551C0C64DF1557688E /* Localizable.xcstrings in Resources */,
 				D464B0F3DC9801FD306ED9BF /* Outfit-Variable.ttf in Resources */,
-				006421298CDDC23FD4BB86E1 /* bank-match-vectors.json in Resources */,
-				AB171D2591A0614D298B0B26 /* categories.json in Resources */,
-				6BB7A16E3F9DF0A6BD5309AC /* period-test-vectors.json in Resources */,
-				B2AB891DADC45E8012159EC4 /* recurring-vectors.json in Resources */,
-				BE9B776B989667236A6D2EAB /* service-name-vectors.json in Resources */,
+				2DE1DE12D6BF40DD00984A94 /* bank-match-vectors.json in Resources */,
+				99A6637FBF3FC99E6A7A2479 /* categories.json in Resources */,
+				53C5E2429E74903F201BB3C7 /* period-test-vectors.json in Resources */,
+				DE1A7C2E02284B6A0914E9D0 /* recurring-vectors.json in Resources */,
+				A25CCCDCE1331AD83E4AB6F8 /* service-name-vectors.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -756,7 +756,7 @@
 			files = (
 				C40D9F32D98A4159AAC5F36A /* Assets.xcassets in Resources */,
 				75EBE046089788B568A04A51 /* Localizable.xcstrings in Resources */,
-				B2F891C7A519EB661A46721A /* categories.json in Resources */,
+				E15BA17BEE14A62823E87874 /* categories.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -768,7 +768,7 @@
 				6D94CE730F3742DE498DC4AC /* GoogleService-Info.plist in Resources */,
 				80A3C109218A10A989F3715B /* Localizable.xcstrings in Resources */,
 				A26E522293A59DCF406CE539 /* Outfit-Variable.ttf in Resources */,
-				0136B57384891501AB30D8CB /* categories.json in Resources */,
+				1E11D4E50D77E3C6C675E502 /* categories.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -857,7 +857,7 @@
 				A691750E725335D247FFD9DF /* AppModel.swift in Sources */,
 				4D4AAC47A43A3EA75447AE54 /* AuthService.swift in Sources */,
 				C76178D2612E9E9DAD64234A /* BankChargeInbox.swift in Sources */,
-				F47A79C1807A872C98696652 /* BankChargesPanel.swift in Sources */,
+				975427C455495F48C9D2C1AF /* BankCharges.swift in Sources */,
 				4BC732E2A3297070B688F1A8 /* BankMatch.swift in Sources */,
 				0F3972CDCD8AC43B1E6910BD /* BudgetAmountEditor.swift in Sources */,
 				97B2460951F9FCDDD42C322B /* CardLogic.swift in Sources */,
