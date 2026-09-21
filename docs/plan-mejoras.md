@@ -706,20 +706,22 @@ pasar, el ajuste es la pregunta.** Quedó en `docs/reglas.md`.
 
 ## Estado
 
-Hecho: C1, C2, I1, I2, W1, W2, V1, V2, V3, B1, B2, P1, P2, P3, R1, R3, D1, X1.
+Hecho: C1, C2, C3, I1, I2, W1, W2, V1, V2, V3, B1, B2, P1, P2, P3, R1, R2, R3,
+R4, R5, D1, X1.
 
 Pendiente:
 
-- **R2** (los `asyncAfter` de foco): el de `SettingsView` no es un hack sino una
-  duración deliberada de 1,6 s y se queda. Los otros tres se intentaron con
-  `.task` y **se revirtieron sin verificar**, con la razón escrita al lado del
-  delay. Sigue sin poder comprobarse acá, y ya no por los datos —X1 está
-  resuelto y el simulador los lee— sino porque **abrir esos sheets necesita un
-  toque**: la automatización de UI no está habilitada en este XcodeBuildMCP y
-  `osascript` no tiene permiso de accesibilidad, y el `simctl openurl` que
-  abriría la carga rápida se queda en un diálogo del sistema que tampoco se
-  puede tocar. Lo desbloquea habilitar accesibilidad para la terminal, o
-  probarlo a mano en el simulador.
 - **G1** (partir `AppModel`, 1.336 líneas) y **G2** (partir `gastos/page.tsx`,
   981, y `datos/page.tsx`, 837). Sin features en vuelo, un store o un hook por
   commit, sin cambiar comportamiento.
+
+**Esta lista se contradecía con las entradas que resume, y en la dirección
+peor.** R2 decía «Hecho el 10/9/2026 (`29afe9f`)» en su propia sección y acá
+seguía como pendiente, con una razón que además era falsa: que no se podía
+manejar la UI del simulador porque la automatización no estaba habilitada y
+`osascript` no tenía accesibilidad. `idb ui tap` la maneja, está instalado en
+esta máquina, y es lo que usó el propio R2 para darse por hecho — la entrada lo
+dice. C3, R4 y R5 tenían la forma inversa: marcados «Hecho» arriba y ausentes
+de las dos listas de acá. Un resumen escrito a mano al pie de lo que resume es
+la copia que nadie acopla, y envejece hacia «hay más trabajo del que hay», que
+es el error que nadie va a ir a buscar.
