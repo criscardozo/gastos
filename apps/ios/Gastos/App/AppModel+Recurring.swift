@@ -74,22 +74,42 @@ extension AppModel {
         )
     }
 
-    /// What the on-open run watches.
+    /// What the run watches.
     ///
     /// Both listeners feed this, and they do not answer together: gating on the
     /// rules alone fired the check while the charges were still in flight, so
     /// it found nothing, returned, and never ran again — the rule had filed
-    /// nothing and said nothing about why. Keyed on both, it re-fires when
-    /// either arrives.
-    /// A latch, not a count.
+    /// nothing and said nothing about why.
     ///
-    /// It included the number of pending charges at first, which the work
-    /// itself changes: filing the first one moved the key, `.task(id:)`
-    /// cancelled the run mid-flight, and the sheet was never shown — the
-    /// expense was filed correctly and silently, which is the one thing the
-    /// sheet exists to prevent. Exactly the bug the web hit in its own shape.
-    /// This only ever goes false → true.
+    /// **This is a latch, and on its own it is not enough to watch.** It goes
+    /// false → true once and then never changes, so anything keyed on it alone
+    /// runs exactly once per launch. Measured, because that is what shipped: a
+    /// rule that matched a charge exactly, with an amount on it, filed nothing
+    /// for two days. The charge landed while the app was open, and returning
+    /// from the background did not help either — only killing the app and
+    /// opening it again did. See `recurringTrigger`, which is what the view
+    /// actually watches; this stays as the half that says "the data is here".
     var recurringInputsReady: Bool { recurringRulesLoaded && bankChargesLoaded }
+
+    /// What the view keys on, so the rules run again when something arrives.
+    ///
+    /// The ids rather than a count: filing a charge takes it out of the pending
+    /// list, so a count goes back down and the work re-triggers itself. Ids
+    /// change too — but the run is idempotent by `evaluatedChargeIds`, so a
+    /// re-fire finds nothing new and returns. That is the whole reason this
+    /// hangs off `onChange` and not `.task(id:)`: `.task` CANCELS the previous
+    /// run when its key moves, and filing moves the key. That is how an
+    /// expense once got filed correctly and silently, with the sheet never
+    /// shown.
+    ///
+    /// The rules are in the key as well: making a rule in Ajustes for a charge
+    /// that is already waiting should file it, and that path is otherwise only
+    /// covered when the rule is made from the charge itself.
+    var recurringTrigger: String {
+        guard recurringInputsReady else { return "" }
+        return expenseBankCharges.map(\.id).joined(separator: ",")
+            + "|" + recurringRules.compactMap(\.docId).joined(separator: ",")
+    }
 
     /// Whether it is worth interrupting on open at all. False while either
     /// listener is still in flight, because an empty list in flight looks
@@ -98,18 +118,36 @@ extension AppModel {
         recurringRulesLoaded && !(recurringReady.isEmpty && recurringAsking.isEmpty)
     }
 
-    /// Run the rules once per launch, then offer the sheet.
+    /// Run the rules over whatever has not been through them yet, then report.
     ///
     /// Only after the rules listener has answered: an empty list in flight is
     /// indistinguishable from "nothing matched", and this would conclude there
     /// was nothing to do a beat before the data arrived. The web hit exactly
     /// that, and this is the same guard.
+    ///
+    /// Runs whenever a charge or a rule arrives, not once per launch. A charge
+    /// lands when the bank sends its email, which is almost never the moment
+    /// somebody cold-starts the app.
     func runRecurringRulesIfNeeded() async {
-        guard !offeredRecurringPrompt, recurringInputsReady, phase == .ready else { return }
-        guard !recurringReady.isEmpty || !recurringAsking.isEmpty else { return }
-        offeredRecurringPrompt = true
-        let filed = recurringReady.count
-        await fileAllReadyRecurring()
+        guard recurringInputsReady, phase == .ready else { return }
+        let fresh = expenseBankCharges.filter { !evaluatedChargeIds.contains($0.id) }
+        guard !fresh.isEmpty else { return }
+        // Marked BEFORE the writes, like the web's latch and for the same
+        // reason: the listener fires again the moment the first expense lands,
+        // and a mark set afterwards would let that run start the same charges
+        // over.
+        evaluatedChargeIds.formUnion(fresh.map(\.id))
+
+        let ids = Set(fresh.map(\.id))
+        let ready = recurringReady.filter { ids.contains($0.charge.id) }
+        let asking = recurringAsking.filter { ids.contains($0.charge.id) }
+        guard !ready.isEmpty || !asking.isEmpty else { return }
+
+        let filed = ready.count
+        for claim in ready {
+            guard let amount = claim.amountAudCents else { continue }
+            await fileOneRecurring(claim, amountAudCents: amount)
+        }
         recurringFiledCount = filed
         showRecurringPrompt = true
     }
@@ -132,24 +170,22 @@ extension AppModel {
         }
     }
 
-    /// Files everything a rule can answer on its own, one batch at a time.
+    /// One claim, filed and awaited.
     ///
-    /// Sequential rather than parallel: each is its own batch, and a burst of
-    /// concurrent writes is how a free-tier quota disappears.
-    func fileAllReadyRecurring() async {
+    /// Callers loop over this sequentially rather than firing them in
+    /// parallel: each is its own batch, and a burst of concurrent writes is how
+    /// a free-tier quota disappears.
+    func fileOneRecurring(_ claim: ClaimedCharge, amountAudCents: Int) async {
         guard let householdId = attachedHouseholdId, let uid = self.uid else { return }
-        for claim in recurringReady {
-            guard let amount = claim.amountAudCents else { continue }
-            await awaitWrite { [firestore] in
-                try await firestore.fileRecurringExpense(
-                    householdId: householdId,
-                    uid: uid,
-                    charge: claim.charge,
-                    rule: claim.rule,
-                    amountAudCents: amount,
-                    estimated: claim.estimated
-                )
-            }
+        await awaitWrite { [firestore] in
+            try await firestore.fileRecurringExpense(
+                householdId: householdId,
+                uid: uid,
+                charge: claim.charge,
+                rule: claim.rule,
+                amountAudCents: amountAudCents,
+                estimated: claim.estimated
+            )
         }
     }
 

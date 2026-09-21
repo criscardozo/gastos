@@ -39,10 +39,25 @@ struct RootView: View {
                     .sheet(isPresented: $model.showRecurringPrompt) {
                         RecurringPromptSheet(filedCount: model.recurringFiledCount)
                     }
-                    // Keyed on both listeners, because they do not answer
-                    // together — see recurringInputsReady.
-                    .task(id: model.recurringInputsReady) {
-                        await model.runRecurringRulesIfNeeded()
+                    // onChange, not `.task(id:)`, and keyed on the charges
+                    // themselves rather than on "the listeners answered".
+                    //
+                    // It was `.task(id: model.recurringInputsReady)`, and that
+                    // key is a latch: false → true once, never again. So the
+                    // rules ran exactly once per cold start, and a charge that
+                    // arrived afterwards — which is every charge, because the
+                    // bank emails when it feels like it — waited for the next
+                    // one. Measured against production: a rule matching its
+                    // charge exactly, amount and all, had filed nothing in two
+                    // days, and coming back from the background did not help.
+                    //
+                    // `.task(id:)` cannot be the fix either: it cancels the
+                    // running task when its key moves, and filing a charge
+                    // moves this key. That is the shape that once filed an
+                    // expense correctly and never showed the sheet.
+                    // `initial: true` keeps the run on open.
+                    .onChange(of: model.recurringTrigger, initial: true) {
+                        Task { await model.runRecurringRulesIfNeeded() }
                     }
             }
         }

@@ -55,7 +55,16 @@ final class AppModel {
     /// the listener empties the queue the moment the writes land and reading it
     /// live would report zero.
     var recurringFiledCount = 0
-    var offeredRecurringPrompt = false
+    /// Charges already put through the rules this launch.
+    ///
+    /// A SET of ids, not a latch and not a count. A latch is what this was, and
+    /// it was not the bug but it would have become one: the run has to be able
+    /// to happen again, because a charge arrives whenever the bank sends the
+    /// email, which is usually while the app is already open. And a count
+    /// cannot be the memory either — filing removes the charge from the
+    /// pending list, so the number goes back DOWN and the work re-triggers
+    /// itself. Ids only ever get added.
+    var evaluatedChargeIds: Set<String> = []
     /// Invite code for this household (created lazily), nil until generated.
     private(set) var inviteCode: String?
 
