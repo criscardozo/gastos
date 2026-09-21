@@ -23,6 +23,42 @@ import { join } from "node:path";
  * `required: false` marks a tool a consumer may legitimately not use — the
  * third app has no next-intl if it does not translate. A consumer that DOES
  * use one still has to match.
+ *
+ * ## `vite` is deliberately NOT here, and not in kyber either
+ *
+ * Decided by Cristian on 21/9/2026, after the sibling project reported that
+ * the two repos resolve it a major apart: gastos on 7.3.6, stock on 8.2.1.
+ *
+ * It looks like exactly the drift this file exists to stop, and it is not.
+ * Nobody declares vite in either repo: `vitest@5.0.1` asks for it as a PEER,
+ * with `^6.4.0 || ^7.0.0 || ^8.0.0`. Two different resolutions of one open
+ * range is what pnpm is supposed to do — there is no intent here to hold to,
+ * which is the only thing this file compares.
+ *
+ * The alternative was declaring it. It was turned down because a key here is
+ * a three-repo change by design (see kyber's versiones.md), and vite reaches
+ * no artefact: `pnpm why vite -r` gives one version, two instances, and every
+ * chain ends in devDependencies — vitest into `web`, `rules-tests` and
+ * `gmail-bank-ingest`. The web is built by Next. What can differ is how the
+ * tests run, not what is deployed.
+ *
+ * The risk being accepted, named: a test that depends on a difference between
+ * vite 7 and 8 fails in one repo and passes in the other, and because CI is
+ * what decides whether anything lands, it shows up as a red build in one
+ * project with nothing in either tree explaining it. If that ever happens,
+ * this paragraph is the explanation.
+ *
+ * And the inference that would kill this note, refuted in advance: running
+ * `pnpm update vite -r` to line them up does NOT settle it. They would drift
+ * again on the next lockfile anybody touches, because nothing couples them —
+ * that is the whole point of it being an undeclared peer. Aligning without
+ * coupling is a fix that expires by itself.
+ *
+ * Should it ever be declared after all, nothing extra is needed to notice.
+ * Measured rather than assumed — `vite` planted in kyber/stack.json and the
+ * file run: all three tests below go red, the first one naming it, "declares
+ * these and nothing here says where they live". So the decision cannot be
+ * reversed in one repo quietly; it has to be said here too.
  */
 describe("the declared stack", () => {
   const ROOT = join(import.meta.dirname, "../../../..");
