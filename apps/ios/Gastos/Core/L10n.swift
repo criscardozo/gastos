@@ -160,9 +160,15 @@ struct L10n {
         count == 1 ? t("bank.dismissedOne") : t("bank.dismissedOther", count)
     }
 
-    /// "1 cargo del banco" / "2 cargos del banco" — the Historial chip.
+    /// "1 cargo del banco" / "2 cargos del banco" — the bank sheet's title.
     func bankChargesCount(_ count: Int) -> String {
         count == 1 ? t("history.bankChargesOne") : t("history.bankChargesOther", count)
+    }
+
+    /// "1 del banco" / "3 del banco" — the Historial chip, which sits beside
+    /// the unverified one on a single line and so cannot afford the long form.
+    func bankChipCount(_ count: Int) -> String {
+        count == 1 ? t("history.bankChipOne") : t("history.bankChipOther", count)
     }
 }
 

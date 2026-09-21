@@ -13,6 +13,17 @@ struct HistoryView: View {
     @State private var detailItem: ExpenseItem?
     /// Narrows the list to the expenses the bank has not confirmed yet.
     @State private var onlyUnverified = false
+    /// Whether the bank's section is expanded. Open when something is waiting,
+    /// closed when not — and once you have said which by hand, that wins. Nil
+    /// means nobody has said.
+    @State private var bankOpenedByHand: Bool?
+    /// The charge whose sheet is up.
+    @State private var decidingCharge: BankCharge?
+    /// The recoverable-dismissals sheet.
+    @State private var showingDismissed = false
+    /// Asking before confirming every guess at once. Assigning DELETES the
+    /// charge, so a bulk mistake cannot be walked back the way a dismissal can.
+    @State private var confirmingAll = false
 
     private var l10n: L10n { model.l10n }
 
@@ -34,6 +45,27 @@ struct HistoryView: View {
             : model.viewedExpenses
     }
 
+    private var bankIsOpen: Bool {
+        bankOpenedByHand ?? !model.expenseBankCharges.isEmpty
+    }
+
+    /// Charge → expense for every row that currently HAS an answer on it.
+    ///
+    /// Exactly what the rows say, which is the same set of taps in one press
+    /// rather than a second opinion with a rule of its own. A charge whose
+    /// suggestion is empty — nothing scored above BankMatch.minScore — is not
+    /// in here and is left for a person to answer.
+    private var pendingGuesses: [(charge: BankCharge, expenseId: String)] {
+        model.bankChargeSuggestions.compactMap { suggestion in
+            guard
+                let charge = model.expenseBankCharges.first(where: { $0.id == suggestion.chargeId }),
+                let expenseId = suggestion.expenseId,
+                !expenseId.isEmpty
+            else { return nil }
+            return (charge, expenseId)
+        }
+    }
+
     private var dayGroups: [DayGroup] {
         let grouped = Dictionary(grouping: visibleItems) { $0.expense.date }
         return grouped.keys.sorted(by: >).compactMap { raw in
@@ -52,25 +84,19 @@ struct HistoryView: View {
                 .padding(.horizontal, 20)
 
             List {
-                // The charges as a PANEL, not behind a chip: a chip is easy not
-                // to notice, and a charge nobody looks at is a purchase missing
-                // from the ledger. It collapses to one line when nothing is
-                // waiting, so the prominence costs the list nothing on a quiet
-                // day.
+                // The bank's charges as a SECTION of this list, above the days.
                 //
-                // INSIDE the list, not above it. As a sibling of the list in a
-                // VStack it took the height it needed and the list scrolled in
-                // whatever was left, so a third waiting charge squeezed the
-                // expenses into a short pane with a scroll of its own — two
-                // scrolling regions on one screen, and the charges could not be
-                // scrolled away at all. One list means one scroll, and the
-                // panel travels with the rows it belongs to.
-                Section {
-                    BankChargesPanel()
-                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 10, trailing: 20))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                }
+                // They were a panel: their own blue header, a hint line and a
+                // card per charge, which cost about half the screen for one
+                // charge and read as a second screen stapled to the top of this
+                // one. Now a charge is a row the same shape as an expense and
+                // the deciding happens in a sheet.
+                //
+                // Above the days, though, and never behind a chip alone — a
+                // charge nobody looks at is a purchase missing from the ledger,
+                // which is what the panel's prominence was for. Prominence is
+                // the position, not the height.
+                bankSection
                 if dayGroups.isEmpty {
                     Section {
                         emptyState
@@ -153,10 +179,29 @@ struct HistoryView: View {
         // gastos://cargos lands here.
         .onChange(of: model.openBankChargesRequest) { _, requested in
             guard requested else { return }
-            // There is no sheet to open any more — the panel is already on
-            // this screen and opens itself when something is waiting, so
-            // arriving here IS the answer.
+            // There is no sheet to open — the charges are rows on this screen,
+            // so arriving here IS the answer. What it does do is undo a fold:
+            // following a link to the charges and finding the section collapsed
+            // because you closed it yesterday is the link not working.
+            bankOpenedByHand = nil
             model.openBankChargesRequest = false
+        }
+        .sheet(item: $decidingCharge) { charge in
+            BankChargeSheet(
+                charge: charge,
+                suggestion: model.bankChargeSuggestions
+                    .first { $0.chargeId == charge.id },
+                onDone: { decidingCharge = nil }
+            )
+        }
+        .sheet(isPresented: $showingDismissed) {
+            DismissedChargesSheet(onDone: { showingDismissed = false })
+        }
+        .alert(l10n.t("bank.confirmAllTitle"), isPresented: $confirmingAll) {
+            Button(l10n.t("common.cancel"), role: .cancel) {}
+            Button(l10n.t("bank.confirmAllGo")) { confirmAll() }
+        } message: {
+            Text(l10n.t("bank.confirmAllBody", pendingGuesses.count))
         }
         .sheet(item: $detailItem) { item in
             ExpenseDetailSheet(
@@ -220,8 +265,8 @@ struct HistoryView: View {
     }
 
     private func dayHeader(_ group: DayGroup) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            RichText.text([
+        sectionHeader(
+            title: [
                 .init(
                     dayName(group.date),
                     color: Theme.ink, font: AppFont.font(13, .bold)
@@ -230,12 +275,37 @@ struct HistoryView: View {
                     " · \(daySubtitle(group.date))",
                     color: Theme.inkTertiary, font: AppFont.font(13, .medium)
                 ),
-            ])
-            Spacer()
-            Text(MoneyFormatter.aud(group.totalCents, locale: l10n.locale))
-                .appFont(12.5, .semibold)
-                .monospacedDigit()
-                .foregroundStyle(Theme.inkSecondary)
+            ],
+            trailing: MoneyFormatter.aud(group.totalCents, locale: l10n.locale)
+        )
+    }
+
+    /// A section header: what it is on the left, its total on the right.
+    ///
+    /// The row becomes a column at an accessibility size, and the Spacer goes
+    /// with it — in a VStack a Spacer expands downwards, and side by side the
+    /// total wrapped onto a second line UNDER the title it was meant to sit
+    /// beside ("Del banco · 3 US$" / "79,30"). Measured at AX5.
+    ///
+    /// One function for both headers because the bank's was written by copying
+    /// the day's, which is how the day's defect would have survived next to a
+    /// fixed copy of itself.
+    private func sectionHeader(
+        title: [RichText.Run],
+        trailing: String?
+    ) -> some View {
+        let layout: AnyLayout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+        return layout {
+            RichText.text(title)
+            if !typeSize.isAccessibilitySize { Spacer() }
+            if let trailing {
+                Text(trailing)
+                    .appFont(12.5, .semibold)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.inkSecondary)
+            }
         }
         .textCase(nil)
     }
@@ -387,33 +457,190 @@ struct HistoryView: View {
 
     @ViewBuilder
     private var verificationBar: some View {
-        if unverifiedCount > 0 || !model.expenseBankCharges.isEmpty {
-            // The two chips sit side by side until neither fits: at an
-            // accessibility size they were two round blobs with their labels
-            // broken mid-word ("verific" over "ar").
+        let pending = model.expenseBankCharges.count
+        if unverifiedCount > 0 || pending > 0 {
+            // Both counts on ONE line. The bank's used to be a full-width blue
+            // bar of its own below this one, so two numbers cost three lines
+            // before anything you came to read — measured on the phone with a
+            // single charge and a single unverified expense.
+            //
+            // Side by side until neither fits: at an accessibility size they
+            // were two round blobs with their labels broken mid-word ("verific"
+            // over "ar"), which is what AdaptiveRow is for.
             AdaptiveRow(spacing: 8) {
                 if unverifiedCount > 0 {
-                    Button {
-                        onlyUnverified.toggle()
-                    } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .appFont(11, .semibold)
-                                .accessibilityHidden(true)
-                            Text(l10n.t("history.unverifiedCount", unverifiedCount))
-                                .appFont(12, .semibold)
-                        }
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 5)
-                        .background(onlyUnverified ? Theme.accentSoft : Theme.fill)
-                        .foregroundStyle(onlyUnverified ? Theme.accentStrong : Theme.inkSecondary)
-                        .clipShape(chipShape)
-                    }
-                    .buttonStyle(.plain)
+                    chip(
+                        icon: "exclamationmark.circle.fill",
+                        label: l10n.t("history.unverifiedCount", unverifiedCount),
+                        on: onlyUnverified,
+                        onColor: Theme.accentStrong,
+                        onBackground: Theme.accentSoft
+                    ) { onlyUnverified.toggle() }
                 }
-                Spacer()
+                if pending > 0 {
+                    // Folds the section rather than opening a screen: the rows
+                    // are right there, and a chip that hid them behind a sheet
+                    // is exactly what this stopped being.
+                    chip(
+                        icon: bankIsOpen ? "chevron.up" : "chevron.down",
+                        label: l10n.bankChipCount(pending),
+                        on: bankIsOpen,
+                        onColor: Theme.infoText,
+                        onBackground: Theme.infoBg
+                    ) { bankOpenedByHand = !bankIsOpen }
+                }
+                // AdaptiveGap, not Spacer: at an accessibility size AdaptiveRow
+                // is a VStack, and a Spacer in a VStack expands DOWNWARDS. The
+                // bare Spacer that used to be here pushed the whole list off
+                // the bottom of the screen — measured at AX5, where the charges
+                // ended up behind the tab bar with a gap above them the height
+                // of half the screen. It predates this section; it was found
+                // by running the new one at that size.
+                AdaptiveGap()
             }
             .padding(.bottom, 10)
+        }
+    }
+
+    private func chip(
+        icon: String,
+        label: String,
+        on: Bool,
+        onColor: Color,
+        onBackground: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .appFont(11, .semibold)
+                    // The label beside it says the same thing.
+                    .accessibilityHidden(true)
+                Text(label)
+                    .appFont(12, .semibold)
+            }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 5)
+            .background(on ? onBackground : Theme.fill)
+            .foregroundStyle(on ? onColor : Theme.inkSecondary)
+            .clipShape(chipShape)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// The bank's charges: one row each, a way to confirm the lot, and the way
+    /// back from a dismissal.
+    @ViewBuilder
+    private var bankSection: some View {
+        let charges = model.expenseBankCharges
+        let dismissed = model.dismissedBankCharges.count
+        // Folded means GONE, header and all, not an empty section: kept, it was
+        // a lone header over a gap, and the chip above already carries the
+        // count that header would be repeating.
+        if (!charges.isEmpty || dismissed > 0) && bankIsOpen {
+            Section {
+                Group {
+                    // Every charge, not the first two. The old cards were tall
+                    // enough that five of them buried the history, so the panel
+                    // showed two and hid the rest behind "ver los que faltan";
+                    // at row height that budget is gone and a charge the list
+                    // does not show is a charge nobody answers.
+                    ForEach(charges, id: \.id) { charge in
+                        BankChargeRow(
+                            charge: charge,
+                            suggestion: model.bankChargeSuggestions
+                                .first { $0.chargeId == charge.id }
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture { decidingCharge = charge }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction { decidingCharge = charge }
+                        .listRowBackground(Theme.surface)
+                        .listRowSeparatorTint(Theme.separator)
+                    }
+                    // One press for the lot, from TWO up: with a single charge
+                    // its own sheet is one tap away and a second way to press
+                    // it is noise.
+                    if pendingGuesses.count >= 2 {
+                        Button {
+                            confirmingAll = true
+                        } label: {
+                            HStack(spacing: 7) {
+                                Image(systemName: "checklist")
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text(l10n.t("bank.confirmAll", pendingGuesses.count))
+                                    .appFont(13, .bold)
+                            }
+                            .foregroundStyle(Theme.accentStrong)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            // Without this the row is tappable only on the
+                            // glyph and the words: a Button's label does not
+                            // claim the space its Spacer or its alignment
+                            // frame occupies. Measured — a press in the middle
+                            // of the dismissed row did nothing at all.
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Theme.surface)
+                        .listRowSeparatorTint(Theme.separator)
+                    }
+                    if dismissed > 0 {
+                        Button {
+                            showingDismissed = true
+                        } label: {
+                            HStack {
+                                Text(l10n.dismissedChargesCount(dismissed))
+                                    .appFont(13, .semibold)
+                                    .foregroundStyle(Theme.inkSecondary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(Theme.inkTertiary)
+                                    .accessibilityHidden(true)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Theme.surface)
+                        .listRowSeparatorTint(Theme.separator)
+                    }
+                }
+            } header: {
+                bankHeader(count: charges.count)
+            }
+        }
+    }
+
+    private func bankHeader(count: Int) -> some View {
+        sectionHeader(
+            title: [
+                .init(
+                    l10n.t("bank.sectionHeader"),
+                    color: Theme.infoText, font: AppFont.font(13, .bold)
+                ),
+                .init(
+                    count > 0 ? " · \(count)" : "",
+                    color: Theme.inkTertiary, font: AppFont.font(13, .medium)
+                ),
+            ],
+            // The day headers carry their day's total; this carries the bank's,
+            // in the currency the bank speaks.
+            trailing: count > 0
+                ? MoneyFormatter.usd(
+                    model.expenseBankCharges.reduce(0) { $0 + $1.usdCents },
+                    locale: l10n.locale
+                )
+                : nil
+        )
+    }
+
+    private func confirmAll() {
+        let guesses = pendingGuesses
+        guard !guesses.isEmpty else { return }
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        for guess in guesses {
+            model.assignBankCharge(guess.charge, to: guess.expenseId)
         }
     }
 

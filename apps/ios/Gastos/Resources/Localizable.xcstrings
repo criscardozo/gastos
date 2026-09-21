@@ -443,6 +443,38 @@
         }
       }
     },
+    "bank.rowNoMatch": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elegí el gasto"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick the expense"
+          }
+        }
+      }
+    },
+    "bank.sectionHeader": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Del banco"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From the bank"
+          }
+        }
+      }
+    },
     "bank.suggested": {
       "extractionState": "manual",
       "localizations": {
@@ -1969,6 +2001,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "%d cargos del banco"
+          }
+        }
+      }
+    },
+    "history.bankChipOne": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 del banco"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 from the bank"
+          }
+        }
+      }
+    },
+    "history.bankChipOther": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d del banco"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d from the bank"
           }
         }
       }
