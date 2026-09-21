@@ -13,7 +13,7 @@ struct RecurringPromptSheet: View {
     /// What was filed before the sheet came up, captured because the listener
     /// empties `recurringReady` the moment the writes land — reading it live
     /// would report zero.
-    let filedCount: Int
+    let filed: [AppModel.ClaimedCharge]
 
     @State private var index = 0
     @State private var amount = BudgetEntryAmount()
@@ -29,17 +29,41 @@ struct RecurringPromptSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    if filedCount > 0 {
-                        Text(filedCount == 1
-                             ? l10n.t("recurring.promptFiledOne")
-                             : l10n.t("recurring.promptFiled", filedCount))
-                            .appFont(13.5, .semibold)
-                            .foregroundStyle(Theme.greenText)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 11)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Theme.greenBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    if !filed.isEmpty {
+                        // The count, and then WHICH. The count on its own was
+                        // the whole message, and "se cargó 1 gasto" does not
+                        // answer the only question anybody has when they open
+                        // this — whether the charge they just made is the one
+                        // it means.
+                        VStack(alignment: .leading, spacing: 7) {
+                            Text(filed.count == 1
+                                 ? l10n.t("recurring.promptFiledOne")
+                                 : l10n.t("recurring.promptFiled", filed.count))
+                                .appFont(13.5, .semibold)
+                                .foregroundStyle(Theme.greenText)
+                            ForEach(filed) { claim in
+                                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                    Text(claim.rule.note)
+                                        .appFont(13, .semibold)
+                                        .foregroundStyle(Theme.ink)
+                                    Spacer(minLength: 8)
+                                    Text(MoneyFormatter.aud(
+                                        claim.amountAudCents ?? 0, locale: l10n.locale
+                                    ))
+                                    .appFont(13, .bold)
+                                    .monospacedDigit()
+                                    .foregroundStyle(Theme.ink)
+                                }
+                                Text(chargeLine(claim))
+                                    .appFont(11.5)
+                                    .foregroundStyle(Theme.inkTertiary)
+                            }
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 11)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Theme.greenBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
 
                     if let claim = current {

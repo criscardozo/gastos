@@ -37,7 +37,7 @@ struct RootView: View {
                     // stays pending and keeps showing in Historial, so swiping
                     // it away answers nothing.
                     .sheet(isPresented: $model.showRecurringPrompt) {
-                        RecurringPromptSheet(filedCount: model.recurringFiledCount)
+                        RecurringPromptSheet(filed: model.recurringFiled)
                     }
                     // onChange, not `.task(id:)`, and keyed on the charges
                     // themselves rather than on "the listeners answered".

@@ -51,10 +51,18 @@ final class AppModel {
     /// launch: postponing loses nothing, because what is left stays pending and
     /// keeps showing in Historial.
     var showRecurringPrompt = false
-    /// How many the rules filed on their own this time round. Captured, because
-    /// the listener empties the queue the moment the writes land and reading it
-    /// live would report zero.
-    var recurringFiledCount = 0
+    /// What the rules filed on their own, for the sheet to report.
+    ///
+    /// The claims, not a count. A count could say "se cargó 1 gasto" and that
+    /// was the whole message — measured on the phone, where the answer to "did
+    /// the Opal charge get filed?" was a number that could have meant any
+    /// expense. It says which ones now.
+    ///
+    /// Captured rather than read live, because the listener empties the queue
+    /// the moment the writes land. Accumulated rather than replaced: the
+    /// charges arrive from the listener in more than one batch, so two runs a
+    /// second apart each filing one would otherwise report "1" twice, or once.
+    var recurringFiled: [ClaimedCharge] = []
     /// Charges already put through the rules this launch.
     ///
     /// A SET of ids, not a latch and not a count. A latch is what this was, and

@@ -267,10 +267,35 @@ final class FirestoreService {
     }
 
     /// Take a dismissal back: the charge returns to the pending list.
+    /// Put a dismissed charge back in the pending list — and take with it the
+    /// expense it was filed as, if it was filed rather than thrown away.
+    ///
+    /// One batch, and the delete is unconditional because it has to be safe
+    /// without a read: `auto_<chargeId>` is derived, so deleting one that was
+    /// never created is a no-op, while leaving one that WAS created is the same
+    /// purchase counted twice — the charge back in the pending list with its
+    /// expense still in the ledger.
+    ///
+    /// The screen tries not to offer Restaurar on a filed charge at all, by
+    /// checking the expenses it has in memory. That check cannot be complete:
+    /// only the current and viewed periods are loaded, so a charge filed into
+    /// an older period — which is exactly what happens when the rules catch up
+    /// on something from days ago — is not recognised as filed and gets the
+    /// button anyway. Measured on the phone: a charge from the 19th, filed, was
+    /// offered as "1 descartado" while its expense sat in the previous period.
+    /// Rather than widen that read, the destructive half is made harmless.
     func restoreBankCharge(householdId: String, chargeId: String) async throws {
-        try await db.collection("households").document(householdId)
-            .collection("bankCharges").document(chargeId)
-            .updateData(["dismissedAt": FieldValue.delete()])
+        let household = db.collection("households").document(householdId)
+        let batch = db.batch()
+        batch.deleteDocument(
+            household.collection("expenses")
+                .document(Self.autoExpenseId(chargeId: chargeId))
+        )
+        batch.updateData(
+            ["dismissedAt": FieldValue.delete()],
+            forDocument: household.collection("bankCharges").document(chargeId)
+        )
+        try await batch.commit()
     }
 
     /// Delete a charge for good — the sweep that clears dismissals past the

@@ -158,12 +158,16 @@ extension AppModel {
         let asking = recurringAsking.filter { ids.contains($0.charge.id) }
         guard !ready.isEmpty || !asking.isEmpty else { return }
 
-        let filed = ready.count
         for claim in ready {
             guard let amount = claim.amountAudCents else { continue }
             await fileOneRecurring(claim, amountAudCents: amount)
+            // Appended as each lands rather than assigned at the end: if a
+            // second batch of charges arrives while this loop is running, the
+            // sheet must end up naming both, not whichever run finished last.
+            if !recurringFiled.contains(where: { $0.id == claim.id }) {
+                recurringFiled.append(claim)
+            }
         }
-        recurringFiledCount = filed
         showRecurringPrompt = true
     }
 
