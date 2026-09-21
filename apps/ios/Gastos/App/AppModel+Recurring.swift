@@ -138,8 +138,23 @@ extension AppModel {
         // over.
         evaluatedChargeIds.formUnion(fresh.map(\.id))
 
+        // Everything a rule can file, not only what is new — but only ASK
+        // about what is new.
+        //
+        // The two halves are not symmetric and the difference is measurable.
+        // Filing is idempotent and always right: if a rule claims a charge and
+        // something can price it, it belongs in the ledger, and a charge can
+        // become filable AFTER it was first seen — filing one recurring expense
+        // verifies it, which teaches the rate, which prices a charge that had
+        // none. That happened in this very run: a "Cafe" rule with no amount
+        // filed nothing on arrival and then could, once two Opal charges had
+        // taught the rate. Restricted to fresh ids it would have waited for the
+        // next launch for no reason.
+        //
+        // Asking is the opposite: re-opening a question somebody has already
+        // postponed is the app nagging, so that half is `fresh` only.
         let ids = Set(fresh.map(\.id))
-        let ready = recurringReady.filter { ids.contains($0.charge.id) }
+        let ready = recurringReady
         let asking = recurringAsking.filter { ids.contains($0.charge.id) }
         guard !ready.isEmpty || !asking.isEmpty else { return }
 

@@ -109,9 +109,21 @@ export default function ExpensesPage() {
   const servicesForRule = useServices(
     ruleSeed === null ? null : (household?.id ?? null),
   ).services;
-  // Offered once per visit. Dismissing it must not bring it straight back —
-  // the charges it asks about are still pending by design.
-  const [promptDone, setPromptDone] = useState(false);
+  // Which charges the prompt has already had its say about.
+  //
+  // A SET of ids, not a boolean. It was a boolean, and dismissing the prompt
+  // unmounted it for the life of the page: a charge that arrived afterwards
+  // was never filed, however long the tab stayed open. That is the same defect
+  // measured on the phone, where a rule with an amount on it filed nothing for
+  // two days because the run was keyed on a launch-time latch. Milder here —
+  // a reload or a trip to another route cures it — and the same shape, which
+  // is exactly why it gets fixed in both and not only where it was reported.
+  //
+  // Dismissing still must not bring it straight back: the charges it asked
+  // about are pending by design, and they are in the set from that moment.
+  const [answeredChargeIds, setAnsweredChargeIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const { rules: recurringRules, loading: rulesLoading } = useRecurringRules(
     household?.id ?? null,
   );
@@ -147,6 +159,11 @@ export default function ExpensesPage() {
   const { charges, loading: chargesLoading } = useBankCharges(
     household?.id ?? null,
   );
+  // The pending ones, worked out once. It was `charges.filter(isPending)`
+  // written out at each of the three places that wanted it, which is the set
+  // being decided three times — and the fourth caller is the one that decides
+  // whether the prompt is shown at all.
+  const pendingCharges = charges.filter(isPending);
 
   const [addForm, setAddForm] = useState<FormState>({
     amount: "",
@@ -732,7 +749,7 @@ export default function ExpensesPage() {
           rule={null}
           household={household}
           locale={locale}
-          pendingMerchants={charges.filter(isPending).map((c) => c.merchant)}
+          pendingMerchants={pendingCharges.map((c) => c.merchant)}
           services={servicesForRule}
           seed={ruleSeed}
           onSave={(input) => {
@@ -751,7 +768,7 @@ export default function ExpensesPage() {
                   input,
                 );
                 for (const claim of claimsOfOneRule(
-                  charges.filter(isPending),
+                  pendingCharges,
                   { id: ruleId, ...input },
                   learnedRate,
                 )) {
@@ -786,9 +803,11 @@ export default function ExpensesPage() {
           conclude there was nothing to say and close itself a moment before
           the data arrived. Same trap the charges listener already documents:
           a read in flight is not a read that came back empty. */}
-      {!promptDone && !chargesLoading && !rulesLoading && (
+      {pendingCharges.some((c) => !answeredChargeIds.has(c.id)) &&
+        !chargesLoading &&
+        !rulesLoading && (
         <RecurringPrompt
-          charges={charges.filter(isPending)}
+          charges={pendingCharges}
           rules={recurringRules}
           learnedRate={learnedRate}
           locale={locale}
@@ -805,7 +824,12 @@ export default function ExpensesPage() {
               estimated,
             );
           }}
-          onDismissed={() => setPromptDone(true)}
+          onDismissed={() =>
+            setAnsweredChargeIds(
+              (seen) =>
+                new Set([...seen, ...pendingCharges.map((c) => c.id)]),
+            )
+          }
         />
       )}
 
