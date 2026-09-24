@@ -156,7 +156,11 @@ export function useBankCharges(householdId: string | null): BankChargesState {
     if (fb === null) return;
     const q = query(
       collection(fb.db, "households", householdId, "bankCharges"),
-      orderBy("date", "asc"),
+      // NEWEST first, so that if the cap ever bites it drops the oldest.
+      // Ascending, the charge left out would have been the one that just
+      // arrived. Reversed below so the rest of the app still sees oldest-first,
+      // the order the matcher was built and tested on.
+      orderBy("date", "desc"),
       limit(MAX_PENDING_CHARGES),
     ).withConverter(bankChargeConverter);
     // Asked to delete once per mount: the snapshot fires again on our own
@@ -165,7 +169,7 @@ export function useBankCharges(householdId: string | null): BankChargesState {
     const unsubscribe = onSnapshot(
       q,
       (snap) => {
-        const all = decoded(snap.docs.map((d) => d.data()));
+        const all = decoded(snap.docs.map((d) => d.data())).reverse();
         const { pending, dismissed, expired } = partitionCharges(all, new Date());
         setState({ charges: [...pending, ...dismissed], loading: false });
         for (const charge of expired) {

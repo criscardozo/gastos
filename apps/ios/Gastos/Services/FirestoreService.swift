@@ -195,7 +195,12 @@ final class FirestoreService {
     ) -> ListenerRegistration {
         db.collection("households").document(householdId)
             .collection("bankCharges")
-            .order(by: "date")
+            // NEWEST first, so that if the cap ever bites it drops the oldest.
+            // Ascending, a 51st charge would have been the one left out — the
+            // one that just arrived, which is the one somebody is looking for.
+            // Reversed below so everything downstream still sees oldest-first,
+            // the order the matcher and the list were built and tested on.
+            .order(by: "date", descending: true)
             .limit(to: 50)
             .addSnapshotListener { snapshot, error in
                 // Logged rather than dropped. These charges are the one thing
@@ -225,7 +230,7 @@ final class FirestoreService {
                         in: "bankCharges"
                     )
                 }
-                onChange(charges)
+                onChange(charges.reversed())
             }
     }
 
