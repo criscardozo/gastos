@@ -632,15 +632,36 @@ export async function dismissBankCharge(
   });
 }
 
-/** Take a dismissal back: the charge returns to the pending list. */
+/**
+ * Take a dismissal back: the charge returns to the pending list — and the
+ * expense it was filed as goes with it, if it was filed rather than thrown
+ * away.
+ *
+ * One batch, and the delete is unconditional because it has to be safe without
+ * a read: the expense id is derived from the charge, so deleting one that was
+ * never created does nothing, while leaving one that WAS created is the same
+ * purchase counted twice.
+ *
+ * The panel tries not to offer Restaurar on a filed charge at all
+ * (`wasFiledAsExpense`), but it can only look among the expenses of the range
+ * on screen, so a charge filed into any other range is offered anyway. That
+ * check cannot be made complete without reading every period; this makes the
+ * destructive half harmless instead. The e2e "restoring a charge filed OUTSIDE
+ * the range" holds it — measured failing before this: the charge back in the
+ * pending list with its expense still there. Same fix as iOS's, which went in
+ * first while this half was left.
+ */
 export async function restoreBankCharge(
   db: Firestore,
   householdId: string,
   chargeId: string,
 ): Promise<void> {
-  await updateDoc(doc(db, "households", householdId, "bankCharges", chargeId), {
+  const batch = writeBatch(db);
+  batch.delete(doc(db, "households", householdId, "expenses", autoExpenseId(chargeId)));
+  batch.update(doc(db, "households", householdId, "bankCharges", chargeId), {
     dismissedAt: deleteField(),
   });
+  await batch.commit();
 }
 
 /**

@@ -2093,6 +2093,107 @@ test("a recurring rule files the charge it recognises, and it can be taken back"
   await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible();
 });
 
+test("restoring a charge filed OUTSIDE the range on screen does not count it twice", async ({
+  page,
+  request,
+}) => {
+  // The discarded list hides a charge that became an expense by looking for
+  // that expense among the ones the screen has loaded — which is only the
+  // range selected. A charge filed into any other range therefore shows up as
+  // "1 descartado" with Restaurar, and Restaurar only cleared the stamp: the
+  // charge went back to pending with its expense still in the ledger, the same
+  // purchase counted twice. Not hypothetical — the rules catching up on a
+  // charge from two days earlier put exactly this on a phone, and the iOS half
+  // was fixed first while this one was left. The test next door asserts "not
+  // listed as discarded" inside the range, which is the case that never broke.
+  const email = `e2e-away-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Away Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const docs = (await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[];
+  const mine = docs.find((d) => d.fields.name.stringValue === "Hogar de Away");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+
+  // The rule by REST: making one through the UI is the test next door's job.
+  const now = new Date().toISOString();
+  const rule = await request.post(
+    `${REST}/households/${householdId}/recurringRules?documentId=rule-away`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          pattern: { stringValue: "Opal*" },
+          categoryId: { stringValue: "transport" },
+          note: { stringValue: "Opal" },
+          amountAudCents: { integerValue: "1500" },
+          createdBy: { stringValue: "e2e" },
+          createdAt: { timestampValue: now },
+          updatedAt: { timestampValue: now },
+        },
+      },
+    },
+  );
+  expect(rule.ok()).toBe(true);
+  const charge = await request.post(
+    `${REST}/households/${householdId}/bankCharges?documentId=gmail-away1`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          usdCents: { integerValue: "1240" },
+          date: { stringValue: sydneyDate() },
+          merchant: { stringValue: "OPAL AUCKLAND ST" },
+          importedAt: { timestampValue: now },
+        },
+      },
+    },
+  );
+  expect(charge.ok()).toBe(true);
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(page.getByText("Se cargó 1 gasto solo")).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("dialog").getByRole("button", { name: "Listo" }).click();
+
+  // Look at LAST month, which does not contain today's expense.
+  const [y, m] = sydneyDate().slice(0, 7).split("-").map(Number);
+  const lastMonth = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+  await page.getByLabel("period").selectOption(`month:${lastMonth}`);
+
+  // The filed charge is offered back, because nothing on screen says it was
+  // filed. That offer is the premise of this test, not the bug: which list it
+  // sits in is cosmetic. What Restaurar does to the ledger is not.
+  await page.getByRole("button", { name: "1 descartado" }).click();
+  await page.getByRole("button", { name: /^Restaurar US\$ 12,40$/ }).click();
+
+  await expect
+    .poll(async () => {
+      const [c, e] = await Promise.all([
+        request.get(`${REST}/households/${householdId}/bankCharges/gmail-away1`, {
+          headers: admin,
+        }),
+        request.get(`${REST}/households/${householdId}/expenses/auto_gmail-away1`, {
+          headers: admin,
+        }),
+      ]);
+      const doc = (await c.json()) as { fields?: { dismissedAt?: unknown } };
+      return [
+        doc.fields?.dismissedAt === undefined ? "pending" : "dismissed",
+        e.status() === 404 ? "no-expense" : "expense-still-there",
+      ].join("/");
+    })
+    .toBe("pending/no-expense");
+});
+
 test("a rule made from a charge files that charge on the spot", async ({
   page,
   request,

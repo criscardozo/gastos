@@ -863,6 +863,27 @@ describe("households/{id}/bankCharges", () => {
     await assertSucceeds(updateDoc(charge, { dismissedAt: deleteField() }));
   });
 
+  it("restoring is one batch that takes the filed expense with it, and works when there was none", async () => {
+    // Both clients restore with this exact batch: delete `auto_<chargeId>` and
+    // clear the stamp. The delete is unconditional because a client cannot
+    // always tell whether the charge was filed — it only sees the expenses of
+    // the range on screen — and leaving a filed one behind counts the purchase
+    // twice. So the case that has to keep working is the ordinary one: a charge
+    // discarded by hand, where that expense never existed.
+    //
+    // This pins a dependency, not a feature. If `allow delete` on expenses ever
+    // starts reading `resource` — an innocent-looking "only your own" — this
+    // batch fails as a whole and Restaurar stops working for every manual
+    // discard, with nothing on screen but the charge not coming back.
+    const alice = db(env, ALICE);
+    const charge = doc(alice, "households", HOUSEHOLD, "bankCharges", "gmail-1");
+    await assertSucceeds(updateDoc(charge, { dismissedAt: serverTimestamp() }));
+    const nothingFiled = writeBatch(alice);
+    nothingFiled.delete(doc(alice, "households", HOUSEHOLD, "expenses", "auto_gmail-1"));
+    nothingFiled.update(charge, { dismissedAt: deleteField() });
+    await assertSucceeds(nothingFiled.commit());
+  });
+
   it("dismissedAt must be the server's clock, not the client's", async () => {
     // A client that picked the value could park a charge in the recoverable
     // list forever, or expire it the moment it was dismissed.
