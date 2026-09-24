@@ -20,8 +20,14 @@ import { CurrencyTag } from "@/components/ui/marks";
  * USD leads everywhere on the Estadísticas screen, but it is NOT a conversion —
  * it is what the bank actually charged, which exists only for the expenses
  * somebody verified. So it is always a lower bound on the same rows, and when
- * NOTHING in the group is verified there is no honest number at all: that shows
- * an em dash rather than "US$ 0,00", which would read as "spent nothing".
+ * NOTHING in the group is verified there is no honest USD number at all — not
+ * "US$ 0,00", which would read as "spent nothing".
+ *
+ * In that case the USD line is left out and the AUD figure takes the headline.
+ * It used to keep the slot and put an em dash in it, so with nothing verified
+ * every card and row on Estadísticas led with a black bar while the one known
+ * figure sat underneath in small grey: the hierarchy upside down exactly when
+ * there was one number to show. Same fix as iOS's UsdOverAud.
  */
 export function UsdOverAud({
   usd,
@@ -42,11 +48,23 @@ export function UsdOverAud({
         ? "text-[15px]"
         : "text-[13px]";
   const secondary = size === "lg" ? "text-[12.5px]" : "text-[11px]";
+  if (!hasUsd) {
+    return (
+      <span className="flex flex-col items-end">
+        <span className="flex items-baseline gap-1.5">
+          <span className={`tnum font-bold tracking-[-0.01em] text-ink ${primary}`}>
+            {aud}
+          </span>
+          <CurrencyTag currency="AUD" />
+        </span>
+      </span>
+    );
+  }
   return (
     <span className="flex flex-col items-end">
       <span className="flex items-baseline gap-1.5">
         <span className={`tnum font-bold tracking-[-0.01em] text-ink ${primary}`}>
-          {hasUsd ? usd : "—"}
+          {usd}
         </span>
         <CurrencyTag currency="USD" />
       </span>

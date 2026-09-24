@@ -69,6 +69,10 @@ export function CardChargesInbox({
 
   if (pending.length === 0 && dismissed.length === 0) return null;
 
+  const unidentifiedCount = pending.filter(
+    (c) => classifyCharge(c.cardLast4, household.cards) === "unknown",
+  ).length;
+
   const withDb = (fn: (db: NonNullable<ReturnType<typeof getFirebaseClient>>["db"]) => Promise<void>) => {
     const fb = getFirebaseClient();
     // Never awaited: Firestore only resolves on server ack.
@@ -82,6 +86,15 @@ export function CardChargesInbox({
         <p className="text-[11.5px] leading-snug text-ink-3">
           {pending.length > 0 ? t("hint", { count: pending.length }) : t("allClear")}
         </p>
+        {/* Said once, with a count, rather than under every row: with no card
+            configured yet that is every charge, and the same sentence five
+            times in a list of five is noise the eye learns to skip. */}
+        {unidentifiedCount > 0 && (
+          <p className="flex items-center gap-1.5 text-[11px] leading-snug text-ink-3">
+            <Icon name="info" size={13} className="flex-none text-ink-3" />
+            {t("unidentified", { count: unidentifiedCount })}
+          </p>
+        )}
       </div>
 
       {/* Says WHY the buttons are dead, where the buttons are. A row of
@@ -110,8 +123,6 @@ export function CardChargesInbox({
         {pending.map((charge) => {
           const configured = brandFor(charge.cardLast4, household.cards);
           const brand = brands[charge.id] ?? configured;
-          const unidentified =
-            classifyCharge(charge.cardLast4, household.cards) === "unknown";
           return (
             <div key={charge.id} className="flex flex-col gap-2 py-3">
               <div className="flex items-baseline justify-between gap-3">
@@ -197,12 +208,6 @@ export function CardChargesInbox({
                 </button>
               </div>
 
-              {unidentified && (
-                <span className="flex items-center gap-1.5 text-[11px] text-ink-3">
-                  <Icon name="info" size={13} className="text-ink-3" />
-                  {t("unidentified")}
-                </span>
-              )}
             </div>
           );
         })}

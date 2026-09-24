@@ -232,7 +232,7 @@
     "hint": "{count, plural, one {# bank charge} other {# bank charges}} not yet on a statement.",
     "add": "Add",
     "dismiss": "Dismiss",
-    "unidentified": "This card is not configured in Settings, so the charge also appears under Expenses.",
+    "unidentified": "{count, plural, one {1 charge is from a card not configured in Settings, so it also appears under Expenses.} other {# charges are from cards not configured in Settings, so they also appear under Expenses.}}",
     "allClear": "No bank charges left to record."
   },
   "empty": {

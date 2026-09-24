@@ -232,7 +232,7 @@
     "hint": "{count, plural, one {# cargo del banco} other {# cargos del banco}} sin registrar en un resumen.",
     "add": "Agregar",
     "dismiss": "Descartar",
-    "unidentified": "Esta tarjeta no está configurada en Ajustes, así que el cargo también aparece en Gastos.",
+    "unidentified": "{count, plural, one {1 cargo es de una tarjeta que no está configurada en Ajustes, así que también aparece en Gastos.} other {# cargos son de tarjetas que no están configuradas en Ajustes, así que también aparecen en Gastos.}}",
     "allClear": "No hay cargos del banco sin registrar."
   },
   "empty": {
