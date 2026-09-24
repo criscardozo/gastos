@@ -28,7 +28,8 @@ describe("recurring vectors", () => {
   it("runs every group in the file", () => {
     expect(
       Object.keys(vectors).filter((k) => k !== "version" && k !== "comment"),
-    ).toEqual(["matches", "firstMatch", "estimate"]);
+      // `run` is read by recurring-run.test.ts, the planner's own suite.
+    ).toEqual(["matches", "firstMatch", "estimate", "run"]);
   });
 
   it("runs the number of cases the suite thinks it does", () => {

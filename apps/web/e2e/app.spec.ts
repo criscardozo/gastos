@@ -2194,6 +2194,156 @@ test("restoring a charge filed OUTSIDE the range on screen does not count it twi
     .toBe("pending/no-expense");
 });
 
+/**
+ * A fresh household with one rule, created by REST — making a rule through the
+ * UI is another test's job. Returns the household id.
+ */
+async function householdWithRule(
+  page: import("@playwright/test").Page,
+  request: import("@playwright/test").APIRequestContext,
+  who: string,
+  rule: { pattern: string; note: string; categoryId: string; amountAudCents: number | null },
+): Promise<string> {
+  const email = `e2e-${who.toLowerCase()}-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate(([n, e]) => window.__devSignIn!(n, e), [`${who} Tester`, email]);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const docs = (await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[];
+  const mine = docs.find((d) => d.fields.name.stringValue === `Hogar de ${who}`);
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+  const now = new Date().toISOString();
+  const fields: Record<string, unknown> = {
+    pattern: { stringValue: rule.pattern },
+    categoryId: { stringValue: rule.categoryId },
+    note: { stringValue: rule.note },
+    createdBy: { stringValue: "e2e" },
+    createdAt: { timestampValue: now },
+    updatedAt: { timestampValue: now },
+  };
+  // Absent, not null, is how a rule says "ask me".
+  if (rule.amountAudCents !== null) {
+    fields.amountAudCents = { integerValue: String(rule.amountAudCents) };
+  }
+  const created = await request.post(
+    `${REST}/households/${householdId}/recurringRules?documentId=rule-${who.toLowerCase()}`,
+    { headers: admin, data: { fields } },
+  );
+  expect(created.ok()).toBe(true);
+  return householdId;
+}
+
+async function postCharge(
+  request: import("@playwright/test").APIRequestContext,
+  householdId: string,
+  id: string,
+  merchant: string,
+  usdCents: number,
+): Promise<void> {
+  const r = await request.post(
+    `${REST}/households/${householdId}/bankCharges?documentId=${id}`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          usdCents: { integerValue: String(usdCents) },
+          date: { stringValue: sydneyDate() },
+          merchant: { stringValue: merchant },
+          importedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+  expect(r.ok()).toBe(true);
+}
+
+test("two questions arriving together are both asked, not the first and then done", async ({
+  page,
+  request,
+}) => {
+  // The prompt read its questions LIVE while stepping an index forward, so
+  // answering one took it out from under the index and the next slid into the
+  // slot just passed: the second was never asked. Measured on iOS first — the
+  // web had the same shape. The questions are captured when planned now.
+  const householdId = await householdWithRule(page, request, "Asker", {
+    pattern: "Cafe",
+    note: "Café",
+    categoryId: "coffee",
+    amountAudCents: null,
+  });
+  await postCharge(request, householdId, "gmail-ask1", "CAFE MARTINEZ", 520);
+  await postCharge(request, householdId, "gmail-ask2", "CAFE SOLO", 450);
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Gastos recurrentes" });
+  await expect(dialog.getByText("CAFE MARTINEZ")).toBeVisible({ timeout: 20_000 });
+  await dialog.getByLabel("Importe AUD").fill("7,00");
+  await dialog.getByRole("button", { name: "Guardar" }).click();
+  // The one that used to be skipped.
+  await expect(dialog.getByText("CAFE SOLO")).toBeVisible();
+  await dialog.getByLabel("Importe AUD").fill("5,00");
+  await dialog.getByRole("button", { name: "Guardar" }).click();
+
+  await expect
+    .poll(async () => {
+      const got: string[] = [];
+      for (const id of ["gmail-ask1", "gmail-ask2"]) {
+        const e = await request.get(`${REST}/households/${householdId}/expenses/auto_${id}`, {
+          headers: admin,
+        });
+        got.push(e.status() === 200 ? "filed" : "missing");
+      }
+      return got.join("/");
+    })
+    .toBe("filed/filed");
+});
+
+test("a charge taken back with undo is not filed again when the next one arrives", async ({
+  page,
+  request,
+}) => {
+  // Undo puts the charge back in the pending list on purpose. The prompt was
+  // handed every pending charge, so the next arrival opened it with the undone
+  // one still claimable, and it was filed straight back.
+  const householdId = await householdWithRule(page, request, "Undoer", {
+    pattern: "Opal*",
+    note: "Opal",
+    categoryId: "transport",
+    amountAudCents: 1500,
+  });
+  await postCharge(request, householdId, "gmail-undo1", "OPAL AUCKLAND ST", 1240);
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(page.getByText("Se cargó 1 gasto solo")).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("dialog").getByRole("button", { name: "Listo" }).click();
+
+  await page.getByRole("button", { name: /Deshacer la carga automática/ }).first().click();
+  await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible();
+
+  await postCharge(request, householdId, "gmail-undo2", "OPAL AUCKLAND ST", 1240);
+  await expect(page.getByText("Se cargó 1 gasto solo")).toBeVisible({ timeout: 20_000 });
+
+  await expect
+    .poll(async () => {
+      const got: string[] = [];
+      for (const id of ["gmail-undo1", "gmail-undo2"]) {
+        const e = await request.get(`${REST}/households/${householdId}/expenses/auto_${id}`, {
+          headers: admin,
+        });
+        got.push(e.status() === 200 ? "filed" : "not-filed");
+      }
+      return got.join("/");
+    })
+    .toBe("not-filed/filed");
+});
+
 test("a rule made from a charge files that charge on the spot", async ({
   page,
   request,

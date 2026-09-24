@@ -12,113 +12,57 @@
 // only ask, and the charge stays pending until somebody answers. Nothing is
 // filed on a guess.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
-import type { BankChargeDoc, RecurringRuleDoc } from "@/lib/firebase/converters";
+import type { BankChargeDoc } from "@/lib/firebase/converters";
 import { parseAmountToCents } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
-import { formatUsd } from "@/lib/money";
-import { claimCharges, type ClaimedCharge } from "@/lib/recurring";
+import { formatCents, formatUsd } from "@/lib/money";
+import type { ClaimedCharge } from "@/lib/recurring";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
 export function RecurringPrompt({
-  charges,
-  rules,
-  learnedRate,
+  filed,
+  asking,
+  currency,
   locale,
-  onFile,
+  onAnswer,
   onDismissed,
 }: {
-  /** The PENDING charges only — a dismissed one is not waiting for anything. */
-  charges: readonly BankChargeDoc[];
-  rules: readonly RecurringRuleDoc[];
-  /** From BankMatch.learnRate — what prices a rule that states no amount. */
-  learnedRate: number | null;
+  /** What the rules filed on their own, as planned — named, not counted. */
+  filed: readonly ClaimedCharge<BankChargeDoc>[];
+  /**
+   * The questions, CAPTURED when the run was planned. Read live, answering
+   * one took it out from under the index below and the next slid into the
+   * slot just passed, so a second question was never asked.
+   */
+  asking: readonly ClaimedCharge<BankChargeDoc>[];
+  /** The household's currency — the one every AUD figure is in. */
+  currency: string;
   locale: string;
-  /** Files one charge under one rule, for the given AUD cents. */
-  onFile: (
-    charge: BankChargeDoc,
-    rule: RecurringRuleDoc,
-    amountAudCents: number,
-    estimated: boolean,
-  ) => Promise<void>;
-  /** Called once the prompt is closed, so the screen can stop offering it. */
+  /** Files one asked-about charge at the AUD cents somebody typed. */
+  onAnswer: (claim: ClaimedCharge<BankChargeDoc>, amountAudCents: number) => Promise<void>;
+  /** The prompt is closed; the screen resets what it reported and asked. */
   onDismissed: () => void;
 }) {
   const t = useTranslations("recurring");
   const tCommon = useTranslations("expenses");
 
-  const { ready, asking } = claimCharges(charges, rules, learnedRate);
-
-  // Filed once per mount, not per render.
-  //
-  // The listener fires again the moment the first expense lands, and without
-  // this the second render would file the same charge again. The deterministic
-  // expense id means a repeat would overwrite rather than duplicate — but a
-  // write per render is a write per render, and the free tier is part of the
-  // design.
-  const [started, setStarted] = useState(false);
-  const [filed, setFiled] = useState<ClaimedCharge<BankChargeDoc>[]>([]);
-
-  useEffect(() => {
-    if (started || ready.length === 0) return;
-    // The latch that says filing has begun, set before the writes rather than
-    // after them: the listener fires again the moment the first expense lands,
-    // and a latch set afterwards would let the second render start the same
-    // charges over. It cascades one render on purpose, which is the whole job.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStarted(true);
-    const batch = [...ready];
-    void (async () => {
-      for (const claim of batch) {
-        // Sequential on purpose: each is its own batch, and a burst of
-        // parallel writes is how a free-tier quota disappears.
-        if (claim.amountAudCents === null) continue;
-        await onFile(
-          claim.charge,
-          claim.rule,
-          claim.amountAudCents,
-          claim.estimated,
-        );
-      }
-      setFiled(batch);
-    })();
-  }, [ready, onFile, started]);
-
   const [index, setIndex] = useState(0);
   const [amount, setAmount] = useState("");
 
   const current = asking[index] ?? null;
-  // Nothing to say only when nothing is coming, either.
-  //
-  // Filing is asynchronous, so between starting it and hearing back there is a
-  // window where the charges have been dismissed (so `ready` is empty again)
-  // and `filed` has not been set yet. Judged on those two alone the prompt
-  // decided it had nothing to report and closed itself a beat before the
-  // report arrived — the expense was filed correctly and silently, which is
-  // the one thing this dialog exists to prevent.
-  const nothingToSay =
-    !started &&
-    ready.length === 0 &&
-    asking.length === 0 &&
-    filed.length === 0;
-
-  useEffect(() => {
-    if (nothingToSay) onDismissed();
-  }, [nothingToSay, onDismissed]);
-
-  if (nothingToSay) return null;
-
   const cents = parseAmountToCents(amount, locale);
 
   const saveCurrent = async () => {
     if (current === null || cents === null) return;
-    // Typed, so not an estimate.
-    await onFile(current.charge, current.rule, cents, false);
-    setAmount("");
+    // The list is captured, so stepping forward reaches the next question
+    // instead of skipping it.
     setIndex((i) => i + 1);
+    setAmount("");
+    await onAnswer(current, cents);
   };
 
   return (
@@ -140,9 +84,32 @@ export function RecurringPrompt({
         </div>
 
         {filed.length > 0 && (
-          <p className="rounded-xl bg-good-bg px-3.5 py-2.5 text-[13px] font-semibold text-good-text">
-            {t("promptFiled", { count: filed.length })}
-          </p>
+          // The count, and then WHICH. The count on its own was the whole
+          // message, and "se cargó 1 gasto" does not answer the only question
+          // anybody has here — whether it is the charge they just made.
+          <div className="flex flex-col gap-1.5 rounded-xl bg-good-bg px-3.5 py-2.5">
+            <p className="text-[13px] font-semibold text-good-text">
+              {t("promptFiled", { count: filed.length })}
+            </p>
+            <ul className="flex flex-col gap-1">
+              {filed.map((claim) => (
+                <li key={claim.charge.id} className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13px] font-semibold text-ink">
+                      {claim.rule.note}
+                    </span>
+                    <span className="block text-[11.5px] text-ink-3">
+                      {formatUsd(claim.charge.usdCents, locale)} ·{" "}
+                      {formatShortDate(claim.charge.date, locale)}
+                    </span>
+                  </span>
+                  <span className="tnum shrink-0 text-[13px] font-bold text-ink">
+                    {claim.amountAudCents === null ? "" : formatCents(claim.amountAudCents, currency, locale)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {current !== null ? (

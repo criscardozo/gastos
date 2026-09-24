@@ -40,7 +40,11 @@ import {
 } from "./pieces";
 import { EditExpenseRow, VerifyExpenseRow } from "./rows";
 import { learnRate } from "@/lib/bank-match";
-import { claimsOfOneRule } from "@/lib/recurring";
+import {
+  claimsOfOneRule,
+  planRecurringRun,
+  type ClaimedCharge,
+} from "@/lib/recurring";
 import { RecurringPrompt } from "@/components/recurring-prompt";
 import { RecurringRuleDialog } from "@/components/recurring-rule-dialog";
 import { useRecurringRules, useServices } from "@/lib/firebase/hooks";
@@ -51,7 +55,7 @@ import {
   undoRecurringExpense,
   chargeIdFromAutoExpense,
 } from "@/lib/firebase/mutations";
-import type { Expense, Household } from "@/lib/firebase/converters";
+import type { BankChargeDoc, Expense, Household } from "@/lib/firebase/converters";
 import { categoryCircleBg, categoryColor } from "@/lib/categories";
 import {
   formatCents,
@@ -110,31 +114,33 @@ export default function ExpensesPage() {
   const servicesForRule = useServices(
     ruleSeed === null ? null : (household?.id ?? null),
   ).services;
-  // Which charges the prompt has already had its say about.
+  // One run of the recurring rules at a time, planned by `planRecurringRun` —
+  // the same plan iOS makes, held to the same shared vectors — and carried out
+  // here. Two memories, kept apart on purpose:
   //
-  // A SET of ids, not a boolean. It was a boolean, and dismissing the prompt
-  // unmounted it for the life of the page: a charge that arrived afterwards
-  // was never filed, however long the tab stayed open. That is the same defect
-  // measured on the phone, where a rule with an amount on it filed nothing for
-  // two days because the run was keyed on a launch-time latch. Milder here —
-  // a reload or a trip to another route cures it — and the same shape, which
-  // is exactly why it gets fixed in both and not only where it was reported.
+  // - `seen`: charges already put through a run on this visit. A run happens
+  //   only when something not in here arrives.
+  // - `filed`: charges this visit filed, by a rule or by an answer. Undo puts
+  //   a charge back in the pending list on purpose, and without this the next
+  //   arrival filed it straight back — measured by the e2e, which undoes, lets
+  //   another charge in, and found the first one filed again.
   //
-  // Dismissing still must not bring it straight back: the charges it asked
-  // about are pending by design, and they are in the set from that moment.
-  const [answeredChargeIds, setAnsweredChargeIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-  // Whether the prompt is up, kept SEPARATELY from whether there is anything
-  // unanswered.
-  //
-  // Deriving the first from the second looks equivalent and is not: filing is
-  // the prompt's whole job, and a filed charge stops being pending, so the
-  // condition that opened it goes false while it is still working. The prompt
-  // then unmounts a beat before it can report, and the expense is filed
-  // correctly and silently — which is the one thing that dialog exists to
-  // prevent, and is written in its own file. Caught by the e2e, not by
-  // checking Firestore afterwards: the write was right, the telling was gone.
+  // Refs, not state: both are read synchronously inside the effect that
+  // plans, and both must be marked BEFORE the writes — the listener fires again
+  // the moment the first expense lands, and a mark set after would let that
+  // render start the same charges over.
+  const seenChargeIds = useRef(new Set<string>());
+  const filedChargeIds = useRef(new Set<string>());
+  // What the open prompt reports and asks, captured when planned. Captured
+  // because read live, answering a question took it out from under the
+  // prompt's index and the next one slid into the slot just passed: with two
+  // to answer, the second was never asked.
+  const [promptFiled, setPromptFiled] = useState<ClaimedCharge<BankChargeDoc>[]>([]);
+  const [promptAsk, setPromptAsk] = useState<ClaimedCharge<BankChargeDoc>[]>([]);
+  // Whether it is up is its own state, not derived from what is pending:
+  // filing is the prompt's whole job and a filed charge stops being pending,
+  // so a derived condition went false mid-flight and the prompt vanished a
+  // beat before it could report.
   const [promptOpen, setPromptOpen] = useState(false);
   const { rules: recurringRules, loading: rulesLoading } = useRecurringRules(
     household?.id ?? null,
@@ -177,17 +183,59 @@ export default function ExpensesPage() {
   // whether the prompt is shown at all.
   const pendingCharges = charges.filter(isPending);
 
-  // Opens the prompt whenever something arrives that it has not answered for.
-  // Above the early return, like every other hook here — see the note on
-  // useExpenseFilters for what putting one below it costs.
-  const hasUnanswered = pendingCharges.some((c) => !answeredChargeIds.has(c.id));
+  // Pure over what is already loaded, so it can sit above the early return and
+  // feed the effect below.
+  const learnedRate = learnRate(expenses);
+
+  // The run. Above the early return, like every other hook here — see the
+  // note on useExpenseFilters for what putting one below it costs.
+  const householdId = household?.id ?? null;
+  const uid = user?.uid ?? null;
   useEffect(() => {
-    // Disabled for the same reason the prompt's own latch is: the cascade IS
-    // the job. Something arrived that nobody has answered for, and the render
-    // after this one is the one that puts the dialog up.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (hasUnanswered) setPromptOpen(true);
-  }, [hasUnanswered]);
+    if (chargesLoading || rulesLoading || householdId === null || uid === null) return;
+    const plan = planRecurringRun(
+      charges.filter(isPending),
+      recurringRules,
+      learnedRate,
+      seenChargeIds.current,
+      filedChargeIds.current,
+    );
+    if (plan.fresh.length === 0) return;
+    for (const id of plan.fresh) seenChargeIds.current.add(id);
+    for (const claim of plan.file) filedChargeIds.current.add(claim.charge.id);
+    if (plan.file.length === 0 && plan.ask.length === 0) return;
+    // Reported as planned rather than as each write lands: Firestore applies
+    // the local write at once and resolves the promise only when the server
+    // answers, and a report that waited for that left the prompt open with
+    // nothing in it. A write the server refuses says so through the app's
+    // own error alert.
+    const merge = (
+      list: ClaimedCharge<BankChargeDoc>[],
+      more: ClaimedCharge<BankChargeDoc>[],
+    ) => [...list, ...more.filter((m) => !list.some((l) => l.charge.id === m.charge.id))];
+    // The cascade IS the job: something arrived, and the render after this
+    // one is the one that puts the prompt up.
+    setPromptFiled((f) => merge(f, plan.file));
+    setPromptAsk((q) => merge(q, plan.ask));
+    setPromptOpen(true);
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    void (async () => {
+      // Sequential on purpose: each is its own batch, and a burst of parallel
+      // writes is how a free-tier quota disappears.
+      for (const claim of plan.file) {
+        if (claim.amountAudCents === null) continue;
+        const filing = fileRecurringExpense(
+          fb.db, householdId, uid, claim.charge, claim.rule,
+          claim.amountAudCents, claim.estimated,
+        );
+        // Reported through the app's alert, and awaited here only to keep
+        // the writes one at a time — a refused one must not stop the rest.
+        write(filing);
+        await filing.catch(() => {});
+      }
+    })();
+  }, [charges, recurringRules, learnedRate, chargesLoading, rulesLoading, householdId, uid, write]);
 
   const [addForm, setAddForm] = useState<FormState>({
     amount: "",
@@ -228,7 +276,6 @@ export default function ExpensesPage() {
      tested — see expense-list.test.ts. */
   // The rate the household's own verified pairs reveal — the same one the
   // charges panel matches with, off the expenses already in memory.
-  const learnedRate = learnRate(expenses);
 
   const { rows: sorted, days } = filters;
 
@@ -797,6 +844,9 @@ export default function ExpensesPage() {
                   learnedRate,
                 )) {
                   if (claim.amountAudCents === null) continue;
+                  // Filed by this visit, like everything the prompt files, so
+                  // an undo is not filed back by the next arrival.
+                  filedChargeIds.current.add(claim.charge.id);
                   await fileRecurringExpense(
                     fb.db,
                     household.id,
@@ -827,41 +877,31 @@ export default function ExpensesPage() {
           conclude there was nothing to say and close itself a moment before
           the data arrived. Same trap the charges listener already documents:
           a read in flight is not a read that came back empty. */}
-      {promptOpen && !chargesLoading && !rulesLoading && (
+      {promptOpen && (
         <RecurringPrompt
-          charges={pendingCharges}
-          rules={recurringRules}
-          learnedRate={learnedRate}
+          filed={promptFiled}
+          asking={promptAsk}
+          currency={household.currency}
           locale={locale}
-          onFile={async (charge, rule, amountAudCents, estimated) => {
-            // Answered the moment it is filed, not only when the prompt is
-            // dismissed. Undo puts the charge back in the pending list on
-            // purpose — that is the whole point of the window — and without
-            // this the rule would claim it again on the next render and file
-            // it straight back. Caught by the e2e, which presses undo and
-            // then looks for the expense: it was there again.
-            setAnsweredChargeIds((seen) => new Set([...seen, charge.id]));
+          onAnswer={async (claim, amountAudCents) => {
+            // Filed by this visit, so an undo does not bring it straight back
+            // once a rate is known and the plan could estimate it.
+            filedChargeIds.current.add(claim.charge.id);
             const fb = getFirebaseClient();
-            if (fb === null || user === null) return;
-            await fileRecurringExpense(
-              fb.db,
-              household.id,
-              user.uid,
-              charge,
-              rule,
-              amountAudCents,
-              estimated,
+            if (fb === null) return;
+            const filing = fileRecurringExpense(
+              fb.db, household.id, user.uid, claim.charge, claim.rule,
+              amountAudCents, false,
             );
+            write(filing);
+            await filing.catch(() => {});
           }}
           onDismissed={() => {
+            // What it reported and asked is over; what was FILED is still
+            // remembered, which is what keeps an undo from coming back.
             setPromptOpen(false);
-            // Whatever is STILL pending at this point is what nobody answered,
-            // and that is what must not be asked again. The filed ones are
-            // already gone from this list, which is why it is read here rather
-            // than captured when the prompt opened.
-            setAnsweredChargeIds(
-              (seen) => new Set([...seen, ...pendingCharges.map((c) => c.id)]),
-            );
+            setPromptFiled([]);
+            setPromptAsk([]);
           }}
         />
       )}
