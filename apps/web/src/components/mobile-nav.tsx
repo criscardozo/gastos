@@ -3,6 +3,11 @@
 // Bottom tab bar — the phone counterpart of the desktop sidebar, mirroring the
 // iOS app's navigation. Hidden from `lg` up, where the sidebar takes over.
 // Sits above the home indicator via the safe-area inset.
+//
+// DEPRECATED with the rest of the PWA since 2026-09-24, by Cristian's decision:
+// kept, not maintained. The known defects of this layout are listed in the
+// root CLAUDE.md, next to the PWA line — read that before "fixing" anything
+// here.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
