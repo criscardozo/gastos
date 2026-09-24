@@ -23,6 +23,7 @@
 		20C112FA5B73240CA98EBDC5 /* LimitsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8649A56B638FCED8CE0B1F /* LimitsTests.swift */; };
 		233E325AA13DE6A39ABD69E9 /* RecurringRuleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54F5FBB8326951E806D6B65 /* RecurringRuleSheet.swift */; };
 		255BB020E5661AD8377D4465 /* BankMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C56B3C224BAFCF9A07789A /* BankMatch.swift */; };
+		25FD552736CBF6CEC2CA859D /* RecurringRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DCEDE210E0ADD9F50756914 /* RecurringRunTests.swift */; };
 		29D21C347F93D7CFAA6A6E8C /* PeriodGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1794B1E43D9A741F78FA369D /* PeriodGate.swift */; };
 		2A2E1FB569B2EA5F024AFAC0 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57212F3BC92DF066F97A5D /* Models.swift */; };
 		2DE1DE12D6BF40DD00984A94 /* bank-match-vectors.json in Resources */ = {isa = PBXBuildFile; fileRef = 4B0E6306FDAAF1E4A42E3EFB /* bank-match-vectors.json */; };
@@ -235,6 +236,7 @@
 		8FEDE9F8A530ADDCFB8FA1C5 /* QuickEntryIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickEntryIntent.swift; sourceTree = "<group>"; };
 		9D321AA370E8BB907F772691 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		9DB8A352BB1E1E129697174D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		9DCEDE210E0ADD9F50756914 /* RecurringRunTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRunTests.swift; sourceTree = "<group>"; };
 		9FDB8AC9B42DEF1653002135 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		9FF743F833087A8F15FFF83F /* RecurringRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRulesTests.swift; sourceTree = "<group>"; };
 		A3735D65DE5E5F8A566E14E5 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -428,6 +430,7 @@
 				DB4FCA6646C9D9BB19D95B20 /* PeriodLogicTests.swift */,
 				BA19DA21A068D1858A9CFA06 /* PeriodSourceTests.swift */,
 				9FF743F833087A8F15FFF83F /* RecurringRulesTests.swift */,
+				9DCEDE210E0ADD9F50756914 /* RecurringRunTests.swift */,
 				890A88734AEF52E42002B803 /* RichTextTests.swift */,
 				8043182EF7DF168D7084E96E /* ServiceLogicTests.swift */,
 				08F5C7217DFB5D8D3FBF2A0F /* ServiceNameVectorsTests.swift */,
@@ -819,6 +822,7 @@
 				574AA03DE657B924BDDD05FE /* PeriodSourceTests.swift in Sources */,
 				CB805A0DE365F08D963B27F4 /* RecurringRules.swift in Sources */,
 				57BB0825D7E2949E5C9C47E0 /* RecurringRulesTests.swift in Sources */,
+				25FD552736CBF6CEC2CA859D /* RecurringRunTests.swift in Sources */,
 				CABCDE7AC6FBE5B196153B33 /* RichText.swift in Sources */,
 				A786E2B4EA2124453BB668EC /* RichTextTests.swift in Sources */,
 				993C79A798814EDFC5506F46 /* ServiceLogic.swift in Sources */,
