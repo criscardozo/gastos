@@ -204,5 +204,311 @@
         "expected": null
       }
     ]
+  },
+  "run": {
+    "comment": "One run of the rules over the pending charges: what gets FILED on its own and what gets ASKED. Both clients plan a run with this and nothing else — it used to be written twice, and it diverged twice in one day: iOS filed only newly arrived charges while the web filed everything claimable, and the web re-filed a charge somebody had just taken back with undo. A run happens only when a charge ARRIVES (`fresh` = pending minus `seen`); a rule made for a charge already waiting is applied by the rule dialog itself (claimsOfOneRule / addRecurringRuleAndApply), not here. Filing and asking are deliberately asymmetric: FILE everything claimable and priceable that this session has not filed — a charge can become priceable after it was first seen, once filing another teaches the rate — but ASK only about charges that just arrived, because re-opening a question somebody postponed is the app nagging. `filed` is what this session filed; an undo puts the charge back in pending and it must not be filed again. `pending`, `file` and `ask` are oldest first. amountAudCents null = the rule says 'ask me'.",
+    "cases": [
+      {
+        "name": "a charge that arrives, claimed by a rule with an amount, is filed at that amount",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "OPAL AUCKLAND ST",
+            "usdCents": 1240
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Opal*",
+            "amountAudCents": 1500
+          }
+        ],
+        "learnedRate": null,
+        "seen": [],
+        "filed": [],
+        "expected": {
+          "fresh": [
+            "c1"
+          ],
+          "file": [
+            {
+              "charge": "c1",
+              "amountAudCents": 1500,
+              "estimated": false
+            }
+          ],
+          "ask": []
+        }
+      },
+      {
+        "name": "a charge that arrives, claimed by a rule with no amount and no rate, is asked about",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "CAFE MARTINEZ",
+            "usdCents": 520
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Cafe",
+            "amountAudCents": null
+          }
+        ],
+        "learnedRate": null,
+        "seen": [],
+        "filed": [],
+        "expected": {
+          "fresh": [
+            "c1"
+          ],
+          "file": [],
+          "ask": [
+            "c1"
+          ]
+        }
+      },
+      {
+        "name": "with a learned rate, a rule with no amount files an estimate instead of asking",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "CAFE MARTINEZ",
+            "usdCents": 520
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Cafe",
+            "amountAudCents": null
+          }
+        ],
+        "learnedRate": 0.65,
+        "seen": [],
+        "filed": [],
+        "expected": {
+          "fresh": [
+            "c1"
+          ],
+          "file": [
+            {
+              "charge": "c1",
+              "amountAudCents": 800,
+              "estimated": true
+            }
+          ],
+          "ask": []
+        }
+      },
+      {
+        "name": "nothing arrived: nothing is filed or asked, even what is claimable",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "OPAL AUCKLAND ST",
+            "usdCents": 1240
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Opal*",
+            "amountAudCents": 1500
+          }
+        ],
+        "learnedRate": null,
+        "seen": [
+          "c1"
+        ],
+        "filed": [],
+        "expected": {
+          "fresh": [],
+          "file": [],
+          "ask": []
+        }
+      },
+      {
+        "name": "an arrival brings along a seen charge that has become priceable since",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "CAFE MARTINEZ",
+            "usdCents": 520
+          },
+          {
+            "id": "c2",
+            "merchant": "OPAL AUCKLAND ST",
+            "usdCents": 1240
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Cafe",
+            "amountAudCents": null
+          },
+          {
+            "pattern": "Opal*",
+            "amountAudCents": 1500
+          }
+        ],
+        "learnedRate": 0.65,
+        "seen": [
+          "c1"
+        ],
+        "filed": [],
+        "expected": {
+          "fresh": [
+            "c2"
+          ],
+          "file": [
+            {
+              "charge": "c1",
+              "amountAudCents": 800,
+              "estimated": true
+            },
+            {
+              "charge": "c2",
+              "amountAudCents": 1500,
+              "estimated": false
+            }
+          ],
+          "ask": []
+        }
+      },
+      {
+        "name": "a charge this session filed and somebody undid is not filed again when the next one arrives",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "OPAL AUCKLAND ST",
+            "usdCents": 1240
+          },
+          {
+            "id": "c2",
+            "merchant": "OPAL AUCKLAND ST",
+            "usdCents": 1240
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Opal*",
+            "amountAudCents": 1500
+          }
+        ],
+        "learnedRate": null,
+        "seen": [
+          "c1"
+        ],
+        "filed": [
+          "c1"
+        ],
+        "expected": {
+          "fresh": [
+            "c2"
+          ],
+          "file": [
+            {
+              "charge": "c2",
+              "amountAudCents": 1500,
+              "estimated": false
+            }
+          ],
+          "ask": []
+        }
+      },
+      {
+        "name": "a postponed question is not asked again when an unrelated charge arrives",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "CAFE MARTINEZ",
+            "usdCents": 520
+          },
+          {
+            "id": "c2",
+            "merchant": "COLES 0831",
+            "usdCents": 289
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Cafe",
+            "amountAudCents": null
+          }
+        ],
+        "learnedRate": null,
+        "seen": [
+          "c1"
+        ],
+        "filed": [],
+        "expected": {
+          "fresh": [
+            "c2"
+          ],
+          "file": [],
+          "ask": []
+        }
+      },
+      {
+        "name": "a charge no rule claims is only marked seen",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "COLES 0831",
+            "usdCents": 289
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Opal*",
+            "amountAudCents": 1500
+          }
+        ],
+        "learnedRate": null,
+        "seen": [],
+        "filed": [],
+        "expected": {
+          "fresh": [
+            "c1"
+          ],
+          "file": [],
+          "ask": []
+        }
+      },
+      {
+        "name": "two questions arriving together are both asked, oldest first",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "CAFE MARTINEZ",
+            "usdCents": 520
+          },
+          {
+            "id": "c2",
+            "merchant": "CAFE SOLO",
+            "usdCents": 450
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Cafe",
+            "amountAudCents": null
+          }
+        ],
+        "learnedRate": null,
+        "seen": [],
+        "filed": [],
+        "expected": {
+          "fresh": [
+            "c1",
+            "c2"
+          ],
+          "file": [],
+          "ask": [
+            "c1",
+            "c2"
+          ]
+        }
+      }
+    ]
   }
 }

@@ -211,3 +211,56 @@ export function claimsOfOneRule<T extends MatchableCharge & { usdCents: number }
 ): ClaimedCharge<T>[] {
   return claimCharges(charges, [rule], learnedRate).ready;
 }
+
+/** One run of the rules: what to file, what to ask, and what is new. */
+export interface RecurringRunPlan<T extends MatchableCharge> {
+  /** Pending charges nobody had put through a run yet. The caller adds these
+   * to its `seen` set whether or not anything else happens. */
+  fresh: string[];
+  /** Everything claimable and priceable this session has not filed yet. */
+  file: ClaimedCharge<T>[];
+  /** Claimed but unpriceable, and among the charges that just arrived. */
+  ask: ClaimedCharge<T>[];
+}
+
+/**
+ * Plan one run of the recurring rules over the pending charges.
+ *
+ * Both clients decide with this and nothing else, held to the `run` cases of
+ * shared/recurring-vectors.json. It used to be written twice, once per client,
+ * and the two diverged twice in one day: one filed only what had just arrived
+ * while the other filed everything claimable, and one re-filed a charge
+ * somebody had just taken back with undo.
+ *
+ * A run happens only when a charge ARRIVES — `fresh` empty means nothing to do,
+ * even if something is claimable. A rule made for a charge already waiting is
+ * applied by the rule dialog (`claimsOfOneRule`), not here: two mechanisms for
+ * one job is how one ends up hiding the other.
+ *
+ * Filing and asking are asymmetric on purpose. Filing covers every priceable
+ * claim this session has not filed, because a charge can become priceable
+ * after it was first seen — filing one recurring expense verifies it, which
+ * teaches the rate, which prices a charge that had none. Asking covers only
+ * what just arrived: re-opening a question somebody postponed is nagging.
+ */
+export function planRecurringRun<T extends MatchableCharge & { usdCents: number }>(
+  /** Oldest first — the order the returned lists keep. */
+  pending: readonly T[],
+  rules: readonly RecurringRule[],
+  learnedRate: number | null,
+  /** Charges already put through a run this session. */
+  seen: ReadonlySet<string>,
+  /** Charges this session filed. Undo puts one back in `pending`; this is what
+   * keeps it from being filed straight back. */
+  filed: ReadonlySet<string>,
+): RecurringRunPlan<T> {
+  const fresh = pending.filter((c) => !seen.has(c.id));
+  if (fresh.length === 0) return { fresh: [], file: [], ask: [] };
+  const freshIds = new Set(fresh.map((c) => c.id));
+  const { ready, asking } = claimCharges(pending, rules, learnedRate);
+  return {
+    fresh: fresh.map((c) => c.id),
+    file: ready.filter((claim) => !filed.has(claim.charge.id)),
+    ask: asking.filter((claim) => freshIds.has(claim.charge.id)),
+  };
+}

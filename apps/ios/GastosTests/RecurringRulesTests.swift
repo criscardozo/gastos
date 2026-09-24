@@ -50,6 +50,27 @@ final class RecurringRulesTests: XCTestCase {
         }
     }()
 
+    /// Every top-level section of the file is one a suite here reads, by NAME.
+    ///
+    /// The count below could not see this: it adds up the cases of the three
+    /// sections it knows, so a fourth section added to the file — `run` was,
+    /// on 24/9 — left it green while nothing on this side read it. A total
+    /// answers "how many"; the question is "which". `run` is read by
+    /// RecurringRunTests.
+    func testNoSectionOfTheFileGoesUnread() throws {
+        guard let url = Bundle(for: RecurringRulesTests.self)
+            .url(forResource: "recurring-vectors", withExtension: "json") else {
+            return XCTFail("recurring-vectors.json missing from the test bundle")
+        }
+        let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
+        let keys = Set((object as? [String: Any] ?? [:]).keys)
+        XCTAssertEqual(
+            keys,
+            ["version", "comment", "matches", "firstMatch", "estimate", "run"],
+            "a section of recurring-vectors.json that no Swift test reads"
+        )
+    }
+
     /// A group added to the file that no test reads would leave this suite
     /// green while covering nothing — the same guard the period vectors carry.
     func testEveryVectorIsActuallyRun() {

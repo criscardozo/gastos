@@ -111,6 +111,80 @@ enum RecurringRules {
     }
 }
 
+extension RecurringRules {
+
+    /// One run of the rules: what is new, what to file, what to ask.
+    struct RunPlan<Charge: RecurringChargeLike, Rule: RecurringRuleLike> {
+        struct Claim {
+            let charge: Charge
+            let rule: Rule
+            /// Nil when neither the rule nor the learned rate can price it.
+            let amountAudCents: Int?
+            /// True when the amount is a division rather than a stated figure.
+            let estimated: Bool
+        }
+        /// Pending charges nobody had put through a run yet. The caller adds
+        /// these to its `seen` set whether or not anything else happens.
+        var fresh: [String] = []
+        /// Everything claimable and priceable this session has not filed yet.
+        var file: [Claim] = []
+        /// Claimed but unpriceable, and among the charges that just arrived.
+        var ask: [Claim] = []
+    }
+
+    /// Plan one run of the recurring rules over the pending charges.
+    ///
+    /// The Swift twin of `planRecurringRun` in apps/web/src/lib/recurring.ts,
+    /// held to the same `run` cases of shared/recurring-vectors.json. It used
+    /// to be written twice with no vectors, inline in each client, and the two
+    /// diverged twice in one day: this side filed only what had just arrived
+    /// while the web filed everything claimable, and the web re-filed a charge
+    /// somebody had just taken back with undo.
+    ///
+    /// A run happens only when a charge ARRIVES. A rule made for a charge
+    /// already waiting is applied by the rule sheet
+    /// (`addRecurringRuleAndApply`), not here. Filing and asking are
+    /// asymmetric on purpose: file every priceable claim this session has not
+    /// filed — a charge can become priceable after it was first seen, once
+    /// filing another teaches the rate — but ask only about what just arrived,
+    /// because re-opening a question somebody postponed is nagging.
+    static func planRun<C: RecurringChargeLike, R: RecurringRuleLike>(
+        pending: [C],
+        rules: [R],
+        learnedRate: Double?,
+        seen: Set<String>,
+        filed: Set<String>
+    ) -> RunPlan<C, R> {
+        let fresh = pending.filter { !seen.contains($0.id) }
+        guard !fresh.isEmpty else { return RunPlan() }
+        let freshIds = Set(fresh.map(\.id))
+        var plan = RunPlan<C, R>(fresh: fresh.map(\.id))
+        for charge in pending {
+            guard let rule = rule(for: charge.merchant, in: rules) else { continue }
+            let amount = rule.amountAudCents
+                ?? estimateAudCents(usdCents: charge.usdCents, rate: learnedRate)
+            let claim = RunPlan<C, R>.Claim(
+                charge: charge, rule: rule, amountAudCents: amount,
+                estimated: rule.amountAudCents == nil && amount != nil
+            )
+            if amount != nil {
+                if !filed.contains(charge.id) { plan.file.append(claim) }
+            } else if freshIds.contains(charge.id) {
+                plan.ask.append(claim)
+            }
+        }
+        return plan
+    }
+}
+
+/// What the planner needs of a charge, for the same reason the rule side is a
+/// protocol: `Core` must not depend on the Firestore model.
+protocol RecurringChargeLike {
+    var id: String { get }
+    var merchant: String { get }
+    var usdCents: Int { get }
+}
+
 /// What the matcher needs of a rule, so `Core` does not depend on the Firestore
 /// model — the same reason `BankMatch` declares its own shapes.
 protocol RecurringRuleLike {
@@ -118,3 +192,6 @@ protocol RecurringRuleLike {
     /// Nil is the rule saying "ask me", and is not the same as zero.
     var amountAudCents: Int? { get }
 }
+
+/// A bank charge is what the planner plans over.
+extension BankCharge: RecurringChargeLike {}
