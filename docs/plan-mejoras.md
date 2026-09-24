@@ -711,9 +711,18 @@ R4, R5, D1, X1.
 
 Pendiente:
 
-- **G1** (partir `AppModel`, 1.336 líneas) y **G2** (partir `gastos/page.tsx`,
-  981, y `datos/page.tsx`, 837). Sin features en vuelo, un store o un hook por
-  commit, sin cambiar comportamiento.
+- **G1** (partir `AppModel` en stores por feature) y **G2** (partir
+  `gastos/page.tsx` y `estadisticas/page.tsx`). Los dos avanzaron después de sus
+  entradas: `AppModel` perdió los cargos del banco a su propio archivo
+  (`ea35444`) y `datos/page.tsx`, que la entrada de G2 da como «sigue entero»,
+  se partió en `cfacaf3`. Sin features en vuelo, un store o un hook por commit,
+  sin cambiar comportamiento.
+
+  **Sin cantidades de líneas acá, a propósito.** Esta línea las tenía —1.336,
+  981, 837— y el 24/9 ya eran 1.010, 991 y 550: un total en prosa que nadie
+  recalcula se vence solo, y éste se había vencido en las dos direcciones. Las
+  de cada entrada de arriba son mediciones fechadas y se quedan como están;
+  la de hoy es `wc -l` sobre esos archivos.
 
 **Esta lista se contradecía con las entradas que resume, y en la dirección
 peor.** R2 decía «Hecho el 10/9/2026 (`29afe9f`)» en su propia sección y acá
