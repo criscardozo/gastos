@@ -63,6 +63,7 @@
   --cat-home: #7b5bd6;
   --cat-health: #e0447c;
   --cat-entertainment: #c13fa8;
+  --cat-services: #0e8f8f;
   --cat-other: #8a8577;
   --cat-circle-alpha: 14%;
 
@@ -114,6 +115,7 @@
     --cat-home: #a78deb;
     --cat-health: #ef6d9c;
     --cat-entertainment: #db6fc7;
+    --cat-services: #3fbdbd;
     --cat-other: #a79f8d;
     --cat-circle-alpha: 16%;
 
@@ -157,6 +159,7 @@
   --cat-home: #a78deb;
   --cat-health: #ef6d9c;
   --cat-entertainment: #db6fc7;
+  --cat-services: #3fbdbd;
   --cat-other: #a79f8d;
   --cat-circle-alpha: 16%;
 
