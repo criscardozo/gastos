@@ -20,7 +20,10 @@ struct RecurringPromptSheet: View {
 
     private var l10n: L10n { model.l10n }
     private var separator: String { l10n.language == "en" ? "." : "," }
-    private var asking: [AppModel.ClaimedCharge] { model.recurringAsking }
+    /// The questions captured when the run was planned — NOT the live list.
+    /// Read live, answering one removed it from under the index and the next
+    /// question slid into the slot just passed, so a second was never asked.
+    private var asking: [AppModel.ClaimedCharge] { model.recurringAskQueue }
     private var current: AppModel.ClaimedCharge? {
         index < asking.count ? asking[index] : nil
     }

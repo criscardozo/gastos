@@ -23,6 +23,20 @@ extension AppModel {
         /// stated.
         let estimated: Bool
         var id: String { charge.id }
+
+        init(charge: BankCharge, rule: RecurringRuleDoc, amountAudCents: Int?, estimated: Bool) {
+            self.charge = charge
+            self.rule = rule
+            self.amountAudCents = amountAudCents
+            self.estimated = estimated
+        }
+
+        init(_ claim: RecurringRules.RunPlan<BankCharge, RecurringRuleDoc>.Claim) {
+            self.init(
+                charge: claim.charge, rule: claim.rule,
+                amountAudCents: claim.amountAudCents, estimated: claim.estimated
+            )
+        }
     }
 
     /// Charges that can be filed: the rule states the amount, or the
@@ -91,24 +105,24 @@ extension AppModel {
     /// actually watches; this stays as the half that says "the data is here".
     var recurringInputsReady: Bool { recurringRulesLoaded && bankChargesLoaded }
 
-    /// What the view keys on, so the rules run again when something arrives.
+    /// What the view keys on, so the rules run again when a charge arrives.
     ///
     /// The ids rather than a count: filing a charge takes it out of the pending
     /// list, so a count goes back down and the work re-triggers itself. Ids
-    /// change too — but the run is idempotent by `evaluatedChargeIds`, so a
-    /// re-fire finds nothing new and returns. That is the whole reason this
-    /// hangs off `onChange` and not `.task(id:)`: `.task` CANCELS the previous
-    /// run when its key moves, and filing moves the key. That is how an
-    /// expense once got filed correctly and silently, with the sheet never
-    /// shown.
+    /// change too — but a run with nothing fresh is a no-op, so a re-fire
+    /// returns. That is the whole reason this hangs off `onChange` and not
+    /// `.task(id:)`: `.task` CANCELS the previous run when its key moves, and
+    /// filing moves this key. That is how an expense once got filed correctly
+    /// and silently, with the sheet never shown.
     ///
-    /// The rules are in the key as well: making a rule in Ajustes for a charge
-    /// that is already waiting should file it, and that path is otherwise only
-    /// covered when the rule is made from the charge itself.
+    /// Charges only. The rules were in this key too, with a note saying that
+    /// making a rule in Ajustes would then file the charge already waiting —
+    /// which it never did: a run acts on charges that ARRIVE, and one already
+    /// seen is not fresh. A new rule is applied to what is waiting by the rule
+    /// sheet itself (`addRecurringRuleAndApply`).
     var recurringTrigger: String {
         guard recurringInputsReady else { return "" }
         return expenseBankCharges.map(\.id).joined(separator: ",")
-            + "|" + recurringRules.compactMap(\.docId).joined(separator: ",")
     }
 
     /// Whether it is worth interrupting on open at all. False while either
@@ -120,68 +134,55 @@ extension AppModel {
 
     /// Run the rules over whatever has not been through them yet, then report.
     ///
-    /// Only after the rules listener has answered: an empty list in flight is
-    /// indistinguishable from "nothing matched", and this would conclude there
-    /// was nothing to do a beat before the data arrived. The web hit exactly
-    /// that, and this is the same guard.
-    ///
-    /// Runs whenever a charge or a rule arrives, not once per launch. A charge
-    /// lands when the bank sends its email, which is almost never the moment
-    /// somebody cold-starts the app.
+    /// Only after both listeners have answered: an empty list in flight is
+    /// indistinguishable from "nothing matched". What is filed and what is
+    /// asked is decided by `RecurringRules.planRun` — the same plan the web
+    /// makes, held to the same shared vectors — and this only carries it out.
     func runRecurringRulesIfNeeded() async {
         guard recurringInputsReady, phase == .ready else { return }
-        let fresh = expenseBankCharges.filter { !evaluatedChargeIds.contains($0.id) }
-        guard !fresh.isEmpty else { return }
-        // Marked BEFORE the writes, like the web's latch and for the same
-        // reason: the listener fires again the moment the first expense lands,
-        // and a mark set afterwards would let that run start the same charges
-        // over.
-        evaluatedChargeIds.formUnion(fresh.map(\.id))
+        let plan = RecurringRules.planRun(
+            pending: expenseBankCharges, rules: recurringRules,
+            learnedRate: learnedBankRate,
+            seen: evaluatedChargeIds, filed: filedChargeIds
+        )
+        guard !plan.fresh.isEmpty else { return }
+        // Both marked BEFORE the writes: the listener fires again the moment
+        // the first expense lands, and a mark set afterwards would let that
+        // run start the same charges over.
+        evaluatedChargeIds.formUnion(plan.fresh)
+        filedChargeIds.formUnion(plan.file.map(\.charge.id))
+        guard !plan.file.isEmpty || !plan.ask.isEmpty else { return }
 
-        // Everything a rule can file, not only what is new — but only ASK
-        // about what is new.
-        //
-        // The two halves are not symmetric and the difference is measurable.
-        // Filing is idempotent and always right: if a rule claims a charge and
-        // something can price it, it belongs in the ledger, and a charge can
-        // become filable AFTER it was first seen — filing one recurring expense
-        // verifies it, which teaches the rate, which prices a charge that had
-        // none. That happened in this very run: a "Cafe" rule with no amount
-        // filed nothing on arrival and then could, once two Opal charges had
-        // taught the rate. Restricted to fresh ids it would have waited for the
-        // next launch for no reason.
-        //
-        // Asking is the opposite: re-opening a question somebody has already
-        // postponed is the app nagging, so that half is `fresh` only.
-        let ids = Set(fresh.map(\.id))
-        // Everything claimable EXCEPT what this launch already filed.
-        //
-        // Undo deliberately puts the charge back in the pending list — that is
-        // the point of the window, and the rule would claim it again the
-        // instant anything re-triggered the run, filing straight back what
-        // somebody just took back. The web hit exactly this and its e2e caught
-        // it: press undo, and the expense was there again.
-        //
-        // Not the same set as `evaluatedChargeIds`, and the difference is the
-        // whole reason there are two: a charge that was merely SEEN and could
-        // not be priced must stay a candidate, because the rate is learned
-        // later. One that was FILED must not.
-        let alreadyFiled = Set(recurringFiled.map(\.charge.id))
-        let ready = recurringReady.filter { !alreadyFiled.contains($0.charge.id) }
-        let asking = recurringAsking.filter { ids.contains($0.charge.id) }
-        guard !ready.isEmpty || !asking.isEmpty else { return }
-
-        for claim in ready {
+        // The questions are CAPTURED, not read live by the sheet. Read live,
+        // answering one took its charge out of the list while the sheet moved
+        // its index forward, so the next question slid into the slot just
+        // passed: with two to answer, the second was never asked. Measured in
+        // the Simulator — two Café charges, the first answered, the sheet said
+        // "Listo" and the second sat pending with no expense.
+        for claim in plan.ask.map(ClaimedCharge.init)
+        where !recurringAskQueue.contains(where: { $0.id == claim.id }) {
+            recurringAskQueue.append(claim)
+        }
+        for claim in plan.file.map(ClaimedCharge.init) {
             guard let amount = claim.amountAudCents else { continue }
             await fileOneRecurring(claim, amountAudCents: amount)
             // Appended as each lands rather than assigned at the end: if a
-            // second batch of charges arrives while this loop is running, the
-            // sheet must end up naming both, not whichever run finished last.
+            // second batch arrives while this loop runs, the sheet must name
+            // both, not whichever run finished last.
             if !recurringFiled.contains(where: { $0.id == claim.id }) {
                 recurringFiled.append(claim)
             }
         }
         showRecurringPrompt = true
+    }
+
+    /// The sheet closed: what it reported and asked is over. What was FILED
+    /// is still remembered (`filedChargeIds`), which is what keeps an undo from
+    /// being filed straight back; only the report and the queue reset, so the
+    /// next sheet names what is new rather than everything since launch.
+    func recurringPromptDismissed() {
+        recurringFiled = []
+        recurringAskQueue = []
     }
 
     // MARK: Writes
@@ -190,6 +191,9 @@ extension AppModel {
         _ claim: ClaimedCharge, amountAudCents: Int, estimated: Bool = false
     ) {
         guard let householdId = attachedHouseholdId, let uid = self.uid else { return }
+        // Filed by this session, so an undo does not bring it straight back —
+        // the planner would otherwise estimate it once a rate is known.
+        filedChargeIds.insert(claim.charge.id)
         write { [firestore] in
             try await firestore.fileRecurringExpense(
                 householdId: householdId,

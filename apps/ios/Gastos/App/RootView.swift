@@ -36,7 +36,9 @@ struct RootView: View {
                     // starting, this may be postponed. What it has not filed
                     // stays pending and keeps showing in Historial, so swiping
                     // it away answers nothing.
-                    .sheet(isPresented: $model.showRecurringPrompt) {
+                    .sheet(isPresented: $model.showRecurringPrompt, onDismiss: {
+                        model.recurringPromptDismissed()
+                    }) {
                         RecurringPromptSheet(filed: model.recurringFiled)
                     }
                     // onChange, not `.task(id:)`, and keyed on the charges

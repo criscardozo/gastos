@@ -63,6 +63,14 @@ final class AppModel {
     /// charges arrive from the listener in more than one batch, so two runs a
     /// second apart each filing one would otherwise report "1" twice, or once.
     var recurringFiled: [ClaimedCharge] = []
+    /// The questions the open sheet is working through, captured when they
+    /// were planned. See runRecurringRulesIfNeeded for why not read live.
+    var recurringAskQueue: [ClaimedCharge] = []
+    /// Every charge this launch filed — by a rule or by answering the sheet.
+    /// Separate from the sheet's report, which resets when it closes: this is
+    /// what stops an undo from being filed straight back, and it must outlive
+    /// the sheet.
+    var filedChargeIds: Set<String> = []
     /// Charges already put through the rules this launch.
     ///
     /// A SET of ids, not a latch and not a count. A latch is what this was, and
