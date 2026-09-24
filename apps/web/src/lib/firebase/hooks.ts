@@ -4,7 +4,7 @@
 // range, and every useEffect returns its unsubscribe (StrictMode's double
 // mount would otherwise duplicate onSnapshot and burn the free tier).
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
   getAggregateFromServer,
@@ -15,6 +15,7 @@ import {
   sum,
   where,
   type Firestore,
+  type Query,
 } from "firebase/firestore";
 
 import { partitionCharges } from "../bank-charges";
@@ -37,6 +38,85 @@ import {
 import { decoded } from "./shape";
 import type { PeriodRange } from "../periods";
 
+
+/* ── The one listener pattern ──────────────────────────────────────────── */
+
+interface ListState<T> {
+  items: T[];
+  loading: boolean;
+  failed?: boolean;
+}
+
+/**
+ * A live, bounded list: subscribe while `buildQuery` returns a query, stay
+ * empty and not loading while it returns null, and say so when the read FAILS.
+ *
+ * Six hooks below used to spell this out each: the same reset when the key
+ * goes away, the same client check, the same "a read that failed is not a read
+ * that came back empty" error branch — which is where 24 of the web's 26
+ * `eslint-disable` lines came from. It is written once now, and the hooks keep
+ * their own names and shapes so no screen had to change.
+ *
+ * Two behaviours are new by being decided once:
+ * - no Firebase client (no config) resolves as not loading. Every copy used to
+ *   `return` without setting state there, so a screen waited on "loading" for
+ *   ever.
+ * - a key change marks the list loading until the new snapshot arrives, as the
+ *   ranged hooks already did — a list must not present the previous key's rows
+ *   as the new one's.
+ *
+ * `key` must change exactly when the query does; the builder is read through a
+ * ref so an inline function does not resubscribe on every render.
+ */
+function useLiveList<T>(
+  key: string | null,
+  // Converters answer null for a document that does not decode; `decoded`
+  // drops those (and logs them), so the list itself is of T.
+  buildQuery: (db: Firestore) => Query<T | null> | null,
+  label: string,
+  options: { includeMetadataChanges?: boolean } = {},
+  onItems?: (items: T[]) => T[],
+): ListState<T> {
+  const [state, setState] = useState<ListState<T>>({ items: [], loading: true });
+  const build = useRef(buildQuery);
+  const post = useRef(onItems);
+  useEffect(() => {
+    build.current = buildQuery;
+    post.current = onItems;
+  });
+  const metadata = options.includeMetadataChanges ?? false;
+
+  useEffect(() => {
+    const fb = key === null ? null : getFirebaseClient();
+    const q = fb === null ? null : build.current(fb.db);
+    if (q === null) {
+      // Resetting a subscription's state as its key goes away: the listener's
+      // lifetime is the external system, so there is nothing to derive in
+      // render.
+      setState({ items: [], loading: false });
+      return;
+    }
+    setState((prev) => (prev.loading ? prev : { ...prev, loading: true }));
+    return onSnapshot(
+      q,
+      { includeMetadataChanges: metadata },
+      (snap) => {
+        const items = decoded(snap.docs.map((d) => d.data()));
+        setState({ items: post.current ? post.current(items) : items, loading: false });
+      },
+      // A read that FAILED is not a read that came back empty. Set as an empty
+      // list, a listener error rendered as "nothing here" — for expenses, a
+      // period showing its whole budget unspent.
+      (error) => {
+        console.error(`[gastos] ${label} listener`, error);
+        setState({ items: [], loading: false, failed: true });
+      },
+    );
+  }, [key, label, metadata]);
+
+  return state;
+}
+
 export interface ExpensesState {
   expenses: Expense[];
   loading: boolean;
@@ -57,54 +137,27 @@ export function useExpensesRange(
   startDate: string | null,
   endDate: string | null,
 ): ExpensesState {
-  const [state, setState] = useState<ExpensesState>({
-    expenses: [],
-    loading: true,
-  });
-
-  useEffect(() => {
-    if (householdId === null || startDate === null || endDate === null) {
-      // resetting a subscription's state as its range changes. The listener's
-      // lifetime is the external system; nothing here can be derived in
-      // render.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState({ expenses: [], loading: false });
-      return;
-    }
-    const fb = getFirebaseClient();
-    if (fb === null) return;
-    setState((prev) => ({ ...prev, loading: true }));
-    const q = query(
-      collection(fb.db, "households", householdId, "expenses"),
-      where("date", ">=", startDate),
-      where("date", "<=", endDate),
-      orderBy("date", "desc"),
-    ).withConverter(expenseConverter);
-    const unsubscribe = onSnapshot(
-      q,
-      // includeMetadataChanges so the "pending" chip clears as soon as the
-      // server acknowledges a queued write. Metadata changes are local — they
-      // don't cost reads.
-      { includeMetadataChanges: true },
-      (snap) => {
-        setState({
-          expenses: decoded(snap.docs.map((d) => d.data())),
-          loading: false,
-        });
-      },
-      // A read that FAILED is not a read that came back empty. This used to
-      // set an empty list either way, so a listener error rendered as "nothing
-      // here" — indistinguishable from the real thing, and for expenses that
-      // means a period showing its whole budget unspent.
-      (error) => {
-        console.error("[gastos] expenses listener", error);
-        setState({ expenses: [], loading: false, failed: true });
-      },
-    );
-    return unsubscribe;
-  }, [householdId, startDate, endDate]);
-
-  return state;
+  const key =
+    householdId === null || startDate === null || endDate === null
+      ? null
+      : `${householdId}/${startDate}/${endDate}`;
+  const { items, loading, failed } = useLiveList(
+    key,
+    (db) =>
+      householdId === null || startDate === null || endDate === null
+        ? null
+        : query(
+            collection(db, "households", householdId, "expenses"),
+            where("date", ">=", startDate),
+            where("date", "<=", endDate),
+            orderBy("date", "desc"),
+          ).withConverter(expenseConverter),
+    "expenses",
+    // So the "pending" chip clears as soon as the server acknowledges a queued
+    // write. Metadata changes are local — they cost no reads.
+    { includeMetadataChanges: true },
+  );
+  return { expenses: items, loading, failed };
 }
 
 /* ── Bank charges waiting to be matched ────────────────────────────────── */
@@ -138,59 +191,40 @@ export interface BankChargesState {
  * whatever it would have deleted.
  */
 export function useBankCharges(householdId: string | null): BankChargesState {
-  const [state, setState] = useState<BankChargesState>({
-    charges: [],
-    loading: true,
-  });
-
-  useEffect(() => {
-    if (householdId === null) {
-      // Resetting a subscription's state as its key changes. The listener's
-      // lifetime is the external system here; there is nothing to derive from
-      // in render.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState({ charges: [], loading: false });
-      return;
-    }
-    const fb = getFirebaseClient();
-    if (fb === null) return;
-    const q = query(
-      collection(fb.db, "households", householdId, "bankCharges"),
-      // NEWEST first, so that if the cap ever bites it drops the oldest.
-      // Ascending, the charge left out would have been the one that just
-      // arrived. Reversed below so the rest of the app still sees oldest-first,
-      // the order the matcher was built and tested on.
-      orderBy("date", "desc"),
-      limit(MAX_PENDING_CHARGES),
-    ).withConverter(bankChargeConverter);
-    // Asked to delete once per mount: the snapshot fires again on our own
-    // delete, and re-issuing it would be a write per round trip.
-    const sweeping = new Set<string>();
-    const unsubscribe = onSnapshot(
-      q,
-      (snap) => {
-        const all = decoded(snap.docs.map((d) => d.data())).reverse();
-        const { pending, dismissed, expired } = partitionCharges(all, new Date());
-        setState({ charges: [...pending, ...dismissed], loading: false });
-        for (const charge of expired) {
-          if (sweeping.has(charge.id)) continue;
-          sweeping.add(charge.id);
-          void deleteBankCharge(fb.db, householdId, charge.id);
-        }
-      },
-      // A read that FAILED is not a read that came back empty. This used to
-      // set an empty list either way, so a listener error rendered as "nothing
-      // here" — indistinguishable from the real thing, and for expenses that
-      // means a period showing its whole budget unspent.
-      (error) => {
-        console.error("[gastos] bankCharges listener", error);
-        setState({ charges: [], loading: false, failed: true });
-      },
-    );
-    return unsubscribe;
-  }, [householdId]);
-
-  return state;
+  // Asked to delete once per mount: the snapshot fires again on our own
+  // delete, and re-issuing it would be a write per round trip.
+  const sweeping = useRef(new Set<string>());
+  const { items, loading, failed } = useLiveList(
+    householdId,
+    (db) =>
+      householdId === null
+        ? null
+        : query(
+            collection(db, "households", householdId, "bankCharges"),
+            // NEWEST first, so that if the cap ever bites it drops the oldest.
+            // Ascending, the charge left out would have been the one that just
+            // arrived. Reversed below so the rest of the app still sees
+            // oldest-first, the order the matcher was built and tested on.
+            orderBy("date", "desc"),
+            limit(MAX_PENDING_CHARGES),
+          ).withConverter(bankChargeConverter),
+    "bankCharges",
+    {},
+    (all) => {
+      const { pending, dismissed, expired } = partitionCharges(
+        [...all].reverse(),
+        new Date(),
+      );
+      const fb = getFirebaseClient();
+      for (const charge of expired) {
+        if (fb === null || householdId === null || sweeping.current.has(charge.id)) continue;
+        sweeping.current.add(charge.id);
+        void deleteBankCharge(fb.db, householdId, charge.id);
+      }
+      return [...pending, ...dismissed];
+    },
+  );
+  return { charges: items, loading, failed };
 }
 
 /* ── Services ──────────────────────────────────────────────────────────── */
@@ -214,48 +248,20 @@ export interface ServicesState {
  * that role: the collection cannot grow without someone adding rows by hand.
  */
 export function useServices(householdId: string | null): ServicesState {
-  const [state, setState] = useState<ServicesState>({
-    services: [],
-    loading: true,
-  });
-
-  useEffect(() => {
-    if (householdId === null) {
-      // Resetting a subscription's state as its key changes. The listener's
-      // lifetime is the external system here; there is nothing to derive from
-      // in render.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState({ services: [], loading: false });
-      return;
-    }
-    const fb = getFirebaseClient();
-    if (fb === null) return;
-    const q = query(
-      collection(fb.db, "households", householdId, "services"),
-      orderBy("name", "asc"),
-      limit(MAX_SERVICES),
-    ).withConverter(serviceConverter);
-    return onSnapshot(
-      q,
-      { includeMetadataChanges: true },
-      (snap) => {
-        setState({
-          services: decoded(snap.docs.map((d) => d.data())),
-          loading: false,
-        });
-      },
-      // A read that FAILED is not a read that came back empty. This used to
-      // set an empty list either way, so a listener error rendered as "nothing
-      // here" — indistinguishable from the real thing, and for expenses that
-      // means a period showing its whole budget unspent.
-      (error) => {
-        console.error("[gastos] services listener", error);
-        setState({ services: [], loading: false, failed: true });
-      },
-    );
-  }, [householdId]);
-
-  return state;
+  const { items, loading, failed } = useLiveList(
+    householdId,
+    (db) =>
+      householdId === null
+        ? null
+        : query(
+            collection(db, "households", householdId, "services"),
+            orderBy("name", "asc"),
+            limit(MAX_SERVICES),
+          ).withConverter(serviceConverter),
+    "services",
+    { includeMetadataChanges: true },
+  );
+  return { services: items, loading, failed };
 }
 
 /* ── Recurring rules ───────────────────────────────────────────────────── */
@@ -280,37 +286,19 @@ export interface RecurringRulesState {
 export function useRecurringRules(
   householdId: string | null,
 ): RecurringRulesState {
-  const [state, setState] = useState<RecurringRulesState>({
-    rules: [],
-    loading: true,
-  });
-
-  useEffect(() => {
-    if (householdId === null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState({ rules: [], loading: false });
-      return;
-    }
-    const fb = getFirebaseClient();
-    if (fb === null) return;
-    const q = query(
-      collection(fb.db, "households", householdId, "recurringRules"),
-      orderBy("pattern", "asc"),
-      limit(MAX_RECURRING_RULES),
-    ).withConverter(recurringRuleConverter);
-    return onSnapshot(
-      q,
-      (snap) => {
-        setState({ rules: decoded(snap.docs.map((d) => d.data())), loading: false });
-      },
-      (error) => {
-        console.error("[gastos] recurring rules listener", error);
-        setState({ rules: [], loading: false, failed: true });
-      },
-    );
-  }, [householdId]);
-
-  return state;
+  const { items, loading, failed } = useLiveList(
+    householdId,
+    (db) =>
+      householdId === null
+        ? null
+        : query(
+            collection(db, "households", householdId, "recurringRules"),
+            orderBy("pattern", "asc"),
+            limit(MAX_RECURRING_RULES),
+          ).withConverter(recurringRuleConverter),
+    "recurring rules",
+  );
+  return { rules: items, loading, failed };
 }
 
 /* ── Credit-card statements and charges ────────────────────────────────── */
@@ -331,47 +319,19 @@ export interface StatementsState {
 
 /** Statements, newest closing date first. */
 export function useCardStatements(householdId: string | null): StatementsState {
-  const [state, setState] = useState<StatementsState>({
-    statements: [],
-    loading: true,
-  });
-
-  useEffect(() => {
-    if (householdId === null) {
-      // Resetting a subscription's state as its key changes. The listener's
-      // lifetime is the external system here; there is nothing to derive from
-      // in render.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState({ statements: [], loading: false });
-      return;
-    }
-    const fb = getFirebaseClient();
-    if (fb === null) return;
-    const q = query(
-      collection(fb.db, "households", householdId, "cardStatements"),
-      orderBy("closingDate", "desc"),
-      limit(MAX_STATEMENTS),
-    ).withConverter(cardStatementConverter);
-    return onSnapshot(
-      q,
-      (snap) => {
-        setState({
-          statements: decoded(snap.docs.map((d) => d.data())),
-          loading: false,
-        });
-      },
-      // A read that FAILED is not a read that came back empty. This used to
-      // set an empty list either way, so a listener error rendered as "nothing
-      // here" — indistinguishable from the real thing, and for expenses that
-      // means a period showing its whole budget unspent.
-      (error) => {
-        console.error("[gastos] cardStatements listener", error);
-        setState({ statements: [], loading: false, failed: true });
-      },
-    );
-  }, [householdId]);
-
-  return state;
+  const { items, loading, failed } = useLiveList(
+    householdId,
+    (db) =>
+      householdId === null
+        ? null
+        : query(
+            collection(db, "households", householdId, "cardStatements"),
+            orderBy("closingDate", "desc"),
+            limit(MAX_STATEMENTS),
+          ).withConverter(cardStatementConverter),
+    "cardStatements",
+  );
+  return { statements: items, loading, failed };
 }
 
 export interface CardChargesState {
@@ -394,50 +354,25 @@ export function useCardCharges(
   startDate: string | null,
   closingDate: string | null,
 ): CardChargesState {
-  const [state, setState] = useState<CardChargesState>({
-    charges: [],
-    loading: true,
-  });
-
-  useEffect(() => {
-    if (householdId === null || startDate === null || closingDate === null) {
-      // Resetting a subscription's state as its key changes. The listener's
-      // lifetime is the external system here; there is nothing to derive from
-      // in render.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState({ charges: [], loading: false });
-      return;
-    }
-    const fb = getFirebaseClient();
-    if (fb === null) return;
-    setState((prev) => ({ ...prev, loading: true }));
-    const q = query(
-      collection(fb.db, "households", householdId, "cardCharges"),
-      where("date", ">=", startDate),
-      where("date", "<=", closingDate),
-      orderBy("date", "desc"),
-    ).withConverter(cardChargeConverter);
-    return onSnapshot(
-      q,
-      { includeMetadataChanges: true },
-      (snap) => {
-        setState({
-          charges: decoded(snap.docs.map((d) => d.data())),
-          loading: false,
-        });
-      },
-      // A read that FAILED is not a read that came back empty. This used to
-      // set an empty list either way, so a listener error rendered as "nothing
-      // here" — indistinguishable from the real thing, and for expenses that
-      // means a period showing its whole budget unspent.
-      (error) => {
-        console.error("[gastos] cardCharges listener", error);
-        setState({ charges: [], loading: false, failed: true });
-      },
-    );
-  }, [householdId, startDate, closingDate]);
-
-  return state;
+  const key =
+    householdId === null || startDate === null || closingDate === null
+      ? null
+      : `${householdId}/${startDate}/${closingDate}`;
+  const { items, loading, failed } = useLiveList(
+    key,
+    (db) =>
+      householdId === null || startDate === null || closingDate === null
+        ? null
+        : query(
+            collection(db, "households", householdId, "cardCharges"),
+            where("date", ">=", startDate),
+            where("date", "<=", closingDate),
+            orderBy("date", "desc"),
+          ).withConverter(cardChargeConverter),
+    "cardCharges",
+    { includeMetadataChanges: true },
+  );
+  return { charges: items, loading, failed };
 }
 
 /* ── Past-period totals via server-side aggregation ────────────────────── */
