@@ -50,6 +50,7 @@ struct SummaryView: View {
             .padding(.bottom, 24)
         }
         .background(Theme.bg.ignoresSafeArea())
+        .statusBarScrim()
         .sheet(isPresented: $showAdjustSheet) {
             AdjustPeriodBudgetSheet()
         }

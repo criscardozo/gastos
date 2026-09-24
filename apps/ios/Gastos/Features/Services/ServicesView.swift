@@ -64,11 +64,13 @@ struct ServicesView: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(.horizontal, 20)
+            .padding(.top, 6)
+            .padding(.bottom, 16)
         }
         .background(Theme.bg)
-        .navigationTitle(l10n.t("tab.services"))
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
+        .statusBarScrim()
         .onAppear {
             store.start(
                 householdId: model.household?.id,
@@ -79,15 +81,22 @@ struct ServicesView: View {
         .onDisappear { store.stop() }
     }
 
+    /// The tab's title in the content, like Resumen, Historial and Ajustes.
+    ///
+    /// It was a centred navigation-bar title with the month as a second, bigger
+    /// heading under it: two titles, and a header shaped differently from three
+    /// of the five tabs. The month is what this screen is about, so it stays —
+    /// as the subtitle.
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(l10n.monthLabel(model.today, timeZone: model.householdTimeZone))
-                .appFont(22, .bold)
+            Text(l10n.t("tab.services"))
+                .appFont(18, .bold)
                 .foregroundStyle(Theme.ink)
-            Text(l10n.t("services.subtitle"))
+            Text("\(l10n.monthLabel(model.today, timeZone: model.householdTimeZone)) · \(l10n.t("services.subtitle"))")
                 .appFont(12)
                 .foregroundStyle(Theme.inkTertiary)
         }
+        .padding(.bottom, 4)
     }
 
     private var emptyState: some View {
@@ -257,6 +266,12 @@ private struct ServiceRow: View {
                         Text(l10n.t("services.useCharged"))
                             .appFont(11.5, .bold)
                             .foregroundStyle(Theme.inkSecondary)
+                            // A button label must not break: squeezed by the
+                            // two texts beside it, "Usar ese importe" came out
+                            // on two lines inside its pill. The texts are the
+                            // ones that may wrap.
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
                             .background(

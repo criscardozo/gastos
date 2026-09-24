@@ -314,8 +314,13 @@ struct PeriodNavigator: View {
 ///
 /// USD leads on the two screens that came from the web's card side, because
 /// that is the currency the card bills in. It is NOT a conversion — the app
-/// converts nothing in the ledger — so when there is no USD figure at all this
-/// shows an em dash rather than "US$ 0,00", which would read as "costs nothing".
+/// converts nothing in the ledger — so when there is no USD figure at all the
+/// USD line is left out and the AUD figure takes the headline slot.
+///
+/// It used to keep the slot and put an em dash in it, so with nothing verified
+/// yet every card on Servicios led with a thick black bar and the one number
+/// that was known sat underneath in small grey — the hierarchy upside down
+/// exactly when there was only one figure to show.
 struct UsdOverAud: View {
     let usdCents: Int
     let audCents: Int
@@ -332,24 +337,33 @@ struct UsdOverAud: View {
             alignment: typeSize.isAccessibilitySize ? .leading : .trailing,
             spacing: typeSize.isAccessibilitySize ? 8 : 1
         ) {
-            figure(
-                MoneyFormatter.usd(usdCents, locale: locale),
-                shown: hasUsd,
-                code: "USD",
-                size: big ? 21 : 14,
-                weight: .bold,
-                colour: Theme.ink,
-                floor: 0.55
-            )
-            figure(
-                MoneyFormatter.aud(audCents, locale: locale),
-                shown: true,
-                code: "AUD",
-                size: big ? 12.5 : 12,
-                weight: .semibold,
-                colour: Theme.inkTertiary,
-                floor: 0.6
-            )
+            if hasUsd {
+                figure(
+                    MoneyFormatter.usd(usdCents, locale: locale),
+                    code: "USD",
+                    size: big ? 21 : 14,
+                    weight: .bold,
+                    colour: Theme.ink,
+                    floor: 0.55
+                )
+                figure(
+                    MoneyFormatter.aud(audCents, locale: locale),
+                    code: "AUD",
+                    size: big ? 12.5 : 12,
+                    weight: .semibold,
+                    colour: Theme.inkTertiary,
+                    floor: 0.6
+                )
+            } else {
+                figure(
+                    MoneyFormatter.aud(audCents, locale: locale),
+                    code: "AUD",
+                    size: big ? 21 : 14,
+                    weight: .bold,
+                    colour: Theme.ink,
+                    floor: 0.55
+                )
+            }
         }
     }
 
@@ -365,14 +379,13 @@ struct UsdOverAud: View {
     @ViewBuilder
     private func figure(
         _ text: String,
-        shown: Bool,
         code: String,
         size: CGFloat,
         weight: Font.Weight,
         colour: Color,
         floor: CGFloat
     ) -> some View {
-        let amount = Text(shown ? text : "—")
+        let amount = Text(text)
             .appFont(size, weight)
             .foregroundStyle(colour)
         if typeSize.isAccessibilitySize {
@@ -417,5 +430,22 @@ struct CurrencyTag: View {
         // pin because the tag is three characters wide, not a phrase.
         .lineLimit(1)
         .fixedSize(horizontal: true, vertical: false)
+    }
+}
+
+extension View {
+    /// Paints the status-bar strip in the screen's background, so a header
+    /// that scrolls up passes UNDER it instead of through the clock.
+    ///
+    /// The tabs draw their own title inside the scroll view, with no navigation
+    /// bar, so nothing gave the top edge a background: scrolled, "Resumen" and
+    /// the period pill ran straight into the time and the battery. Measured on
+    /// Resumen in the Simulator.
+    func statusBarScrim() -> some View {
+        safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear
+                .frame(height: 0)
+                .background(Theme.bg.ignoresSafeArea(edges: .top))
+        }
     }
 }

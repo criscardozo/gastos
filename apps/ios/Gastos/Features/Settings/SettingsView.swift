@@ -51,6 +51,7 @@ struct SettingsView: View {
             .padding(.bottom, 24)
         }
         .background(Theme.bg.ignoresSafeArea())
+        .statusBarScrim()
         .sheet(isPresented: $showDefaultAmountSheet) {
             DefaultAmountSheet()
         }

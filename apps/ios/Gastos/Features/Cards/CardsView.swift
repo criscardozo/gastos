@@ -27,6 +27,13 @@ struct CardsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                // In the content, like the other tabs — it was a centred
+                // navigation-bar title, the only header of its kind besides
+                // Servicios'.
+                Text(l10n.t("tab.cards"))
+                    .appFont(18, .bold)
+                    .foregroundStyle(Theme.ink)
+                    .padding(.bottom, 4)
                 if store.loading && store.statements.isEmpty {
                     Text(l10n.t("common.loading"))
                         .appFont(13)
@@ -58,11 +65,13 @@ struct CardsView: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(.horizontal, 20)
+            .padding(.top, 6)
+            .padding(.bottom, 16)
         }
         .background(Theme.bg)
-        .navigationTitle(l10n.t("tab.cards"))
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
+        .statusBarScrim()
         .onAppear {
             store.start(
                 householdId: model.household?.id,
