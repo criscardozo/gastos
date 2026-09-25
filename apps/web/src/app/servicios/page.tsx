@@ -45,7 +45,6 @@ import {
   type ServiceStatus,
 } from "@/lib/services";
 import { monthRange } from "@/lib/periods";
-import { UsdOverAud } from "@/components/charts";
 import { updateHouseholdCategories } from "@/lib/firebase/mutations";
 import { useExpensesRange } from "@/lib/firebase/hooks";
 
@@ -57,6 +56,23 @@ function useDueLabel() {
     if (days === 1) return t("dueTomorrow");
     return t("dueInDays", { days });
   };
+}
+
+/** A month total: the AUD sum, and the part billed in dollars when any is. */
+function MonthFigure({ aud, usdPart }: { aud: string; usdPart: string | null }) {
+  return (
+    <>
+      <span className="flex items-baseline gap-1.5">
+        <span className="tnum text-[22px] font-bold leading-tight tracking-[-0.01em] text-ink">
+          {aud}
+        </span>
+        <CurrencyTag currency="AUD" />
+      </span>
+      {usdPart !== null && (
+        <span className="tnum text-[12px] font-semibold text-ink-2">{usdPart}</span>
+      )}
+    </>
+  );
 }
 
 export default function ServicesPage() {
@@ -152,23 +168,25 @@ export default function ServicesPage() {
 
       {/* What this month costs, and how much of it has already been charged.
           Two figures rather than one average: the second is the only one that
-          can be checked against a bank statement. */}
+          can be checked against a bank statement.
+          AUD leads because it is the whole sum; the USD figure covers only the
+          services billed in dollars. Stacked USD-over-AUD, as the rows are, it
+          read as the headline — "A pagar US$ 14,99" over a month that costs
+          $67,99. */}
       {services.length > 0 && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">
             <span className="section-label">{t("chargedThisMonth")}</span>
-            <span className="flex items-start">
-              <UsdOverAud
-                size="lg"
-                usd={formatUsd(totals.chargedUsdCents, locale)}
-                aud={formatCents(
-                  totals.chargedAudCents,
-                  household.currency,
-                  locale,
-                )}
-                hasUsd={totals.chargedUsdCents > 0}
-              />
-            </span>
+            <MonthFigure
+              aud={formatCents(totals.chargedAudCents, household.currency, locale)}
+              usdPart={
+                totals.chargedUsdCents > 0
+                  ? t("chargedUsdPart", {
+                      amount: formatUsd(totals.chargedUsdCents, locale),
+                    })
+                  : null
+              }
+            />
             <span className="text-[11.5px] text-ink-3">
               {t("chargedCount", {
                 charged: totals.chargedCount,
@@ -178,14 +196,16 @@ export default function ServicesPage() {
           </div>
           <div className="flex flex-col gap-1.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">
             <span className="section-label">{t("dueThisMonth")}</span>
-            <span className="flex items-start">
-              <UsdOverAud
-                size="lg"
-                usd={formatUsd(totals.dueUsdCents, locale)}
-                aud={formatCents(totals.dueAudCents, household.currency, locale)}
-                hasUsd={totals.dueUsdCents > 0}
-              />
-            </span>
+            <MonthFigure
+              aud={formatCents(totals.dueAudCents, household.currency, locale)}
+              usdPart={
+                totals.dueUsdCents > 0
+                  ? t("dueUsdPart", {
+                      amount: formatUsd(totals.dueUsdCents, locale),
+                    })
+                  : null
+              }
+            />
             <span className="text-[11.5px] text-ink-3">{t("dueThisMonthHint")}</span>
           </div>
         </div>

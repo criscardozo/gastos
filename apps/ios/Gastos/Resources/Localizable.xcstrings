@@ -3257,6 +3257,40 @@
         }
       }
     },
+    "services.chargedUsdPart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Of which %@ was charged in USD"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De eso, %@ se cobraron en dólares"
+          }
+        }
+      }
+    },
+    "services.dueUsdPart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Of which %@ is billed in USD"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De eso, %@ se cobran en dólares"
+          }
+        }
+      }
+    },
     "settings.about": {
       "extractionState": "stale",
       "localizations": {

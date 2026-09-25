@@ -148,6 +148,8 @@
     "chargedThisMonth": "Charged this month",
     "chargedCount": "{charged} of {due} services this month",
     "dueThisMonth": "Due this month",
+    "chargedUsdPart": "Of which {amount} was charged in USD",
+    "dueUsdPart": "Of which {amount} is billed in USD",
     "dueThisMonthHint": "Sum of the services this month charges.",
     "notThisMonth": "Not charged this month",
     "notChargedYet": "Not charged yet",

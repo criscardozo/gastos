@@ -131,12 +131,10 @@ struct ServicesView: View {
             Card {
                 VStack(alignment: .leading, spacing: 4) {
                     SectionLabel(text: l10n.t("services.chargedThisMonth"))
-                    UsdOverAud(
-                        usdCents: totals.chargedUsdCents,
+                    monthFigure(
                         audCents: totals.chargedAudCents,
-                        hasUsd: totals.chargedUsdCents > 0,
-                        locale: l10n.locale,
-                        big: true
+                        usdCents: totals.chargedUsdCents,
+                        usdKey: "services.chargedUsdPart"
                     )
                     Text(l10n.t("services.chargedCount", totals.chargedCount, totals.dueCount))
                         .appFont(11)
@@ -147,12 +145,10 @@ struct ServicesView: View {
             Card {
                 VStack(alignment: .leading, spacing: 4) {
                     SectionLabel(text: l10n.t("services.dueThisMonth"))
-                    UsdOverAud(
-                        usdCents: totals.dueUsdCents,
+                    monthFigure(
                         audCents: totals.dueAudCents,
-                        hasUsd: totals.dueUsdCents > 0,
-                        locale: l10n.locale,
-                        big: true
+                        usdCents: totals.dueUsdCents,
+                        usdKey: "services.dueUsdPart"
                     )
                     Text(l10n.t("services.dueThisMonthHint"))
                         .appFont(11)
@@ -162,6 +158,27 @@ struct ServicesView: View {
             }
         }
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// A month total: the AUD sum, and the part billed in dollars when any is.
+    ///
+    /// AUD leads because it is the whole sum; the USD figure covers only the
+    /// services billed in dollars. Stacked USD-over-AUD, as the rows are, it
+    /// read as the headline — "A pagar US$ 14,99" over a month that costs
+    /// $67,99.
+    @ViewBuilder
+    private func monthFigure(audCents: Int, usdCents: Int, usdKey: String) -> some View {
+        UsdOverAud(
+            usdCents: 0, audCents: audCents, hasUsd: false,
+            locale: l10n.locale, big: true
+        )
+        if usdCents > 0 {
+            Text(l10n.t(usdKey, MoneyFormatter.usd(usdCents, locale: l10n.locale)))
+                .appFont(11.5, .semibold)
+                .monospacedDigit()
+                .foregroundStyle(Theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

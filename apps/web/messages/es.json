@@ -148,6 +148,8 @@
     "chargedThisMonth": "Cobrado este mes",
     "chargedCount": "{charged} de {due} servicios del mes",
     "dueThisMonth": "A pagar este mes",
+    "chargedUsdPart": "De eso, {amount} se cobraron en dólares",
+    "dueUsdPart": "De eso, {amount} se cobran en dólares",
     "dueThisMonthHint": "Suma de los servicios que se cobran este mes.",
     "notThisMonth": "No se paga este mes",
     "notChargedYet": "Todavía no se cobró",
