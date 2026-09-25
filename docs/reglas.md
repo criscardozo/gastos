@@ -827,14 +827,12 @@ claves de este proyecto, que es lo que no viaja:
 - El **device support** también se desfasa: si el iPhone se actualiza antes que
   Xcode, `xcodebuild` dice que la versión de iOS "is not installed" y no hay
   build para dispositivo hasta bajar el componente.
-- **Los `.xcscheme` los genera `xcodegen`, no Xcode.** Si aparece un diff en
-  ellos (típicamente `version = "1.3"` → `"1.7"` y bloques
-  `CommandLineArguments` vacíos), es la herramienta poniéndose al día con un
-  archivo que quedó viejo: **commitearlo**, no revertirlo. Lo reverti dos veces
-  culpando a Xcode antes de comprobarlo — checkout del archivo en 1.3, correr
-  `xcodegen`, y vuelve a 1.7 sin abrir el proyecto. Que un checkout limpio más
-  `xcodegen` deje el árbol limpio es lo que hace que un diff accidental
-  signifique algo.
+- **El `.xcodeproj` no se trackea desde el 25/9/2026** (decisión de Cristian,
+  igual que Stock): lo genera `xcodegen` desde `project.yml` y sólo queda en
+  git el `Package.resolved`. Antes esta línea decía que un diff en los
+  `.xcscheme` había que commitearlo; ya no hay nada que commitear ahí. Lo que
+  se aceptó con el cambio: un clon limpio no abre en Xcode ni compila sin correr
+  `xcodegen` primero — `install-ios` lo dice en su mensaje de error.
 
 ---
 

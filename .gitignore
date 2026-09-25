@@ -61,3 +61,20 @@ apps/web/CLAUDE.md
 # whole workspace or pnpm's `catalog:` versions cannot resolve.
 .vercel/
 .env.local
+
+# The Xcode project is GENERATED from apps/ios/project.yml by xcodegen and not
+# tracked — Cristian's decision, 2026-09-25, the same as Stock's. Every run
+# rewrote ~35 object UUIDs and xcodebuild downgraded a scheme, so the tracked
+# copy was a diff that never meant anything, and twice it went stale in a way
+# that did mean something (a renamed file, a new test file the project did not
+# name). Only Package.resolved stays: it is SPM's lockfile, the one file here
+# that pins what gets built. Git cannot re-include a file under an excluded
+# parent, hence one pair of lines per level.
+apps/ios/Gastos.xcodeproj/*
+!apps/ios/Gastos.xcodeproj/project.xcworkspace/
+apps/ios/Gastos.xcodeproj/project.xcworkspace/*
+!apps/ios/Gastos.xcodeproj/project.xcworkspace/xcshareddata/
+apps/ios/Gastos.xcodeproj/project.xcworkspace/xcshareddata/*
+!apps/ios/Gastos.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+apps/ios/Gastos.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
+!apps/ios/Gastos.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved

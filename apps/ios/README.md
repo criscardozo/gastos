@@ -13,8 +13,10 @@ deliberately web-only — see the root README.
 ## Project generation
 
 The Xcode project is generated with [XcodeGen](https://github.com/yonaskolb/XcodeGen)
-from `project.yml` (the generated `Gastos.xcodeproj` is committed too so the
-project opens without tooling):
+from `project.yml`. **`Gastos.xcodeproj` is not tracked** — run `xcodegen`
+after cloning and after any change to `project.yml`. The one file inside it
+that is tracked is `Package.resolved`, SPM's lockfile: `project.yml` says
+`from: 12.0.0`, and only the resolved file says what actually gets built.
 
 ```sh
 cd apps/ios
