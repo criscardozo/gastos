@@ -82,6 +82,8 @@ struct ExpenseFormView: View {
     private enum Field: Hashable { case amount, note }
 
     @State private var amount = BudgetEntryAmount()
+    /// Set when opening Wallet failed, so the button does not stay dead.
+    @State private var walletUnavailable = false
     @State private var selectedCategoryId: String?
     @State private var note = ""
     @State private var pickedDate: CalendarDate?
@@ -262,7 +264,7 @@ struct ExpenseFormView: View {
                 .appFont(18, .bold)
                 .foregroundStyle(Theme.ink)
             Spacer()
-            if !isEditing, Self.walletURL != nil {
+            if !isEditing, Self.walletURL != nil, !walletUnavailable {
                 walletButton
             }
             if isEditing {
@@ -276,28 +278,33 @@ struct ExpenseFormView: View {
         .padding(.bottom, 4)
     }
 
-    /// Wallet, if this device can open it.
+    /// Wallet, opened by its scheme.
     ///
-    /// `shoebox` is Wallet's scheme and Apple does not document it, so the URL
-    /// is resolved through `canOpenURL` (declared in LSApplicationQueriesSchemes)
-    /// and the button simply does not exist when the answer is no. A wrong
-    /// guess therefore costs a missing button rather than a dead one — and the
-    /// simulator, where Wallet is not installed, is one of the noes.
+    /// `shoebox` is Wallet's scheme and Apple does not document it. This used to
+    /// ask `canOpenURL` first and leave the button out when the answer was no;
+    /// that call is deprecated from iOS 27, the floor since 2026-09-25, with
+    /// "prefer attempting to open URLs and handling any failures". So the
+    /// button is offered and the attempt is the question: if it fails, the
+    /// button goes away for the rest of the session. A wrong guess still costs
+    /// one dead press at most, not a dead button.
+    ///
+    /// Measured on 2026-09-25: on the iOS 27 simulator Wallet IS present and
+    /// the button opens it, so that is the success path seen working. The
+    /// failure path — hiding the button — has not been seen run: no device at
+    /// hand lacks Wallet.
     ///
     /// Here because paying by card and logging the expense are the same moment:
     /// the card comes out, then the amount goes in. Opening Wallet leaves this
     /// sheet exactly as it is, so coming back finds the half-typed amount still
     /// there.
-    private static let walletURL: URL? = {
-        guard let url = URL(string: "shoebox://"),
-              UIApplication.shared.canOpenURL(url)
-        else { return nil }
-        return url
-    }()
+    private static let walletURL = URL(string: "shoebox://")
 
     private var walletButton: some View {
         Button {
-            if let url = Self.walletURL { UIApplication.shared.open(url) }
+            guard let url = Self.walletURL else { return }
+            UIApplication.shared.open(url) { opened in
+                if !opened { walletUnavailable = true }
+            }
         } label: {
             Image(systemName: "wallet.bifold.fill")
                 .font(.system(size: 15, weight: .semibold))

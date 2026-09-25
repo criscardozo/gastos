@@ -43,10 +43,6 @@
 	<string>$(GD_INGEST_URL)</string>
 	<key>GIDClientID</key>
 	<string>56331687585-o1vn25s25vv682tgqc34uq03hucklc89.apps.googleusercontent.com</string>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>shoebox</string>
-	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Outfit-Variable.ttf</string>

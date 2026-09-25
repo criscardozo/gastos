@@ -1,14 +1,21 @@
 name: Gastos
 options:
-  # iOS 26, deliberately ahead of what compatibility would suggest.
+  # The floor follows the household's phones, not compatibility: this app
+  # runs on exactly two iPhones, so a lower floor buys nothing and costs the
+  # newer APIs. Cristian's call. Raised to 27.0 on 2026-09-25 once BOTH phones
+  # were confirmed on 27 — checked with him, not inferred from the one that is
+  # plugged in. Raise it again the same way: when both phones have moved.
   #
-  # This app runs on exactly two phones and both are on 26, so holding the
-  # floor at 17 bought nothing and cost the newer APIs. Cristian's call:
-  # comfort and what the platform offers now, over a compatibility nobody in
-  # this household needs. The watchOS target stays at 10 — the watch is a
-  # separate device and nothing there needs the newer floor.
+  # Declared ONCE, here. It used to be declared twice, also as
+  # IPHONEOS_DEPLOYMENT_TARGET under settings.base, and measured on the
+  # regenerated project that one WINS: with both present, lowering this line
+  # changed nothing. Without it, this line alone sets every configuration —
+  # the app, the widget and the tests inherit it — so the second copy was
+  # redundant and the misleading one. Removed rather than guarded. The watchOS
+  # target is separate (10.0, below) and does not follow: the watch is its own
+  # device and nothing there needs a newer floor.
   deploymentTarget:
-    iOS: "26.0"
+    iOS: "27.0"
   developmentLanguage: es
   createIntermediateGroups: true
   groupSortPosition: top
@@ -42,7 +49,6 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "5.10"
-    IPHONEOS_DEPLOYMENT_TARGET: "26.0"
     SWIFT_STRICT_CONCURRENCY: complete
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     CODE_SIGN_STYLE: Automatic
@@ -111,16 +117,10 @@ targets:
         # secret: the endpoint does nothing without a fresh request stamped on
         # the household, which only a member can write.
         GDIngestURL: $(GD_INGEST_URL)
-        # Wallet, so the entry form can offer to open it.
-        #
-        # `shoebox` is Wallet's URL scheme. It is not documented by Apple, and
-        # declaring it here is what lets `canOpenURL` answer honestly — which
-        # is the point: the button is only shown when the scheme really can be
-        # opened, so a wrong guess hides the button instead of leaving a dead
-        # one. (Never a concern for review: this app is sideloaded on a free
-        # team and does not go near the App Store.)
-        LSApplicationQueriesSchemes:
-          - shoebox
+        # No LSApplicationQueriesSchemes: it existed only so `canOpenURL` could
+        # be asked about Wallet's `shoebox` scheme, and that call is deprecated
+        # from iOS 27. The entry form now just opens the URL and hides the
+        # button if it fails — `open` needs no declaration. See ExpenseFormView.
         CFBundleURLTypes:
           - CFBundleTypeRole: Editor
             CFBundleURLSchemes:

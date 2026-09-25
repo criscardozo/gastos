@@ -10,7 +10,7 @@ and **$0 infrastructure**.
 
 | | |
 |---|---|
-| 📱 iOS | `apps/ios` — SwiftUI, iOS 26+, Firebase SDK via SPM, offline-first. Home-screen widget + Watch companion |
+| 📱 iOS | `apps/ios` — SwiftUI, iOS 27+, Firebase SDK via SPM, offline-first. Home-screen widget + Watch companion |
 | 🌐 Web | `apps/web` — Next.js App Router, Tailwind, next-intl (es/en), Vercel. Also an installable **PWA**, which is how it stays on the phone |
 | 📧 Bank ingest | `tools/gmail-bank-ingest` — Apps Script on a 15-min trigger, files the bank's USD charge emails for matching |
 | 🔥 Firebase | `firebase/` — security rules (the only security boundary), emulator tests |
