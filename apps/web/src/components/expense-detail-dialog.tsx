@@ -235,7 +235,7 @@ export function ExpenseDetailDialog({
           <button
             type="button"
             onClick={onDelete}
-            className="text-[13.5px] font-semibold text-over"
+            className="text-[13.5px] font-semibold text-over-text"
           >
             {tExpenses("delete")}
           </button>

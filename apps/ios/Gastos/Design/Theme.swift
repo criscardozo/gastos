@@ -48,8 +48,8 @@ enum Theme {
     static let bg = Color.hex(light: "#FAF6EF", dark: "#191410")
     static let surface = Color.hex(light: "#FFFFFF", dark: "#242019")
     static let ink = Color.hex(light: "#241A10", dark: "#F6EEE2")
-    static let inkSecondary = Color.hex(light: "#8F8272", dark: "#A2937F")
-    static let inkTertiary = Color.hex(light: "#B4A794", dark: "#6E6153")
+    static let inkSecondary = Color.hex(light: "#60574D", dark: "#B2A695")
+    static let inkTertiary = Color.hex(light: "#766753", dark: "#988876")
 
     /// Hairlines: cards .08, pills .10.
     static let border = Color.hex(light: "#241A10", dark: "#F6EEE2", lightAlpha: 0.08, darkAlpha: 0.08)
@@ -63,7 +63,7 @@ enum Theme {
 
     // Accent (coral) — unchanged in dark mode.
     static let accent = Color(hex: "#FF5C39")
-    static let accentStrong = Color(hex: "#E8492A")
+    static let accentStrong = Color.hex(light: "#CB3316", dark: "#EC6C53")
     static let accentSoft = Color(hex: "#FF5C39", alpha: 0.12)
 
     // Budget states
@@ -71,10 +71,10 @@ enum Theme {
     static let greenText = Color.hex(light: "#1F7A45", dark: "#6FD79A")
     static let greenBg = Color.hex(light: "#2E9E5B", dark: "#40BE74", lightAlpha: 0.12, darkAlpha: 0.16)
     static let amber = Color(hex: "#E39A0C")
-    static let amberText = Color.hex(light: "#B87804", dark: "#E39A0C")
+    static let amberText = Color.hex(light: "#986303", dark: "#E39A0C")
     static let amberBg = Color(hex: "#E39A0C", alpha: 0.15)
     static let red = Color(hex: "#E5484D")
-    static let redText = Color(hex: "#E5484D")
+    static let redText = Color.hex(light: "#D51E24", dark: "#E96569")
     static let redBg = Color(hex: "#E5484D", alpha: 0.11)
     /// Over-budget track tint.
     static let redTrack = Color(hex: "#E5484D", alpha: 0.2)

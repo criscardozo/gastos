@@ -14,15 +14,15 @@
   --bg: #faf6ef;
   --surface: #ffffff;
   --ink: #241a10;
-  --ink-secondary: #8f8272;
-  --ink-tertiary: #b4a794;
+  --ink-secondary: #60574d;
+  --ink-tertiary: #766753;
   --line-card: rgba(36, 26, 16, 0.08);
   --line-pill: rgba(36, 26, 16, 0.1);
   --line-soft: rgba(36, 26, 16, 0.06);
   --fill: rgba(36, 26, 16, 0.06);
   --track: rgba(36, 26, 16, 0.08);
   --accent: #ff5c39;
-  --accent-strong: #e8492a;
+  --accent-strong: #cb3316;
   --accent-soft: rgba(255, 92, 57, 0.12);
 
   /* Budget states */
@@ -30,10 +30,10 @@
   --good-text: #1f7a45;
   --good-bg: rgba(46, 158, 91, 0.12);
   --warn: #e39a0c;
-  --warn-text: #b87804;
+  --warn-text: #986303;
   --warn-bg: rgba(227, 154, 12, 0.15);
   --over: #e5484d;
-  --over-text: #e5484d;
+  --over-text: #d51e24;
   --over-bg: rgba(229, 72, 77, 0.11);
   --over-track: rgba(229, 72, 77, 0.2);
 
@@ -86,8 +86,8 @@
     --bg: #191410;
     --surface: #242019;
     --ink: #f6eee2;
-    --ink-secondary: #a2937f;
-    --ink-tertiary: #6e6153;
+    --ink-secondary: #b2a695;
+    --ink-tertiary: #988876;
     --line-card: rgba(246, 238, 226, 0.08);
     --line-pill: rgba(246, 238, 226, 0.1);
     --line-soft: rgba(246, 238, 226, 0.06);
@@ -100,6 +100,8 @@
     /* Brightened for dark, as iOS already had it: the light value on
        --surface is 4.42:1, under the 4.5:1 AA needs for body text. */
     --warn-text: #e39a0c;
+    --accent-strong: #ec6c53;
+    --over-text: #e96569;
 
     --info: #4fb3d4;
     --info-text: #4fb3d4;
@@ -130,8 +132,8 @@
   --bg: #191410;
   --surface: #242019;
   --ink: #f6eee2;
-  --ink-secondary: #a2937f;
-  --ink-tertiary: #6e6153;
+  --ink-secondary: #b2a695;
+  --ink-tertiary: #988876;
   --line-card: rgba(246, 238, 226, 0.08);
   --line-pill: rgba(246, 238, 226, 0.1);
   --line-soft: rgba(246, 238, 226, 0.06);
@@ -144,6 +146,8 @@
   /* Brightened for dark, as iOS already had it: the light value on
      --surface is 4.42:1, under the 4.5:1 AA needs for body text. */
   --warn-text: #e39a0c;
+  --accent-strong: #ec6c53;
+  --over-text: #e96569;
 
   --info: #4fb3d4;
   --info-text: #4fb3d4;
@@ -194,6 +198,7 @@
   --color-info-text: var(--info-text);
   --color-info-bg: var(--info-bg);
   --color-over: var(--over);
+  --color-over-text: var(--over-text);
   --color-over-bg: var(--over-bg);
   --color-over-track: var(--over-track);
   --color-member-blue: var(--member-blue);

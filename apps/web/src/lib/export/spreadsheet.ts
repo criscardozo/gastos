@@ -19,7 +19,7 @@ export type SpreadsheetExportOptions = PdfExportOptions;
 /* Design tokens, as the ARGB strings exceljs expects. */
 const CORAL = "FFFF5C39";
 const INK = "FF241A10";
-const MUTED = "FF8F8272";
+const MUTED = "FF60574D"; // ink-secondary
 const LINE = "FFDCD6CC";
 const SOFT = "FFFDEDE9"; // accent-soft, for the totals block
 const WHITE = "FFFFFFFF";

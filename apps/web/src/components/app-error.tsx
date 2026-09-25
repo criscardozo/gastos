@@ -133,7 +133,7 @@ function AppErrorDialog({
         className="flex w-full max-w-[440px] flex-col gap-3.5 rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]"
       >
         <div className="flex items-start gap-3">
-          <Icon name="error" size={22} className="mt-0.5 text-over" />
+          <Icon name="error" size={22} className="mt-0.5 text-over-text" />
           <div className="min-w-0">
             <h2 className="text-base font-bold text-ink">{t("title")}</h2>
             <p className="mt-1 text-[13px] text-ink-2">{t("body")}</p>

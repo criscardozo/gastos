@@ -20,17 +20,26 @@ reference). Both clients implement these exactly; do not invent new colors.
 | `bg` | `#FAF6EF` | App background (warm cream) |
 | `surface` | `#FFFFFF` | Cards, sheets, keypad keys |
 | `ink` | `#241A10` | Primary text, dark buttons |
-| `inkSecondary` | `#8F8272` | Secondary text |
-| `inkTertiary` | `#B4A794` | Tertiary text, placeholders, currency symbol |
+| `inkSecondary` | `#60574D` (dark `#B2A695`) | Secondary text |
+| `inkTertiary` | `#766753` (dark `#988876`) | Tertiary text, placeholders, currency symbol |
 | `border` | `rgba(36,26,16,.08)` (cards) / `.10` (pills) | Hairlines |
 | `fill` | `rgba(36,26,16,.06)` | Segmented control track, muted badges |
 | `accent` | `#FF5C39` | Coral: primary buttons, active nav, brand icon |
-| `accentStrong` | `#E8492A` | Coral text on light (nav active, "Ajustado" badge) |
+| `accentStrong` | `#CB3316` (dark `#EC6C53`) | Coral TEXT (nav active, "Ajustado" badge, text buttons) |
 | `accentSoft` | `rgba(255,92,57,.11–.13)` | Active nav bg, selected-option bg |
 
 Budget states: green `#2E9E5B` (text `#1F7A45`, bg `rgba(46,158,91,.12)`) · amber `#E39A0C`
-(text `#B87804`, bg `rgba(227,154,12,.15)`) · red `#E5484D` (text `#E5484D`, bg
-`rgba(229,72,77,.11)`).
+(text `#986303`, bg `rgba(227,154,12,.15)`) · red `#E5484D` (text `#D51E24`, dark `#E96569`;
+bg `rgba(229,72,77,.11)`).
+
+**Text colours changed on 2026-09-25, for legibility.** The export's greys and
+text tints were under WCAG AA: tertiary 2.19:1 on the page, secondary 3.48:1,
+amber text 3.40:1, coral text 3.60:1, red text 3.63:1. Each was darkened (or,
+in dark mode, lightened) along its own hue to the least that clears 4.5:1 on
+every surface it is drawn on — page, card, chip fill, its own tint — while
+keeping ink > secondary > tertiary. The fills (`accent`, `over`, the state
+bars) are unchanged. `apps/web/src/lib/text-contrast.test.ts` holds it, reading
+`design-system/tokens.json`.
 
 `info` — **added 8 Sep 2026**, and the only token here that is not in the Claude
 Design export. Light `#1F7FA8` (text `#17627F`, bg `rgba(31,127,168,.13)`) · dark
@@ -63,11 +72,12 @@ Member avatars: Cristian `#2A6FDB`, Natalia `#E0447C` (initials, white, 700).
 | `bg` | `#191410` |
 | `surface` | `#242019` |
 | `ink` | `#F6EEE2` |
-| `inkSecondary` | `#A2937F` |
-| `inkTertiary` | `#6E6153` |
+| `inkSecondary` | `#B2A695` |
+| `inkTertiary` | `#988876` |
 | `border` | `rgba(246,238,226,.08)` (cards) / `.10` (pills) |
 | `fill` | `rgba(246,238,226,.07)` |
 | `accent` | `#FF5C39` (unchanged) |
+| `accentStrong` | `#EC6C53` (text only) |
 
 Dark budget green: bar `#40BE74`, text `#6FD79A`, bg `rgba(64,190,116,.16)`.
 Dark avatars: C `#4B87E8`, N `#EF6D9C`. Dark category colors: see

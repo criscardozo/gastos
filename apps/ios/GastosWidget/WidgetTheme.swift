@@ -37,8 +37,8 @@ extension Color {
 enum WidgetTheme {
     static let bg = Color.widgetHex(light: "#FAF6EF", dark: "#191410")
     static let ink = Color.widgetHex(light: "#241A10", dark: "#F6EEE2")
-    static let inkSecondary = Color.widgetHex(light: "#8F8272", dark: "#A2937F")
-    static let inkTertiary = Color.widgetHex(light: "#B4A794", dark: "#6E6153")
+    static let inkSecondary = Color.widgetHex(light: "#60574D", dark: "#B2A695")
+    static let inkTertiary = Color.widgetHex(light: "#766753", dark: "#988876")
     /// Progress track (light .08 / dark .09 per design).
     static let track = Color.widgetHex(light: "#241A10", dark: "#F6EEE2", lightAlpha: 0.08, darkAlpha: 0.08)
     static let red = Color(hex: "#E5484D")

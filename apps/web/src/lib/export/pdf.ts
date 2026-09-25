@@ -69,7 +69,7 @@ const HEADER_H = 62;
 // Coral accent (#FF5C39) and ink (#241A10) from the design tokens.
 const CORAL: [number, number, number] = [255, 92, 57];
 const INK: [number, number, number] = [36, 26, 16];
-const MUTED: [number, number, number] = [143, 130, 114];
+const MUTED: [number, number, number] = [96, 87, 77]; // ink-secondary, #60574D
 
 // Column x-offsets (from the left margin) and widths.
 // Two money columns now: AUD, then the bank's USD at the content edge.

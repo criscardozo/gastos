@@ -395,7 +395,7 @@ export default function DataPage() {
       )}
 
       {exportPhase === "error" && (
-        <span className="text-[12.5px] font-semibold text-over">
+        <span className="text-[12.5px] font-semibold text-over-text">
           {t("exportError")}
         </span>
       )}

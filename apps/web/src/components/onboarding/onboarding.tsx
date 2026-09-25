@@ -104,7 +104,7 @@ function LoginStep() {
         </span>
       </button>
       {error && (
-        <p className="mt-4 text-sm font-semibold text-over">
+        <p className="mt-4 text-sm font-semibold text-over-text">
           {t("auth.signInError")}
         </p>
       )}
@@ -198,7 +198,7 @@ function ChooseStep({ onCreate }: { onCreate: () => void }) {
           </button>
         </div>
         {error && (
-          <p className="text-sm font-semibold text-over">{t("joinError")}</p>
+          <p className="text-sm font-semibold text-over-text">{t("joinError")}</p>
         )}
       </div>
 
@@ -304,7 +304,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
       </div>
 
       {error && (
-        <p className="mt-4 text-sm font-semibold text-over">
+        <p className="mt-4 text-sm font-semibold text-over-text">
           {t("createError")}
         </p>
       )}

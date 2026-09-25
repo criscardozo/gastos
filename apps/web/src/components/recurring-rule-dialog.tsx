@@ -271,7 +271,7 @@ export function RecurringRuleDialog({
               if (confirmDelete) onDelete();
               else setConfirmDelete(true);
             }}
-            className="rounded-full px-4 py-2.5 text-sm font-semibold text-over"
+            className="rounded-full px-4 py-2.5 text-sm font-semibold text-over-text"
           >
             {confirmDelete ? t("deleteConfirm") : t("delete")}
           </button>

@@ -251,7 +251,7 @@ export function ImportExpenses() {
     const styles: Record<PreviewRow["status"], string> = {
       ok: "bg-good-bg text-good-text",
       mapped: "bg-warn-bg text-warn-text",
-      error: "bg-over-bg text-over",
+      error: "bg-over-bg text-over-text",
     };
     const label =
       r.status === "ok"
@@ -294,10 +294,10 @@ export function ImportExpenses() {
         </div>
 
         {fileError && (
-          <p className="text-[13px] font-semibold text-over">{t("fileError")}</p>
+          <p className="text-[13px] font-semibold text-over-text">{t("fileError")}</p>
         )}
         {headerError && (
-          <p className="text-[13px] font-semibold text-over">
+          <p className="text-[13px] font-semibold text-over-text">
             {t("reasonNoColumns")}
           </p>
         )}
@@ -384,7 +384,7 @@ export function ImportExpenses() {
                   </span>
                 )}
                 {importPhase === "error" && (
-                  <span className="text-over">{t("importError")}</span>
+                  <span className="text-over-text">{t("importError")}</span>
                 )}
               </div>
               <button

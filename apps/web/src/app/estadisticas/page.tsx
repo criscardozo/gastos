@@ -301,7 +301,7 @@ export default function StatsPage() {
         <span className="text-[13px] text-ink-3">{t("loading")}</span>
       )}
       {state.failed && (
-        <span className="text-[13px] font-semibold text-over">{t("failed")}</span>
+        <span className="text-[13px] font-semibold text-over-text">{t("failed")}</span>
       )}
 
       {stats !== null && !state.loading && !state.failed && (

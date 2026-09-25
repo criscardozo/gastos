@@ -65,15 +65,17 @@ describe("the state colours agree everywhere they are written", () => {
     },
   );
 
-  it.each([
-    ["info", "#1F7FA8", "#17627F"],
-    ["good", "#2E9E5B", "#1F7A45"],
-    ["warn", "#E39A0C", "#B87804"],
-  ])("%s and its text colour are both in tokens.md", (_name, base, text) => {
-    // Case-insensitively: the doc writes them upper, the CSS lower.
-    expect(DOC.toUpperCase()).toContain(base);
-    expect(DOC.toUpperCase()).toContain(text);
-  });
+  it.each(["info", "good", "warn", "over"])(
+    "%s and its text colour are both in tokens.md",
+    (name) => {
+      // Read from the stylesheet rather than written here: this used to spell
+      // the text hexes out, which made it one more copy to update — and the
+      // day the text colours moved for contrast, it was the copy that failed
+      // instead of the doc. Case-insensitively: the doc writes them upper.
+      expect(DOC.toUpperCase()).toContain(cssHex(name));
+      expect(DOC.toUpperCase()).toContain(cssHex(`${name}-text`));
+    },
+  );
 
   it("keeps info out of the palette's taken hues", () => {
     // The reason it is a new token: every blue here already means something.
