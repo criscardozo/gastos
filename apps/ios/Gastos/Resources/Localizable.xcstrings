@@ -498,13 +498,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bank charges"
+            "value": "Bank charge"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cargos del banco"
+            "value": "Cargo del banco"
           }
         }
       }

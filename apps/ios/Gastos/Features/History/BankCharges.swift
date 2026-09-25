@@ -117,87 +117,99 @@ struct BankChargeSheet: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text(l10n.t("bank.title"))
-                    .appFont(19, .bold)
-                    .foregroundStyle(Theme.ink)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 22)
+        // The same chrome as every other sheet here: an inline title and the
+        // way out at the top-left. It had its own centred heading and a
+        // Cancelar at the very bottom, under Descartar — the two exits a sheet
+        // offers, stacked where a thumb meant for one lands on the other.
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    header
 
-                header
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(l10n.t("bank.chooseExpense"))
-                        .appFont(11.5, .bold)
-                        .foregroundStyle(Theme.inkTertiary)
-                        .textCase(.uppercase)
-                    if model.unverifiedExpenses.isEmpty {
-                        Text(l10n.t("bank.noExpenses"))
-                            .appFont(12.5)
-                            .foregroundStyle(Theme.inkSecondary)
-                    } else {
-                        picker
-                        Text(
-                            suggestion?.expenseId == nil
-                                ? l10n.t("bank.noCandidate")
-                                : l10n.t(
-                                    "bank.suggested",
-                                    BankChargeText.rate(suggestion?.impliedRate ?? 0, l10n: l10n),
-                                    Int(((suggestion?.score ?? 0) * 100).rounded())
-                                )
-                        )
-                        .appFont(11.5, .semibold)
-                        .foregroundStyle(Theme.inkTertiary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(l10n.t("bank.chooseExpense"))
+                            .appFont(11.5, .bold)
+                            .foregroundStyle(Theme.inkTertiary)
+                            .textCase(.uppercase)
+                        if model.unverifiedExpenses.isEmpty {
+                            Text(l10n.t("bank.noExpenses"))
+                                .appFont(12.5)
+                                .foregroundStyle(Theme.inkSecondary)
+                        } else {
+                            picker
+                            Text(
+                                suggestion?.expenseId == nil
+                                    ? l10n.t("bank.noCandidate")
+                                    : l10n.t(
+                                        "bank.suggested",
+                                        BankChargeText.rate(suggestion?.impliedRate ?? 0, l10n: l10n),
+                                        Int(((suggestion?.score ?? 0) * 100).rounded())
+                                    )
+                            )
+                            .appFont(11.5, .semibold)
+                            .foregroundStyle(Theme.inkTertiary)
+                        }
                     }
-                }
 
-                // The rate the suggestions are built on, stated where the
-                // suggestion is being judged.
-                if let rate = model.learnedBankRate {
-                    Text(l10n.t("bank.hintWithRate", BankChargeText.rate(rate, l10n: l10n)))
-                        .appFont(11.5)
-                        .foregroundStyle(Theme.inkTertiary)
-                }
+                    // The rate the suggestions are built on, stated where the
+                    // suggestion is being judged.
+                    if let rate = model.learnedBankRate {
+                        Text(l10n.t("bank.hintWithRate", BankChargeText.rate(rate, l10n: l10n)))
+                            .appFont(11.5)
+                            .foregroundStyle(Theme.inkTertiary)
+                    }
 
-                PrimaryCTA(
-                    title: l10n.t("bank.assign"),
-                    icon: "checkmark",
-                    height: 50,
-                    enabled: chosenId != nil
-                ) {
-                    guard let expenseId = chosenId else { return }
-                    UINotificationFeedbackGenerator().notificationOccurred(.success)
-                    model.assignBankCharge(charge, to: expenseId)
-                    onDone()
-                }
+                    PrimaryCTA(
+                        title: l10n.t("bank.assign"),
+                        icon: "checkmark",
+                        height: 50,
+                        enabled: chosenId != nil
+                    ) {
+                        guard let expenseId = chosenId else { return }
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        model.assignBankCharge(charge, to: expenseId)
+                        onDone()
+                    }
 
-                // The third way out. Before it, a charge with no counterpart
-                // could only be DISCARDED — which says "this was not ours"
-                // about a real purchase nobody had entered.
-                Button(l10n.t("bank.createExpense")) { creating = true }
-                    .appFont(14, .bold)
-                    .foregroundStyle(Theme.accentStrong)
+                    // The third way out. Before it, a charge with no counterpart
+                    // could only be DISCARDED — which says "this was not ours"
+                    // about a real purchase nobody had entered.
+                    Button(l10n.t("bank.createExpense")) { creating = true }
+                        .appFont(14, .bold)
+                        .foregroundStyle(Theme.accentStrong)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+
+                    // Red, and alone at the bottom: it says the charge was never
+                    // ours, which is the one answer here that removes something.
+                    // In the same grey as Cancelar it read as another way to close.
+                    Button(role: .destructive) {
+                        model.discardBankCharge(charge)
+                        onDone()
+                    } label: {
+                        Label(l10n.t("bank.discard"), systemImage: "trash")
+                            .appFont(13.5, .semibold)
+                    }
+                    .foregroundStyle(Theme.redText)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-
-                Button(l10n.t("bank.discard")) {
-                    model.discardBankCharge(charge)
-                    onDone()
                 }
-                .appFont(13.5, .semibold)
-                .foregroundStyle(Theme.inkSecondary)
-                .frame(maxWidth: .infinity)
-
-                Button(l10n.t("common.cancel")) { onDone() }
-                    .appFont(14, .semibold)
-                    .foregroundStyle(Theme.inkSecondary)
-                    .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
+            .background(Theme.bg.ignoresSafeArea())
+            .navigationTitle(l10n.t("bank.title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(l10n.t("common.cancel")) { onDone() }
+                }
+            }
         }
-        .background(Theme.bg.ignoresSafeArea())
+        // Tall enough for every answer at once — Descartar included — so the
+        // common case never needs a drag, and the list behind stays in view.
+        .presentationDetents([.fraction(0.6), .large])
+        .presentationDragIndicator(.visible)
         .sheet(item: Binding(
             get: { seedMerchant.map(SeedMerchant.init) },
             set: { seedMerchant = $0?.merchant }
@@ -241,25 +253,60 @@ struct BankChargeSheet: View {
         }
     }
 
+    /// A Menu around an inline Picker rather than a `.menu` Picker: that one
+    /// draws its own label in the system font, the only text on this sheet
+    /// that was not the app's. The Picker inside keeps the checkmark on the
+    /// current choice.
     private var picker: some View {
-        Picker(
-            selection: Binding(
-                get: { chosenId ?? "" },
-                set: { choice = $0 }
-            )
-        ) {
-            Text(l10n.t("bank.none")).tag("")
-            ForEach(model.unverifiedExpenses, id: \.id) { expense in
-                Text(BankChargeText.expenseLabel(expense, model: model, l10n: l10n))
-                    .tag(expense.id ?? "")
+        Menu {
+            Picker(
+                selection: Binding(
+                    get: { chosenId ?? "" },
+                    set: { choice = $0 }
+                )
+            ) {
+                Text(l10n.t("bank.none")).tag("")
+                ForEach(model.unverifiedExpenses, id: \.id) { expense in
+                    Text(BankChargeText.expenseLabel(expense, model: model, l10n: l10n))
+                        .tag(expense.id ?? "")
+                }
+            } label: {
+                Text(l10n.t("bank.chooseExpense"))
             }
+            .pickerStyle(.inline)
         } label: {
-            Text(l10n.t("bank.chooseExpense"))
+            HStack(spacing: 8) {
+                Text(chosenLabel)
+                    .appFont(14.5, .semibold)
+                    .monospacedDigit()
+                    .foregroundStyle(chosenId == nil ? Theme.inkSecondary : Theme.ink)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.inkTertiary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
+                    .strokeBorder(Theme.border, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
         }
-        .pickerStyle(.menu)
-        .tint(Theme.ink)
-        .labelsHidden()
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .buttonStyle(.plain)
+        .accessibilityLabel(l10n.t("bank.chooseExpense"))
+        .accessibilityValue(chosenLabel)
+    }
+
+    private var chosenLabel: String {
+        guard let id = chosenId,
+              let expense = model.unverifiedExpenses.first(where: { $0.id == id })
+        else { return l10n.t("bank.none") }
+        return BankChargeText.expenseLabel(expense, model: model, l10n: l10n)
     }
 }
 
@@ -277,53 +324,55 @@ struct DismissedChargesSheet: View {
     private var l10n: L10n { model.l10n }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(l10n.dismissedChargesCount(model.dismissedBankCharges.count))
-                    .appFont(19, .bold)
-                    .foregroundStyle(Theme.ink)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 22)
-                    .padding(.bottom, 4)
-
-                Text(l10n.t("bank.dismissedHint"))
-                    .appFont(12)
-                    .foregroundStyle(Theme.inkTertiary)
-                ForEach(model.dismissedBankCharges, id: \.id) { charge in
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(MoneyFormatter.usd(charge.usdCents, locale: l10n.locale))
-                                .appFont(14.5, .bold)
-                                .monospacedDigit()
-                                .foregroundStyle(Theme.ink)
-                            Text(BankChargeText.subtitle(charge, model: model, l10n: l10n))
-                                .appFont(11.5)
-                                .foregroundStyle(Theme.inkTertiary)
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(l10n.t("bank.dismissedHint"))
+                        .appFont(12)
+                        .foregroundStyle(Theme.inkTertiary)
+                    ForEach(model.dismissedBankCharges, id: \.id) { charge in
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(MoneyFormatter.usd(charge.usdCents, locale: l10n.locale))
+                                    .appFont(14.5, .bold)
+                                    .monospacedDigit()
+                                    .foregroundStyle(Theme.ink)
+                                Text(BankChargeText.subtitle(charge, model: model, l10n: l10n))
+                                    .appFont(11.5)
+                                    .foregroundStyle(Theme.inkTertiary)
+                            }
+                            Spacer()
+                            Button(l10n.t("bank.restore")) {
+                                model.restoreBankCharge(charge)
+                            }
+                            .appFont(12.5, .bold)
+                            .foregroundStyle(Theme.ink)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Theme.fill)
+                            .clipShape(Capsule())
+                            .buttonStyle(.plain)
                         }
-                        Spacer()
-                        Button(l10n.t("bank.restore")) {
-                            model.restoreBankCharge(charge)
-                        }
-                        .appFont(12.5, .bold)
-                        .foregroundStyle(Theme.ink)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Theme.fill)
-                        .clipShape(Capsule())
-                        .buttonStyle(.plain)
                     }
-                }
 
-                Button(l10n.t("common.close")) { onDone() }
-                    .appFont(14, .semibold)
-                    .foregroundStyle(Theme.inkSecondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 8)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
+            .background(Theme.bg.ignoresSafeArea())
+            .navigationTitle(l10n.dismissedChargesCount(model.dismissedBankCharges.count))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                // Nothing here is pending an answer, so it is closed, not
+                // cancelled — top-right, as the expense detail's Listo.
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(l10n.t("common.close")) { onDone() }
+                }
+            }
         }
-        .background(Theme.bg.ignoresSafeArea())
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
         // Restoring the last one closes this, and it has to be driven by the
         // count arriving rather than checked after the call: the write is not
         // awaited — Firestore only resolves it when the server confirms — so
@@ -344,20 +393,20 @@ struct DismissedChargesSheet: View {
 // carrying the annotation.
 @MainActor
 enum BankChargeText {
-    /// "COLES 0831" — or the date when the bank sent no merchant at all.
+    /// "Coles 0831" — or the amount when the bank sent no merchant at all.
     static func title(_ charge: BankCharge, l10n: L10n) -> String {
         charge.merchant.isEmpty
             ? MoneyFormatter.usd(charge.usdCents, locale: l10n.locale)
-            : charge.merchant
+            : MerchantName.display(charge.merchant)
     }
 
-    /// "3 ago · COLES 0831 · ••1234"
+    /// "3 ago · Coles 0831 · ••1234"
     static func subtitle(_ charge: BankCharge, model: AppModel, l10n: L10n) -> String {
         var parts: [String] = []
         if let date = CalendarDate(charge.date) {
             parts.append(l10n.dayMonth(date, timeZone: model.householdTimeZone))
         }
-        if !charge.merchant.isEmpty { parts.append(charge.merchant) }
+        if !charge.merchant.isEmpty { parts.append(MerchantName.display(charge.merchant)) }
         if let last4 = charge.cardLast4 { parts.append("••\(last4)") }
         return parts.joined(separator: " · ")
     }

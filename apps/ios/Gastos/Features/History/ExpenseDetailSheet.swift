@@ -60,6 +60,7 @@ struct ExpenseDetailSheet: View {
                 }
             }
         }
+        .presentationDragIndicator(.visible)
     }
 
     // MARK: Pieces

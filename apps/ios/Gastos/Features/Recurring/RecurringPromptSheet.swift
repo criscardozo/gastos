@@ -75,7 +75,7 @@ struct RecurringPromptSheet: View {
                     if let claim = current {
                         Card {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(claim.charge.merchant)
+                                Text(MerchantName.display(claim.charge.merchant))
                                     .appFont(15, .bold)
                                     .foregroundStyle(Theme.ink)
                                 Text(chargeLine(claim))
@@ -159,6 +159,7 @@ struct RecurringPromptSheet: View {
                 }
             }
         }
+        .presentationDragIndicator(.visible)
     }
 
     /// "US$ 12,40 · 5 sept" — and just the figure when the stored date is not
