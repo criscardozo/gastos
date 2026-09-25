@@ -256,16 +256,23 @@ struct PrimaryCTA: View {
                 Text(title)
                     .appFont(17, .bold)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(enabled ? Color.white : Theme.inkTertiary)
             .frame(maxWidth: .infinity)
             .frame(height: height)
-            .background(Theme.accent)
+            // Disabled is neutral, not a faded coral. At 45% opacity the
+            // white label on the washed-out accent measured 1.93:1 in dark
+            // mode, and the button still looked like the thing to press —
+            // just broken. Grey on the chip fill says "not yet".
+            .background(enabled ? Theme.accent : Theme.fill)
             .clipShape(Capsule())
-            .shadow(color: Color(hex: "#FF5C39", alpha: 0.35), radius: 10, y: 8)
+            .shadow(
+                color: enabled ? Color(hex: "#FF5C39", alpha: 0.35) : .clear,
+                radius: 10, y: 8
+            )
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
-        .opacity(enabled ? 1 : 0.45)
+        .animation(.easeOut(duration: 0.15), value: enabled)
     }
 }
 
