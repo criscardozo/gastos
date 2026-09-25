@@ -5162,6 +5162,23 @@
         }
       }
     },
+    "recurring.promptWhy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This rule has no fixed amount, and there is no learned rate yet to estimate it. How much was it in AUD?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La regla no tiene un importe fijo y todavía no hay una tasa aprendida para estimarlo. ¿Cuánto se pagó en AUD?"
+          }
+        }
+      }
+    },
     "bank.createExpense": {
       "localizations": {
         "es": {

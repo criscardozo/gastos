@@ -17,6 +17,9 @@ struct RecurringPromptSheet: View {
 
     @State private var index = 0
     @State private var amount = BudgetEntryAmount()
+    /// The amount is the only thing this sheet asks for, so the keyboard is
+    /// up when it opens rather than behind a tap on the field.
+    @FocusState private var amountFocused: Bool
 
     private var l10n: L10n { model.l10n }
     private var separator: String { l10n.language == "en" ? "." : "," }
@@ -86,6 +89,14 @@ struct RecurringPromptSheet: View {
                             .padding(.vertical, 8)
                         }
 
+                        // Why it is asking at all. A rule that files on its
+                        // own was the promise, and a bare amount field read
+                        // as the rule having failed.
+                        Text(l10n.t("recurring.promptWhy"))
+                            .appFont(12.5)
+                            .foregroundStyle(Theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
                         VStack(alignment: .leading, spacing: 6) {
                             SectionLabel(text: l10n.t("recurring.promptAmount"))
                             HStack(spacing: 6) {
@@ -95,6 +106,7 @@ struct RecurringPromptSheet: View {
                                 TextField("0,00", text: amountText)
                                     .appFont(17, .semibold)
                                     .keyboardType(.decimalPad)
+                                    .focused($amountFocused)
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
@@ -130,6 +142,12 @@ struct RecurringPromptSheet: View {
                 .padding(20)
             }
             .background(Theme.bg.ignoresSafeArea())
+            .task {
+                // After the presentation settles: focus asked for while the
+                // sheet is still sliding in is dropped.
+                try? await Task.sleep(for: .milliseconds(400))
+                if current != nil { amountFocused = true }
+            }
             .navigationTitle(l10n.t("recurring.promptTitle"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
