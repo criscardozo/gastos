@@ -77,6 +77,23 @@ describe("the state colours agree everywhere they are written", () => {
     },
   );
 
+  it("draws the Visa wordmark in the same blue on both platforms", () => {
+    // Hand-written on both sides — globals.css's --visa and CardMark.swift —
+    // because neither is a design token the emitter manages. Both themes: the
+    // dark value is the one that keeps the wordmark legible on a dark card.
+    const mark = read("apps/ios/Gastos/Design/CardMark.swift");
+    const line = mark.split("\n").find((l) => l.includes("static let visaBlue"));
+    expect(line, "static let visaBlue in CardMark.swift").toBeDefined();
+    const swift = [...(line as string).matchAll(/#[0-9a-fA-F]{6}/g)].map((m) =>
+      m[0].toUpperCase(),
+    );
+    const dark = CSS.match(
+      /:root\[data-theme="dark"\] \{[^}]*--visa:\s*(#[0-9a-fA-F]{6})/,
+    );
+    expect(dark, "--visa in the forced-dark block").not.toBeNull();
+    expect(swift).toEqual([cssHex("visa"), (dark as RegExpMatchArray)[1].toUpperCase()]);
+  });
+
   it("keeps info out of the palette's taken hues", () => {
     // The reason it is a new token: every blue here already means something.
     // If somebody later "tidies up" by pointing info at one of them, the

@@ -149,9 +149,7 @@ struct CardsView: View {
                                     // "Mastercard" was coming out as three
                                     // stacked fragments.
                                     AdaptiveRow(spacing: 6) {
-                                        Text(brand.label)
-                                            .appFont(11, .bold)
-                                            .foregroundStyle(Theme.inkSecondary)
+                                        CardMark(brand: brand, width: 26)
                                         Text(MoneyFormatter.usd(total, locale: l10n.locale))
                                             .appFont(13, .semibold)
                                             .foregroundStyle(Theme.inkSecondary)
@@ -255,19 +253,18 @@ private struct ChargeRow: View {
     var body: some View {
         Card {
             AdaptiveRow(spacing: 12) {
-                Text(charge.card.label)
-                    .appFont(10, .bold)
-                    .foregroundStyle(Theme.inkSecondary)
-                    // A 62pt column fits "Mastercard" at the designed size and
-                    // shreds it into three stacked fragments at an
-                    // accessibility one, so the column only exists while the
-                    // row is a row.
+                // The mark, in a fixed column so the details line up. It was
+                // the brand's name in 10pt grey, 62pt wide to fit
+                // "Mastercard" — the least legible thing in the row.
+                CardMark(brand: charge.card, width: 30)
                     .frame(
-                        width: typeSize.isAccessibilitySize ? nil : 62,
+                        width: typeSize.isAccessibilitySize ? nil : 34,
                         alignment: .leading
                     )
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(charge.detail.isEmpty ? charge.card.label : charge.detail)
+                    Text(charge.detail.isEmpty
+                         ? charge.card.label
+                         : MerchantName.display(charge.detail))
                         .appFont(14, .semibold)
                         .foregroundStyle(Theme.ink)
                         .lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
