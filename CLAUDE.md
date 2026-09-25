@@ -91,16 +91,14 @@ All JS commands run from the repo root (pnpm workspace):
   under any other project id the rules resolve `isMember()`'s `get()` in a
   namespace with no household, which is an evaluation error, and every
   subcollection reads back empty with no error at all (`docs/reglas.md`).
-- iOS: `cd apps/ios && xcodegen && open Gastos.xcodeproj`. **Two tracked files
-  get dirtied by routine commands and neither diff means anything — do not
-  commit them.** `xcodegen` rewrites `project.pbxproj` with fresh object UUIDs
-  every run: measured on a clean tree, 35 lines out and 35 in, same content,
-  different identifiers. And `xcodebuild` rewrites
-  `xcshareddata/xcschemes/GastosWatch.xcscheme` from format `1.7` down to
-  `1.3`. Both are the generated side of `project.yml`; a diff that never means
-  a change is the thing that teaches people to skim the ones that do, so
-  `git checkout -- apps/ios/Gastos.xcodeproj/` after building is part of the
-  loop until someone decides whether that directory should be tracked at all.
+- iOS: `cd apps/ios && xcodegen && open Gastos.xcodeproj`. **`Gastos.xcodeproj` is
+  NOT tracked** (since 2026-09-25, Cristian's decision, same as Stock): it is
+  generated from `project.yml`, so run `xcodegen` after cloning and after any
+  change to `project.yml` — `install:ios` refuses to start without it. The one
+  tracked file inside is `project.xcworkspace/xcshareddata/swiftpm/Package.resolved`,
+  SPM's lockfile, the only record of which package versions get built. It was
+  tracked before and every `xcodegen` run rewrote ~35 object UUIDs, which is
+  why this line used to prescribe reverting the directory after each build.
   CLI tests:
   `xcodebuild test -project Gastos.xcodeproj -scheme GastosTests -destination 'platform=iOS Simulator,name=<iPhone>'`.
   That scheme builds ONLY the test bundle, which compiles `Gastos/Core`
