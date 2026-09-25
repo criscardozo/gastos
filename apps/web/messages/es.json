@@ -164,7 +164,7 @@
     "linkAction": "Es este"
   },
   "cards": {
-    "title": "Tarjetas de Crédito",
+    "title": "Tarjetas",
     "addCharge": "Agregar gasto",
     "editCharge": "Editar gasto",
     "amountUsd": "Monto (USD)",
@@ -237,6 +237,7 @@
     "add": "Agregar",
     "dismiss": "Descartar",
     "unidentified": "{count, plural, one {1 cargo es de una tarjeta que no está configurada en Ajustes, así que también aparece en Gastos.} other {# cargos son de tarjetas que no están configuradas en Ajustes, así que también aparecen en Gastos.}}",
+    "configureCards": "Configurar tarjetas",
     "allClear": "No hay cargos del banco sin registrar."
   },
   "empty": {

@@ -14,6 +14,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 
 import { Icon } from "@/components/ui/icon";
 import { CardMark } from "@/components/ui/marks";
@@ -90,9 +91,18 @@ export function CardChargesInbox({
             configured yet that is every charge, and the same sentence five
             times in a list of five is noise the eye learns to skip. */}
         {unidentifiedCount > 0 && (
-          <p className="flex items-center gap-1.5 text-[11px] leading-snug text-ink-3">
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-snug text-ink-3">
             <Icon name="info" size={13} className="flex-none text-ink-3" />
-            {t("unidentified", { count: unidentifiedCount })}
+            <span>{t("unidentified", { count: unidentifiedCount })}</span>
+            {/* The fix is on another screen, so the note carries the way
+                there: it used to say "configure them in Ajustes" and leave
+                finding where. */}
+            <Link
+              href="/ajustes#tarjetas"
+              className="font-bold text-accent-strong underline-offset-2 hover:underline"
+            >
+              {t("configureCards")}
+            </Link>
           </p>
         )}
       </div>

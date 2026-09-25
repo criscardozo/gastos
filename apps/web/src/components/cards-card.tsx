@@ -73,7 +73,11 @@ export function CardsCard({ household }: { household: Household }) {
     "w-24 rounded-xl border border-line bg-bg px-3 py-2 text-base text-ink outline-none focus:border-accent";
 
   return (
-    <div className="flex flex-col rounded-[18px] border border-line bg-surface px-[18px] py-4">
+    // `tarjetas` is where Tarjetas' "not configured" note links to.
+    <div
+      id="tarjetas"
+      className="flex scroll-mt-6 flex-col rounded-[18px] border border-line bg-surface px-[18px] py-4"
+    >
       <div className="mb-1 flex flex-col gap-1">
         <div className="flex items-baseline justify-between gap-3">
           <span className="section-label">{t("title")}</span>

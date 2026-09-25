@@ -164,7 +164,7 @@
     "linkAction": "This one"
   },
   "cards": {
-    "title": "Credit Cards",
+    "title": "Cards",
     "addCharge": "Add charge",
     "editCharge": "Edit charge",
     "amountUsd": "Amount (USD)",
@@ -237,6 +237,7 @@
     "add": "Add",
     "dismiss": "Dismiss",
     "unidentified": "{count, plural, one {1 charge is from a card not configured in Settings, so it also appears under Expenses.} other {# charges are from cards not configured in Settings, so they also appear under Expenses.}}",
+    "configureCards": "Set up cards",
     "allClear": "No bank charges left to record."
   },
   "empty": {

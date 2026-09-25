@@ -1,6 +1,6 @@
 "use client";
 
-// Tarjetas de Crédito: what went on the cards, grouped into the statement it
+// Tarjetas: what went on the credit cards, grouped into the statement it
 // belongs to.
 //
 // A statement is a window with two dates that mean different things — the
@@ -278,17 +278,6 @@ export default function CardsPage() {
         </button>
       </div>
 
-      <CardChargesInbox
-        household={household}
-        charges={bankCharges}
-        uid={user?.uid ?? null}
-        locale={locale}
-        // Blocked once the open statement's closing date has gone by, whichever
-        // statement the pager happens to be showing: the inbox always files
-        // into the open one, not the one being looked at.
-        statementClosed={openStatementClosed}
-      />
-
       {shown !== null && (
         <div className="flex flex-col gap-3 rounded-[18px] border border-line bg-surface px-[18px] py-4">
           {/* Which statement, and how to walk back through the earlier ones. */}
@@ -433,6 +422,21 @@ export default function CardsPage() {
           )}
         </div>
       )}
+
+      {/* After the statement's own card, before its rows: the screen is about
+          the statement, and a full inbox above it pushed the total and the
+          dates below the fold. Still ahead of the rows, because these are the
+          charges about to become rows. */}
+      <CardChargesInbox
+        household={household}
+        charges={bankCharges}
+        uid={user?.uid ?? null}
+        locale={locale}
+        // Blocked once the open statement's closing date has gone by, whichever
+        // statement the pager happens to be showing: the inbox always files
+        // into the open one, not the one being looked at.
+        statementClosed={openStatementClosed}
+      />
 
       {chargesLoading && charges.length === 0 && (
         <p className="px-1 text-[13px] text-ink-3">{t("loading")}</p>
