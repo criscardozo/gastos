@@ -935,11 +935,38 @@ test("a leftover that could not be read is not materialized as zero", async ({
     );
   }
 
+  const reloadedAt = Date.now();
   await page.goto("/");
   // It says so, instead of writing a period whose leftover is a made-up zero.
-  await expect(page.getByRole("dialog")).toContainText("No se pudo guardar", {
-    timeout: 25_000,
-  });
+  //
+  // Failed ONCE in CI (run 35985614815, 24/9, on a commit that only moved the
+  // version number): 26.6s and no dialog at all, then green on the rerun and
+  // 6/6 full-suite runs locally. Measured and ruled out since: test order, and
+  // a stale current period left in IndexedDB by the probe reload (forced 3/3,
+  // the dialog still came in ~140ms). The failed attempt's log was overwritten
+  // by the rerun, so what was ON SCREEN is unknown — which is what this catch
+  // records next time, into the job log rather than an artifact.
+  try {
+    await expect(page.getByRole("dialog")).toContainText("No se pudo guardar", {
+      timeout: 25_000,
+    });
+  } catch (error) {
+    const periodsNow = await request.get(
+      `${REST}/households/${householdId}/periodBudgets`,
+      { headers: admin },
+    );
+    console.log(
+      "[carry-leftover diagnosis]",
+      JSON.stringify({
+        msSinceReload: Date.now() - reloadedAt,
+        url: page.url(),
+        periodsOnServer: (((await periodsNow.json()).documents ?? []) as { name: string }[])
+          .map((d) => d.name.split("/").pop()),
+      }),
+    );
+    console.log("[carry-leftover diagnosis] screen:\n" + (await page.locator("body").ariaSnapshot()));
+    throw error;
+  }
 
   // And nothing was written: only the period this test seeded exists.
   const periods = await request.get(
