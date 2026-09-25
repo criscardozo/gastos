@@ -16,7 +16,11 @@ import type { Expense, Household, PeriodBudget } from "@/lib/firebase/converters
 import { categoryCircleBg, categoryColor, countsToBudget } from "@/lib/categories";
 import { containsDate } from "@/lib/periods";
 import { formatCents, formatUsd } from "@/lib/money";
-import { formatLongDate, formatPeriodRange } from "@/lib/dates";
+import {
+  capitaliseFirst,
+  formatLongDate,
+  formatPeriodRange,
+} from "@/lib/dates";
 
 /** "28 jul, 13:48" — an absolute instant, in the reader's own timezone.
  * 24-hour in Spanish, where "01:56 p. m." is not how anyone writes a time. */
@@ -89,7 +93,7 @@ export function ExpenseDetailDialog({
       : null;
 
   const facts: { label: string; value: string }[] = [
-    { label: t("date"), value: formatLongDate(expense.date, locale) },
+    { label: t("date"), value: capitaliseFirst(formatLongDate(expense.date, locale)) },
     ...(period !== undefined
       ? [
           {

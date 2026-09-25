@@ -21,31 +21,32 @@ function numberLocale(locale: string): string {
 }
 
 /**
- * The month's name, capitalised.
+ * A label's first letter, upper-cased — for a date that STARTS a label on its
+ * own: "Domingo 25 de octubre" as the value under CIERRE.
  *
- * Spanish writes months lowercase and `Intl` obeys — "agosto". Every place this
- * app prints one it is a LABEL (a heading, a pill, a column of dates) rather
- * than a word in a sentence, and lowercase labels read as unfinished next to
- * everything around them. English capitalises already, so this only changes the
- * Spanish side.
+ * Spanish writes months and weekdays lowercase, and so does every formatter
+ * here: most of these dates sit inside a sentence ("cerró el domingo 25 de
+ * octubre", "Por día hasta el 8 oct", "Cobrado el 25 sept"). They used to be
+ * capitalised everywhere on the grounds that every date in the app was a
+ * label, which stopped being true, and the web ended up writing "Cobrado el
+ * 25 Sept" where the iPhone wrote "25 sept". A capital belongs to where the
+ * label begins, so the caller that knows it begins one asks for it. English
+ * capitalises its names already, so this changes nothing there.
  */
-/** Spanish writes both months and weekdays lowercase; these are labels. */
-function capitalise(word: string): string {
-  return word.charAt(0).toUpperCase() + word.slice(1);
+export function capitaliseFirst(label: string): string {
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 function monthName(date: string, locale: string, style: "short" | "long"): string {
   const name = new Intl.DateTimeFormat(numberLocale(locale), {
     month: style,
   }).format(toFormatDate(date));
-  return capitalise(name.replace(/\.$/, ""));
+  return name.replace(/\.$/, "");
 }
 
 function weekdayName(date: string, locale: string): string {
-  return capitalise(
-    new Intl.DateTimeFormat(numberLocale(locale), { weekday: "long" }).format(
-      toFormatDate(date),
-    ),
+  return new Intl.DateTimeFormat(numberLocale(locale), { weekday: "long" }).format(
+    toFormatDate(date),
   );
 }
 
@@ -96,15 +97,16 @@ export function formatLongDate(date: string, locale: string): string {
 }
 
 /**
- * A whole month, named: "agosto 2026" / "August 2026".
+ * A whole month, named: "Agosto 2026" / "August 2026".
  *
  * Carries the year always, unlike the day formats: a month is a window somebody
  * navigates back through, and "agosto" on its own is ambiguous the moment there
- * is more than one of them in the list.
+ * is more than one of them in the list. Capitalised because it is only ever a
+ * heading or a pill — the label begins with it.
  */
 export function formatMonthLabel(date: string, locale: string): string {
   const month = monthName(date, locale, "long");
-  return `${month} ${date.slice(0, 4)}`;
+  return capitaliseFirst(`${month} ${date.slice(0, 4)}`);
 }
 
 /** Compact single date: "11 jul". */

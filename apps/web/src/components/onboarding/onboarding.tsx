@@ -23,7 +23,7 @@ import {
   joinHousehold,
   DEFAULT_TIMEZONE,
 } from "@/lib/firebase/mutations";
-import { formatLongDate } from "@/lib/dates";
+import { capitaliseFirst, formatLongDate } from "@/lib/dates";
 import { todayInTimezone, type PeriodType } from "@/lib/periods";
 
 function Dots({ active }: { active: 0 | 1 | 2 }) {
@@ -288,7 +288,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
           <span className="text-sm font-semibold text-ink">{t("starts")}</span>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-ink-2">
-              {formatLongDate(startDate, locale)}
+              {capitaliseFirst(formatLongDate(startDate, locale))}
             </span>
             <input
               type="date"

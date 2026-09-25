@@ -63,6 +63,7 @@ import {
   parseAmountToCents,
 } from "@/lib/money";
 import {
+  capitaliseFirst,
   formatDayHeading,
   formatMonthLabel,
   formatPeriodRange,
@@ -324,7 +325,7 @@ export default function ExpensesPage() {
     const heading = formatDayHeading(date, locale);
     const [weekday, ...rest] = heading.split(" ");
     return {
-      bold: weekday.charAt(0).toUpperCase() + weekday.slice(1),
+      bold: capitaliseFirst(weekday),
       muted: rest.join(" "),
     };
   };

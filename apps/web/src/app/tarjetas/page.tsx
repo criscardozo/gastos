@@ -40,7 +40,7 @@ import {
   type CardChargeInput,
 } from "@/lib/firebase/mutations";
 import { formatUsd } from "@/lib/money";
-import { formatLongDate, formatShortDate } from "@/lib/dates";
+import { capitaliseFirst, formatLongDate, formatShortDate } from "@/lib/dates";
 import {
   CARD_BRANDS,
   digitalUsdCents,
@@ -347,7 +347,7 @@ export default function CardsPage() {
             <div className="flex flex-col gap-0.5">
               <span className="section-label">{t("closingDate")}</span>
               <span className="text-[13.5px] font-bold text-ink">
-                {formatLongDate(shown.closingDate, locale)}
+                {capitaliseFirst(formatLongDate(shown.closingDate, locale))}
               </span>
               <span className="text-[11px] text-ink-3">
                 {t("fromDate", {
@@ -358,7 +358,7 @@ export default function CardsPage() {
             <div className="flex flex-col gap-0.5">
               <span className="section-label">{t("dueDate")}</span>
               <span className="text-[13.5px] font-bold text-ink">
-                {formatLongDate(shown.dueDate, locale)}
+                {capitaliseFirst(formatLongDate(shown.dueDate, locale))}
               </span>
             </div>
           </div>

@@ -17,7 +17,7 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import { formatCents, parseAmountToCents } from "@/lib/money";
-import { formatLongDate } from "@/lib/dates";
+import { capitaliseFirst, formatLongDate } from "@/lib/dates";
 import { extendToFortnight, type PeriodBudgetLike } from "@/lib/periods";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
@@ -89,7 +89,7 @@ export function ExtendPeriodDialog({
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-[12px] text-ink-2">{t("endsNow")}</span>
             <span className="text-[13px] font-semibold text-ink-2 line-through">
-              {formatLongDate(period.endDate, locale)}
+              {capitaliseFirst(formatLongDate(period.endDate, locale))}
             </span>
           </div>
           <div className="flex items-baseline justify-between gap-3">
@@ -97,7 +97,7 @@ export function ExtendPeriodDialog({
               {t("endsAfter")}
             </span>
             <span className="text-[13.5px] font-bold text-ink">
-              {formatLongDate(extension.endDate, locale)}
+              {capitaliseFirst(formatLongDate(extension.endDate, locale))}
             </span>
           </div>
         </div>
