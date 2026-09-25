@@ -171,7 +171,7 @@ export function CategoriesCard({ household }: { household: Household }) {
 
       <div className="divide-y divide-soft">
         {rows.map((row, index) => (
-          <div key={row.id} className="flex items-center gap-3 py-2">
+          <div key={row.id} className="group flex items-center gap-3 py-2">
             <div
               className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full"
               style={{ background: categoryCircleBg(row.id, row.def) }}
@@ -231,7 +231,13 @@ export function CategoriesCard({ household }: { household: Household }) {
                 style={{ left: countsToBudget(row.def) ? 18 : 2 }}
               />
             </button>
-            <div className="flex flex-none items-center gap-0.5">
+            {/* Shown on the row being pointed at or tabbed into, where a mouse
+                exists. Four icons on each of nine rows was a column of 36
+                controls beside the list, drowning the names and the one
+                control that is a setting — the switch, which stays. Still
+                laid out while hidden, so the row does not shift on hover; and
+                on a touch screen, with no hover to reveal them, always there. */}
+            <div className="flex flex-none items-center gap-0.5 transition-opacity [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
               <IconButton
                 name="keyboard_arrow_up"
                 ariaLabel={t("moveUp", { name: row.label })}
