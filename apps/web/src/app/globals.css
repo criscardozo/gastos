@@ -199,6 +199,11 @@
   --color-member-blue: var(--member-blue);
   --color-member-pink: var(--member-pink);
   --color-white: #ffffff;
+  /* The modal scrim (`bg-black/40`). `--color-*: initial` above removes the
+     default palette, and every backdrop on the web was asking for a black
+     that no longer existed — twelve dialogs over an undimmed page, from the
+     first one until 2026-09-25. theme-colors.test.ts holds it. */
+  --color-black: #000000;
   --color-transparent: transparent;
 
   --font-sans: var(--font-outfit), "Outfit", sans-serif;
