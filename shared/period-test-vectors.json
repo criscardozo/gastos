@@ -556,5 +556,66 @@
         "expectedAddedDays": null
       }
     ]
+  },
+  "dailyAllowance": {
+    "comment": "What is left to spend per day until the period ends, TODAY INCLUDED: floor(remainingCents / days) in integer cents, where days = daysBetween(today, endDate) + 1. Zero once the budget is spent or overspent (never negative: 'you may spend -$3 a day' is not a figure anyone can act on). null when today is past endDate. Only asked of the current period, so today >= startDate always holds.",
+    "cases": [
+      {
+        "name": "two weeks left, remainder dropped",
+        "remainingCents": 45000,
+        "today": "2026-09-25",
+        "endDate": "2026-10-08",
+        "expected": 3214
+      },
+      {
+        "name": "divides exactly",
+        "remainingCents": 7000,
+        "today": "2026-10-02",
+        "endDate": "2026-10-08",
+        "expected": 1000
+      },
+      {
+        "name": "last day gets everything left",
+        "remainingCents": 1234,
+        "today": "2026-10-08",
+        "endDate": "2026-10-08",
+        "expected": 1234
+      },
+      {
+        "name": "across the Sydney DST start is still calendar days",
+        "remainingCents": 10000,
+        "today": "2026-10-01",
+        "endDate": "2026-10-08",
+        "expected": 1250
+      },
+      {
+        "name": "less than a cent a day rounds down to zero",
+        "remainingCents": 13,
+        "today": "2026-09-25",
+        "endDate": "2026-10-08",
+        "expected": 0
+      },
+      {
+        "name": "budget exactly spent",
+        "remainingCents": 0,
+        "today": "2026-09-25",
+        "endDate": "2026-10-08",
+        "expected": 0
+      },
+      {
+        "name": "overspent is zero, not negative",
+        "remainingCents": -1500,
+        "today": "2026-09-25",
+        "endDate": "2026-10-08",
+        "expected": 0
+      },
+      {
+        "name": "period already over",
+        "remainingCents": 5000,
+        "today": "2026-10-09",
+        "endDate": "2026-10-08",
+        "expected": null
+      }
+    ]
   }
 }

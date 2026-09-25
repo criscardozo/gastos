@@ -4396,6 +4396,40 @@
         }
       }
     },
+    "summary.perDayUntil": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per day until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por día hasta el %@"
+          }
+        }
+      }
+    },
+    "summary.perDayHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today included"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contando hoy"
+          }
+        }
+      }
+    },
     "tab.cards": {
       "extractionState": "manual",
       "localizations": {

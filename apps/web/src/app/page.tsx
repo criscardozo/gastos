@@ -23,7 +23,12 @@ import type {
   Household,
   PeriodBudget,
 } from "@/lib/firebase/converters";
-import { budgetState, containsDate, daysBetween } from "@/lib/periods";
+import {
+  budgetState,
+  containsDate,
+  dailyAllowance,
+  daysBetween,
+} from "@/lib/periods";
 import { CurrencyTag } from "@/components/ui/marks";
 import { formatCents, formatCentsCompact } from "@/lib/money";
 import { formatPeriodRange, formatShortDate } from "@/lib/dates";
@@ -186,6 +191,10 @@ export default function DashboardPage() {
   const daysLeft =
     today !== null && isCurrent
       ? Math.max(daysBetween(today, selected.endDate) + 1, 0)
+      : null;
+  const perDay =
+    today !== null && isCurrent
+      ? dailyAllowance(remaining, today, selected.endDate)
       : null;
 
   /* Category breakdown */
@@ -379,22 +388,46 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          {/* How much we've spent this period — the figure asked for at a
-              glance, so it gets its own card and its own big number. */}
+          {/* For the running period, what can still go out each day. This
+              card used to repeat the spent figure, which the hero already
+              states one line under its bar; the per-day figure is the one
+              that answers "can we afford this today". A past period has no
+              days left, so it keeps the spent figure. */}
           <div className="flex flex-col gap-1 rounded-[18px] border border-line bg-surface px-5 py-5 lg:px-6">
-            <span className="text-[13px] font-semibold text-ink-2">
-              {t(
-                selected.period === "weekly"
-                  ? "dashboard.spentThisWeek"
-                  : "dashboard.spentThisFortnight",
-              )}
-            </span>
-            <span
-              className="tnum text-[34px] font-bold leading-none tracking-[-0.03em]"
-              style={{ color: state === "over" ? "var(--over)" : "var(--ink)" }}
-            >
-              {formatCents(spent, household.currency, locale)}
-            </span>
+            {perDay !== null ? (
+              <>
+                <span className="text-[13px] font-semibold text-ink-2">
+                  {t("dashboard.perDayUntil", {
+                    date: formatShortDate(selected.endDate, locale),
+                  })}
+                </span>
+                <span
+                  className="tnum text-[34px] font-bold leading-none tracking-[-0.03em]"
+                  style={{ color: state === "over" ? "var(--over)" : "var(--ink)" }}
+                >
+                  {formatCents(perDay, household.currency, locale)}
+                </span>
+                <span className="text-[11.5px] text-ink-3">
+                  {t("dashboard.perDayHint")}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-[13px] font-semibold text-ink-2">
+                  {t(
+                    selected.period === "weekly"
+                      ? "dashboard.spentThisWeek"
+                      : "dashboard.spentThisFortnight",
+                  )}
+                </span>
+                <span
+                  className="tnum text-[34px] font-bold leading-none tracking-[-0.03em]"
+                  style={{ color: state === "over" ? "var(--over)" : "var(--ink)" }}
+                >
+                  {formatCents(spent, household.currency, locale)}
+                </span>
+              </>
+            )}
           </div>
 
           {/* Same, for the calendar month. */}

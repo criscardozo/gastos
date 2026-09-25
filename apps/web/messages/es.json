@@ -72,6 +72,8 @@
     "offBudget": "no descuenta",
     "spentThisWeek": "Gastado esta semana",
     "spentThisFortnight": "Gastado esta quincena",
+    "perDayUntil": "Por día hasta el {date}",
+    "perDayHint": "Contando hoy",
     "spentThisMonth": "Gastado este mes",
     "loading": "Cargando…",
     "carriedOver": "Incluye {amount} que sobró del período anterior",

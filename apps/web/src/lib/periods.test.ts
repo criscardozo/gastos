@@ -5,6 +5,7 @@ import {
   addDays,
   budgetState,
   cascadeMaterialization,
+  dailyAllowance,
   containsDate,
   daysBetween,
   extendToFortnight,
@@ -48,6 +49,7 @@ describe("period vectors", () => {
         "budgetState",
         "extendToFortnight",
         "stretchPeriodTo",
+        "dailyAllowance",
       ]),
     );
   });
@@ -62,8 +64,9 @@ describe("period vectors", () => {
       vectors.todayInTimezone.cases.length +
       vectors.budgetState.cases.length +
       vectors.extendToFortnight.cases.length +
-      vectors.stretchPeriodTo.cases.length;
-    expect(counted).toBe(72);
+      vectors.stretchPeriodTo.cases.length +
+      vectors.dailyAllowance.cases.length;
+    expect(counted).toBe(80);
   });
 });
 
@@ -182,6 +185,15 @@ describe("budgetState", () => {
     "$spentCents of $budgetCents → $expected",
     ({ spentCents, budgetCents, expected }) => {
       expect(budgetState(spentCents, budgetCents)).toBe(expected);
+    },
+  );
+});
+
+describe("dailyAllowance (shared vectors)", () => {
+  it.each(vectors.dailyAllowance.cases)(
+    "$name",
+    ({ remainingCents, today, endDate, expected }) => {
+      expect(dailyAllowance(remainingCents, today, endDate)).toBe(expected);
     },
   );
 });

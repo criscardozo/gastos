@@ -233,6 +233,25 @@ export function stretchPeriodTo(
 }
 
 /**
+ * What is left to spend per day until the period ends, today included.
+ *
+ * Integer cents, rounded DOWN: a figure you can keep to every day without
+ * overshooting by the last one. Zero once the budget is gone rather than a
+ * negative daily figure, which nobody can act on — the hero already says by
+ * how much it is over. Null when `today` is past `endDate`.
+ */
+export function dailyAllowance(
+  remainingCents: number,
+  today: string,
+  endDate: string,
+): number | null {
+  const days = daysBetween(today, endDate) + 1;
+  if (days <= 0) return null;
+  if (remainingCents <= 0) return 0;
+  return Math.floor(remainingCents / days);
+}
+
+/**
  * Budget progress state. `over` when spent exceeds the budget, `warning`
  * from 85% of the budget (inclusive), `comfortable` otherwise.
  * Integer-only math — no float division edge cases at the exact threshold.

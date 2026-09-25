@@ -282,6 +282,24 @@ enum PeriodLogic {
         return created
     }
 
+    // MARK: Daily allowance
+
+    /// What is left to spend per day until the period ends, today included.
+    ///
+    /// Integer cents, rounded down: a figure you can keep to every day without
+    /// overshooting by the last one. Zero once the budget is gone rather than a
+    /// negative daily figure, which nobody can act on — the hero already says
+    /// by how much it is over. Nil when `today` is past `endDate`. The same
+    /// cases run against the web's `dailyAllowance` (shared vectors).
+    static func dailyAllowance(
+        remainingCents: Int, today: CalendarDate, endDate: CalendarDate
+    ) -> Int? {
+        let days = daysBetween(today, endDate) + 1
+        guard days > 0 else { return nil }
+        guard remainingCents > 0 else { return 0 }
+        return remainingCents / days
+    }
+
     // MARK: Budget state
 
     /// Warning threshold: spent >= 85% of budget. Over: spent > budget.

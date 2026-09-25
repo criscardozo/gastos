@@ -72,6 +72,8 @@
     "offBudget": "off budget",
     "spentThisWeek": "Spent this week",
     "spentThisFortnight": "Spent this fortnight",
+    "perDayUntil": "Per day until {date}",
+    "perDayHint": "Today included",
     "spentThisMonth": "Spent this month",
     "loading": "Loading…",
     "carriedOver": "Includes {amount} left over from the previous period",

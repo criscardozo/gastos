@@ -87,6 +87,17 @@ final class PeriodLogicTests: XCTestCase {
             let cases: [Case]
         }
 
+        struct Allowance: Decodable {
+            struct Case: Decodable {
+                let name: String
+                let remainingCents: Int
+                let today: String
+                let endDate: String
+                let expected: Int?
+            }
+            let cases: [Case]
+        }
+
         let addDays: [AddDays]
         let daysBetween: [DaysBetween]
         let periodEndDate: [PeriodEnd]
@@ -96,6 +107,7 @@ final class PeriodLogicTests: XCTestCase {
         let budgetState: Budget
         let extendToFortnight: Extend
         let stretchPeriodTo: Stretch
+        let dailyAllowance: Allowance
     }
 
     private static let vectors: Vectors = {
@@ -149,7 +161,7 @@ final class PeriodLogicTests: XCTestCase {
             [
                 "addDays", "daysBetween", "periodEndDate", "containment",
                 "cascadeMaterialization", "todayInTimezone", "budgetState",
-                "extendToFortnight", "stretchPeriodTo",
+                "extendToFortnight", "stretchPeriodTo", "dailyAllowance",
             ],
             "a group was added to or removed from the vectors: decode it in "
                 + "`Vectors` and run it, or the suite quietly covers less"
@@ -169,7 +181,8 @@ final class PeriodLogicTests: XCTestCase {
             + Self.vectors.budgetState.cases.count
             + Self.vectors.extendToFortnight.cases.count
             + Self.vectors.stretchPeriodTo.cases.count
-        XCTAssertEqual(counted, 72)
+            + Self.vectors.dailyAllowance.cases.count
+        XCTAssertEqual(counted, 80)
     }
 
     // MARK: - Sections
@@ -395,6 +408,19 @@ final class PeriodLogicTests: XCTestCase {
                 result.rawValue, vector.expected,
                 "budgetState(\(vector.spentCents), \(vector.budgetCents))"
             )
+        }
+    }
+
+    func testDailyAllowanceVectors() {
+        let cases = Self.vectors.dailyAllowance.cases
+        XCTAssertFalse(cases.isEmpty)
+        for vector in cases {
+            let result = PeriodLogic.dailyAllowance(
+                remainingCents: vector.remainingCents,
+                today: date(vector.today),
+                endDate: date(vector.endDate)
+            )
+            XCTAssertEqual(result, vector.expected, vector.name)
         }
     }
 }

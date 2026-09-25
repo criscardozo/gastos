@@ -245,20 +245,49 @@ struct SummaryView: View {
 
     // MARK: Spend readouts (this period · this month)
 
-    /// Two cards, matching the web: what this period has consumed of its
-    /// budget, and the calendar month regardless of period boundaries.
+    /// Two cards, matching the web: what can still go out each day of the
+    /// running period, and the calendar month regardless of period boundaries.
+    ///
+    /// The first card used to repeat the period's spent figure, which the hero
+    /// already states under its bar; the per-day figure is the one that
+    /// answers "can we afford this today". A past period has no days left, so
+    /// it keeps the spent figure.
     private var spendCards: some View {
         HStack(alignment: .top, spacing: 10) {
-            spendCard(
-                title: l10n.t(period?.period == .weekly
-                              ? "summary.spentThisWeek"
-                              : "summary.spentThisFortnight"),
-                cents: spentCents,
-                over: state == .over,
-                footnote: nil
-            )
+            if let period, let end = period.end, let perDay = perDayCents(until: end) {
+                spendCard(
+                    title: l10n.t(
+                        "summary.perDayUntil",
+                        l10n.dayMonth(end, timeZone: model.householdTimeZone)
+                    ),
+                    cents: perDay,
+                    over: state == .over,
+                    footnote: nil,
+                    caption: l10n.t("summary.perDayHint")
+                )
+            } else {
+                spendCard(
+                    title: l10n.t(period?.period == .weekly
+                                  ? "summary.spentThisWeek"
+                                  : "summary.spentThisFortnight"),
+                    cents: spentCents,
+                    over: state == .over,
+                    footnote: nil
+                )
+            }
             monthCard
         }
+        // Both cards as tall as the taller one: the per-day card carries a
+        // caption the month card does not, and the pair read as misaligned.
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// The running period's daily allowance; nil for any other period.
+    private func perDayCents(until end: CalendarDate) -> Int? {
+        guard model.isViewingCurrentPeriod else { return nil }
+        return PeriodLogic.dailyAllowance(
+            remainingCents: remainingCents, today: model.today, endDate: end
+        )
     }
 
     @ViewBuilder
@@ -284,7 +313,7 @@ struct SummaryView: View {
                     .foregroundStyle(Theme.inkTertiary)
             }
             .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(Theme.surface)
             .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
             .overlay(
@@ -298,7 +327,8 @@ struct SummaryView: View {
         title: String,
         cents: Int,
         over: Bool,
-        footnote: String?
+        footnote: String?,
+        caption: String? = nil
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
@@ -312,6 +342,11 @@ struct SummaryView: View {
                 .foregroundStyle(over ? Theme.red : Theme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
+            if let caption {
+                Text(caption)
+                    .appFont(11.5)
+                    .foregroundStyle(Theme.inkTertiary)
+            }
             if let footnote {
                 Text(footnote)
                     .appFont(10.5, .semibold)
@@ -321,7 +356,7 @@ struct SummaryView: View {
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 96, maxHeight: .infinity, alignment: .topLeading)
         .background(Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
         .overlay(
