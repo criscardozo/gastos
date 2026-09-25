@@ -328,8 +328,11 @@ export default function SettingsPage() {
     }
   };
 
+  // Left-aligned, not centred: centred, this column put the title 226px to
+  // the right of every other screen's, and it jumped sideways on each switch
+  // of tab.
   return (
-    <div className="mx-auto flex w-[660px] max-w-full flex-col gap-3.5">
+    <div className="flex w-[660px] max-w-full flex-col gap-3.5">
       <h1 className="mb-1 text-[22px] font-bold text-ink">{t("title")}</h1>
 
       {/* Default budget + this period — stacked below lg (iPad portrait) */}
