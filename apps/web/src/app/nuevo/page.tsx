@@ -248,7 +248,7 @@ export default function QuickEntryPage() {
         type="button"
         onClick={() => void save()}
         disabled={!canSave}
-        className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-[15.5px] font-bold text-white shadow-[0_6px_16px_rgba(255,92,57,.3)] disabled:opacity-50 disabled:shadow-none"
+        className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-[15.5px] font-bold text-white shadow-[0_6px_16px_rgba(255,92,57,.3)] primary-disabled"
       >
         <Icon name={justSaved ? "check" : "add"} size={20} className="text-white" />
         {justSaved ? tEntry("saved") : t("save")}

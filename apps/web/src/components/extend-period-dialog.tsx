@@ -150,8 +150,9 @@ export function ExtendPeriodDialog({
             }
             onConfirm(extension.endDate, newTotal);
           }}
-          className="mt-1 rounded-full py-3 text-sm font-bold text-white disabled:opacity-40"
-          style={{ background: confirming ? "var(--warn-text)" : "var(--accent)" }}
+          className={`mt-1 rounded-full py-3 text-sm font-bold text-white primary-disabled ${
+            confirming ? "bg-warn-text" : "bg-accent"
+          }`}
         >
           {confirming ? t("confirm") : t("extend")}
         </button>

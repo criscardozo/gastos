@@ -18,6 +18,7 @@ import { Icon } from "@/components/ui/icon";
 import type { BankChargeDoc } from "@/lib/firebase/converters";
 import { formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
+import { displayMerchant } from "@/lib/merchant-name";
 
 export function DismissedCharges({
   charges,
@@ -64,7 +65,7 @@ export function DismissedCharges({
                 </span>
                 <span className="truncate text-[11px] text-ink-3">
                   {formatShortDate(charge.date, locale)}
-                  {charge.merchant !== "" && ` · ${charge.merchant}`}
+                  {charge.merchant !== "" && ` · ${displayMerchant(charge.merchant)}`}
                   {charge.cardLast4 !== null && ` · ••${charge.cardLast4}`}
                 </span>
               </div>

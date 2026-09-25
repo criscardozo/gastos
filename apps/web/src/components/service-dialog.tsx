@@ -247,7 +247,7 @@ export function ServiceDialog({
             type="button"
             disabled={!valid}
             onClick={submit}
-            className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white disabled:opacity-40"
+            className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white primary-disabled"
           >
             {tCommon("save")}
           </button>

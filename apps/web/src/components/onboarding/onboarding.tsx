@@ -314,7 +314,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
           type="button"
           onClick={() => void create()}
           disabled={!valid || creating}
-          className="h-14 w-full rounded-full bg-accent text-base font-bold text-white shadow-[0_8px_20px_rgba(255,92,57,.35)] disabled:opacity-60"
+          className="h-14 w-full rounded-full bg-accent text-base font-bold text-white shadow-[0_8px_20px_rgba(255,92,57,.35)] primary-disabled"
         >
           {creating ? t("creating") : t("finish")}
         </button>

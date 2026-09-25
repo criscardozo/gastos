@@ -1,0 +1,36 @@
+{
+  "$comment": [
+    "How a merchant string from the bank is SHOWN.",
+    "",
+    "The bank sends merchants in capitals — 'NETFLIX.COM', 'OPAL AUCKLAND ST' —",
+    "and a list of them reads as a wall of shouting beside expenses written the",
+    "way people write. An all-caps merchant is shown with each space-separated",
+    "word capitalised; anything already in mixed case is left exactly as it is,",
+    "because somebody wrote it that way on purpose ('iTunes', 'McDonald's').",
+    "The same form seeds the NOTE of an expense or rule made from a charge.",
+    "",
+    "Display only. Matching, the recurring rules' patterns and what is stored as",
+    "the charge all keep the raw string: a rule written against 'NETFLIX.COM'",
+    "must keep finding it.",
+    "",
+    "Implemented twice (apps/web/src/lib/merchant-name.ts displayMerchant,",
+    "apps/ios/Gastos/Core/MerchantName.swift display); both run every case here.",
+    "Change a case here first."
+  ],
+  "cases": [
+    { "raw": "CAFE MARTINEZ", "display": "Cafe Martinez", "why": "all caps: every word capitalised" },
+    { "raw": "OPAL AUCKLAND ST", "display": "Opal Auckland St", "why": "the case the old note seeding was written for" },
+    { "raw": "COLES 0831", "display": "Coles 0831", "why": "digits stay as they are" },
+    { "raw": "NETFLIX.COM", "display": "Netflix.com", "why": "punctuation does not start a word" },
+    { "raw": "AMZN MKTP US*2K3", "display": "Amzn Mktp Us*2k3", "why": "nor does an asterisk" },
+    { "raw": "PANADERÍA ÑANDÚ", "display": "Panadería Ñandú", "why": "accented capitals lower correctly" },
+    { "raw": "TRANSPORT  FOR NSW", "display": "Transport  For Nsw", "why": "runs of spaces are kept, and acronyms are not guessed at" },
+    { "raw": " LEADING SPACE", "display": " Leading Space", "why": "a leading space is kept, not trimmed" },
+    { "raw": "iTunes Store", "display": "iTunes Store", "why": "mixed case is left as written" },
+    { "raw": "McDonald's", "display": "McDonald's", "why": "mixed case is left as written" },
+    { "raw": "DiDiMobility", "display": "DiDiMobility", "why": "mixed case is left as written" },
+    { "raw": "telefonica", "display": "telefonica", "why": "all lowercase is not shouting either; left alone" },
+    { "raw": "7-11 0042", "display": "7-11 0042", "why": "no letters at all: nothing to change" },
+    { "raw": "", "display": "", "why": "empty stays empty" }
+  ]
+}

@@ -38,6 +38,7 @@ import { partitionCharges, wasFiledAsExpense } from "@/lib/bank-charges";
 import { belongsToExpenses } from "@/lib/cards";
 import { formatCents, formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
+import { displayMerchant } from "@/lib/merchant-name";
 
 /** "0,652" / "0.652" — the bank's rate, as many decimals as it deserves. */
 function formatRate(rate: number, locale: string): string {
@@ -277,7 +278,7 @@ export function BankChargesPanel({
                   </span>
                   <span className="truncate text-[11.5px] text-ink-3">
                     {formatShortDate(charge.date, locale)}
-                    {charge.merchant !== "" && ` · ${charge.merchant}`}
+                    {charge.merchant !== "" && ` · ${displayMerchant(charge.merchant)}`}
                     {charge.cardLast4 !== null && ` · ••${charge.cardLast4}`}
                   </span>
                 </div>
@@ -319,7 +320,7 @@ export function BankChargesPanel({
                     type="button"
                     onClick={() => assign(charge, chosen)}
                     disabled={chosen === ""}
-                    className="rounded-full bg-accent px-3.5 py-[7px] text-[12.5px] font-bold text-white disabled:opacity-40"
+                    className="rounded-full bg-accent px-3.5 py-[7px] text-[12.5px] font-bold text-white primary-disabled"
                   >
                     {t("assign")}
                   </button>
@@ -337,7 +338,7 @@ export function BankChargesPanel({
                        "Hacerlo recurrente" and only the row says which. */
                     aria-label={`${tRecurring("fromCharge")} — ${
                       charge.merchant !== ""
-                        ? charge.merchant
+                        ? displayMerchant(charge.merchant)
                         : formatUsd(charge.usdCents, locale)
                     }`}
                     className="flex items-center text-ink-2"
@@ -351,7 +352,7 @@ export function BankChargesPanel({
                        "Crear gasto" alone says nothing about which. */
                     aria-label={`${t("createExpense")} — ${
                       charge.merchant !== ""
-                        ? charge.merchant
+                        ? displayMerchant(charge.merchant)
                         : formatUsd(charge.usdCents, locale)
                     }`}
                     className="text-[12.5px] font-bold text-accent-strong"

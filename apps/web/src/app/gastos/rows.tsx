@@ -72,7 +72,7 @@ export function VerifyExpenseRow({
         type="button"
         onClick={() => submitVerify(typed)}
         disabled={typed === null}
-        className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
+        className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
       >
         {t("markVerified")}
       </button>
@@ -127,7 +127,7 @@ export function EditExpenseRow({
       <button
         type="button"
         onClick={submitEdit}
-        className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
+        className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
       >
         {t("save")}
       </button>

@@ -17,24 +17,12 @@ import type { Household, RecurringRuleDoc } from "@/lib/firebase/converters";
 import type { RecurringRuleInput } from "@/lib/firebase/mutations";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 import { matchesPattern } from "@/lib/recurring";
+import { displayMerchant } from "@/lib/merchant-name";
 import {
   ServiceNoteField,
   serviceNoteValid,
 } from "@/components/service-note-field";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
-
-/**
- * "OPAL AUCKLAND ST" → "Opal Auckland St".
- *
- * Only for the NOTE, which is what shows in Historial — the bank shouts and a
- * ledger should not. The pattern is left exactly as the bank writes it,
- * because that one has to match.
- */
-function titleCase(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/(^|\s)(\p{L})/gu, (_, sep, first) => sep + first.toUpperCase());
-}
 
 /** Integer cents back to an editable string ("1500" → "15,00"). */
 function centsToInput(cents: number | null, locale: string): string {
@@ -98,7 +86,7 @@ export function RecurringRuleDialog({
 
   const [pattern, setPattern] = useState(rule?.pattern ?? seed?.merchant ?? "");
   const [note, setNote] = useState(
-    rule?.note ?? (seed === undefined ? "" : titleCase(seed.merchant)),
+    rule?.note ?? (seed === undefined ? "" : displayMerchant(seed.merchant)),
   );
   const [categoryId, setCategoryId] = useState(
     rule?.categoryId ?? Object.keys(household.categories)[0] ?? "",
@@ -259,7 +247,7 @@ export function RecurringRuleDialog({
               amountAudCents: asks ? null : cents,
             });
           }}
-          className="rounded-full bg-accent px-4 py-3 text-sm font-bold text-white disabled:opacity-45"
+          className="rounded-full bg-accent px-4 py-3 text-sm font-bold text-white primary-disabled"
         >
           {t("save")}
         </button>

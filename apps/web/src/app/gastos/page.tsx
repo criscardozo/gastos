@@ -934,7 +934,7 @@ export default function ExpensesPage() {
             type="button"
             onClick={submitAdd}
             disabled={parseAmountToCents(effectiveAddForm.amount, locale) === null}
-            className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white disabled:opacity-60"
+            className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
           >
             {t("save")}
           </button>

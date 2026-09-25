@@ -31,6 +31,7 @@ import { belongsToCard, brandFor, classifyCharge } from "@/lib/cards";
 import { formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 import { CARD_BRANDS, type CardBrand } from "@/lib/statements";
+import { displayMerchant } from "@/lib/merchant-name";
 
 export function CardChargesInbox({
   household,
@@ -141,7 +142,7 @@ export function CardChargesInbox({
                 </span>
                 <span className="truncate text-[11.5px] text-ink-3">
                   {formatShortDate(charge.date, locale)}
-                  {charge.merchant !== "" && ` · ${charge.merchant}`}
+                  {charge.merchant !== "" && ` · ${displayMerchant(charge.merchant)}`}
                   {charge.cardLast4 !== null && ` · ••${charge.cardLast4}`}
                 </span>
               </div>
@@ -173,7 +174,7 @@ export function CardChargesInbox({
                   // Named after the charge: a screen reader hearing "Agregar"
                   // three times learns nothing about which one it is on.
                   aria-label={`${t("add")} ${formatUsd(charge.usdCents, locale)}${
-                    charge.merchant !== "" ? ` · ${charge.merchant}` : ""
+                    charge.merchant !== "" ? ` · ${displayMerchant(charge.merchant)}` : ""
                   }`}
                   disabled={brand === null || uid === null || statementClosed}
                   onClick={() => {
@@ -197,7 +198,7 @@ export function CardChargesInbox({
                       ),
                     );
                   }}
-                  className="ml-auto rounded-full bg-accent px-3.5 py-[7px] disabled:opacity-40"
+                  className="ml-auto rounded-full bg-accent px-3.5 py-[7px] primary-disabled"
                 >
                   <span className="text-[12.5px] font-bold text-white">
                     {t("add")}

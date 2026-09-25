@@ -70,3 +70,38 @@ describe("colour utilities against the theme", () => {
     expect(report, report.join("\n")).toEqual([]);
   });
 });
+
+/**
+ * A disabled coral button goes grey through `primary-disabled`, never by
+ * dimming itself.
+ *
+ * Twenty buttons each said `disabled:opacity-NN`, with four different NNs for
+ * one decision: a washed-out coral with a white label, still reading as the
+ * button to press. The look lives once, in globals.css; this fails the next
+ * class string that pairs the coral fill with an opacity instead of the name.
+ * Known gap, left open: a coral button with no disabled styling at all passes.
+ */
+describe("disabled primary buttons", () => {
+  const CLASS_STRING = /"[^"\n]*"|`[^`]*`/g;
+  const CORAL = /(?<![\w-])bg-accent(?![\w-])/;
+
+  it("has the utility to point at", () => {
+    expect(CSS).toMatch(/@utility primary-disabled\s*\{/);
+  });
+
+  it("never dims a coral button with opacity", () => {
+    const offenders: string[] = [];
+    let coralStrings = 0;
+    for (const f of files) {
+      const text = readFileSync(join(ROOT, f), "utf8");
+      for (const m of text.matchAll(CLASS_STRING)) {
+        if (!CORAL.test(m[0])) continue;
+        coralStrings++;
+        if (/disabled:opacity-/.test(m[0])) offenders.push(`${f}: ${m[0].slice(0, 90)}`);
+      }
+    }
+    // Anti-empty: a sweep that found no coral classes at all checked nothing.
+    expect(coralStrings).toBeGreaterThan(10);
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+});

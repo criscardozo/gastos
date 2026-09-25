@@ -50,6 +50,7 @@ import {
   totalsByCard,
   type StatementRange,
 } from "@/lib/statements";
+import { displayMerchant } from "@/lib/merchant-name";
 
 /**
  * Today, pulled inside a statement's window. A charge belongs to whichever
@@ -470,7 +471,7 @@ export default function CardsPage() {
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="truncate text-[14px] font-semibold text-ink">
-                  {charge.detail !== "" ? charge.detail : CARD_LABELS[charge.card]}
+                  {charge.detail !== "" ? displayMerchant(charge.detail) : CARD_LABELS[charge.card]}
                 </span>
                 <span className="text-[11.5px] text-ink-3">
                   {formatShortDate(charge.date, locale)}

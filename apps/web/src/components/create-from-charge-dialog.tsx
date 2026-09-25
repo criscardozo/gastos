@@ -28,6 +28,7 @@ import type { Household } from "@/lib/firebase/converters";
 import { formatCents, formatUsd, parseAmountToCents } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 import { estimateAudCents } from "@/lib/recurring";
+import { displayMerchant } from "@/lib/merchant-name";
 
 export function CreateFromChargeDialog({
   charge,
@@ -65,7 +66,7 @@ export function CreateFromChargeDialog({
       ? ""
       : formatCents(estimate, household.currency, locale).replace(/[^\d.,]/g, ""),
   );
-  const [note, setNote] = useState(titleCase(charge.merchant));
+  const [note, setNote] = useState(displayMerchant(charge.merchant));
   const [categoryId, setCategoryId] = useState(
     Object.keys(household.categories)[0] ?? "",
   );
@@ -118,7 +119,7 @@ export function CreateFromChargeDialog({
           </span>
           <span className="text-[12px] text-ink-2">
             {formatShortDate(charge.date, locale)}
-            {charge.merchant !== "" && ` · ${charge.merchant}`}
+            {charge.merchant !== "" && ` · ${displayMerchant(charge.merchant)}`}
           </span>
         </div>
 
@@ -176,7 +177,7 @@ export function CreateFromChargeDialog({
             if (cents === null) return;
             onCreate({ categoryId, note: note.trim(), amountAudCents: cents });
           }}
-          className="rounded-full bg-accent px-4 py-3 text-sm font-bold text-white disabled:opacity-45"
+          className="rounded-full bg-accent px-4 py-3 text-sm font-bold text-white primary-disabled"
         >
           {t("createExpense")}
         </button>
@@ -185,9 +186,3 @@ export function CreateFromChargeDialog({
   );
 }
 
-/** "OPAL AUCKLAND ST" → "Opal Auckland St": the bank shouts, a ledger should not. */
-function titleCase(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/(^|\s)(\p{L})/gu, (_, sep, first) => sep + first.toUpperCase());
-}

@@ -14,6 +14,7 @@ import type { CardChargeInput } from "@/lib/firebase/mutations";
 import { formatLongDate, formatShortDate } from "@/lib/dates";
 import { formatUsd, parseAmountToCents } from "@/lib/money";
 import { CARD_BRANDS, type CardBrand, type StatementRange } from "@/lib/statements";
+import { displayMerchant } from "@/lib/merchant-name";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
 /** The peso ceiling the security rules enforce on both `cardFees` fields. */
@@ -135,7 +136,7 @@ export function VerifyStatementDialog({
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-[13.5px] font-semibold text-ink">
-                  {charge.detail !== "" ? charge.detail : CARD_LABELS[charge.card]}
+                  {charge.detail !== "" ? displayMerchant(charge.detail) : CARD_LABELS[charge.card]}
                 </span>
                 <span className="text-[11px] text-ink-3">
                   {formatShortDate(charge.date, locale)}
@@ -330,7 +331,7 @@ export function CardChargeDialog({
               if (usdCents === null) return;
               onSave({ date, detail: detail.trim(), card: brand, usdCents, digital });
             }}
-            className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white disabled:opacity-40"
+            className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white primary-disabled"
           >
             {tCommon("save")}
           </button>
@@ -528,7 +529,7 @@ export function StatementDatesDialog({
             type="button"
             disabled={!valid}
             onClick={primary}
-            className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white disabled:opacity-40"
+            className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white primary-disabled"
           >
             {confirming
               ? t("confirmCloseCta")
@@ -641,7 +642,7 @@ export function CardFeesDialog({
               usdArsRate: rateCents === null ? null : rateCents / 100,
             });
           }}
-          className="mt-1 rounded-full bg-accent py-3 text-sm font-bold text-white disabled:opacity-40"
+          className="mt-1 rounded-full bg-accent py-3 text-sm font-bold text-white primary-disabled"
         >
           {tCommon("save")}
         </button>

@@ -164,7 +164,7 @@ export function CardsCard({ household }: { household: Household }) {
               type="button"
               disabled={!valid}
               onClick={add}
-              className="rounded-full bg-accent px-4 py-2 disabled:opacity-40"
+              className="rounded-full bg-accent px-4 py-2 primary-disabled"
             >
               <span className="text-[13px] font-bold text-white">
                 {tCommon("save")}

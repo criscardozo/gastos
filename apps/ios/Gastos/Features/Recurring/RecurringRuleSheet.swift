@@ -248,21 +248,13 @@ struct RecurringRuleSheet: View {
         // one-second edit — whereas a clever guess that drops the wrong half is
         // a rule that never fires and says nothing about why.
         pattern = rule?.pattern ?? seedMerchant ?? ""
-        // The note is what shows in Historial, so it is title-cased: the bank
-        // shouts and a ledger should not. The PATTERN stays exactly as the
-        // bank writes it, because that one has to match.
-        note = rule?.note ?? seedMerchant.map(Self.titleCased) ?? ""
+        // The note is what shows in Historial, so it takes the display form:
+        // the bank shouts and a ledger should not. The PATTERN stays exactly
+        // as the bank writes it, because that one has to match.
+        note = rule?.note ?? seedMerchant.map(MerchantName.display) ?? ""
         categoryId = rule?.categoryId ?? sortedCategories.first?.0 ?? ""
         asks = rule?.amountAudCents == nil
         if let cents = rule?.amountAudCents { amount.setAUDCents(cents) }
-    }
-
-    /// "OPAL AUCKLAND ST" → "Opal Auckland St".
-    private static func titleCased(_ text: String) -> String {
-        text.lowercased()
-            .split(separator: " ", omittingEmptySubsequences: false)
-            .map { $0.isEmpty ? "" : $0.prefix(1).uppercased() + $0.dropFirst() }
-            .joined(separator: " ")
     }
 
     private func save() {

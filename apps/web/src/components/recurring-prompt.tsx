@@ -21,6 +21,7 @@ import { parseAmountToCents } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 import { formatCents, formatUsd } from "@/lib/money";
 import type { ClaimedCharge } from "@/lib/recurring";
+import { displayMerchant } from "@/lib/merchant-name";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
 export function RecurringPrompt({
@@ -116,7 +117,7 @@ export function RecurringPrompt({
           <>
             <div className="flex flex-col gap-1 rounded-xl border border-line bg-bg px-3.5 py-3">
               <span className="text-sm font-bold text-ink">
-                {current.charge.merchant}
+                {displayMerchant(current.charge.merchant)}
               </span>
               <span className="text-[12px] text-ink-2">
                 {formatUsd(current.charge.usdCents, locale)} ·{" "}
@@ -143,7 +144,7 @@ export function RecurringPrompt({
                 type="button"
                 disabled={cents === null}
                 onClick={() => void saveCurrent()}
-                className="flex-1 rounded-full bg-accent px-4 py-3 text-sm font-bold text-white disabled:opacity-45"
+                className="flex-1 rounded-full bg-accent px-4 py-3 text-sm font-bold text-white primary-disabled"
               >
                 {t("promptSave")}
               </button>

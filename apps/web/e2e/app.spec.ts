@@ -1650,9 +1650,9 @@ test("a closed statement offers its charges to be checked off, once", async ({
   await expect(dialog.getByText("0 de 2 comprobados")).toBeVisible();
 
   // The whole row toggles, not a small target beside it.
-  await dialog.getByRole("button", { name: /STEAM/ }).click();
+  await dialog.getByRole("button", { name: /Steam/ }).click();
   await expect(dialog.getByText("1 de 2 comprobados")).toBeVisible();
-  await dialog.getByRole("button", { name: /TEMU/ }).click();
+  await dialog.getByRole("button", { name: /Temu/ }).click();
   await expect(dialog.getByText("2 de 2 comprobados")).toBeVisible();
 
   // Everything ticked, so the way out says so.
@@ -2430,7 +2430,7 @@ test("a rule made from a charge files that charge on the spot", async ({
 
   // The icon ON the charge, named after it.
   await page
-    .getByRole("button", { name: /Hacerlo recurrente — OPAL AUCKLAND ST/ })
+    .getByRole("button", { name: /Hacerlo recurrente — Opal Auckland St/ })
     .click();
 
   const dialog = page.getByRole("dialog", { name: "Gastos recurrentes" });
@@ -2540,10 +2540,10 @@ test("a charge with nothing to match is created as its own expense", async ({
 
   // The panel opens itself, because there is something waiting.
   await expect(
-    page.getByRole("button", { name: /Crear gasto — BUNNINGS ALEXANDRIA/ }),
+    page.getByRole("button", { name: /Crear gasto — Bunnings Alexandria/ }),
   ).toBeVisible({ timeout: 20_000 });
   await page
-    .getByRole("button", { name: /Crear gasto — BUNNINGS ALEXANDRIA/ })
+    .getByRole("button", { name: /Crear gasto — Bunnings Alexandria/ })
     .click();
 
   const dialog = page.getByRole("dialog", { name: "Crear gasto" });
@@ -2669,7 +2669,7 @@ test("a recurring rule can be pointed at the service it pays", async ({
   await page.goto("/gastos");
   await page.reload();
   await page
-    .getByRole("button", { name: /Hacerlo recurrente — GOOGLE YOUTUBEPREMIUM/ })
+    .getByRole("button", { name: /Hacerlo recurrente — Google Youtubepremium/ })
     .click({ timeout: 20_000 });
   const dialog = page.getByRole("dialog", { name: "Gastos recurrentes" });
 
@@ -2731,7 +2731,7 @@ test("a recurring rule can be pointed at the service it pays", async ({
 
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
   await page
-    .getByRole("button", { name: /Crear gasto — SPOTIFY AU/ })
+    .getByRole("button", { name: /Crear gasto — Spotify Au/ })
     .click({ timeout: 20_000 });
   const create = page.getByRole("dialog", { name: "Crear gasto" });
   await create.getByLabel("Categoría").selectOption({ label: "Servicios" });

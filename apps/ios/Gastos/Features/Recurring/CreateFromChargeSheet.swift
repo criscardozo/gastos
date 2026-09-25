@@ -143,9 +143,10 @@ struct CreateFromChargeSheet: View {
     }
 
     private var subtitle: String {
-        guard let date = CalendarDate(charge.date) else { return charge.merchant }
+        let merchant = MerchantName.display(charge.merchant)
+        guard let date = CalendarDate(charge.date) else { return merchant }
         let day = l10n.dayMonth(date, timeZone: model.householdTimeZone)
-        return charge.merchant.isEmpty ? day : "\(day) · \(charge.merchant)"
+        return merchant.isEmpty ? day : "\(day) · \(merchant)"
     }
 
     private var sortedCategories: [(String, Category)] {
@@ -173,12 +174,8 @@ struct CreateFromChargeSheet: View {
 
     private func load() {
         guard note.isEmpty else { return }
-        // Title-cased: the bank shouts and a ledger should not.
-        note = charge.merchant
-            .lowercased()
-            .split(separator: " ", omittingEmptySubsequences: false)
-            .map { $0.isEmpty ? "" : $0.prefix(1).uppercased() + $0.dropFirst() }
-            .joined(separator: " ")
+        // The display form: the bank shouts and a ledger should not.
+        note = MerchantName.display(charge.merchant)
         categoryId = sortedCategories.first?.0 ?? ""
         if let estimate = RecurringRules.estimateAudCents(
             usdCents: charge.usdCents, rate: model.learnedBankRate

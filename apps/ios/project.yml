@@ -264,6 +264,8 @@ targets:
       - path: ../../shared/recurring-vectors.json
       - path: ../../shared/service-name-vectors.json
         buildPhase: resources
+      - path: ../../shared/merchant-name-vectors.json
+        buildPhase: resources
     settings:
       base:
         # Test bundles have no Info.plist of their own; codesigning requires one.

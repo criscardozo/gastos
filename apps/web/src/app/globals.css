@@ -219,6 +219,27 @@ body {
   color: var(--ink);
 }
 
+/* A disabled primary (coral) button: neutral, not a faded coral.
+ *
+ * Each of them used to say `disabled:opacity-40` (or 45, 50, 60 — four values
+ * for one decision): a washed-out coral with a white label, which still read
+ * as the button to press, just broken, and put the label near 2:1. Grey on the
+ * chip fill says "not yet", as iOS's PrimaryCTA does. Defined once so the next
+ * button takes it by name; theme-colors.test.ts fails a coral button that
+ * dims itself with opacity instead. The `*` covers labels and icons that carry
+ * their own `text-white`. */
+@utility primary-disabled {
+  &:disabled {
+    background-color: var(--fill);
+    color: var(--ink-tertiary);
+    box-shadow: none;
+    cursor: default;
+  }
+  &:disabled * {
+    color: var(--ink-tertiary);
+  }
+}
+
 /* Tabular numerals for every amount */
 .tnum {
   font-variant-numeric: tabular-nums;
