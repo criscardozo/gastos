@@ -21,12 +21,15 @@ import { CategoriesCard } from "@/components/categories-card";
 import { RecurringRulesCard } from "@/components/recurring-rules-card";
 import { ImportExpenses } from "@/components/import-expenses";
 import { ExtendPeriodDialog } from "@/components/extend-period-dialog";
+import { StartEarlyDialog } from "@/components/start-early-dialog";
+import { reportAppError } from "@/components/app-error";
 import { parseBudgetAmount } from "@/components/budget-amount-field";
 import { MAX_HOUSEHOLD_NAME_CHARACTERS } from "@/lib/limits";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import {
   createInvite,
   extendPeriodToFortnight,
+  startPeriodEarly,
   updateDefaultBudget,
   updateHouseholdName,
   updatePeriodAmount,
@@ -34,7 +37,9 @@ import {
 } from "@/lib/firebase/mutations";
 import { formatCents } from "@/lib/money";
 import { formatPeriodRange } from "@/lib/dates";
-import type { PeriodType } from "@/lib/periods";
+import { startNextEarly, type PeriodType } from "@/lib/periods";
+import { fetchPeriodSpent } from "@/lib/firebase/hooks";
+import { allCategoriesCount, budgetCategoryIds } from "@/lib/categories";
 import {
   applyTheme,
   readStoredTheme,
@@ -245,13 +250,15 @@ export default function SettingsPage() {
   const t = useTranslations("settings");
   const tp = useTranslations("period");
   const tExtend = useTranslations("extendPeriod");
+  const tEarly = useTranslations("startEarly");
   const tAuth = useTranslations("auth");
   const { locale, setLocale } = useLocale();
   const { user } = useAuth();
-  const { household, periods, currentPeriod, openStartPeriod } = useHousehold();
+  const { household, periods, currentPeriod, today, openStartPeriod } = useHousehold();
 
   const [copied, setCopied] = useState(false);
   const [extending, setExtending] = useState(false);
+  const [startingEarly, setStartingEarly] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
 
   // Manual theme (per-device, localStorage) — read after mount to avoid a
@@ -315,6 +322,58 @@ export default function SettingsPage() {
   const withDb = (fn: (db: NonNullable<ReturnType<typeof getFirebaseClient>>["db"]) => Promise<void>) => {
     const fb = getFirebaseClient();
     if (fb !== null) void fn(fb.db);
+  };
+
+  // Starting the next period today. Offered only when it makes sense for the
+  // period under way (startNextEarly) and nothing already answered sits in the
+  // days the new period would take: a later period nobody confirmed is
+  // replaced in the same batch, one somebody did is a decision this does not
+  // overrule.
+  const early =
+    currentPeriod !== null && today !== null
+      ? startNextEarly(currentPeriod, today, household.defaultBudget.period)
+      : null;
+  const overlapped =
+    early === null || currentPeriod === null
+      ? []
+      : periods.filter(
+          (p) =>
+            p.startDate > currentPeriod.startDate &&
+            p.startDate <= early.next.endDate,
+        );
+  const canStartEarly = early !== null && overlapped.every((p) => !p.confirmed);
+
+  const confirmStartEarly = () => {
+    setStartingEarly(false);
+    const fb = getFirebaseClient();
+    if (fb === null || early === null || currentPeriod === null) return;
+    // The carry-over is worked out as materialization does it: only with
+    // rollover on, from what the period under way spent in the days it keeps.
+    const carry =
+      household.defaultBudget.rollover === true
+        ? fetchPeriodSpent(
+            fb.db,
+            household.id,
+            { startDate: currentPeriod.startDate, endDate: early.endDate },
+            allCategoriesCount(household.categories)
+              ? null
+              : budgetCategoryIds(household.categories),
+          ).then((spent) => currentPeriod.amountCents - spent)
+        : Promise.resolve(0);
+    void carry
+      .then((rolloverCents) =>
+        startPeriodEarly(
+          fb.db,
+          household.id,
+          currentPeriod.startDate,
+          early,
+          household.defaultBudget.period,
+          household.defaultBudget.amountCents,
+          rolloverCents,
+          overlapped[0]?.startDate ?? null,
+        ),
+      )
+      .catch(reportAppError);
   };
 
   const copyCode = async () => {
@@ -473,6 +532,21 @@ export default function SettingsPage() {
                   {tExtend("extend")}
                 </button>
               )}
+
+              {canStartEarly && (
+                <button
+                  type="button"
+                  onClick={() => setStartingEarly(true)}
+                  className="flex items-center gap-2 rounded-full border border-pill px-3.5 py-2 text-[13px] font-bold text-ink"
+                >
+                  <Icon name="arrow_forward" size={15} className="text-ink-2" />
+                  {tEarly(
+                    household.defaultBudget.period === "weekly"
+                      ? "actionWeekly"
+                      : "actionFortnightly",
+                  )}
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -591,6 +665,16 @@ export default function SettingsPage() {
             setExtending(false);
           }}
           onClose={() => setExtending(false)}
+        />
+      )}
+
+      {startingEarly && early !== null && currentPeriod !== null && (
+        <StartEarlyDialog
+          currentEndDate={currentPeriod.endDate}
+          early={early}
+          locale={locale}
+          onConfirm={confirmStartEarly}
+          onClose={() => setStartingEarly(false)}
         />
       )}
 

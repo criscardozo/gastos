@@ -667,6 +667,54 @@ final class FirestoreService {
         try await batch.commit()
     }
 
+    /// Start the next period today: the one under way ends yesterday and the
+    /// next is created from today (`PeriodLogic.startNextEarly`).
+    ///
+    /// ONE batch, as for `stretchPeriod`: between a separate cut and create,
+    /// today would belong to no period. The new period is written exactly as
+    /// materialization writes one — default amount, the carry-over when
+    /// rollover is on, no confirmedAt — so the start-period screen then asks
+    /// about it like any other. `dropStartDate` is a later period already
+    /// materialized and unanswered that the new one would overlap. The web's
+    /// twin is `startPeriodEarly` in mutations.ts.
+    func startPeriodEarly(
+        householdId: String,
+        currentStartDate: String,
+        early: PeriodLogic.EarlyStart,
+        periodType: PeriodType,
+        amountCents: Int,
+        rolloverCents: Int,
+        dropStartDate: String?
+    ) async throws {
+        let periods = db.collection("households").document(householdId)
+            .collection("periodBudgets")
+        let batch = db.batch()
+        batch.updateData(
+            [
+                "endDate": early.endDate.raw,
+                "updatedAt": FieldValue.serverTimestamp(),
+            ],
+            forDocument: periods.document(currentStartDate)
+        )
+        if let dropStartDate {
+            batch.deleteDocument(periods.document(dropStartDate))
+        }
+        var next: [String: Any] = [
+            "startDate": early.nextStartDate.raw,
+            "endDate": early.nextEndDate.raw,
+            "period": periodType.rawValue,
+            // Same floor as materialization: a deficit can empty the envelope,
+            // never invert it.
+            "amountCents": max(1, amountCents + rolloverCents),
+            "source": "default",
+            "createdAt": FieldValue.serverTimestamp(),
+            "updatedAt": FieldValue.serverTimestamp(),
+        ]
+        if rolloverCents != 0 { next["rolloverCents"] = rolloverCents }
+        batch.setData(next, forDocument: periods.document(early.nextStartDate.raw))
+        try await batch.commit()
+    }
+
     // MARK: - Expenses
 
     func createExpense(

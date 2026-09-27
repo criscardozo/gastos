@@ -232,6 +232,46 @@ export function stretchPeriodTo(
   };
 }
 
+/** Where the period under way now ends, and the one that starts today. */
+export interface EarlyStart {
+  /** The current period's new end date: yesterday. */
+  endDate: string;
+  next: PeriodRange;
+}
+
+/**
+ * Start the next period TODAY instead of waiting for the current one to end.
+ *
+ * The current period is cut to end yesterday, and the next one starts today
+ * and runs to where the FOLLOWING period would have ended anyway — the current
+ * end plus one `nextPeriod`. So the household's usual weekday comes back after
+ * it: a Monday week started on its Sunday gives an 8-day period to the next
+ * Sunday, and Monday again after that. That was the choice when this was asked
+ * for; the alternative, restarting the chain on the new weekday, was declined.
+ *
+ * It is the first write here that SHORTENS a period, which everything else
+ * refuses because the days given up would belong to no period. They do not
+ * here: the new period starts on exactly the first of them, in the same batch
+ * (startPeriodEarly in mutations.ts), and expenses are bucketed by date, so
+ * today's move to the new period without a single expense doc being touched.
+ *
+ * Null when it makes no sense: today outside the period, a cut that would
+ * leave the current period a single day (the rules require endDate >
+ * startDate), or a new period longer than MAX_STRETCHED_DAYS.
+ */
+export function startNextEarly(
+  period: { startDate: string; endDate: string },
+  today: string,
+  nextPeriod: PeriodType,
+): EarlyStart | null {
+  if (today < period.startDate || today > period.endDate) return null;
+  const endDate = addDays(today, -1);
+  if (endDate <= period.startDate) return null;
+  const nextEnd = addDays(period.endDate, periodLengthDays(nextPeriod));
+  if (daysBetween(today, nextEnd) + 1 > MAX_STRETCHED_DAYS) return null;
+  return { endDate, next: { startDate: today, endDate: nextEnd } };
+}
+
 /**
  * What is left to spend per day until the period ends, today included.
  *

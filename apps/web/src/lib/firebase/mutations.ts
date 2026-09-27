@@ -23,7 +23,7 @@ import {
   JOINER_COLOR,
   type CategoryDef,
 } from "../categories";
-import type { PeriodRange, PeriodType } from "../periods";
+import type { EarlyStart, PeriodRange, PeriodType } from "../periods";
 import type { HouseholdCards } from "../cards";
 import type { PaidWith, ServiceInterval } from "../services";
 import type { CardBrand, StatementRange } from "../statements";
@@ -376,6 +376,51 @@ export async function stretchPeriod(
   if (dropStartDate !== null) {
     batch.delete(doc(periods, dropStartDate));
   }
+  await batch.commit();
+}
+
+/**
+ * Start the next period today: the one under way ends yesterday, and the next
+ * is created from today to `next.endDate` (see startNextEarly in periods.ts).
+ *
+ * ONE batch, for the same reason as stretchPeriod: between a separate cut and
+ * create, today would belong to no period and every expense in it would leave
+ * every total. The new period is created exactly as materialization would —
+ * the default amount, the carry-over when rollover is on, no confirmedAt — so
+ * the start-period screen then asks about it like any other.
+ *
+ * `dropStartDate` is a next period already materialized and unanswered, which
+ * the new one would overlap; it goes in the same batch.
+ */
+export async function startPeriodEarly(
+  db: Firestore,
+  householdId: string,
+  currentStartDate: string,
+  early: EarlyStart,
+  periodType: PeriodType,
+  amountCents: number,
+  rolloverCents: number,
+  dropStartDate: string | null,
+): Promise<void> {
+  const periods = collection(db, "households", householdId, "periodBudgets");
+  const batch = writeBatch(db);
+  batch.update(doc(periods, currentStartDate), {
+    endDate: early.endDate,
+    updatedAt: serverTimestamp(),
+  });
+  if (dropStartDate !== null) batch.delete(doc(periods, dropStartDate));
+  batch.set(doc(periods, early.next.startDate), {
+    startDate: early.next.startDate,
+    endDate: early.next.endDate,
+    period: periodType,
+    // Same floor as materializePeriods: a deficit can empty the envelope,
+    // never invert it.
+    amountCents: Math.max(1, amountCents + rolloverCents),
+    source: "default",
+    ...(rolloverCents !== 0 ? { rolloverCents } : {}),
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
   await batch.commit();
 }
 

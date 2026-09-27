@@ -84,11 +84,12 @@ rules_version = '2';
 //   Deletes are denied for any period that carries `confirmedAt`: a settled
 //   period is an immutable historical record. An UNCONFIRMED one may be
 //   dropped, which the stretch below needs.
-//   startDate never moves. endDate moves in exactly TWO cases, both forward:
-//   the week under way stretched into a fortnight (weekly → fortnightly, amount
-//   only growing), and a plain stretch to a chosen date that buys days without
-//   touching the amount — used to move which weekday the budget starts on.
-//   See the update rule.
+//   startDate never moves. endDate moves in exactly THREE cases: forward, the
+//   week under way stretched into a fortnight (weekly → fortnightly, amount
+//   only growing); forward, a plain stretch to a chosen date that buys days
+//   without touching the amount — used to move which weekday the budget starts
+//   on; and BACK, to yesterday, when the next period is started early, in the
+//   same batch that creates it from today. See the update rule.
 //
 // Subcollection: households/{id}/services
 // Document ID: random
@@ -184,6 +185,13 @@ service cloud.firestore {
     function isCalendarDate(value) {
       return value is string
         && value.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$');
+    }
+
+    // A calendar date as the timestamp of its UTC midnight, for comparing a
+    // stored date against the server clock. Only ever used with a margin of
+    // days, because the household's midnight is not UTC's.
+    function calendarDateInstant(value) {
+      return timestamp.date(int(value[0:4]), int(value[5:7]), int(value[8:10]));
     }
 
     function isServerTimestamp(value) {
@@ -511,7 +519,8 @@ service cloud.firestore {
           && (!('confirmedAt' in request.resource.data)
               || isServerTimestamp(request.resource.data.confirmedAt));
 
-        // Three shapes of update, and nothing else.
+        // Five shapes of update, and nothing else — (d) and (e) are explained
+        // where they are written, below.
         //
         // (a) Re-budgeting: the amount, and what of it was carried in — which
         //     is that amount's explanation. Boundaries do not move. May carry
@@ -570,6 +579,28 @@ service cloud.firestore {
               && request.resource.data.period == resource.data.period
               && request.resource.data.amountCents == resource.data.amountCents
               && request.resource.data.endDate > resource.data.endDate)
+            // (e) start the next period early: the end date moves IN, to
+            //     yesterday, touching nothing else — and the next period is
+            //     created from today in the SAME batch, so the days given up
+            //     belong to it rather than to no period at all. That is what
+            //     made shrinking unsafe everywhere else, and it is the client's
+            //     half of the bargain (startPeriodEarly / startNextEarly):
+            //     rules cannot see the rest of the batch without date
+            //     arithmetic on the document id.
+            //
+            //     What they CAN hold is when: the new end date has to be within
+            //     three days of the server clock — yesterday in any timezone,
+            //     with room for UTC+14 and UTC-12. Without it, a settled week
+            //     from last month could be cut short and its expenses moved into
+            //     whatever claimed the days, which is rewriting the record this
+            //     collection exists to keep. isValidPeriodBudget already keeps
+            //     the cut period at least two days long.
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['endDate', 'updatedAt'])
+              && request.resource.data.startDate == resource.data.startDate
+              && request.resource.data.period == resource.data.period
+              && request.resource.data.amountCents == resource.data.amountCents
+              && request.resource.data.endDate < resource.data.endDate
+              && calendarDateInstant(request.resource.data.endDate) >= request.time - duration.value(3, 'd'))
           );
 
         // A period nobody has accepted yet may be dropped; a settled one is an

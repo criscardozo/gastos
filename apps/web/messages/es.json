@@ -379,6 +379,17 @@
     "noWayBack": "Esto no se puede deshacer: el período queda de dos semanas y no hay forma de volverlo a una. Tocá de nuevo para confirmar.",
     "confirm": "Sí, extender el período"
   },
+  "startEarly": {
+    "actionWeekly": "Empezar la próxima semana hoy",
+    "actionFortnightly": "Empezar la próxima quincena hoy",
+    "title": "Empezar el próximo período hoy",
+    "endsNow": "Este período termina",
+    "endsAfter": "Pasa a terminar",
+    "nextRuns": "El nuevo",
+    "days": "{count, plural, one {1 día} other {# días}}",
+    "note": "Los gastos de hoy pasan al período nuevo, y después se vuelve a arrancar el día de siempre. Enseguida te pregunta con qué presupuesto empezar, como cada vez.",
+    "confirm": "Empezar hoy"
+  },
   "categories": {
     "groceries": "Súper",
     "coffee": "Café",

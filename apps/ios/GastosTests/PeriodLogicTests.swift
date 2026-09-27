@@ -87,6 +87,21 @@ final class PeriodLogicTests: XCTestCase {
             let cases: [Case]
         }
 
+        struct EarlyStart: Decodable {
+            struct Case: Decodable {
+                let name: String
+                let startDate: String
+                let endDate: String
+                let today: String
+                let nextPeriod: String
+                let expectedEndDate: String?
+                let expectedNextStartDate: String?
+                let expectedNextEndDate: String?
+            }
+            let maxDays: Int
+            let cases: [Case]
+        }
+
         struct Allowance: Decodable {
             struct Case: Decodable {
                 let name: String
@@ -108,6 +123,7 @@ final class PeriodLogicTests: XCTestCase {
         let extendToFortnight: Extend
         let stretchPeriodTo: Stretch
         let dailyAllowance: Allowance
+        let startNextEarly: EarlyStart
     }
 
     private static let vectors: Vectors = {
@@ -161,7 +177,7 @@ final class PeriodLogicTests: XCTestCase {
             [
                 "addDays", "daysBetween", "periodEndDate", "containment",
                 "cascadeMaterialization", "todayInTimezone", "budgetState",
-                "extendToFortnight", "stretchPeriodTo", "dailyAllowance",
+                "extendToFortnight", "stretchPeriodTo", "dailyAllowance", "startNextEarly",
             ],
             "a group was added to or removed from the vectors: decode it in "
                 + "`Vectors` and run it, or the suite quietly covers less"
@@ -182,7 +198,8 @@ final class PeriodLogicTests: XCTestCase {
             + Self.vectors.extendToFortnight.cases.count
             + Self.vectors.stretchPeriodTo.cases.count
             + Self.vectors.dailyAllowance.cases.count
-        XCTAssertEqual(counted, 80)
+            + Self.vectors.startNextEarly.cases.count
+        XCTAssertEqual(counted, 92)
     }
 
     // MARK: - Sections
@@ -421,6 +438,23 @@ final class PeriodLogicTests: XCTestCase {
                 endDate: date(vector.endDate)
             )
             XCTAssertEqual(result, vector.expected, vector.name)
+        }
+    }
+
+    func testStartNextEarlyVectors() {
+        let vectors = Self.vectors.startNextEarly
+        XCTAssertEqual(vectors.maxDays, PeriodLogic.maxStretchedDays)
+        XCTAssertFalse(vectors.cases.isEmpty)
+        for vector in vectors.cases {
+            let result = PeriodLogic.startNextEarly(
+                startDate: date(vector.startDate),
+                endDate: date(vector.endDate),
+                today: date(vector.today),
+                nextPeriod: period(vector.nextPeriod)
+            )
+            XCTAssertEqual(result?.endDate.raw, vector.expectedEndDate, vector.name)
+            XCTAssertEqual(result?.nextStartDate.raw, vector.expectedNextStartDate, vector.name)
+            XCTAssertEqual(result?.nextEndDate.raw, vector.expectedNextEndDate, vector.name)
         }
     }
 }

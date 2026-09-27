@@ -1286,7 +1286,9 @@ describe("households/{id}/periodBudgets", () => {
   it("a stretch only goes forward", async () => {
     // Backwards would orphan every expense logged in the days given up: an
     // expense belongs to whichever period's range holds its date, and those
-    // days would then belong to none.
+    // days would then belong to none. The one sanctioned move back is starting
+    // the next period early, and it is held to the present — these dates are
+    // weeks in the past, which is why this still fails (see "starting early").
     const ref = doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", "2026-08-28");
     await seed(env, async (admin) => {
       await setDoc(
@@ -1365,6 +1367,110 @@ describe("households/{id}/periodBudgets", () => {
         doc(db(env, CAROL), "households", HOUSEHOLD, "periodBudgets", "2026-08-28"),
         { endDate: "2026-09-06", updatedAt: serverTimestamp() },
       ),
+    );
+  });
+
+  // ------------------------- starting early -------------------------
+  //
+  // The one write that moves an end date BACK: the week under way ends
+  // yesterday and the next one is created from today, in one batch. Cristian's
+  // case — a Monday week he wanted to close on its Sunday. The rule holds WHEN
+  // (within three days of the server clock), so the dates here are relative to
+  // the real now, not fixed like the rest of this file.
+
+  const dayOffset = (days: number) => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+
+  async function seedWeekUnderWay() {
+    // Six days ago to today: today is its last day, as on that Sunday.
+    const start = dayOffset(-6);
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", start),
+        periodBudgetDoc({
+          startDate: start,
+          endDate: dayOffset(0),
+          period: "weekly",
+          amountCents: 17000,
+          confirmedAt: serverTimestamp(),
+        }),
+      );
+    });
+    return start;
+  }
+
+  it("a member can cut the week under way to yesterday and start the next one today", async () => {
+    const start = await seedWeekUnderWay();
+    const alice = db(env, ALICE);
+    const batch = writeBatch(alice);
+    batch.update(doc(alice, "households", HOUSEHOLD, "periodBudgets", start), {
+      endDate: dayOffset(-1),
+      updatedAt: serverTimestamp(),
+    });
+    batch.set(
+      doc(alice, "households", HOUSEHOLD, "periodBudgets", dayOffset(0)),
+      periodBudgetDoc({
+        startDate: dayOffset(0),
+        endDate: dayOffset(7),
+        period: "weekly",
+        amountCents: 17000,
+      }),
+    );
+    // Allowed on a settled period too — the confirmation stays as it was.
+    await assertSucceeds(batch.commit());
+  });
+
+  it("a period cannot be cut short in the past", async () => {
+    // A settled week from last month cut short would hand its days — and every
+    // expense in them — to whatever claimed them. The clock is what stops it.
+    const start = dayOffset(-40);
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "periodBudgets", start),
+        periodBudgetDoc({
+          startDate: start,
+          endDate: dayOffset(-34),
+          period: "weekly",
+          amountCents: 17000,
+          confirmedAt: serverTimestamp(),
+        }),
+      );
+    });
+    await assertFails(
+      updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", start), {
+        endDate: dayOffset(-36),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("cutting short cannot leave a one-day period, nor carry money or a type change", async () => {
+    const start = await seedWeekUnderWay();
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD, "periodBudgets", start);
+    // To its own start day: a period has to end after it starts.
+    await assertFails(updateDoc(ref, { endDate: start, updatedAt: serverTimestamp() }));
+    await assertFails(
+      updateDoc(ref, { endDate: dayOffset(-1), amountCents: 12000, updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(ref, { endDate: dayOffset(-1), period: "fortnightly", updatedAt: serverTimestamp() }),
+    );
+    // And the confirmation cannot be dropped on the way.
+    await assertFails(
+      updateDoc(ref, { endDate: dayOffset(-1), confirmedAt: null, updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it("an outsider cannot cut a period short", async () => {
+    const start = await seedWeekUnderWay();
+    await assertFails(
+      updateDoc(doc(db(env, CAROL), "households", HOUSEHOLD, "periodBudgets", start), {
+        endDate: dayOffset(-1),
+        updatedAt: serverTimestamp(),
+      }),
     );
   });
 

@@ -1,11 +1,12 @@
 import Foundation
 import FirebaseFirestore
 
-/// Materializing the periods a household missed, and the two sanctioned ways an
-/// end date moves: a week extended into a fortnight, and a plain forward
-/// stretch. Both are fenced by their own branch in the security rules, and both
-/// delete the period they swallow — the phantom overlap in production came from
-/// the extend not doing that.
+/// Materializing the periods a household missed, and the three sanctioned ways
+/// an end date moves: a week extended into a fortnight, a plain forward
+/// stretch, and — the one move back — ending the period under way yesterday to
+/// start the next one today. Each is fenced by its own branch in the security
+/// rules, and each deletes the unanswered period it would overlap — the phantom
+/// overlap in production came from the extend not doing that.
 extension AppModel {
     // MARK: Period materialization
 
@@ -161,6 +162,65 @@ extension AppModel {
                 endDate: endDate.raw,
                 amountCents: total,
                 swallowedStartDate: swallowed?.startDate
+            )
+        }
+    }
+
+    // MARK: - Starting the next period early
+
+    /// What starting the next period today would do, or nil when it is not on
+    /// offer: the arithmetic refuses (`PeriodLogic.startNextEarly`), or a later
+    /// period somebody already answered sits in the days the new one would
+    /// take — a decision this does not overrule. One nobody answered is
+    /// replaced in the same batch.
+    var earlyStart: PeriodLogic.EarlyStart? {
+        guard let current = currentPeriod, let household,
+              let start = current.start, let end = current.end,
+              let early = PeriodLogic.startNextEarly(
+                  startDate: start, endDate: end, today: today,
+                  nextPeriod: household.defaultBudget.period
+              )
+        else { return nil }
+        let overlapped = periods.filter {
+            $0.startDate > current.startDate && $0.startDate <= early.nextEndDate.raw
+        }
+        return overlapped.allSatisfy { !$0.isConfirmed } ? early : nil
+    }
+
+    /// End the period under way yesterday and start the next one today. The
+    /// new one is created unanswered, so the start-period sheet then asks about
+    /// it as it asks about every period; the carry-over is worked out as
+    /// materialization does, from the days the current period keeps.
+    func startNextPeriodEarly() {
+        guard let early = earlyStart, let current = currentPeriod, let household,
+              let householdId = attachedHouseholdId
+        else { return }
+        let dropped = periods.first {
+            $0.startDate > current.startDate && $0.startDate <= early.nextEndDate.raw
+        }
+        let type = household.defaultBudget.period
+        let amount = household.defaultBudget.amountCents
+        let wantsRollover = household.defaultBudget.rollover == true
+        let categoryIds = budgetCategoryIds
+        write {
+            var carried = 0
+            if wantsRollover,
+               let spent = await self.firestore.fetchSpentCents(
+                   householdId: householdId,
+                   startDate: current.startDate,
+                   endDate: early.endDate.raw,
+                   categoryIds: categoryIds
+               ) {
+                carried = current.amountCents - spent
+            }
+            try await self.firestore.startPeriodEarly(
+                householdId: householdId,
+                currentStartDate: current.startDate,
+                early: early,
+                periodType: type,
+                amountCents: amount,
+                rolloverCents: carried,
+                dropStartDate: dropped?.startDate
             )
         }
     }

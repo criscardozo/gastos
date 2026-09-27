@@ -235,6 +235,47 @@ enum PeriodLogic {
         )
     }
 
+    /// Where the period under way now ends, and the one that starts today.
+    struct EarlyStart: Equatable, Sendable {
+        /// The current period's new end date: yesterday.
+        let endDate: CalendarDate
+        let nextStartDate: CalendarDate
+        let nextEndDate: CalendarDate
+    }
+
+    /// Start the next period TODAY instead of waiting for the current one to
+    /// end.
+    ///
+    /// The current period is cut to end yesterday, and the next one starts
+    /// today and runs to where the FOLLOWING period would have ended anyway —
+    /// the current end plus one `nextPeriod` — so the usual weekday comes back
+    /// after it: a Monday week started on its Sunday gives an 8-day period to
+    /// the next Sunday, and Monday again after that. That was the choice when
+    /// this was asked for; restarting the chain on the new weekday was declined.
+    ///
+    /// The first write here that SHORTENS a period, which everything else
+    /// refuses because the days given up would belong to no period. They do
+    /// not here: the new period starts on the first of them in the same batch
+    /// (`FirestoreService.startPeriodEarly`).
+    ///
+    /// nil when it makes no sense: today outside the period, a cut leaving the
+    /// current period a single day (the rules require endDate > startDate), or
+    /// a new period longer than `maxStretchedDays`. The TS twin is
+    /// `startNextEarly`; both run the `startNextEarly` vectors.
+    static func startNextEarly(
+        startDate: CalendarDate,
+        endDate: CalendarDate,
+        today: CalendarDate,
+        nextPeriod: PeriodType
+    ) -> EarlyStart? {
+        guard startDate <= today, today <= endDate else { return nil }
+        let newEnd = addDays(today, -1)
+        guard newEnd > startDate else { return nil }
+        let nextEnd = addDays(endDate, nextPeriod.lengthInDays)
+        guard daysBetween(today, nextEnd) + 1 <= maxStretchedDays else { return nil }
+        return EarlyStart(endDate: newEnd, nextStartDate: today, nextEndDate: nextEnd)
+    }
+
     /// The local calendar date of `instant` in `timezone` — never the device
     /// timezone, never UTC bucketing. This is the 23:30-in-Sydney fix.
     static func todayInTimezone(_ instant: Date, _ timezone: TimeZone) -> CalendarDate {

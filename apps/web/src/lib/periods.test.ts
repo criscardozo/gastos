@@ -6,6 +6,7 @@ import {
   budgetState,
   cascadeMaterialization,
   dailyAllowance,
+  startNextEarly,
   containsDate,
   daysBetween,
   extendToFortnight,
@@ -50,6 +51,7 @@ describe("period vectors", () => {
         "extendToFortnight",
         "stretchPeriodTo",
         "dailyAllowance",
+        "startNextEarly",
       ]),
     );
   });
@@ -65,8 +67,9 @@ describe("period vectors", () => {
       vectors.budgetState.cases.length +
       vectors.extendToFortnight.cases.length +
       vectors.stretchPeriodTo.cases.length +
-      vectors.dailyAllowance.cases.length;
-    expect(counted).toBe(80);
+      vectors.dailyAllowance.cases.length +
+      vectors.startNextEarly.cases.length;
+    expect(counted).toBe(92);
   });
 });
 
@@ -194,6 +197,26 @@ describe("dailyAllowance (shared vectors)", () => {
     "$name",
     ({ remainingCents, today, endDate, expected }) => {
       expect(dailyAllowance(remainingCents, today, endDate)).toBe(expected);
+    },
+  );
+});
+
+describe("startNextEarly (shared vectors)", () => {
+  it("uses the same cap as a stretch", () => {
+    expect(MAX_STRETCHED_DAYS).toBe(vectors.startNextEarly.maxDays);
+  });
+
+  it.each(vectors.startNextEarly.cases)(
+    "$name",
+    ({ startDate, endDate, today, nextPeriod, expectedEndDate, expectedNextStartDate, expectedNextEndDate }) => {
+      const result = startNextEarly(
+        { startDate, endDate },
+        today,
+        nextPeriod as "weekly" | "fortnightly",
+      );
+      expect(result === null ? null : [result.endDate, result.next.startDate, result.next.endDate]).toEqual(
+        expectedEndDate === null ? null : [expectedEndDate, expectedNextStartDate, expectedNextEndDate],
+      );
     },
   );
 });

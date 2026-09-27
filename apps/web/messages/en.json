@@ -379,6 +379,17 @@
     "noWayBack": "This cannot be undone: the period becomes two weeks and there is no way back to one. Press again to confirm.",
     "confirm": "Yes, extend the period"
   },
+  "startEarly": {
+    "actionWeekly": "Start next week today",
+    "actionFortnightly": "Start next fortnight today",
+    "title": "Start the next period today",
+    "endsNow": "This period ends",
+    "endsAfter": "It will end",
+    "nextRuns": "The new one",
+    "days": "{count, plural, one {1 day} other {# days}}",
+    "note": "Today's expenses move to the new period, and after it the usual start day comes back. Next you'll be asked what budget to start with, as always.",
+    "confirm": "Start today"
+  },
   "categories": {
     "groceries": "Groceries",
     "coffee": "Coffee",

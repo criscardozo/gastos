@@ -5306,6 +5306,91 @@
           }
         }
       }
+    },
+    "startEarly.actionWeekly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start next week today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empezar la próxima semana hoy"
+          }
+        }
+      }
+    },
+    "startEarly.actionFortnightly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start next fortnight today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empezar la próxima quincena hoy"
+          }
+        }
+      }
+    },
+    "startEarly.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start the next period today?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Empezar el próximo período hoy?"
+          }
+        }
+      }
+    },
+    "startEarly.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The current period will end on %1$@, and the new one runs from %2$@ to %3$@ (%4$@). Today's expenses move to the new one, and after it the usual start day comes back. Next you'll be asked what budget to start with."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El período en curso pasa a terminar el %1$@, y el nuevo va del %2$@ al %3$@ (%4$@). Los gastos de hoy pasan al nuevo, y después se vuelve al día de siempre. Enseguida te pregunta con qué presupuesto empezar."
+          }
+        }
+      }
+    },
+    "startEarly.confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empezar hoy"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

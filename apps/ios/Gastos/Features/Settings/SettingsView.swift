@@ -7,6 +7,7 @@ struct SettingsView: View {
     @State private var showDefaultAmountSheet = false
     @State private var showPeriodBudgetSheet = false
     @State private var showExtendPeriodSheet = false
+    @State private var showStartEarlyConfirm = false
     @State private var showCategoriesManager = false
     @State private var editingRule: RecurringRuleDoc?
     @State private var addingRule = false
@@ -20,6 +21,20 @@ struct SettingsView: View {
     @State private var reminderDenied = false
 
     private var l10n: L10n { model.l10n }
+
+    /// "El período en curso pasa a terminar el sábado 26 de septiembre, y el
+    /// nuevo va del 27 sept al 4 oct (8 días)…"
+    private func startEarlyMessage(_ early: PeriodLogic.EarlyStart) -> String {
+        let tz = model.householdTimeZone
+        let days = PeriodLogic.daysBetween(early.nextStartDate, early.nextEndDate) + 1
+        return l10n.t(
+            "startEarly.message",
+            l10n.longDate(early.endDate, timeZone: tz),
+            l10n.dayMonth(early.nextStartDate, timeZone: tz),
+            l10n.dayMonth(early.nextEndDate, timeZone: tz),
+            l10n.daysCount(days)
+        )
+    }
 
     private static func storedReminderTime() -> Date {
         let time = ReminderService.time
@@ -352,6 +367,40 @@ struct SettingsView: View {
                         ExtendPeriodSheet(period: period) {
                             showExtendPeriodSheet = false
                         }
+                    }
+                }
+                // Starting the next period today. Only there while it makes
+                // sense for the period under way (AppModel.earlyStart).
+                if let early = model.earlyStart {
+                    Button {
+                        showStartEarlyConfirm = true
+                    } label: {
+                        HStack(spacing: 9) {
+                            Image(systemName: "forward.end")
+                                .appFont(14, .semibold)
+                            Text(l10n.t(model.household?.defaultBudget.period == .fortnightly
+                                        ? "startEarly.actionFortnightly"
+                                        : "startEarly.actionWeekly"))
+                                .appFont(14, .bold)
+                            Spacer()
+                        }
+                        .foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 13)
+                        .background(Theme.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.card, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
+                                .strokeBorder(Theme.borderPill, lineWidth: 1)
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .alert(l10n.t("startEarly.title"), isPresented: $showStartEarlyConfirm) {
+                        Button(l10n.t("common.cancel"), role: .cancel) {}
+                        Button(l10n.t("startEarly.confirm")) { model.startNextPeriodEarly() }
+                    } message: {
+                        Text(startEarlyMessage(early))
                     }
                 }
                 Text(l10n.t("settings.thisPeriod.foot"))

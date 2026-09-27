@@ -114,7 +114,7 @@ Rules of the chain:
   period already settled, every period, forever. Clients ask when the current
   period has no `confirmedAt`; the per-device key survives only to suppress the
   sheet for a period that started before that device ever saw the household.
-- **Extending the week under way** is the FIRST of two exceptions to that boundary rule.
+- **Extending the week under way** is the FIRST of three exceptions to that boundary rule.
   Mid-period it can become clear that this week has to cover a fortnight, so
   `period` goes `weekly → fortnightly`, `endDate` moves out by 7 days to exactly
   what `startDate + 13` would have been, `amountCents` grows by whatever is being
@@ -167,6 +167,31 @@ Rules of the chain:
   everywhere else: days given up would belong to no period at all, so every
   expense logged in them would vanish from every total. Bounded to 31 days from
   `startDate`, past which the date is a typo rather than a stretch.
+- **Starting the next period early** is the third, and the only one that moves an
+  `endDate` BACK. Asked for on a Sunday (2026-09-27), in a household whose weeks
+  run Monday to Sunday: start the new week today instead of waiting. The period
+  under way ends yesterday, and the next one starts today and runs to where the
+  FOLLOWING period would have ended anyway — current `endDate` + one period of
+  the default length — so the usual weekday comes back after it: Sunday 27 →
+  Sunday 4 October, eight days, then Monday again. Restarting the chain on the
+  new weekday was the alternative, and Cristian declined it.
+
+  What makes shrinking unsafe everywhere else — days given up belonging to no
+  period — does not apply, because the new period starts on exactly the first of
+  them, **in the same batch**: the cut, the new period (created as
+  materialization creates one: default amount, the carry-over when rollover is
+  on, no `confirmedAt`), and the deletion of any later period nobody answered
+  that it would overlap. A later period somebody DID answer blocks the whole
+  thing. The new period being unanswered is the point: every client then shows
+  the start-period screen for it, exactly as for any other.
+
+  The arithmetic is `startNextEarly`, twice, against the `startNextEarly`
+  vectors: refused on the period's first two days (the cut period must keep two
+  — the rules require `endDate > startDate`) and past 31 days. The rules allow
+  the shape — `endDate` earlier, nothing else changed, confirmed or not — and
+  hold one thing the clients cannot be trusted with: the new `endDate` must be
+  within three days of the server clock, so a settled period from the past
+  cannot be cut short and its expenses handed to something else.
 
   The arithmetic is `stretchPeriodTo`; the rules enforce only the shape (end
   date strictly later, everything else identical), exactly as with extending.
