@@ -1,11 +1,8 @@
 import { defineConfig } from "vitest/config";
+import rules from "../../kyber/firebase/vitest-rules.mjs";
 
-export default defineConfig({
-  test: {
-    // Rules tests hit the emulator; keep them sequential so `clearFirestore`
-    // calls from one file don't wipe another file's state.
-    fileParallelism: false,
-    testTimeout: 20000,
-    hookTimeout: 30000,
-  },
-});
+// The settings every consumer's rules suite shares — sequential files, and
+// the timeouts — live in kyber so the sibling projects cannot drift. This
+// suite used 20 s for a test until 2026-09-29; nothing recorded that as a
+// decision, so it took kyber's 30 s.
+export default defineConfig(rules);
