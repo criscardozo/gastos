@@ -31,21 +31,50 @@ function bankEmailText(html) {
     .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<[^>]+>/g, " ");
-  // The handful of entities this mailer actually emits.
-  text = text
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&aacute;/gi, "á")
-    .replace(/&eacute;/gi, "é")
-    .replace(/&iacute;/gi, "í")
-    .replace(/&oacute;/gi, "ó")
-    .replace(/&uacute;/gi, "ú")
-    .replace(/&ntilde;/gi, "ñ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&#(\d+);/g, function (_, code) {
-      return String.fromCharCode(Number(code));
-    });
+  // ONE pass over every entity, so what one decodes to is never decoded
+  // again: "&amp;quot;" is the text "&quot;", not a quote. The chain of
+  // replaces this used to be decoded &amp; before the numeric ones, and knew
+  // no &quot;, &#39; or hex form — a merchant with quotes in its name arrived
+  // with "&quot;" in it, and so did any rule pattern written from it.
+  // Unknown names are left exactly as written.
+  text = text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, function (whole, name) {
+    if (name.charAt(0) === "#") {
+      var code =
+        name.charAt(1).toLowerCase() === "x"
+          ? parseInt(name.slice(2), 16)
+          : Number(name.slice(1));
+      return isFinite(code) && code > 0 && code <= 0x10ffff
+        ? String.fromCodePoint(code)
+        : whole;
+    }
+    var named = NAMED_ENTITIES[name.toLowerCase()];
+    if (named === undefined) return whole;
+    // Case carries meaning for the letters: &Iacute; is Í, &iacute; is í.
+    return /^[A-Z]/.test(name) ? named.toUpperCase() : named;
+  });
   return text.replace(/[\s ]+/g, " ").trim();
 }
+
+/** The entities a Spanish-language mailer can plausibly emit. */
+var NAMED_ENTITIES = {
+  nbsp: " ",
+  amp: "&",
+  quot: '"',
+  apos: "'",
+  lt: "<",
+  gt: ">",
+  aacute: "á",
+  eacute: "é",
+  iacute: "í",
+  oacute: "ó",
+  uacute: "ú",
+  uuml: "ü",
+  ntilde: "ñ",
+  iquest: "¿",
+  iexcl: "¡",
+  ordm: "º",
+  ordf: "ª",
+};
 
 /** "63,90" → 6390. Dots are thousands, the comma is the decimal separator. */
 function moneyToCents(raw) {

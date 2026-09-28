@@ -29,6 +29,29 @@ describe("parseBankNotification", () => {
     });
   });
 
+  it("decodes the entities a merchant name can carry, in one pass", () => {
+    // Quotes and apostrophes in every spelling the mailer might use. Before,
+    // only a handful were known and "&quot;" reached the ledger as text.
+    expect(bankEmailText("CAF&Eacute; &quot;EL SOL&quot; D&#39;ARG &#x41;&#66;")).toBe(
+      'CAFÉ "EL SOL" D\'ARG AB',
+    );
+    // One pass: what &amp; turns into is not decoded again.
+    expect(bankEmailText("A &amp;quot; B")).toBe("A &quot; B");
+    // Lowercase stays lowercase; unknown names and code 0 are left alone.
+    expect(bankEmailText("autorizaci&oacute;n &bogus; &#0;")).toBe(
+      "autorización &bogus; &#0;",
+    );
+    expect(bankEmailText("a&nbsp;&nbsp;b")).toBe("a b");
+  });
+
+  it("reads a merchant with quotes through to the charge", () => {
+    const charge = parseBankNotification(
+      body({}).replace("COLES 0831", "LA &quot;ESQUINA&quot;"),
+      SYDNEY,
+    );
+    expect(charge?.merchant).toBe('LA "ESQUINA"');
+  });
+
   it("survives the amount being split across tags", () => {
     // The mailer wraps "U$S" and "63,90" in separate <span>s.
     expect(bankEmailText("<b><span>U$S</span> <span>63,90</span></b>")).toBe(
