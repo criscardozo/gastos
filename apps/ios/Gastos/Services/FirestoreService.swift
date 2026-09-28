@@ -919,16 +919,21 @@ final class FirestoreService {
 
     // MARK: - Services
 
-    /// The whole register. Unbounded on purpose and safe to be: a service is a
-    /// RULE, one per bill the household pays, and there are a dozen of them.
-    /// The money they cost lives in `expenses`, which is bounded like always.
+    /// The whole register: a service is a RULE, one per bill the household
+    /// pays, and there are a dozen of them. The cap is a backstop rather than a
+    /// page, and it is the web's (listener-limits.test.ts). The money they cost
+    /// lives in `expenses`, which is bounded by date like always.
     func listenServices(
         householdId: String,
         onChange: @escaping ([ServiceDoc]) -> Void
     ) -> ListenerRegistration {
         db.collection("households").document(householdId)
             .collection("services")
-            .limit(to: 100)
+            // The same order and cap as the web (listener-limits.test.ts):
+            // with a limit, the order decides WHICH bills arrive, and a client
+            // listening in no order would hold a different subset past it.
+            .order(by: "name")
+            .limit(to: 60)
             .addSnapshotListener { snapshot, error in
                 if let error { Self.reportListen("services", error) }
                 onChange(snapshot?.documents.compactMap {
@@ -947,6 +952,8 @@ final class FirestoreService {
     ) -> ListenerRegistration {
         db.collection("households").document(householdId)
             .collection("recurringRules")
+            // Same order and cap as the web — see listenServices.
+            .order(by: "pattern")
             .limit(to: 50)
             .addSnapshotListener { snapshot, error in
                 if let error { Self.reportListen("recurringRules", error) }

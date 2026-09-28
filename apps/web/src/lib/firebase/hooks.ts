@@ -303,8 +303,9 @@ export function useRecurringRules(
 
 /* ── Credit-card statements and charges ────────────────────────────────── */
 
-/** Roughly a year of statements — enough to page back through, bounded. */
-const MAX_STATEMENTS = 13;
+/** Two years of statements — enough to page back through, bounded, and the
+ * same number iOS listens to (listener-limits.test.ts). */
+const MAX_STATEMENTS = 24;
 
 export interface StatementsState {
   statements: CardStatement[];
