@@ -267,6 +267,26 @@ describe("monthTotals", () => {
     expect(totals.chargedAudCents).toBe(0);
   });
 
+  it("keeps a dollars-only service out of the AUD figure, and says so", () => {
+    // A service quoted only in USD has no AUD to add, so the AUD headline
+    // cannot include it — and the screen must not caption it as "of which".
+    const usdOnly = {
+      id: "s-usd",
+      name: "Claude",
+      amountUsdCents: 2000,
+      interval: "monthly" as const,
+      dueDay: 5,
+    };
+    const all = [...services, usdOnly];
+    const totals = monthTotals(all, serviceStatuses(all, [], 10));
+    expect(totals.dueAudCents).toBe(2299);
+    expect(totals.dueUsdCents).toBe(3499);
+    expect(totals.dueUsdOnlyCents).toBe(2000);
+    // Netflix carries both prices, so it is NOT "USD only".
+    const both = monthTotals(services, serviceStatuses(services, [], 10));
+    expect(both.dueUsdOnlyCents).toBe(0);
+  });
+
   it("adds the quarterly one in its own month", () => {
     const statuses = serviceStatuses(services, [], 9);
     const totals = monthTotals(services, statuses);

@@ -166,6 +166,23 @@ final class ServiceLogicTests: XCTestCase {
         XCTAssertEqual(totals.chargedCount, 0)
     }
 
+    func testKeepsADollarsOnlyServiceOutOfTheAudFigureAndSaysSo() {
+        // A service quoted only in USD has no AUD to add, so the AUD headline
+        // cannot include it — and the screen must not caption it "of which".
+        let usdOnly = service(id: "s-usd", name: "Claude", aud: nil, usd: 2_000, dueDay: 5)
+        let services = [service(), insurance, usdOnly]
+        let statuses = ServiceLogic.statuses(services: services, expenses: [], month: 10)
+        let totals = ServiceLogic.monthTotals(services: services, statuses: statuses)
+        XCTAssertEqual(totals.dueAudCents, 2_299)
+        XCTAssertEqual(totals.dueUsdCents, 3_499)
+        XCTAssertEqual(totals.dueUsdOnlyCents, 2_000)
+        let both = ServiceLogic.monthTotals(
+            services: [service(), insurance],
+            statuses: ServiceLogic.statuses(services: [service(), insurance], expenses: [], month: 10)
+        )
+        XCTAssertEqual(both.dueUsdOnlyCents, 0)
+    }
+
     func testSeparatesWhatHasLandedFromWhatTheMonthCosts() {
         // Netflix came in at 25,99 rather than 22,99: due says what is on file,
         // charged says what the bank did, and they disagree on purpose.

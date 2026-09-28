@@ -3291,6 +3291,23 @@
         }
       }
     },
+    "services.dueUsdOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus %@ of services priced only in dollars"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más %@ de servicios cotizados sólo en dólares"
+          }
+        }
+      }
+    },
     "settings.about": {
       "extractionState": "stale",
       "localizations": {

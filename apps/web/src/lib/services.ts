@@ -238,6 +238,13 @@ export interface MonthTotals {
   /** What the month's services will cost, whether or not they have landed. */
   dueAudCents: number;
   dueUsdCents: number;
+  /**
+   * The part of `dueUsdCents` from services quoted ONLY in dollars. Those are
+   * absent from `dueAudCents`, so a screen leading with the AUD figure has to
+   * say "plus US$ X" for them rather than "of which US$ X" — the caption that
+   * is right for a service carrying both prices.
+   */
+  dueUsdOnlyCents: number;
   /** What has actually been charged so far, from the expenses. */
   chargedAudCents: number;
   chargedUsdCents: number;
@@ -266,6 +273,7 @@ export function monthTotals(
   const totals: MonthTotals = {
     dueAudCents: 0,
     dueUsdCents: 0,
+    dueUsdOnlyCents: 0,
     chargedAudCents: 0,
     chargedUsdCents: 0,
     chargedCount: 0,
@@ -277,6 +285,9 @@ export function monthTotals(
     totals.dueCount += 1;
     totals.dueAudCents += service.amountAudCents ?? 0;
     totals.dueUsdCents += service.amountUsdCents ?? 0;
+    if (service.amountAudCents == null) {
+      totals.dueUsdOnlyCents += service.amountUsdCents ?? 0;
+    }
     if (status.charge !== null) {
       totals.chargedCount += 1;
       totals.chargedAudCents += status.charge.amountCents;

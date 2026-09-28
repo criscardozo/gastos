@@ -150,6 +150,7 @@
     "dueThisMonth": "Due this month",
     "chargedUsdPart": "Of which {amount} was charged in USD",
     "dueUsdPart": "Of which {amount} is billed in USD",
+    "dueUsdOnly": "Plus {amount} of services priced only in dollars",
     "dueThisMonthHint": "Sum of the services this month charges.",
     "notThisMonth": "Not charged this month",
     "notChargedYet": "Not charged yet",

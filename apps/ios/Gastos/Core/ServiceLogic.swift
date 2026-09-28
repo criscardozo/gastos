@@ -137,6 +137,10 @@ struct ServiceMonthTotals: Equatable {
     /// What the month's services will cost, whether or not they have landed.
     var dueAudCents = 0
     var dueUsdCents = 0
+    /// The part of `dueUsdCents` from services quoted ONLY in dollars. Those
+    /// are absent from `dueAudCents`, so a screen leading with the AUD figure
+    /// says "plus US$ X" for them rather than "of which US$ X".
+    var dueUsdOnlyCents = 0
     /// What has actually been charged so far, from the expenses.
     var chargedAudCents = 0
     var chargedUsdCents = 0
@@ -207,6 +211,9 @@ extension ServiceLogic {
             totals.dueCount += 1
             totals.dueAudCents += service.amountAudCents ?? 0
             totals.dueUsdCents += service.amountUsdCents ?? 0
+            if service.amountAudCents == nil {
+                totals.dueUsdOnlyCents += service.amountUsdCents ?? 0
+            }
             if let charge = status.charge {
                 totals.chargedCount += 1
                 totals.chargedAudCents += charge.amountCents

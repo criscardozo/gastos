@@ -59,7 +59,18 @@ function useDueLabel() {
 }
 
 /** A month total: the AUD sum, and the part billed in dollars when any is. */
-function MonthFigure({ aud, usdPart }: { aud: string; usdPart: string | null }) {
+function MonthFigure({
+  aud,
+  usdPart,
+  usdOnly = null,
+}: {
+  aud: string;
+  /** Dollars that are ALSO inside the AUD figure: "de eso, US$ X". */
+  usdPart: string | null;
+  /** Dollars the AUD figure could not include — services quoted only in
+   * USD — so they read as "más US$ X", never as "de eso". */
+  usdOnly?: string | null;
+}) {
   return (
     <>
       <span className="flex items-baseline gap-1.5">
@@ -70,6 +81,9 @@ function MonthFigure({ aud, usdPart }: { aud: string; usdPart: string | null }) 
       </span>
       {usdPart !== null && (
         <span className="tnum text-[12px] font-semibold text-ink-2">{usdPart}</span>
+      )}
+      {usdOnly !== null && (
+        <span className="tnum text-[12px] font-semibold text-ink-2">{usdOnly}</span>
       )}
     </>
   );
@@ -202,10 +216,15 @@ export default function ServicesPage() {
             <MonthFigure
               aud={formatCents(totals.dueAudCents, household.currency, locale)}
               usdPart={
-                totals.dueUsdCents > 0
+                totals.dueUsdCents - totals.dueUsdOnlyCents > 0
                   ? t("dueUsdPart", {
-                      amount: formatUsd(totals.dueUsdCents, locale),
+                      amount: formatUsd(totals.dueUsdCents - totals.dueUsdOnlyCents, locale),
                     })
+                  : null
+              }
+              usdOnly={
+                totals.dueUsdOnlyCents > 0
+                  ? t("dueUsdOnly", { amount: formatUsd(totals.dueUsdOnlyCents, locale) })
                   : null
               }
             />

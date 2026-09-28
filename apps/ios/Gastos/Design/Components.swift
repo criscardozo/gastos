@@ -333,6 +333,10 @@ struct UsdOverAud: View {
     let audCents: Int
     /// False when there is no USD figure for this thing at all.
     let hasUsd: Bool
+    /// False when there is no AUD figure — a service quoted only in dollars.
+    /// It drew "$ 0,00 AUD" under its price, which reads as a bill that costs
+    /// nothing rather than one that has no AUD price.
+    var hasAud: Bool = true
     let locale: Locale
     /// Headline size, for the two figures a screen leads with.
     var big: Bool = false
@@ -353,14 +357,16 @@ struct UsdOverAud: View {
                     colour: Theme.ink,
                     floor: 0.55
                 )
-                figure(
-                    MoneyFormatter.aud(audCents, locale: locale),
-                    code: "AUD",
-                    size: big ? 12.5 : 12,
-                    weight: .semibold,
-                    colour: Theme.inkTertiary,
-                    floor: 0.6
-                )
+                if hasAud {
+                    figure(
+                        MoneyFormatter.aud(audCents, locale: locale),
+                        code: "AUD",
+                        size: big ? 12.5 : 12,
+                        weight: .semibold,
+                        colour: Theme.inkTertiary,
+                        floor: 0.6
+                    )
+                }
             } else {
                 figure(
                     MoneyFormatter.aud(audCents, locale: locale),

@@ -147,8 +147,11 @@ struct ServicesView: View {
                     SectionLabel(text: l10n.t("services.dueThisMonth"))
                     monthFigure(
                         audCents: totals.dueAudCents,
-                        usdCents: totals.dueUsdCents,
-                        usdKey: "services.dueUsdPart"
+                        // Only the dollars that are ALSO in the AUD figure read
+                        // as "de eso"; a dollars-only service is on top of it.
+                        usdCents: totals.dueUsdCents - totals.dueUsdOnlyCents,
+                        usdKey: "services.dueUsdPart",
+                        usdOnlyCents: totals.dueUsdOnlyCents
                     )
                     Text(l10n.t("services.dueThisMonthHint"))
                         .appFont(11)
@@ -166,14 +169,26 @@ struct ServicesView: View {
     /// services billed in dollars. Stacked USD-over-AUD, as the rows are, it
     /// read as the headline — "A pagar US$ 14,99" over a month that costs
     /// $67,99.
+    ///
+    /// `usdOnlyCents` is what the AUD figure could NOT include — services
+    /// quoted only in dollars — and is captioned as "plus", never "of which".
     @ViewBuilder
-    private func monthFigure(audCents: Int, usdCents: Int, usdKey: String) -> some View {
+    private func monthFigure(
+        audCents: Int, usdCents: Int, usdKey: String, usdOnlyCents: Int = 0
+    ) -> some View {
         UsdOverAud(
             usdCents: 0, audCents: audCents, hasUsd: false,
             locale: l10n.locale, big: true
         )
         if usdCents > 0 {
             Text(l10n.t(usdKey, MoneyFormatter.usd(usdCents, locale: l10n.locale)))
+                .appFont(11.5, .semibold)
+                .monospacedDigit()
+                .foregroundStyle(Theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        if usdOnlyCents > 0 {
+            Text(l10n.t("services.dueUsdOnly", MoneyFormatter.usd(usdOnlyCents, locale: l10n.locale)))
                 .appFont(11.5, .semibold)
                 .monospacedDigit()
                 .foregroundStyle(Theme.inkSecondary)
@@ -219,6 +234,7 @@ private struct ServiceRow: View {
                             usdCents: service.amountUsdCents ?? 0,
                             audCents: service.amountAudCents ?? 0,
                             hasUsd: service.amountUsdCents != nil,
+                            hasAud: service.amountAudCents != nil,
                             locale: l10n.locale
                         )
                         Text(l10n.t("services.\(service.paidWith.rawValue)"))
