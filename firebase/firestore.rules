@@ -15,12 +15,11 @@ rules_version = '2';
 //   - householdId: string|null (optional; denormalized convenience — when set,
 //     the user must be a member of that household after this write)
 //   - language: "es"|"en"|null (optional)
-//   - displayCurrency: string|null (optional, ISO 4217 uppercase; DEPRECATED —
-//     no client writes it any more, still accepted for older builds)
-//   - defaultEntryCurrency: "AUD"|"USD"|null (optional; DEPRECATED — AUD is the
-//     only entry currency now. No client reads or writes it, but existing user
-//     docs still carry it, so it stays accepted: dropping it from hasOnly()
-//     would make every later update of those docs fail)
+//   (displayCurrency and defaultEntryCurrency, from the dual-currency entry
+//   removed on 2026-08-03, were accepted until 2026-09-29 because the two
+//   production user docs still carried one of them. Both fields were deleted
+//   from those docs first, then from here — the other order would have made
+//   every later update of those docs fail.)
 //   - createdAt: timestamp (required, server time, immutable)
 //   - updatedAt: timestamp (required, server time)
 //
@@ -201,17 +200,13 @@ service cloud.firestore {
     // ============================ users ============================
 
     function isValidUser(data) {
-      return data.keys().hasOnly(['displayName', 'householdId', 'language', 'displayCurrency', 'defaultEntryCurrency', 'createdAt', 'updatedAt'])
+      return data.keys().hasOnly(['displayName', 'householdId', 'language', 'createdAt', 'updatedAt'])
         && data.keys().hasAll(['displayName', 'createdAt', 'updatedAt'])
         && data.displayName is string
         && data.displayName.size() >= 1 && data.displayName.size() <= 80
         && (!('householdId' in data) || data.householdId == null
             || (data.householdId is string && data.householdId.size() >= 1 && data.householdId.size() <= 60))
-        && (!('language' in data) || data.language == null || data.language in ['es', 'en'])
-        && (!('displayCurrency' in data) || data.displayCurrency == null
-            || (data.displayCurrency is string && data.displayCurrency.matches('^[A-Z]{3}$')))
-        && (!('defaultEntryCurrency' in data) || data.defaultEntryCurrency == null
-            || data.defaultEntryCurrency in ['AUD', 'USD']);
+        && (!('language' in data) || data.language == null || data.language in ['es', 'en']);
     }
 
     // If householdId is set, the user must actually be a member of that

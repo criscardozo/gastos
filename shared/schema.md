@@ -20,8 +20,6 @@ authorization, not this doc.
 | `displayName` | string | From the auth profile; editable |
 | `householdId` | string \| null | Set after creating/joining a household |
 | `language` | `"es"` \| `"en"` \| null | null → follow system/browser |
-| `displayCurrency` | string \| null | **Deprecated** — the old "also show USD" toggle. No client reads or writes it; the rules still accept it so older builds don't break |
-| `defaultEntryCurrency` | `"AUD"` \| `"USD"` \| null | **Deprecated** — AUD is the only entry currency. No client reads or writes it, but the existing user docs still carry it, so the rules keep accepting it (dropping it from `hasOnly()` would make every later update of those docs fail) |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
 ### `households/{householdId}`

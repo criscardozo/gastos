@@ -107,19 +107,18 @@ describe("users/{uid}", () => {
     const me = doc(db(env, ALICE), "users", ALICE);
     await assertFails(setDoc(me, userDoc({ hacked: true })));
     await assertFails(setDoc(me, userDoc({ language: "fr" })));
-    await assertFails(setDoc(me, userDoc({ displayCurrency: "usd" })));
     await assertFails(setDoc(me, userDoc({ displayName: "" })));
     await assertFails(setDoc(me, userDoc({ displayName: "x".repeat(81) })));
-    await assertFails(setDoc(me, userDoc({ defaultEntryCurrency: "EUR" })));
   });
 
-  // defaultEntryCurrency is deprecated (AUD is the only entry currency now) but
-  // still accepted: the existing user docs carry it, and dropping it from
-  // hasOnly() would make every later update of those docs fail.
-  it("still accepts the deprecated default entry currency", async () => {
-    await assertSucceeds(
-      setDoc(doc(db(env, ALICE), "users", ALICE), userDoc({ defaultEntryCurrency: "USD" })),
-    );
+  // The two fields of the dual-currency entry, removed on 2026-08-03. They
+  // were accepted until the production user docs had been cleaned of them;
+  // now a write carrying either is refused, whatever the value.
+  it("refuses the retired currency preferences", async () => {
+    const me = doc(db(env, ALICE), "users", ALICE);
+    await assertFails(setDoc(me, userDoc({ defaultEntryCurrency: "AUD" })));
+    await assertFails(setDoc(me, userDoc({ displayCurrency: null })));
+    await assertSucceeds(setDoc(me, userDoc()));
   });
 
   it("cannot claim membership of a household I am not in", async () => {

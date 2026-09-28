@@ -35,7 +35,6 @@ export function userDoc(overrides: Record<string, unknown> = {}) {
     displayName: "Cristian",
     householdId: null,
     language: "es",
-    displayCurrency: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     ...overrides,
