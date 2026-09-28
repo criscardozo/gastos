@@ -422,16 +422,29 @@ export function primePeriodTotal(
 }
 
 /**
- * Spend for a calendar month (1 server-side read, cached like the period
- * totals). Separate from the period totals because a month rarely lines up
- * with a weekly/fortnightly period — it answers "how are we going this month"
- * regardless of where the period boundaries fall.
+ * Spend for a calendar month (1 server-side read). Separate from the period
+ * totals because a month rarely lines up with a weekly/fortnightly period — it
+ * answers "how are we going this month" regardless of where the period
+ * boundaries fall.
+ *
+ * NOT served from the session cache, and asked again whenever `refreshKey`
+ * changes. It used to be cached for the whole session, so an expense added in
+ * Gastos was missing from Inicio's month until a reload — on the screen that
+ * exists to be glanced at after spending. `refreshKey` is the caller's
+ * `ledgerSignature` of the period under way: one read per change to the
+ * ledger, which for two people is a handful a day. Changes the current
+ * period's listener cannot see (an older expense of the same month edited on
+ * the other phone) are picked up the next time Inicio mounts.
+ *
+ * `refreshKey` null means the ledger is still loading: nothing is asked until
+ * it is known, so opening Inicio costs one read rather than two.
  */
 export function useMonthTotal(
   householdId: string | null,
   /** Any date inside the month, "YYYY-MM-DD" in the household timezone. */
   today: string | null,
   categoryIds: string[] | null = null,
+  refreshKey: string | null = "",
 ): {
   total: number | null;
   status: "loading" | "ready" | "error";
@@ -455,6 +468,11 @@ export function useMonthTotal(
     [categoryIds],
   );
 
+  // Which month the figure on screen belongs to. A refresh of the SAME month
+  // keeps showing the previous figure until the new one arrives, rather than
+  // flashing "Cargando…" every time an expense is added.
+  const shownFor = useRef<string | null>(null);
+
   useEffect(() => {
     if (householdId === null || range === null) {
       // This effect owns a one-shot aggregation; clearing before it starts is
@@ -462,32 +480,41 @@ export function useMonthTotal(
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTotal(null);
       setStatus("loading");
+      shownFor.current = null;
       return;
     }
+    if (refreshKey === null) return;
     const fb = getFirebaseClient();
     if (fb === null) return;
     let cancelled = false;
-    setStatus("loading");
+    const monthKey = `${householdId}/${range.startDate}/${serializedCategories}`;
+    if (shownFor.current !== monthKey) {
+      setTotal(null);
+      setStatus("loading");
+    }
     void fetchPeriodTotal(
       fb.db,
       householdId,
       range,
       serializedCategories === "" ? null : serializedCategories.split("+"),
+      true,
     )
       .then((value) => {
         if (cancelled) return;
+        shownFor.current = monthKey;
         setTotal(value);
         setStatus("ready");
       })
       .catch(() => {
         if (cancelled) return;
+        shownFor.current = null;
         setTotal(null);
         setStatus("error");
       });
     return () => {
       cancelled = true;
     };
-  }, [householdId, range, serializedCategories]);
+  }, [householdId, range, serializedCategories, refreshKey]);
 
   return { total, status, range };
 }

@@ -316,6 +316,9 @@ final class AppModel {
     private var sweptChargeIds: Set<String> = []
     private var viewedExpensesListener: ListenerRegistration?
     private var currentListenerRange: (String, String)?
+    /// `LedgerSignature` of the current period's expenses as last delivered.
+    /// The month's sum is asked again when it changes — see the listener.
+    private var currentLedgerSignature: String?
     private var viewedListenerRange: (String, String)?
     var materializing = false
     /// Whether `periods` still comes from the offline cache. Materialization
@@ -407,6 +410,7 @@ final class AppModel {
         bankChargesLoaded = false
         sweptChargeIds = []
         currentListenerRange = nil
+        currentLedgerSignature = nil
         viewedListenerRange = nil
     }
 
@@ -513,6 +517,7 @@ final class AppModel {
             let range = (current.startDate, current.endDate)
             if currentListenerRange?.0 != range.0 || currentListenerRange?.1 != range.1 {
                 currentListenerRange = range
+                currentLedgerSignature = nil
                 currentExpensesListener?.remove()
                 currentExpensesListener = firestore.listenExpenses(
                     householdId: householdId,
@@ -527,6 +532,19 @@ final class AppModel {
                     if self.isViewingCurrentPeriod {
                         self.viewedExpenses = self.currentExpenses
                     }
+                    // "Gastado este mes" is a server-side sum, not a live
+                    // query: it only moved when the periods listener fired or
+                    // Resumen reappeared after its 60-second throttle, so an
+                    // expense just typed was missing from it. Ask again when
+                    // the ledger's figures change — one read per change, not
+                    // per snapshot (the pending and acknowledged snapshots of
+                    // one expense sign the same). The first delivery is skipped:
+                    // the periods listener has just asked.
+                    let signature = LedgerSignature.of(items.map(\.expense))
+                    if let previous = self.currentLedgerSignature, previous != signature {
+                        self.loadMonthTotal()
+                    }
+                    self.currentLedgerSignature = signature
                     self.publishWidgetSnapshot()
                 }
             }

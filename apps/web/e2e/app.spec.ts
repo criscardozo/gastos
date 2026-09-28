@@ -1867,6 +1867,44 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
 });
 
 /**
+ * "Gastado este mes" follows the ledger without a reload.
+ *
+ * It is a server-side sum, and it was cached for the whole session: open
+ * Inicio, add an expense in Gastos, come back, and the month still showed the
+ * figure from before — on the one screen that exists to be glanced at after
+ * spending. The period's own figures were live all along, which made the
+ * stale one look like a different kind of number.
+ */
+test("the month's spend includes an expense added after Inicio was opened", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate(
+    (e) => window.__devSignIn!("Month Tester", e),
+    `e2e-month-${Date.now()}@test.dev`,
+  );
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await expect(page.getByText("¿Cuánto por período?")).toBeVisible();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  // Inicio has asked for the month once, before anything was spent.
+  const month = page.getByText("Gastado este mes", { exact: true }).locator("..");
+  await expect(month).toContainText("$0,00");
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await page.getByLabel("0,00", { exact: true }).fill("12,34");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("$12,34").first()).toBeVisible();
+
+  // Back by the sidebar, not by reloading: a reload would hide the bug.
+  await page.getByRole("link", { name: "Inicio", exact: true }).click();
+  await expect(month).toContainText("$12,34");
+});
+
+/**
  * Starting the next period today, and every later period it overlaps goes.
  *
  * The week under way began three days ago; starting early cuts it to end

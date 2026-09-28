@@ -29,6 +29,7 @@ import {
   dailyAllowance,
   daysBetween,
 } from "@/lib/periods";
+import { ledgerSignature } from "@/lib/ledger-signature";
 import { CurrencyTag } from "@/components/ui/marks";
 import { formatCents, formatCentsCompact } from "@/lib/money";
 import { formatPeriodRange, formatShortDate } from "@/lib/dates";
@@ -96,11 +97,20 @@ export default function DashboardPage() {
   // The CURRENT period always keeps a live listener for the trend bar; when
   // the selected period IS the current one, the listener above covers it
   // (passing null here avoids a duplicate).
-  const { expenses: currentExpenses } = useExpensesRange(
-    isCurrent ? null : (household?.id ?? null),
-    currentPeriod?.startDate ?? null,
-    currentPeriod?.endDate ?? null,
-  );
+  const { expenses: currentExpenses, loading: currentExpensesLoading } =
+    useExpensesRange(
+      isCurrent ? null : (household?.id ?? null),
+      currentPeriod?.startDate ?? null,
+      currentPeriod?.endDate ?? null,
+    );
+  // What the month's sum is refreshed on: the ledger of the period under way,
+  // from whichever listener holds it. Null while it is still loading.
+  const ledgerKey =
+    currentPeriod === null
+      ? ""
+      : (isCurrent ? expensesLoading : currentExpensesLoading)
+        ? null
+        : ledgerSignature(isCurrent ? expenses : currentExpenses);
 
   // Past (non-current, non-selected) trend periods come from one sum()
   // aggregation each (1 read) instead of streaming their expense docs.
@@ -127,6 +137,7 @@ export default function DashboardPage() {
     household?.id ?? null,
     today,
     budgetCategories,
+    ledgerKey,
   );
 
   // While a past period is open its docs are live on the client — seed the
