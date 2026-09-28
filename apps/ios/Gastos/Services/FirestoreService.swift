@@ -674,9 +674,10 @@ final class FirestoreService {
     /// today would belong to no period. The new period is written exactly as
     /// materialization writes one — default amount, the carry-over when
     /// rollover is on, no confirmedAt — so the start-period screen then asks
-    /// about it like any other. `dropStartDate` is a later period already
-    /// materialized and unanswered that the new one would overlap. The web's
-    /// twin is `startPeriodEarly` in mutations.ts.
+    /// about it like any other. `dropStartDates` are the later periods already
+    /// materialized and unanswered that the new one would overlap — all of
+    /// them, since one left standing would give its days two budgets. The
+    /// web's twin is `startPeriodEarly` in mutations.ts.
     func startPeriodEarly(
         householdId: String,
         currentStartDate: String,
@@ -684,7 +685,7 @@ final class FirestoreService {
         periodType: PeriodType,
         amountCents: Int,
         rolloverCents: Int,
-        dropStartDate: String?
+        dropStartDates: [String]
     ) async throws {
         let periods = db.collection("households").document(householdId)
             .collection("periodBudgets")
@@ -696,8 +697,8 @@ final class FirestoreService {
             ],
             forDocument: periods.document(currentStartDate)
         )
-        if let dropStartDate {
-            batch.deleteDocument(periods.document(dropStartDate))
+        for startDate in dropStartDates {
+            batch.deleteDocument(periods.document(startDate))
         }
         var next: [String: Any] = [
             "startDate": early.nextStartDate.raw,

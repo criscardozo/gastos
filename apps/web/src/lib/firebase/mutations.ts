@@ -389,8 +389,10 @@ export async function stretchPeriod(
  * the default amount, the carry-over when rollover is on, no confirmedAt — so
  * the start-period screen then asks about it like any other.
  *
- * `dropStartDate` is a next period already materialized and unanswered, which
- * the new one would overlap; it goes in the same batch.
+ * `dropStartDates` are the later periods already materialized and unanswered
+ * that the new one would overlap; they go in the same batch. Usually none,
+ * sometimes one; never partial — a cut that left one of them standing would
+ * give those days two budgets at once.
  */
 export async function startPeriodEarly(
   db: Firestore,
@@ -400,7 +402,7 @@ export async function startPeriodEarly(
   periodType: PeriodType,
   amountCents: number,
   rolloverCents: number,
-  dropStartDate: string | null,
+  dropStartDates: readonly string[],
 ): Promise<void> {
   const periods = collection(db, "households", householdId, "periodBudgets");
   const batch = writeBatch(db);
@@ -408,7 +410,7 @@ export async function startPeriodEarly(
     endDate: early.endDate,
     updatedAt: serverTimestamp(),
   });
-  if (dropStartDate !== null) batch.delete(doc(periods, dropStartDate));
+  for (const startDate of dropStartDates) batch.delete(doc(periods, startDate));
   batch.set(doc(periods, early.next.startDate), {
     startDate: early.next.startDate,
     endDate: early.next.endDate,

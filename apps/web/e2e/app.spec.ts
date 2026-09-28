@@ -1867,6 +1867,102 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
 });
 
 /**
+ * Starting the next period today, and every later period it overlaps goes.
+ *
+ * The week under way began three days ago; starting early cuts it to end
+ * yesterday and creates the next one from today to where the following week
+ * would have ended (today + 3 + 7). Two LATER periods nobody answered sit
+ * inside that range — rare, since materialization only reaches today, but the
+ * batch's whole promise is that no day ever has two budgets, and the first
+ * version dropped only the first of them.
+ */
+test("starting the next period early drops every later period it overlaps", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  const email = `e2e-early-${Date.now()}@test.dev`;
+  await page.evaluate((e) => window.__devSignIn!("Early Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await expect(page.getByText("¿Cuánto por período?")).toBeVisible();
+  await page.getByRole("tab", { name: "Semanal" }).click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, { headers: admin });
+  const householdId = (
+    ((await households.json()).documents as {
+      name: string;
+      fields: { name: { stringValue: string } };
+    }[]).find((d) => d.fields.name.stringValue === "Hogar de Early") as {
+      name: string;
+    }
+  ).name
+    .split("/")
+    .pop() as string;
+
+  const period = (start: string, end: string, confirmed: boolean) => ({
+    fields: {
+      startDate: { stringValue: start },
+      endDate: { stringValue: end },
+      period: { stringValue: "weekly" },
+      amountCents: { integerValue: "90000" },
+      source: { stringValue: "default" },
+      ...(confirmed ? { confirmedAt: { timestampValue: new Date().toISOString() } } : {}),
+      createdAt: { timestampValue: new Date().toISOString() },
+      updatedAt: { timestampValue: new Date().toISOString() },
+    },
+  });
+  const put = (start: string, end: string, confirmed: boolean) =>
+    request.patch(`${REST}/households/${householdId}/periodBudgets/${start}`, {
+      headers: admin,
+      data: period(start, end, confirmed),
+    });
+  // The week under way moves three days back. Created BEFORE the onboarding
+  // period is deleted, so there is never a moment with no period covering
+  // today for the page to materialize into.
+  await put(sydneyDate(-3), sydneyDate(3), true);
+  await request.delete(
+    `${REST}/households/${householdId}/periodBudgets/${sydneyDate(0)}`,
+    { headers: admin },
+  );
+  // Two later periods nobody answered, both starting inside the new range.
+  await put(sydneyDate(4), sydneyDate(6), false);
+  await put(sydneyDate(7), sydneyDate(13), false);
+
+  await page.getByRole("link", { name: "Ajustes", exact: true }).click();
+  await page.getByRole("button", { name: "Empezar la próxima semana hoy" }).click();
+  await expect(page.getByText("Pasa a terminar")).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Empezar hoy" }).click();
+
+  // NOT asserted: the start screen for the new period. It does come up in
+  // real use, but here the new period starts today — the same day as the one
+  // onboarding created and marked as seen on this browser — so the per-device
+  // ack suppresses it. The periods themselves are what this test is about.
+  await expect(page.getByRole("dialog")).toBeHidden();
+
+  // Exactly two periods: the cut week and the new one. Neither overlapped
+  // period survives, and the new one runs to the usual end.
+  await expect
+    .poll(async () => {
+      const res = await request.get(
+        `${REST}/households/${householdId}/periodBudgets`,
+        { headers: admin },
+      );
+      return (((await res.json()).documents ?? []) as {
+        name: string;
+        fields: { endDate: { stringValue: string } };
+      }[])
+        .map((d) => `${d.name.split("/").pop()}..${d.fields.endDate.stringValue}`)
+        .sort()
+        .join(",");
+    })
+    .toBe(`${sydneyDate(-3)}..${sydneyDate(-1)},${sydneyDate(0)}..${sydneyDate(10)}`);
+});
+
+/**
  * Routing the bank's charges by which card they came from.
  *
  * The bank names a card exactly one way — "finalizada en 1234" — so the four

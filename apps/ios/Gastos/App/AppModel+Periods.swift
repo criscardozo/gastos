@@ -195,9 +195,9 @@ extension AppModel {
         guard let early = earlyStart, let current = currentPeriod, let household,
               let householdId = attachedHouseholdId
         else { return }
-        let dropped = periods.first {
+        let dropped = periods.filter {
             $0.startDate > current.startDate && $0.startDate <= early.nextEndDate.raw
-        }
+        }.map(\.startDate)
         let type = household.defaultBudget.period
         let amount = household.defaultBudget.amountCents
         let wantsRollover = household.defaultBudget.rollover == true
@@ -220,7 +220,7 @@ extension AppModel {
                 periodType: type,
                 amountCents: amount,
                 rolloverCents: carried,
-                dropStartDate: dropped?.startDate
+                dropStartDates: dropped
             )
         }
     }

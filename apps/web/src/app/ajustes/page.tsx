@@ -370,7 +370,7 @@ export default function SettingsPage() {
           household.defaultBudget.period,
           household.defaultBudget.amountCents,
           rolloverCents,
-          overlapped[0]?.startDate ?? null,
+          overlapped.map((p) => p.startDate),
         ),
       )
       .catch(reportAppError);
