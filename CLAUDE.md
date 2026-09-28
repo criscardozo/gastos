@@ -14,7 +14,7 @@ A household expense tracker for 2 users (Cristian + wife) who share a single wee
 - `apps/web/` — Next.js App Router + TypeScript + Tailwind + next-intl, fully client-rendered, deployed on Vercel Hobby. Charts are plain styled divs per the design (no chart library). Also an installable **PWA** (service worker in `public/sw.js`, manifest + safe-area handling), which is how the app stays permanently on the iPhone without Apple signing. One codebase, two layouts: sidebar from `lg` up, bottom tab bar below it, with `/nuevo` mirroring the iOS quick-entry screen.
   **The PWA and the below-`lg` layout are DEPRECATED since 2026-09-24 — Cristian's decision.** Kept, not deleted, and not maintained: the iPhone app is what the household uses, and two phone UIs are not worth keeping in step. Do not spend time on fixes that only touch the mobile-web layout (`components/mobile-nav.tsx`, the stacked below-`lg` screens) until he says it is back in use. Shared web code — CSS tokens, `lib/`, mutations, anything the desktop layout also renders — is still maintained, because the sidebar layout is. Known and deliberately left, so they are not rediscovered as new: /gastos below `lg` has the bank panel filling the screen with merchants truncated and three rows of filters (the layout iOS moved away from in v1.2.0); Inicio below `lg` spends a whole card repeating the spent figure; the bottom bar squeezes 8 tabs into 390px; and its short label for Estadísticas is the English "Stats". The risk being accepted: anyone who installs the PWA gets the older, cramped phone experience.
 - `firebase/` — Firestore security rules, indexes, emulator config, and rules tests (vitest + `@firebase/rules-unit-testing`).
-- `shared/` — the cross-platform contract: `schema.md` (Firestore schema source of truth), `categories.json`, `period-test-vectors.json`, `bank-match-vectors.json`.
+- `shared/` — the cross-platform contract (`schema.md` is the Firestore schema source of truth).
 - `tools/gmail-bank-ingest/` — Apps Script (free, Google-side, 15-min trigger) that files the bank's USD charge emails into `households/{id}/bankCharges` with its OWN service-account key. Both apps match each charge to an expense using the rate they learn from already-verified pairs — the matcher exists twice (`apps/web/src/lib/bank-match.ts`, `apps/ios/Gastos/Core/BankMatch.swift`) and both run `shared/bank-match-vectors.json`, like the period arithmetic. There is no FX API anywhere. `pnpm test:ingest` covers the email parser.
 
 pnpm workspaces for the JS side (web + rules-tests). Swift and TS share no code — only data contracts in `shared/`.
@@ -40,8 +40,11 @@ fails silently.
 @kyber/docs/codigo.md
 @kyber/docs/secretos.md
 @kyber/docs/versiones.md
-@kyber/docs/guardas.md
 
+One more shared doc is deliberately NOT imported, because it is ~65k characters
+and would sit in every session: **before writing or changing a test, a guard, a
+generator or any check — and before reporting something as verified — read
+[`kyber/docs/guardas.md`](kyber/docs/guardas.md)** ("verificar, no suponer").
 
 - **$0 infra budget** — see the imported `costo-cero`. For this project that means Firebase Spark (never Cloud Functions: they require Blaze) and Vercel Hobby.
 - **No custom backend.** Both clients talk directly to Firebase (Auth + Firestore). **Firestore security rules are the only security boundary** — client-side route gating is cosmetic.
@@ -64,9 +67,6 @@ fails silently.
 
 All JS commands run from the repo root (pnpm workspace):
 
-- `pnpm dev` — Next.js dev server (`apps/web`).
-- `pnpm typecheck && pnpm lint && pnpm build` — web checks.
-- `pnpm test:web` — vitest, includes the period-logic vector tests.
 - **Servicios is a register of rules; the money lives in `expenses`.** A charged service is an ordinary expense in the `services` category whose note is the service's name — the screen links the two by that name (nothing stored) and offers to move the rule onto whatever was actually charged. The two figures at the top are this month's: what it costs, and how much has landed.
 - `/datos` is a GRID first: the range's expenses on screen with the export's own columns, sortable and filterable, and every export writes exactly what is on screen in that order. Importing a CSV lives in **Ajustes** (`components/import-expenses.tsx`) — it is the one control on either screen that writes rows.
 - Exports live in `apps/web/src/lib/export/`: `pdf.ts` (jsPDF) and `spreadsheet.ts` (exceljs) render the SAME payload, so Excel/Sheets mirror the PDF. Every export carries both money columns (AUD + the bank's USD, blank when unverified) and a range with unverified expenses is only exported after the consent checkbox is ticked; `drive.ts` uploads the workbook to Drive converted to a Google Sheet (needs the Drive API enabled — see `docs/setup.md`). Both libraries are dynamically imported to stay out of the first-load bundle.

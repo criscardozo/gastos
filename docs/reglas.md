@@ -140,7 +140,9 @@ Swift y la de TypeScript.
 > código en vez de medirlo.
 
 **Las formulaciones generales viven en
-[`kyber/docs/guardas.md`](../kyber/docs/guardas.md)** y `CLAUDE.md` las importa.
+[`kyber/docs/guardas.md`](../kyber/docs/guardas.md)**, y `CLAUDE.md` manda a
+leerlas antes de escribir o cambiar un test, una guarda o un chequeo (no las
+importa: son ~65k caracteres que irían en cada sesión).
 Lo que sigue acá son los **casos**: cada regla con el artefacto concreto que la
 produjo — el emulador, los perfiles de firma, la CSP, los puertos. Esa mitad no
 viaja, y es la que hace que la otra se pueda aplicar a algo nuevo en vez de
