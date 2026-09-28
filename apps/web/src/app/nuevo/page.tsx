@@ -31,6 +31,7 @@ import {
 import { budgetState, containsDate } from "@/lib/periods";
 import { formatShortDate } from "@/lib/dates";
 import { stateBarColor } from "@/components/ui/progress-bar";
+import { useTransientFlag } from "@/components/use-transient-flag";
 
 export default function QuickEntryPage() {
   const t = useTranslations("expenses");
@@ -46,7 +47,7 @@ export default function QuickEntryPage() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [date, setDate] = useState("");
-  const [justSaved, setJustSaved] = useState(false);
+  const [justSaved, flashSaved] = useTransientFlag();
   const amountRef = useRef<HTMLInputElement | null>(null);
 
   // Live totals for the remaining pill (bounded to the current period).
@@ -117,8 +118,7 @@ export default function QuickEntryPage() {
     );
     setAmount("");
     setNote("");
-    setJustSaved(true);
-    setTimeout(() => setJustSaved(false), 1600);
+    flashSaved(1600);
     amountRef.current?.focus();
   };
 

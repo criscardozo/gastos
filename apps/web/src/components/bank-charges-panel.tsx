@@ -39,6 +39,7 @@ import { belongsToExpenses } from "@/lib/cards";
 import { formatCents, formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 import { displayMerchant } from "@/lib/merchant-name";
+import { useTransientFlag } from "@/components/use-transient-flag";
 
 /** "0,652" / "0.652" — the bank's rate, as many decimals as it deserves. */
 function formatRate(rate: number, locale: string): string {
@@ -156,16 +157,18 @@ export function BankChargesPanel({
   // pinged second — see requestBankIngest for why that order IS the security
   // model. `fetching` only gates the double click: what tells the user it
   // worked is a charge appearing, which the listener does on its own.
-  const [fetching, setFetching] = useState(false);
+  const [fetching, holdFetching] = useTransientFlag();
   const fetchNow = () => {
     const fb = getFirebaseClient();
     if (fb === null || fetching) return;
-    setFetching(true);
+    // Held up for as long as the request takes (capped, so a request that
+    // never settles cannot disable the button for good), then for the tail.
+    holdFetching(30_000);
     write(
       requestBankIngest(fb.db, household.id, INGEST_ENDPOINT).finally(() => {
         // Long enough that the charge has a chance to arrive before the button
         // invites another go.
-        setTimeout(() => setFetching(false), 4000);
+        holdFetching(4000);
       }),
     );
   };

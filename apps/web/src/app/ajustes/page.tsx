@@ -40,6 +40,7 @@ import { formatPeriodRange } from "@/lib/dates";
 import { startNextEarly, type PeriodType } from "@/lib/periods";
 import { fetchPeriodSpent } from "@/lib/firebase/hooks";
 import { allCategoriesCount, budgetCategoryIds } from "@/lib/categories";
+import { useTransientFlag } from "@/components/use-transient-flag";
 import {
   applyTheme,
   readStoredTheme,
@@ -256,7 +257,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { household, periods, currentPeriod, today, openStartPeriod } = useHousehold();
 
-  const [copied, setCopied] = useState(false);
+  const [copied, flashCopied] = useTransientFlag();
   const [extending, setExtending] = useState(false);
   const [startingEarly, setStartingEarly] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -380,8 +381,7 @@ export default function SettingsPage() {
     if (inviteCode === null) return;
     try {
       await navigator.clipboard.writeText(inviteCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      flashCopied(2000);
     } catch {
       // Clipboard unavailable — the code is visible to copy by hand.
     }
