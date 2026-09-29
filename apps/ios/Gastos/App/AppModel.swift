@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 import Security
 import FirebaseAuth
 import FirebaseFirestore
@@ -8,6 +9,10 @@ import FirebaseFirestore
 @MainActor
 @Observable
 final class AppModel {
+
+    /// For what is worth a device log and not an alert. Same subsystem as
+    /// FirestoreService, so one `log stream` predicate shows both.
+    private static let log = Logger(subsystem: "dev.cardozo.gastos", category: "model")
 
     enum Phase: Equatable {
         case loading
@@ -288,11 +293,20 @@ final class AppModel {
             // Asked once per launch: our own delete fires the listener again,
             // and re-issuing it would be a write per round trip.
             guard sweptChargeIds.insert(charge.id).inserted else { continue }
-            write {
-                try await self.firestore.deleteBankCharge(
-                    householdId: householdId,
-                    chargeId: charge.id
-                )
+            // Not through `write`: this is housekeeping nobody asked for, so a
+            // refusal is not the user's to answer — the charge stays, still
+            // hidden, and the next launch sweeps it. The web logs it the same
+            // way. It went through `write` while the refusal alert was never
+            // seen; now that it is, it would interrupt for nothing.
+            Task { [firestore] in
+                do {
+                    try await firestore.deleteBankCharge(
+                        householdId: householdId,
+                        chargeId: charge.id
+                    )
+                } catch {
+                    Self.log.error("sweeping an expired charge failed: \(error.localizedDescription, privacy: .public)")
+                }
             }
         }
     }
