@@ -259,6 +259,7 @@
     "rangeLabel": "Rango",
     "summary": "{count, plural, one {# gasto} other {# gastos}} · {total}",
     "exportEmpty": "No hay gastos en este rango.",
+    "loadFailed": "No pudimos leer los gastos de ese rango, así que no hay nada para mostrar ni exportar. Recargá la página para volver a intentar.",
     "loading": "Cargando…",
     "exportCsv": "CSV",
     "exportPdf": "PDF",

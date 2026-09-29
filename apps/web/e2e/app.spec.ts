@@ -1149,6 +1149,37 @@ test("a figure that does not parse cannot be saved", async ({ page }) => {
   await expect(save).toBeEnabled();
 });
 
+// Datos read the range once and, when that read failed, drew the same
+// sentence as a range with nothing in it — with every export disabled.
+test("Datos says a range it could not read, rather than an empty one", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-datos-failed-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Datos Failed", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const denyExpenseReads = REAL_RULES.replace(
+    `      match /expenses/{expenseId} {
+        allow read: if isMember(householdId);`,
+    `      match /expenses/{expenseId} {
+        allow read: if false;`,
+  );
+  expect(denyExpenseReads).not.toBe(REAL_RULES);
+  await loadRules(request, denyExpenseReads);
+
+  await page.goto("/datos");
+  await expect(page.getByText("No pudimos leer los gastos de ese rango")).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByText("No hay gastos en este rango.")).toHaveCount(0);
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,

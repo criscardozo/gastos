@@ -70,6 +70,8 @@ export default function DataPage() {
   const [loadState, setLoadState] = useState<{
     rows: Expense[];
     loading: boolean;
+    /** The read failed. Not the same as an empty range: see the catch. */
+    failed?: boolean;
   }>({ rows: [], loading: false });
   /**
    * Which categories the grid is showing; null = all of them.
@@ -168,8 +170,12 @@ export default function DataPage() {
           loading: false,
         });
       })
-      .catch(() => {
-        if (!cancelled) setLoadState({ rows: [], loading: false });
+      // A read that failed is not a range with nothing in it. As an empty
+      // list it drew "no expenses in this range" with every export
+      // disabled — an answer, and the wrong one. Estadísticas already said so.
+      .catch((error: unknown) => {
+        console.error("[gastos] datos read", error);
+        if (!cancelled) setLoadState({ rows: [], loading: false, failed: true });
       });
     setCategoryFilter(null);
     // A new range is a new decision — never carry the consent across.
@@ -415,6 +421,10 @@ export default function DataPage() {
         {loadState.loading ? (
           <p className="py-6 text-center text-[13px] text-ink-3">
             {t("loading")}
+          </p>
+        ) : loadState.failed === true ? (
+          <p className="py-6 text-center text-[13px] font-semibold text-over-text">
+            {t("loadFailed")}
           </p>
         ) : rows.length === 0 ? (
           <p className="py-6 text-center text-[13px] text-ink-3">

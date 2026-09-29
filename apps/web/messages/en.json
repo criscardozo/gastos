@@ -259,6 +259,7 @@
     "rangeLabel": "Range",
     "summary": "{count, plural, one {# expense} other {# expenses}} · {total}",
     "exportEmpty": "No expenses in this range.",
+    "loadFailed": "We couldn't read the expenses for that range, so there is nothing to show or export. Reload the page to try again.",
     "loading": "Loading…",
     "exportCsv": "CSV",
     "exportPdf": "PDF",
