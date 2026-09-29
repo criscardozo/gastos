@@ -29,10 +29,19 @@ import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
+import { onReadFailure } from "@/lib/firebase/read-failures";
+
+/**
+ * What failed. A refused write and a refused read need different words: the
+ * first says a change did not stick, the second that what is on screen may
+ * be incomplete — and a write outranks a read, so a read failing a moment
+ * later never covers the one that lost somebody's change.
+ */
+export type AppErrorKind = "write" | "read";
 
 interface AppErrorContextValue {
   /** Surface a failure to the user. Safe to call with anything thrown. */
-  report: (error: unknown) => void;
+  report: (error: unknown, kind?: AppErrorKind) => void;
   /**
    * Run a fire-and-forget write and surface a rejection. Never awaited by the
    * caller: awaiting a write freezes the form until the server answers, which
@@ -65,36 +74,44 @@ function describe(error: unknown): string {
  * matters most. Falls back to the console when nothing is mounted (a test, or
  * a failure during the very first render).
  */
-let mountedReport: ((error: unknown) => void) | null = null;
+let mountedReport: ((error: unknown, kind?: AppErrorKind) => void) | null = null;
 
-export function reportAppError(error: unknown): void {
+export function reportAppError(error: unknown, kind: AppErrorKind = "write"): void {
   if (mountedReport !== null) {
-    mountedReport(error);
+    mountedReport(error, kind);
     return;
   }
   console.error("[gastos]", error);
 }
 
 export function AppErrorProvider({ children }: { children: ReactNode }) {
-  const [detail, setDetail] = useState<string | null>(null);
+  const [shown, setShown] = useState<{ detail: string; kind: AppErrorKind } | null>(
+    null,
+  );
 
-  const report = useCallback((error: unknown) => {
+  const report = useCallback((error: unknown, kind: AppErrorKind = "write") => {
     // Kept in the console too: the dialog is for the person using the app, the
     // console is what a screenshot of the dev tools can still show later.
     console.error("[gastos]", error);
-    setDetail(describe(error));
+    setShown((prev) =>
+      prev !== null && prev.kind === "write" && kind === "read"
+        ? prev
+        : { detail: describe(error), kind },
+    );
   }, []);
 
   useEffect(() => {
     mountedReport = report;
+    onReadFailure((error) => report(error, "read"));
     return () => {
       mountedReport = null;
+      onReadFailure(null);
     };
   }, [report]);
 
   const write = useCallback(
     (promise: Promise<unknown>) => {
-      void promise.catch(report);
+      void promise.catch((error: unknown) => report(error, "write"));
     },
     [report],
   );
@@ -104,8 +121,12 @@ export function AppErrorProvider({ children }: { children: ReactNode }) {
   return (
     <AppErrorContext.Provider value={value}>
       {children}
-      {detail !== null && (
-        <AppErrorDialog detail={detail} onClose={() => setDetail(null)} />
+      {shown !== null && (
+        <AppErrorDialog
+          detail={shown.detail}
+          kind={shown.kind}
+          onClose={() => setShown(null)}
+        />
       )}
     </AppErrorContext.Provider>
   );
@@ -113,12 +134,15 @@ export function AppErrorProvider({ children }: { children: ReactNode }) {
 
 function AppErrorDialog({
   detail,
+  kind,
   onClose,
 }: {
   detail: string;
+  kind: AppErrorKind;
   onClose: () => void;
 }) {
   const t = useTranslations("errors");
+  const title = kind === "read" ? t("readTitle") : t("title");
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6"
@@ -128,15 +152,17 @@ function AppErrorDialog({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={t("title")}
+        aria-label={title}
         onClick={(event) => event.stopPropagation()}
         className="flex w-full max-w-[440px] flex-col gap-3.5 rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]"
       >
         <div className="flex items-start gap-3">
           <Icon name="error" size={22} className="mt-0.5 text-over-text" />
           <div className="min-w-0">
-            <h2 className="text-base font-bold text-ink">{t("title")}</h2>
-            <p className="mt-1 text-[13px] text-ink-2">{t("body")}</p>
+            <h2 className="text-base font-bold text-ink">{title}</h2>
+            <p className="mt-1 text-[13px] text-ink-2">
+              {kind === "read" ? t("readBody") : t("body")}
+            </p>
             {/* The raw message. Ugly, and worth it: when this appears at all,
                 a screenshot of it is the whole diagnosis. */}
             <p className="mt-2 break-words text-[11.5px] text-ink-3">

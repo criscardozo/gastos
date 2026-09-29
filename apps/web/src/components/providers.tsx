@@ -17,6 +17,7 @@ import {
 import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
 
 import { AppErrorProvider, reportAppError } from "@/components/app-error";
+import { readFailed } from "@/lib/firebase/read-failures";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   collection,
@@ -260,7 +261,7 @@ export function Providers({ children }: { children: ReactNode }) {
       // ever and every page bails on its `=== null` guard: a blank screen with
       // no spinner, no message and nothing to tap.
       (error) => {
-        console.error("[gastos] users listener", error);
+        readFailed("users", error);
         setUserState({ userDoc: null, loading: false });
       },
     );
@@ -325,7 +326,7 @@ export function Providers({ children }: { children: ReactNode }) {
       },
       // Of the three this is the one that decides whether the app exists at all.
       (error) => {
-        console.error("[gastos] household listener", error);
+        readFailed("household", error);
         setHouseholdState({ household: null, loading: false });
       },
     );
@@ -379,7 +380,7 @@ export function Providers({ children }: { children: ReactNode }) {
       // it, and a failed read must never be mistaken for the server saying
       // there are no periods — that would materialize a duplicate.
       (error) => {
-        console.error("[gastos] periodBudgets listener", error);
+        readFailed("periodBudgets", error);
         setPeriodState({ periods: [], loading: false, fromCache: true });
       },
     );

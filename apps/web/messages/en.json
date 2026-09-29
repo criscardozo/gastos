@@ -525,6 +525,8 @@
   "errors": {
     "title": "Could not save",
     "body": "The server refused the change, so it was not saved. Try again.",
+    "readTitle": "Could not read the data",
+    "readBody": "The server refused to send part of what is on screen, so it may be incomplete: an empty list here does not mean there is nothing. Reload the page to try again.",
     "dismiss": "Got it"
   },
   "recurring": {

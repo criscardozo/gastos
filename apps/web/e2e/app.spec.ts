@@ -1063,6 +1063,38 @@ test("a service the server refuses says so", async ({ page, request }) => {
   await expect(page.getByRole("dialog")).toContainText("No se pudo guardar");
 });
 
+// A listener the server refuses is not an empty list. Every live list set a
+// `failed` flag that no screen read, so a refused read drew exactly what an
+// empty one draws — here, "no services yet" over a register that has one.
+test("a read the server refuses says so instead of drawing it empty", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-refused-read-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Refused Read", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const denyServiceReads = REAL_RULES.replace(
+    `      match /services/{serviceId} {
+        allow read: if isMember(householdId);`,
+    `      match /services/{serviceId} {
+        allow read: if false;`,
+  );
+  expect(denyServiceReads).not.toBe(REAL_RULES);
+  await loadRules(request, denyServiceReads);
+
+  // A fresh listener, opened after the rules changed.
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("No se pudieron leer los datos");
+  await page.getByRole("button", { name: "Entendido" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,

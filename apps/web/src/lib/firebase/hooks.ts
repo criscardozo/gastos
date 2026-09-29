@@ -20,6 +20,7 @@ import {
 
 import { partitionCharges } from "../bank-charges";
 import { getFirebaseClient } from "./client";
+import { readFailed } from "./read-failures";
 import { deleteBankCharge } from "./mutations";
 import {
   bankChargeConverter,
@@ -108,7 +109,7 @@ function useLiveList<T>(
       // list, a listener error rendered as "nothing here" — for expenses, a
       // period showing its whole budget unspent.
       (error) => {
-        console.error(`[gastos] ${label} listener`, error);
+        readFailed(label, error);
         setState({ items: [], loading: false, failed: true });
       },
     );

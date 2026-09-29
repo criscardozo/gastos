@@ -525,6 +525,8 @@
   "errors": {
     "title": "No se pudo guardar",
     "body": "El servidor rechazó el cambio, así que no quedó guardado. Volvé a intentarlo.",
+    "readTitle": "No se pudieron leer los datos",
+    "readBody": "El servidor no dejó leer parte de lo que ves, así que puede estar incompleto: una lista vacía acá no quiere decir que no haya nada. Recargá la página para volver a intentar.",
     "dismiss": "Entendido"
   },
   "recurring": {
