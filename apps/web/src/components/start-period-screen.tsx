@@ -38,7 +38,12 @@ import { fetchPeriodSpent } from "@/lib/firebase/hooks";
 import { allCategoriesCount, budgetCategoryIds } from "@/lib/categories";
 import { formatCents, formatCentsCompact } from "@/lib/money";
 import { formatLongDate, formatPeriodRange } from "@/lib/dates";
-import { MAX_STRETCHED_DAYS, addDays, stretchPeriodTo } from "@/lib/periods";
+import {
+  MAX_STRETCHED_DAYS,
+  addDays,
+  repeatBudget,
+  stretchPeriodTo,
+} from "@/lib/periods";
 import type { PeriodBudget } from "@/lib/firebase/converters";
 
 export function StartPeriodScreen({
@@ -100,7 +105,8 @@ export function StartPeriodScreen({
         if (!cancelled) setLeftover(previousAmount - spent);
       })
       .catch(() => {
-        // Offline or denied: no figure, so no checkbox — never a guess.
+        // Offline or denied: no fresh figure. The offer falls back to what
+        // the period doc records, which is a figure, not a guess.
       });
     return () => {
       cancelled = true;
@@ -109,12 +115,17 @@ export function StartPeriodScreen({
 
   if (household === null) return null;
 
-  /* What "repeat" would set. Never below 1: the rules require a positive
-     budget, so a deficit can empty the envelope but not invert it. */
-  const repeatAmount =
-    includeRollover && leftover !== null
-      ? Math.max(1, defaultAmount + leftover)
-      : defaultAmount;
+  /* What "repeat" would set, and the leftover it offers. Until the read
+     lands — or when it failed — the offer is what the period doc already
+     carries, never zero: see repeatBudget. */
+  const repeated = repeatBudget(
+    defaultAmount,
+    includeRollover,
+    leftover,
+    period.rolloverCents,
+  );
+  const repeatAmount = repeated.amountCents;
+  const carried = repeated.carriedCents;
 
   const typed = parseBudgetAmount(amount, locale);
 
@@ -308,7 +319,7 @@ export function StartPeriodScreen({
               <span className="tnum text-[44px] font-bold leading-none tracking-[-0.03em] text-ink">
                 {formatCents(repeatAmount, household.currency, locale)}
               </span>
-              {includeRollover && leftover !== null && leftover !== 0 ? (
+              {repeated.rolloverCents !== 0 ? (
                 <span className="text-center text-[12.5px] font-semibold text-ink-3">
                   {t("breakdown", {
                     base: formatCentsCompact(
@@ -317,7 +328,7 @@ export function StartPeriodScreen({
                       locale,
                     ),
                     carried: formatCentsCompact(
-                      Math.abs(leftover),
+                      Math.abs(carried),
                       household.currency,
                       locale,
                     ),
@@ -334,7 +345,7 @@ export function StartPeriodScreen({
 
         {/* The leftover, with its figure on the row. A deficit says so rather
             than pretending it is a bonus. */}
-        {!editing && leftover !== null && leftover !== 0 && (
+        {!editing && carried !== 0 && (
           <button
             type="button"
             onClick={() => setIncludeRollover(!includeRollover)}
@@ -351,15 +362,15 @@ export function StartPeriodScreen({
             />
             <span className="flex flex-col">
               <span className="text-[14.5px] font-semibold text-ink">
-                {t(leftover >= 0 ? "includeLeftover" : "includeDeficit")}
+                {t(carried >= 0 ? "includeLeftover" : "includeDeficit")}
               </span>
               <span
                 className="tnum text-[12.5px] font-semibold"
                 style={{
-                  color: leftover >= 0 ? "var(--good-text)" : "var(--over)",
+                  color: carried >= 0 ? "var(--good-text)" : "var(--over)",
                 }}
               >
-                {formatCents(Math.abs(leftover), household.currency, locale)}
+                {formatCents(Math.abs(carried), household.currency, locale)}
               </span>
             </span>
           </button>
@@ -390,10 +401,7 @@ export function StartPeriodScreen({
               <button
                 type="button"
                 onClick={() =>
-                  confirm(
-                    repeatAmount,
-                    includeRollover ? (leftover ?? 0) : 0,
-                  )
+                  confirm(repeatAmount, repeated.rolloverCents)
                 }
                 disabled={repeatAmount <= 0}
                 className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-base font-bold text-white shadow-[0_8px_20px_rgba(255,92,57,.35)] primary-disabled"

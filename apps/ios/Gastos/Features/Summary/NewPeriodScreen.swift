@@ -40,13 +40,19 @@ struct NewPeriodScreen: View {
     private var isWeekly: Bool { period?.period == .weekly }
     private var defaultAmount: Int { model.household?.defaultBudget.amountCents ?? 0 }
 
-    /// What "repeat" would set: the usual budget, plus the carried leftover
-    /// when it is being included. Never below 1 — the rules require a positive
-    /// budget, so a deficit can empty the envelope but not invert it.
-    private var repeatAmount: Int {
-        guard includeRollover, let leftover else { return defaultAmount }
-        return max(1, defaultAmount + leftover)
+    /// What "repeat" would set, and the leftover it offers. Until the read
+    /// lands — or when it failed — the offer is what the period doc already
+    /// carries, never zero: see PeriodLogic.repeatBudget.
+    private var repeated: (carriedCents: Int, amountCents: Int, rolloverCents: Int) {
+        PeriodLogic.repeatBudget(
+            defaultCents: defaultAmount,
+            includeRollover: includeRollover,
+            leftoverCents: leftover,
+            materializedRolloverCents: period?.rolloverCents ?? 0
+        )
     }
+    private var repeatAmount: Int { repeated.amountCents }
+    private var carried: Int { repeated.carriedCents }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -54,7 +60,7 @@ struct NewPeriodScreen: View {
             Spacer(minLength: 12)
             amountBlock
             Spacer(minLength: 12)
-            if leftover != nil, leftover != 0 {
+            if carried != 0 {
                 rolloverRow
             }
             actions
@@ -107,11 +113,11 @@ struct NewPeriodScreen: View {
                 .foregroundStyle(Theme.ink)
                 .contentTransition(.numericText())
                 .animation(.snappy(duration: 0.2), value: repeatAmount)
-            if includeRollover, let leftover, leftover != 0 {
+            if repeated.rolloverCents != 0 {
                 Text(l10n.t(
                     "newPeriod.breakdown",
                     MoneyFormatter.aud(defaultAmount, locale: l10n.locale),
-                    MoneyFormatter.aud(abs(leftover), locale: l10n.locale)
+                    MoneyFormatter.aud(abs(carried), locale: l10n.locale)
                 ))
                 .appFont(12.5, .semibold)
                 .foregroundStyle(Theme.inkTertiary)
@@ -139,16 +145,16 @@ struct NewPeriodScreen: View {
                     .font(.system(size: 21, weight: .medium))
                     .foregroundStyle(includeRollover ? Theme.accent : Theme.inkTertiary)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(l10n.t((leftover ?? 0) >= 0
+                    Text(l10n.t(carried >= 0
                                 ? "newPeriod.includeLeftover"
                                 : "newPeriod.includeDeficit"))
                         .appFont(14.5, .semibold)
                         .foregroundStyle(Theme.ink)
                         .multilineTextAlignment(.leading)
-                    Text(MoneyFormatter.aud(abs(leftover ?? 0), locale: l10n.locale))
+                    Text(MoneyFormatter.aud(abs(carried), locale: l10n.locale))
                         .appFont(12.5, .semibold)
                         .monospacedDigit()
-                        .foregroundStyle((leftover ?? 0) >= 0 ? Theme.greenText : Theme.redText)
+                        .foregroundStyle(carried >= 0 ? Theme.greenText : Theme.redText)
                 }
                 Spacer()
             }
@@ -177,7 +183,7 @@ struct NewPeriodScreen: View {
             ) {
                 model.confirmNewPeriod(
                     amountCents: repeatAmount,
-                    rolloverCents: includeRollover ? (leftover ?? 0) : 0
+                    rolloverCents: repeated.rolloverCents
                 )
             }
             Button {

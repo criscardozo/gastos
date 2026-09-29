@@ -292,6 +292,33 @@ export function dailyAllowance(
 }
 
 /**
+ * What the new-period screen's "Repetir" writes, and the leftover it offers.
+ *
+ * `leftoverCents` is the previous period's leftover as just read, null until
+ * that read lands — or when it failed. Null falls back to what the period doc
+ * already records from materialization, NOT to zero: a failed read is not an
+ * empty leftover, and treating it as one made "Repetir" overwrite a carried
+ * rollover with the bare default. Never below 1: the rules require a positive
+ * budget, so a deficit can empty the envelope but not invert it.
+ */
+export function repeatBudget(
+  defaultCents: number,
+  includeRollover: boolean,
+  leftoverCents: number | null,
+  materializedRolloverCents: number,
+): { carriedCents: number; amountCents: number; rolloverCents: number } {
+  const carriedCents = leftoverCents ?? materializedRolloverCents;
+  if (!includeRollover || carriedCents === 0) {
+    return { carriedCents, amountCents: defaultCents, rolloverCents: 0 };
+  }
+  return {
+    carriedCents,
+    amountCents: Math.max(1, defaultCents + carriedCents),
+    rolloverCents: carriedCents,
+  };
+}
+
+/**
  * Budget progress state. `over` when spent exceeds the budget, `warning`
  * from 85% of the budget (inclusive), `comfortable` otherwise.
  * Integer-only math — no float division edge cases at the exact threshold.

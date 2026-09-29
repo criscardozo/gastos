@@ -743,5 +743,118 @@
         "expectedNextEndDate": null
       }
     ]
+  },
+  "repeatBudget": {
+    "comment": "What the new-period screen's 'Repetir' writes. carriedCents is the figure the leftover checkbox offers: the previous period's leftover as just read, or — when that read has not landed or failed (null) — the rollover the period doc already records from materialization. A failed read is not a zero leftover: falling back to 0 made 'Repetir' overwrite a carried rollover with the bare default. amountCents = defaultCents when nothing is included or carriedCents is 0, else max(1, defaultCents + carriedCents) — the rules require a positive budget, so a deficit can empty the envelope but not invert it. rolloverCents = carriedCents when included, else 0.",
+    "cases": [
+      {
+        "name": "rollover off: the usual budget",
+        "defaultCents": 90000,
+        "includeRollover": false,
+        "leftoverCents": 5000,
+        "materializedRolloverCents": 0,
+        "expected": {
+          "carriedCents": 5000,
+          "amountCents": 90000,
+          "rolloverCents": 0
+        }
+      },
+      {
+        "name": "a leftover carried",
+        "defaultCents": 90000,
+        "includeRollover": true,
+        "leftoverCents": 5000,
+        "materializedRolloverCents": 0,
+        "expected": {
+          "carriedCents": 5000,
+          "amountCents": 95000,
+          "rolloverCents": 5000
+        }
+      },
+      {
+        "name": "a deficit carried",
+        "defaultCents": 90000,
+        "includeRollover": true,
+        "leftoverCents": -20000,
+        "materializedRolloverCents": 0,
+        "expected": {
+          "carriedCents": -20000,
+          "amountCents": 70000,
+          "rolloverCents": -20000
+        }
+      },
+      {
+        "name": "a deficit bigger than the budget floors at one cent",
+        "defaultCents": 90000,
+        "includeRollover": true,
+        "leftoverCents": -100000,
+        "materializedRolloverCents": 0,
+        "expected": {
+          "carriedCents": -100000,
+          "amountCents": 1,
+          "rolloverCents": -100000
+        }
+      },
+      {
+        "name": "the read failed: keep what materialization carried",
+        "defaultCents": 90000,
+        "includeRollover": true,
+        "leftoverCents": null,
+        "materializedRolloverCents": 5000,
+        "expected": {
+          "carriedCents": 5000,
+          "amountCents": 95000,
+          "rolloverCents": 5000
+        }
+      },
+      {
+        "name": "the read failed and nothing was carried",
+        "defaultCents": 90000,
+        "includeRollover": true,
+        "leftoverCents": null,
+        "materializedRolloverCents": 0,
+        "expected": {
+          "carriedCents": 0,
+          "amountCents": 90000,
+          "rolloverCents": 0
+        }
+      },
+      {
+        "name": "a fresh read wins over what was materialized",
+        "defaultCents": 90000,
+        "includeRollover": true,
+        "leftoverCents": 3000,
+        "materializedRolloverCents": 5000,
+        "expected": {
+          "carriedCents": 3000,
+          "amountCents": 93000,
+          "rolloverCents": 3000
+        }
+      },
+      {
+        "name": "nothing left over",
+        "defaultCents": 90000,
+        "includeRollover": true,
+        "leftoverCents": 0,
+        "materializedRolloverCents": 0,
+        "expected": {
+          "carriedCents": 0,
+          "amountCents": 90000,
+          "rolloverCents": 0
+        }
+      },
+      {
+        "name": "unticked after materialization carried: the usual budget",
+        "defaultCents": 90000,
+        "includeRollover": false,
+        "leftoverCents": null,
+        "materializedRolloverCents": 5000,
+        "expected": {
+          "carriedCents": 5000,
+          "amountCents": 90000,
+          "rolloverCents": 0
+        }
+      }
+    ]
   }
 }

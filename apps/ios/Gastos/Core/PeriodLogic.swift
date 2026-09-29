@@ -341,6 +341,31 @@ enum PeriodLogic {
         return remainingCents / days
     }
 
+    // MARK: Repeating the budget
+
+    /// What the new-period screen's "Repetir" writes, and the leftover it
+    /// offers.
+    ///
+    /// `leftoverCents` is the previous period's leftover as just read, nil
+    /// until that read lands — or when it failed. Nil falls back to what the
+    /// period doc already records from materialization, NOT to zero: a failed
+    /// read is not an empty leftover, and treating it as one made "Repetir"
+    /// overwrite a carried rollover with the bare default. Never below 1: the
+    /// rules require a positive budget. The same cases run against the web's
+    /// `repeatBudget` (shared vectors).
+    static func repeatBudget(
+        defaultCents: Int,
+        includeRollover: Bool,
+        leftoverCents: Int?,
+        materializedRolloverCents: Int
+    ) -> (carriedCents: Int, amountCents: Int, rolloverCents: Int) {
+        let carried = leftoverCents ?? materializedRolloverCents
+        guard includeRollover, carried != 0 else {
+            return (carried, defaultCents, 0)
+        }
+        return (carried, max(1, defaultCents + carried), carried)
+    }
+
     // MARK: Budget state
 
     /// Warning threshold: spent >= 85% of budget. Over: spent > budget.

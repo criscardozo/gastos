@@ -102,6 +102,23 @@ final class PeriodLogicTests: XCTestCase {
             let cases: [Case]
         }
 
+        struct Repeat: Decodable {
+            struct Expected: Decodable {
+                let carriedCents: Int
+                let amountCents: Int
+                let rolloverCents: Int
+            }
+            struct Case: Decodable {
+                let name: String
+                let defaultCents: Int
+                let includeRollover: Bool
+                let leftoverCents: Int?
+                let materializedRolloverCents: Int
+                let expected: Expected
+            }
+            let cases: [Case]
+        }
+
         struct Allowance: Decodable {
             struct Case: Decodable {
                 let name: String
@@ -124,6 +141,7 @@ final class PeriodLogicTests: XCTestCase {
         let stretchPeriodTo: Stretch
         let dailyAllowance: Allowance
         let startNextEarly: EarlyStart
+        let repeatBudget: Repeat
     }
 
     private static let vectors: Vectors = {
@@ -178,6 +196,7 @@ final class PeriodLogicTests: XCTestCase {
                 "addDays", "daysBetween", "periodEndDate", "containment",
                 "cascadeMaterialization", "todayInTimezone", "budgetState",
                 "extendToFortnight", "stretchPeriodTo", "dailyAllowance", "startNextEarly",
+                "repeatBudget",
             ],
             "a group was added to or removed from the vectors: decode it in "
                 + "`Vectors` and run it, or the suite quietly covers less"
@@ -199,7 +218,8 @@ final class PeriodLogicTests: XCTestCase {
             + Self.vectors.stretchPeriodTo.cases.count
             + Self.vectors.dailyAllowance.cases.count
             + Self.vectors.startNextEarly.cases.count
-        XCTAssertEqual(counted, 92)
+            + Self.vectors.repeatBudget.cases.count
+        XCTAssertEqual(counted, 101)
     }
 
     // MARK: - Sections
@@ -438,6 +458,22 @@ final class PeriodLogicTests: XCTestCase {
                 endDate: date(vector.endDate)
             )
             XCTAssertEqual(result, vector.expected, vector.name)
+        }
+    }
+
+    func testRepeatBudgetVectors() {
+        let cases = Self.vectors.repeatBudget.cases
+        XCTAssertFalse(cases.isEmpty)
+        for vector in cases {
+            let result = PeriodLogic.repeatBudget(
+                defaultCents: vector.defaultCents,
+                includeRollover: vector.includeRollover,
+                leftoverCents: vector.leftoverCents,
+                materializedRolloverCents: vector.materializedRolloverCents
+            )
+            XCTAssertEqual(result.carriedCents, vector.expected.carriedCents, vector.name)
+            XCTAssertEqual(result.amountCents, vector.expected.amountCents, vector.name)
+            XCTAssertEqual(result.rolloverCents, vector.expected.rolloverCents, vector.name)
         }
     }
 

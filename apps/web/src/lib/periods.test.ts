@@ -6,6 +6,7 @@ import {
   budgetState,
   cascadeMaterialization,
   dailyAllowance,
+  repeatBudget,
   startNextEarly,
   containsDate,
   daysBetween,
@@ -52,6 +53,7 @@ describe("period vectors", () => {
         "stretchPeriodTo",
         "dailyAllowance",
         "startNextEarly",
+        "repeatBudget",
       ]),
     );
   });
@@ -68,8 +70,9 @@ describe("period vectors", () => {
       vectors.extendToFortnight.cases.length +
       vectors.stretchPeriodTo.cases.length +
       vectors.dailyAllowance.cases.length +
-      vectors.startNextEarly.cases.length;
-    expect(counted).toBe(92);
+      vectors.startNextEarly.cases.length +
+      vectors.repeatBudget.cases.length;
+    expect(counted).toBe(101);
   });
 });
 
@@ -197,6 +200,17 @@ describe("dailyAllowance (shared vectors)", () => {
     "$name",
     ({ remainingCents, today, endDate, expected }) => {
       expect(dailyAllowance(remainingCents, today, endDate)).toBe(expected);
+    },
+  );
+});
+
+describe("repeatBudget (shared vectors)", () => {
+  it.each(vectors.repeatBudget.cases)(
+    "$name",
+    ({ defaultCents, includeRollover, leftoverCents, materializedRolloverCents, expected }) => {
+      expect(
+        repeatBudget(defaultCents, includeRollover, leftoverCents, materializedRolloverCents),
+      ).toEqual(expected);
     },
   );
 });
