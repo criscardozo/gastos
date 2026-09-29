@@ -103,6 +103,7 @@ export function EditExpenseRow({
   categories,
   noteSuggestions,
   submitEdit,
+  canSave,
   cancelEdit,
   t,
 }: {
@@ -112,6 +113,9 @@ export function EditExpenseRow({
   categories: Parameters<typeof ExpenseFormFields>[0]["categories"];
   noteSuggestions: string[];
   submitEdit: () => void;
+  /** The same test submitEdit applies. Without it the button stayed live over
+   * an amount that does not parse, and pressing it did nothing at all. */
+  canSave: boolean;
   cancelEdit: () => void;
   t: (key: string) => string;
 }) {
@@ -127,6 +131,7 @@ export function EditExpenseRow({
       <button
         type="button"
         onClick={submitEdit}
+        disabled={!canSave}
         className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
       >
         {t("save")}

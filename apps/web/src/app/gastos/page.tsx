@@ -428,7 +428,10 @@ export default function ExpensesPage() {
     setVerifyAmount("");
   };
 
-  const removeExpense = async (e: Expense) => {
+  // Through `write`, like every other change on this screen. It awaited the
+  // delete on its own instead: a refusal was an unhandled rejection that said
+  // nothing, and the row came back from the server with no word about why.
+  const removeExpense = (e: Expense) => {
     const fb = getFirebaseClient();
     if (fb === null) return;
     const ok = window.confirm(
@@ -437,7 +440,7 @@ export default function ExpensesPage() {
       }),
     );
     if (!ok) return;
-    await deleteExpense(fb.db, household.id, e.id);
+    write(deleteExpense(fb.db, household.id, e.id));
   };
 
   /* CSV export of the CURRENTLY FILTERED list (client-side download).
@@ -506,6 +509,10 @@ export default function ExpensesPage() {
           categories={categories}
           noteSuggestions={noteSuggestions}
           submitEdit={submitEdit}
+          canSave={
+            buildAmountFields(editForm.amount, locale) !== null &&
+            editForm.date !== ""
+          }
           cancelEdit={() => {
             setEditingId(null);
             setEditForm(null);
@@ -675,7 +682,7 @@ export default function ExpensesPage() {
             aria-label={t("delete")}
             onClick={(event) => {
               event.stopPropagation();
-              void removeExpense(e);
+              removeExpense(e);
             }}
             className="flex h-[30px] w-[30px] items-center justify-center rounded-[10px]"
             style={{ background: "var(--over-bg)" }}
@@ -971,7 +978,7 @@ export default function ExpensesPage() {
           }}
           onDelete={() => {
             setDetailId(null);
-            void removeExpense(detailExpense);
+            removeExpense(detailExpense);
           }}
         />
       )}

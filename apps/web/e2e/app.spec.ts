@@ -992,6 +992,13 @@ test("a write the server refuses says so", async ({ page, request }) => {
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
   await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
 
+  // One expense saved while the server still accepts, for the delete below.
+  await page.getByLabel("0,00", { exact: true }).fill("20,00");
+  await page.getByLabel("Nota (opcional)").fill("Borrable");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Borrable")).toBeVisible();
+  await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
+
   // Make the server refuse. Loading rules into the emulator is how a real
   // rejection is produced without touching the repo's own rules file. The
   // matching "offline must stay quiet" case lives in the offline test above,
@@ -1014,6 +1021,12 @@ test("a write the server refuses says so", async ({ page, request }) => {
   await expect(page.getByRole("dialog")).toContainText("No se pudo guardar");
   await page.getByRole("button", { name: "Entendido" }).click();
   await expect(page.getByText("No se pudo guardar")).toHaveCount(0);
+
+  // Deleting said nothing either: it awaited the delete outside `write`, so
+  // a refusal was an unhandled rejection and the row just came back.
+  page.once("dialog", (confirm) => void confirm.accept());
+  await page.getByRole("button", { name: "Borrar", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("No se pudo guardar");
 });
 
 // The same promise on the screens that wrote through their own helper. Each
@@ -1093,6 +1106,47 @@ test("a read the server refuses says so instead of drawing it empty", async ({
   await expect(page.getByRole("dialog")).toContainText("No se pudieron leer los datos");
   await page.getByRole("button", { name: "Entendido" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+// Two forms whose save button stayed live over a figure that does not parse.
+// Editing an expense: pressing it did nothing at all. A service: the AUD was
+// dropped and the service saved as USD-only.
+test("a figure that does not parse cannot be saved", async ({ page }) => {
+  const email = `e2e-unreadable-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Unreadable", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await page.getByLabel("0,00", { exact: true }).fill("12,00");
+  await page.getByLabel("Nota (opcional)").fill("Editable");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await page.getByRole("button", { name: "Editar", exact: true }).click();
+
+  const amounts = page.getByLabel("0,00", { exact: true });
+  await expect(amounts).toHaveCount(2);
+  const editAmount = amounts.nth(1);
+  await expect(editAmount).toHaveValue(/12/);
+  const saves = page.getByRole("button", { name: "Guardar", exact: true });
+  await editAmount.fill("abc");
+  await expect(saves.nth(1)).toBeDisabled();
+  await editAmount.fill("15,00");
+  await expect(saves.nth(1)).toBeEnabled();
+
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await page.getByRole("button", { name: "Agregar", exact: true }).click();
+  await page.getByLabel("Nombre").fill("Ilegible");
+  await page.getByLabel("USD").fill("10,00");
+  // Not "12,5x": the parser drops letters on purpose and reads that as 12,50.
+  await page.getByLabel("AUD").fill("1,2,3");
+  const save = page.getByRole("dialog").getByRole("button", { name: "Guardar" });
+  await expect(save).toBeDisabled();
+  await page.getByLabel("AUD").fill("");
+  await expect(save).toBeEnabled();
 });
 
 test("renaming a category keeps it out of the budget", async ({

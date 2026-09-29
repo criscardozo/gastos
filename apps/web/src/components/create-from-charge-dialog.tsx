@@ -25,7 +25,13 @@ import {
   DIALOG_SHELL,
 } from "@/components/ui/dialog-shell";
 import type { Household } from "@/lib/firebase/converters";
-import { formatCents, formatUsd, parseAmountToCents } from "@/lib/money";
+import {
+  formatCents,
+  formatRate,
+  formatUsd,
+  parseAmountToCents,
+} from "@/lib/money";
+import { firstCategoryId } from "@/lib/categories";
 import { formatShortDate } from "@/lib/dates";
 import { estimateAudCents } from "@/lib/recurring";
 import { displayMerchant } from "@/lib/merchant-name";
@@ -68,7 +74,7 @@ export function CreateFromChargeDialog({
   );
   const [note, setNote] = useState(displayMerchant(charge.merchant));
   const [categoryId, setCategoryId] = useState(
-    Object.keys(household.categories)[0] ?? "",
+    firstCategoryId(household.categories),
   );
   const [writesOwnNote, setWritesOwnNote] = useState(false);
 
@@ -137,7 +143,7 @@ export function CreateFromChargeDialog({
           {estimate !== null && (
             <span className="text-[11.5px] text-ink-3">
               {t("audFromRate", {
-                rate: (learnedRate ?? 0).toFixed(4).replace(".", ","),
+                rate: formatRate(learnedRate ?? 0, locale),
               })}
             </span>
           )}

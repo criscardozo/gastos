@@ -104,6 +104,18 @@ export function formatArs(cents: number): string {
 export const MAX_AMOUNT_CENTS = 10_000_000;
 
 /**
+ * A USD→AUD rate, four places, in the app's own decimal mark. It is shown
+ * beside a figure worked out from it, so it reads like the figure does.
+ */
+export function formatRate(rate: number, locale: string): string {
+  return new Intl.NumberFormat(numberLocale(locale), {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+    useGrouping: false,
+  }).format(rate);
+}
+
+/**
  * `max` exists for the peso fields on the Tarjetas screen: an ARS figure is
  * three orders of magnitude larger than an AUD one, so the ledger's ceiling
  * would refuse a perfectly ordinary bank fee. Every ledger caller leaves it

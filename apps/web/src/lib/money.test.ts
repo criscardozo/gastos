@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatRate,
   formatCents,
   formatCentsCompact,
   MAX_AMOUNT_CENTS,
@@ -82,5 +83,18 @@ describe("parseAmountToCents on what a person types", () => {
     expect(parseAmountToCents("-5", "es")).toBeNull();
     expect(parseAmountToCents("abc", "es")).toBeNull();
     expect(parseAmountToCents("1,2,3", "en")).toBeNull();
+  });
+});
+
+describe("formatRate", () => {
+  // The learned USD→AUD rate beside a pre-filled amount. It was
+  // `toFixed(4).replace(".", ",")`, a comma in every language.
+  it("uses the locale's decimal mark", () => {
+    expect(formatRate(0.65, "es")).toBe("0,6500");
+    expect(formatRate(0.65, "en")).toBe("0.6500");
+  });
+  it("keeps four places however many the rate has", () => {
+    expect(formatRate(1.234567, "en")).toBe("1.2346");
+    expect(formatRate(2, "es")).toBe("2,0000");
   });
 });

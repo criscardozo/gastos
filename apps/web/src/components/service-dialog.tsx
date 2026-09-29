@@ -76,8 +76,18 @@ export function ServiceDialog({
   const day = Number(dueDay);
   const dayValid = Number.isInteger(day) && day >= 1 && day <= 31;
   // At least one price: a row with neither says nothing, and the rules agree.
+  // A figure typed that does not parse blocks saving rather than being
+  // dropped: "either may be left blank" means blank, and the old test let
+  // "1,2,3" in AUD beside a valid USD save as a USD-only service, the AUD
+  // silently gone.
+  const unreadable =
+    (aud.trim() !== "" && audCents === null) ||
+    (usd.trim() !== "" && usdCents === null);
   const valid =
-    name.trim() !== "" && dayValid && (audCents !== null || usdCents !== null);
+    name.trim() !== "" &&
+    dayValid &&
+    !unreadable &&
+    (audCents !== null || usdCents !== null);
 
   const preview = dayValid
     ? nextDueDate(

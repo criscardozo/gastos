@@ -109,6 +109,18 @@ export const CATEGORY_ICONS: string[] = [
 ];
 
 /**
+ * The category a form preselects: the first one its dropdown lists, which
+ * is by sortOrder. "" when there are none.
+ */
+export function firstCategoryId(categories: Record<string, CategoryDef>): string {
+  let first: [string, number] | null = null;
+  for (const [id, def] of Object.entries(categories)) {
+    if (first === null || def.sortOrder < first[1]) first = [id, def.sortOrder];
+  }
+  return first?.[0] ?? "";
+}
+
+/**
  * Random id for a custom category. Plain lowercase alphanumerics so the id
  * is safe inside a Firestore field path ("categories.<id>").
  */

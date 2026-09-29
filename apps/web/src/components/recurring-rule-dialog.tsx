@@ -17,6 +17,7 @@ import type { Household, RecurringRuleDoc } from "@/lib/firebase/converters";
 import type { RecurringRuleInput } from "@/lib/firebase/mutations";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 import { matchesPattern } from "@/lib/recurring";
+import { firstCategoryId } from "@/lib/categories";
 import { displayMerchant } from "@/lib/merchant-name";
 import {
   ServiceNoteField,
@@ -89,7 +90,7 @@ export function RecurringRuleDialog({
     rule?.note ?? (seed === undefined ? "" : displayMerchant(seed.merchant)),
   );
   const [categoryId, setCategoryId] = useState(
-    rule?.categoryId ?? Object.keys(household.categories)[0] ?? "",
+    rule?.categoryId ?? firstCategoryId(household.categories),
   );
   const [asks, setAsks] = useState(rule === null || rule.amountAudCents === null);
   const [amount, setAmount] = useState(
