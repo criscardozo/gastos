@@ -26,6 +26,7 @@ import { reportAppError } from "@/components/app-error";
 import { parseBudgetAmount } from "@/components/budget-amount-field";
 import { MAX_HOUSEHOLD_NAME_CHARACTERS } from "@/lib/limits";
 import { getFirebaseClient } from "@/lib/firebase/client";
+import { useDbWrite } from "@/components/use-db-write";
 import {
   createInvite,
   extendPeriodToFortnight,
@@ -249,6 +250,7 @@ function inviteCodeKey(householdId: string): string {
 
 export default function SettingsPage() {
   const t = useTranslations("settings");
+  const withDb = useDbWrite();
   const tp = useTranslations("period");
   const tExtend = useTranslations("extendPeriod");
   const tEarly = useTranslations("startEarly");
@@ -320,10 +322,6 @@ export default function SettingsPage() {
     .filter((p) => p !== undefined)
     .map((p) => ({ name: p.displayName, color: p.color }));
 
-  const withDb = (fn: (db: NonNullable<ReturnType<typeof getFirebaseClient>>["db"]) => Promise<void>) => {
-    const fb = getFirebaseClient();
-    if (fb !== null) void fn(fb.db);
-  };
 
   // Starting the next period today. Offered only when it makes sense for the
   // period under way (startNextEarly) and nothing already answered sits in the

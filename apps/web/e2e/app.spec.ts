@@ -1016,6 +1016,53 @@ test("a write the server refuses says so", async ({ page, request }) => {
   await expect(page.getByText("No se pudo guardar")).toHaveCount(0);
 });
 
+// The same promise on the screens that wrote through their own helper. Each
+// of Servicios, Tarjetas and Ajustes had a `withDb` that fired the write with
+// `void` and nothing else, so a refusal left the row on screen from the local
+// cache and said nothing. Servicios stands in for the four: they now share
+// one hook, and the category manager, which awaited instead, goes through it
+// too.
+test("a service the server refuses says so", async ({ page, request }) => {
+  const email = `e2e-refused-service-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Refused Service", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await expect(page.getByText("Todavía no hay servicios")).toBeVisible();
+
+  await loadRules(
+    request,
+    `
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        match /{document=**} { allow read: if true; allow write: if false; }
+      }
+    }`,
+  );
+
+  await page.getByRole("button", { name: "Agregar", exact: true }).click();
+  await page.getByLabel("Nombre").fill("Rechazado");
+  await page.getByLabel("AUD").fill("10,00");
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("No se pudo guardar");
+  await page.getByRole("button", { name: "Entendido" }).click();
+
+  // And the category manager, which awaited the write instead of reporting it.
+  await page.getByRole("link", { name: "Ajustes" }).click();
+  await page.getByRole("button", { name: /Renombrar Salud/ }).click();
+  const field = page.getByLabel("Nombre de la categoría");
+  await field.fill("Médico");
+  await field.press("Enter");
+  await expect(page.getByRole("dialog")).toContainText("No se pudo guardar");
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,

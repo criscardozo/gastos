@@ -219,7 +219,12 @@ export function useBankCharges(householdId: string | null): BankChargesState {
       for (const charge of expired) {
         if (fb === null || householdId === null || sweeping.current.has(charge.id)) continue;
         sweeping.current.add(charge.id);
-        void deleteBankCharge(fb.db, householdId, charge.id);
+        // Housekeeping nobody asked for, so a refusal is logged rather than
+        // put in front of anyone: the charge stays, still expired, and the
+        // next session sweeps it. Uncaught, it was an unhandled rejection.
+        void deleteBankCharge(fb.db, householdId, charge.id).catch((error) => {
+          console.error("[gastos] sweeping an expired charge", error);
+        });
       }
       return [...pending, ...dismissed];
     },

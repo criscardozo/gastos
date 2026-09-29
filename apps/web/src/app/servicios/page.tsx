@@ -22,7 +22,7 @@ import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { CurrencyTag } from "@/components/ui/marks";
 import { ServiceDialog } from "@/components/service-dialog";
-import { getFirebaseClient } from "@/lib/firebase/client";
+import { useDbWrite } from "@/components/use-db-write";
 import { useServices } from "@/lib/firebase/hooks";
 import type { ServiceDoc } from "@/lib/firebase/converters";
 import {
@@ -91,6 +91,7 @@ function MonthFigure({
 
 export default function ServicesPage() {
   const t = useTranslations("services");
+  const withDb = useDbWrite();
   const { locale } = useLocale();
   const { user } = useAuth();
   const { household, today } = useHousehold();
@@ -139,13 +140,6 @@ export default function ServicesPage() {
   const hasServicesCategory =
     household.categories[SERVICES_CATEGORY_ID] !== undefined;
 
-  const withDb = (fn: (db: NonNullable<ReturnType<typeof getFirebaseClient>>["db"]) => Promise<void>) => {
-    const fb = getFirebaseClient();
-    // Fire and forget: Firestore only resolves a write once the SERVER
-    // acknowledges it, so awaiting here would freeze the dialog offline while
-    // the row is already saved locally.
-    if (fb !== null) void fn(fb.db);
-  };
 
   const save = (input: ServiceInput) => {
     if (user === null) return;

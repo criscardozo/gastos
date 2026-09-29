@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
-import { getFirebaseClient } from "@/lib/firebase/client";
+import { useDbWrite } from "@/components/use-db-write";
 import { updateHouseholdCategories } from "@/lib/firebase/mutations";
 import { countsToBudget } from "@/lib/categories";
 import type { Household } from "@/lib/firebase/converters";
@@ -59,7 +59,7 @@ export function CategoriesCard({ household }: { household: Household }) {
   const t = useTranslations("categoryManager");
   const tCat = useTranslations("categories");
 
-  const [saving, setSaving] = useState(false);
+  const withDb = useDbWrite();
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [adding, setAdding] = useState(false);
@@ -81,17 +81,14 @@ export function CategoriesCard({ household }: { household: Household }) {
 
   const atCap = rows.length >= MAX_CATEGORIES;
 
-  const write = async (
-    changes: Record<string, CategoryDef | null>,
-  ): Promise<void> => {
-    const fb = getFirebaseClient();
-    if (fb === null) return;
-    setSaving(true);
-    try {
-      await updateHouseholdCategories(fb.db, household.id, changes);
-    } finally {
-      setSaving(false);
-    }
+  // Fire-and-forget through the app's error dialog. This used to await the
+  // write with every button held off meanwhile: offline, where Firestore only
+  // resolves on server ack, the manager froze until signal came back, and a
+  // refusal was an unhandled rejection nobody saw. The household listener
+  // applies the change from the local cache at once, so the next click
+  // already reads the order the last one wrote.
+  const write = (changes: Record<string, CategoryDef | null>): void => {
+    withDb((db) => updateHouseholdCategories(db, household.id, changes));
   };
 
   const startRename = (row: Row) => {
@@ -109,7 +106,7 @@ export function CategoriesCard({ household }: { household: Household }) {
     // the budget silently put it back in and moved every figure on the
     // dashboard. (iOS mutates the whole category, which is why it never had
     // this.)
-    void write({
+    write({
       [row.id]: {
         ...row.def,
         key: undefined,
@@ -131,22 +128,22 @@ export function CategoriesCard({ household }: { household: Household }) {
         changes[id] = { ...def, sortOrder: i };
       }
     });
-    if (Object.keys(changes).length > 0) void write(changes);
+    if (Object.keys(changes).length > 0) write(changes);
   };
 
   const remove = (row: Row) => {
     if (rows.length <= 1) return; // rules require ≥ 1 category
     if (!window.confirm(t("deleteConfirm", { name: row.label }))) return;
-    void write({ [row.id]: null });
+    write({ [row.id]: null });
   };
 
-  const submitAdd = async () => {
+  const submitAdd = () => {
     const name = newName.trim();
     if (name === "" || atCap) return;
     const id = newCategoryId(household.categories);
     const sortOrder =
       rows.reduce((max, r) => Math.max(max, r.def.sortOrder), -1) + 1;
-    await write({ [id]: { name, icon: newIcon, color: newColor, sortOrder } });
+    write({ [id]: { name, icon: newIcon, color: newColor, sortOrder } });
     setNewName("");
     setAdding(false);
   };
@@ -210,9 +207,8 @@ export function CategoriesCard({ household }: { household: Household }) {
               aria-checked={countsToBudget(row.def)}
               aria-label={t("countsToBudget", { name: row.label })}
               title={t("countsToBudget", { name: row.label })}
-              disabled={saving}
               onClick={() =>
-                void write({
+                write({
                   [row.id]: {
                     ...row.def,
                     countsToBudget: !countsToBudget(row.def),
@@ -241,25 +237,24 @@ export function CategoriesCard({ household }: { household: Household }) {
               <IconButton
                 name="keyboard_arrow_up"
                 ariaLabel={t("moveUp", { name: row.label })}
-                disabled={saving || index === 0}
+                disabled={index === 0}
                 onClick={() => move(index, -1)}
               />
               <IconButton
                 name="keyboard_arrow_down"
                 ariaLabel={t("moveDown", { name: row.label })}
-                disabled={saving || index === rows.length - 1}
+                disabled={index === rows.length - 1}
                 onClick={() => move(index, 1)}
               />
               <IconButton
                 name="edit"
                 ariaLabel={t("rename", { name: row.label })}
-                disabled={saving}
                 onClick={() => startRename(row)}
               />
               <IconButton
                 name="delete"
                 ariaLabel={t("delete", { name: row.label })}
-                disabled={saving || rows.length <= 1}
+                disabled={rows.length <= 1}
                 onClick={() => remove(row)}
               />
             </div>
@@ -290,7 +285,7 @@ export function CategoriesCard({ household }: { household: Household }) {
                 maxLength={40}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") void submitAdd();
+                  if (e.key === "Enter") submitAdd();
                   if (e.key === "Escape") setAdding(false);
                 }}
                 placeholder={t("namePlaceholder")}
@@ -299,8 +294,8 @@ export function CategoriesCard({ household }: { household: Household }) {
               />
               <button
                 type="button"
-                onClick={() => void submitAdd()}
-                disabled={saving || newName.trim() === ""}
+                onClick={() => submitAdd()}
+                disabled={newName.trim() === ""}
                 className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
               >
                 {t("save")}

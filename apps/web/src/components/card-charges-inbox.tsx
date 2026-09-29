@@ -19,7 +19,7 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { CardMark } from "@/components/ui/marks";
 import { DismissedCharges } from "@/components/dismissed-charges";
-import { getFirebaseClient } from "@/lib/firebase/client";
+import { useDbWrite } from "@/components/use-db-write";
 import {
   dismissBankCharge,
   importBankChargeAsCardCharge,
@@ -53,6 +53,7 @@ export function CardChargesInbox({
   statementClosed: boolean;
 }) {
   const t = useTranslations("cardsInbox");
+  const withDb = useDbWrite();
   const tCards = useTranslations("cards");
 
   /** Brand chosen per charge, when the configured one is not enough. */
@@ -75,11 +76,6 @@ export function CardChargesInbox({
     (c) => classifyCharge(c.cardLast4, household.cards) === "unknown",
   ).length;
 
-  const withDb = (fn: (db: NonNullable<ReturnType<typeof getFirebaseClient>>["db"]) => Promise<void>) => {
-    const fb = getFirebaseClient();
-    // Never awaited: Firestore only resolves on server ack.
-    if (fb !== null) void fn(fb.db);
-  };
 
   return (
     <div className="flex flex-col gap-2.5 rounded-[18px] border border-line bg-surface px-[18px] py-4">

@@ -26,7 +26,7 @@ import {
 } from "@/components/card-dialogs";
 import { CardTaxes } from "@/components/card-taxes-panel";
 import { CardChargesInbox } from "@/components/card-charges-inbox";
-import { getFirebaseClient } from "@/lib/firebase/client";
+import { useDbWrite } from "@/components/use-db-write";
 import { useBankCharges, useCardCharges, useCardStatements } from "@/lib/firebase/hooks";
 import type { CardCharge, CardFeeSettings } from "@/lib/firebase/converters";
 import {
@@ -91,6 +91,7 @@ function verifyOfferKey(householdId: string): string {
 
 export default function CardsPage() {
   const t = useTranslations("cards");
+  const withDb = useDbWrite();
   const tCommon = useTranslations("expenses");
   const { locale } = useLocale();
   const { user } = useAuth();
@@ -196,12 +197,6 @@ export default function CardsPage() {
 
   if (household === null || today === null) return null;
 
-  const withDb = (fn: (db: NonNullable<ReturnType<typeof getFirebaseClient>>["db"]) => Promise<void>) => {
-    const fb = getFirebaseClient();
-    // Never awaited: Firestore resolves a write only on server ack, and the
-    // dialog must close the moment the row is queued locally.
-    if (fb !== null) void fn(fb.db);
-  };
 
   const saveCharge = (input: CardChargeInput) => {
     if (user === null) return;
