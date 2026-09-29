@@ -817,14 +817,23 @@ final class AppModel {
     /// never double-writes. Drops gracefully when there's no household/uid yet.
     private static let watchProcessedKey = "watchProcessedClientIds"
 
-    func saveExpenseFromWatch(clientId: String, amountCents: Int, categoryId: String, dateYMD: String) {
+    func saveExpenseFromWatch(
+        clientId: String, amountCents: Int, categoryId: String, dateYMD: String,
+        enteredAt: Double? = nil
+    ) {
         // The watch cannot show the start-period screen, so it cannot be sent
         // there — but writing anyway would file the expense into a period
         // nobody started, which is the whole thing being prevented. Dropped,
         // and the phone asks the next time it is opened.
         guard canAddExpense else { return }
         guard let householdId = attachedHouseholdId, let uid else { return }
-        guard amountCents > 0, CalendarDate(dateYMD) != nil else { return }
+        // The household's day, not the watch's: see WatchExpenseDate.
+        guard amountCents > 0,
+              let date = WatchExpenseDate.resolve(
+                  enteredAt: enteredAt, dateYMD: dateYMD,
+                  householdTimeZone: householdTimeZone
+              )
+        else { return }
 
         // Idempotency guard: skip payloads we've already processed.
         var processed = UserDefaults.standard.stringArray(forKey: Self.watchProcessedKey) ?? []
@@ -840,7 +849,7 @@ final class AppModel {
             amountCents: amountCents,
             categoryId: categoryId,
             note: "",
-            date: dateYMD,
+            date: date.raw,
             expenseId: clientId
         )
     }

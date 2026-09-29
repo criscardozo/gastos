@@ -30,7 +30,10 @@ final class WatchConnectivityModel: NSObject, ObservableObject {
         session.transferUserInfo([
             "amountCents": amountCents,
             "categoryId": categoryId,
+            // Still sent, for a phone app older than this watch app. The phone
+            // files by `enteredAt`, in the household's timezone.
             "dateYMD": dateYMD,
+            "enteredAt": Date().timeIntervalSince1970,
             "clientId": UUID().uuidString,
         ])
     }

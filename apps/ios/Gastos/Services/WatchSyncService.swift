@@ -29,6 +29,8 @@ final class WatchSyncService: NSObject {
         static let categoryId = "categoryId"
         static let dateYMD = "dateYMD"
         static let clientId = "clientId"
+        /// Seconds since 1970 when it was typed — see WatchExpenseDate.
+        static let enteredAt = "enteredAt"
         // Budget context (phone → watch).
         static let remainingCents = "remainingCents"
         static let budgetCents = "budgetCents"
@@ -91,12 +93,14 @@ final class WatchSyncService: NSObject {
             let clientId = userInfo[Key.clientId] as? String,
             amountCents > 0
         else { return }
+        let enteredAt = userInfo[Key.enteredAt] as? Double
         Task { @MainActor in
             AppModel.shared?.saveExpenseFromWatch(
                 clientId: clientId,
                 amountCents: amountCents,
                 categoryId: categoryId,
-                dateYMD: dateYMD
+                dateYMD: dateYMD,
+                enteredAt: enteredAt
             )
         }
     }
