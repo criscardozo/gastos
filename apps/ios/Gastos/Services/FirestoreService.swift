@@ -26,6 +26,16 @@ final class FirestoreService {
     /// unreported, the app lies indefinitely.
     var onWriteRejected: ((Error) -> Void)?
 
+    /// Called when the server refuses a LISTENER.
+    ///
+    /// Every listener here answers a failure by handing its caller an empty
+    /// list (or nil), because the caller has to be told something — and an
+    /// empty week is exactly what a week with no spending looks like. Only
+    /// logging it meant a refused read drew a period with its whole budget
+    /// unspent and nothing anywhere said otherwise. Offline never lands here:
+    /// a listener serves the cache instead of failing.
+    var onListenFailed: ((Error) -> Void)?
+
     init() {
         self.db = Firestore.firestore()
     }
@@ -80,8 +90,8 @@ final class FirestoreService {
     /// both end at `onChange(nil)`, and one of them sends a signed-in user to
     /// onboarding. Saying so is the difference.
     func listenUser(uid: String, onChange: @escaping (UserProfile?) -> Void) -> ListenerRegistration {
-        db.collection("users").document(uid).addSnapshotListener { snapshot, error in
-            if let error { Self.reportListen("users/\(uid)", error) }
+        db.collection("users").document(uid).addSnapshotListener { [weak self] snapshot, error in
+            if let error { self?.reportListen("users/\(uid)", error) }
             guard let snapshot, snapshot.exists else {
                 onChange(nil)
                 return
@@ -93,8 +103,8 @@ final class FirestoreService {
     /// Same shape, worse consequence: a denied read of the household reads as
     /// "you are not in one", which is the screen that offers to create another.
     func listenHousehold(id: String, onChange: @escaping (Household?) -> Void) -> ListenerRegistration {
-        db.collection("households").document(id).addSnapshotListener { snapshot, error in
-            if let error { Self.reportListen("households/\(id)", error) }
+        db.collection("households").document(id).addSnapshotListener { [weak self] snapshot, error in
+            if let error { self?.reportListen("households/\(id)", error) }
             guard let snapshot, snapshot.exists else {
                 onChange(nil)
                 return
@@ -128,13 +138,13 @@ final class FirestoreService {
             .collection("periodBudgets")
             .order(by: "startDate", descending: true)
             .limit(to: 26)
-            .addSnapshotListener(includeMetadataChanges: true) { snapshot, error in
+            .addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
                 // A denied or failed read here reads EXACTLY like a household
                 // with no periods: no current period, no budget, "Quedan
                 // $0,00", and the start-period screen never asking. Saying so
                 // is the difference between a bug you can chase and one you
                 // cannot — see docs/reglas.md.
-                if let error { Self.reportListen("periodBudgets", error) }
+                if let error { self?.reportListen("periodBudgets", error) }
                 // `.estimate` for confirmedAt: by default a serverTimestamp the
                 // server has not acknowledged yet decodes as nil, so the
                 // start-period screen would come straight back after being
@@ -163,11 +173,11 @@ final class FirestoreService {
             .collection("expenses")
             .whereField("date", isGreaterThanOrEqualTo: startDate)
             .whereField("date", isLessThanOrEqualTo: endDate)
-            .addSnapshotListener(includeMetadataChanges: true) { snapshot, error in
+            .addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, error in
                 // The worst of the three to lose: an empty list is what a week
                 // with no spending looks like, so a refused read renders as a
                 // perfectly plausible week and nothing anywhere says otherwise.
-                if let error { Self.reportListen("expenses", error) }
+                if let error { self?.reportListen("expenses", error) }
                 guard let snapshot else {
                     onChange([])
                     return
@@ -202,15 +212,13 @@ final class FirestoreService {
             // the order the matcher and the list were built and tested on.
             .order(by: "date", descending: true)
             .limit(to: 50)
-            .addSnapshotListener { snapshot, error in
+            .addSnapshotListener { [weak self] snapshot, error in
                 // Logged rather than dropped. These charges are the one thing
                 // in the database this app does not write — an Apps Script
                 // does, from whatever the bank's email looked like that day —
                 // so a charge whose shape stopped decoding is a real
                 // possibility, and it would otherwise just never appear.
-                if let error {
-                    Self.log.error("bankCharges listener failed: \(error.localizedDescription, privacy: .public)")
-                }
+                if let error { self?.reportListen("bankCharges", error) }
                 guard let snapshot else {
                     onChange([])
                     return
@@ -907,14 +915,19 @@ final class FirestoreService {
         }
     }
 
-    private static func reportListen(_ what: String, _ error: Error) {
+    private func reportListen(_ what: String, _ error: Error) {
         // os.Logger rather than print, for a measured reason: the simulator's
         // runtime log does not capture an app's stdout — not through the build
         // tooling and not through `simctl launch --console-pty` — so a `print`
         // here is a report nobody can read. `log stream --predicate 'subsystem
         // == "dev.cardozo.gastos"'` shows these. Same channel the bank
         // charge listener already used.
-        log.error("listen \(what, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+        Self.log.error("listen \(what, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+        // Signing out tears the listeners down, and the server may refuse the
+        // ones still open for the instant in between. That is the app leaving,
+        // not data missing, so nobody is shown it.
+        guard Auth.auth().currentUser != nil else { return }
+        onListenFailed?(error)
     }
 
     // MARK: - Services
@@ -934,8 +947,8 @@ final class FirestoreService {
             // listening in no order would hold a different subset past it.
             .order(by: "name")
             .limit(to: 60)
-            .addSnapshotListener { snapshot, error in
-                if let error { Self.reportListen("services", error) }
+            .addSnapshotListener { [weak self] snapshot, error in
+                if let error { self?.reportListen("services", error) }
                 onChange(snapshot?.documents.compactMap {
                     Self.decode($0, as: ServiceDoc.self, in: "services")
                 } ?? [])
@@ -955,8 +968,8 @@ final class FirestoreService {
             // Same order and cap as the web — see listenServices.
             .order(by: "pattern")
             .limit(to: 50)
-            .addSnapshotListener { snapshot, error in
-                if let error { Self.reportListen("recurringRules", error) }
+            .addSnapshotListener { [weak self] snapshot, error in
+                if let error { self?.reportListen("recurringRules", error) }
                 onChange(snapshot?.documents.compactMap {
                     Self.decode($0, as: RecurringRuleDoc.self, in: "recurringRules")
                 } ?? [])
@@ -1174,8 +1187,8 @@ final class FirestoreService {
             .collection("cardStatements")
             .order(by: "closingDate", descending: true)
             .limit(to: 24)
-            .addSnapshotListener { snapshot, error in
-                if let error { Self.reportListen("cardStatements", error) }
+            .addSnapshotListener { [weak self] snapshot, error in
+                if let error { self?.reportListen("cardStatements", error) }
                 onChange(snapshot?.documents.compactMap {
                     Self.decode($0, as: CardStatement.self, in: "cardStatements")
                 } ?? [])
@@ -1194,8 +1207,8 @@ final class FirestoreService {
             .collection("cardCharges")
             .whereField("date", isGreaterThanOrEqualTo: startDate)
             .whereField("date", isLessThanOrEqualTo: closingDate)
-            .addSnapshotListener { snapshot, error in
-                if let error { Self.reportListen("cardCharges", error) }
+            .addSnapshotListener { [weak self] snapshot, error in
+                if let error { self?.reportListen("cardCharges", error) }
                 onChange(snapshot?.documents.compactMap {
                     Self.decode($0, as: CardCharge.self, in: "cardCharges")
                 } ?? [])

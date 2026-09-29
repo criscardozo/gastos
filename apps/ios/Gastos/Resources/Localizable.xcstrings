@@ -1818,6 +1818,40 @@
         }
       }
     },
+    "error.read.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not read the data"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudieron leer los datos"
+          }
+        }
+      }
+    },
+    "error.read.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server refused to send part of what is on screen, so it may be incomplete: an empty list here does not mean there is nothing. Close and reopen the app to try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El servidor no dejó leer parte de lo que ves, así que puede estar incompleto: una lista vacía acá no quiere decir que no haya nada. Cerrá y volvé a abrir la app para intentar de nuevo."
+          }
+        }
+      }
+    },
     "extendPeriod.addAmount": {
       "extractionState": "manual",
       "localizations": {

@@ -67,18 +67,32 @@ struct RootView: View {
         // A refused write is worth interrupting for: the change looks applied
         // in the local cache and is saved nowhere, so a banner that scrolls
         // away would leave the app quietly lying. Not shown when merely
-        // offline — Firestore queues those writes instead of failing them.
-        .alert(
-            model.l10n.t("error.write.title"),
-            isPresented: Binding(
-                get: { model.writeError != nil },
-                set: { if !$0 { model.writeError = nil } }
-            ),
-            presenting: model.writeError
-        ) { _ in
-            Button(model.l10n.t("common.done")) { model.writeError = nil }
-        } message: { detail in
-            Text("\(model.l10n.t("error.write.body"))\n\n\(detail)")
+        // offline — Firestore queues those writes instead of failing them. A
+        // refused READ gets the same alert with its own words, because an
+        // empty list is exactly what a refused listener hands back.
+        //
+        // Presented by RefusalAlert, not by an `.alert` here: see that file
+        // for the measurement. The state is cleared as soon as it is handed
+        // over, so the same message twice in a row is still a change.
+        .onChange(of: model.writeError) { _, detail in
+            guard let detail else { return }
+            RefusalAlert.show(
+                kind: .write,
+                title: model.l10n.t("error.write.title"),
+                message: "\(model.l10n.t("error.write.body"))\n\n\(detail)",
+                done: model.l10n.t("common.done")
+            )
+            model.writeError = nil
+        }
+        .onChange(of: model.readError) { _, detail in
+            guard let detail else { return }
+            RefusalAlert.show(
+                kind: .read,
+                title: model.l10n.t("error.read.title"),
+                message: "\(model.l10n.t("error.read.body"))\n\n\(detail)",
+                done: model.l10n.t("common.done")
+            )
+            model.readError = nil
         }
         .environment(\.locale, model.l10n.locale)
         // Manual appearance override (Sistema/Claro/Oscuro in Settings).

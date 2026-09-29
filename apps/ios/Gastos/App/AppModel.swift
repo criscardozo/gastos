@@ -134,6 +134,10 @@ final class AppModel {
     /// offline: Firestore queues those and sends them later. See
     /// FirestoreService.onWriteRejected for why silence was the wrong default.
     var writeError: String?
+    /// A listener the server REFUSED — what is on screen may be incomplete.
+    /// Shown by the same alert as `writeError`, which outranks it: a read
+    /// failing a moment later must not cover the change that was lost.
+    var readError: String?
 
     /// Main tab bar selection — settable from outside SwiftUI (App Intent /
     /// URL scheme) so Back Tap → "Registrar gasto" lands on quick entry.
@@ -356,6 +360,9 @@ final class AppModel {
         // in the service) report here too.
         firestore.onWriteRejected = { [weak self] error in
             self?.writeError = error.localizedDescription
+        }
+        firestore.onListenFailed = { [weak self] error in
+            self?.readError = error.localizedDescription
         }
         // The signing expiry moves with every re-signing, so re-schedule the
         // warnings each launch. Never prompts for permission (see the service).
