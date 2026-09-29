@@ -341,6 +341,27 @@ enum PeriodLogic {
         return remainingCents / days
     }
 
+    // MARK: Carrying into a new period
+
+    enum Carry: Equatable {
+        case carry(Int)
+        /// The leftover could not be read. Nothing may be written: a period
+        /// doc is an immutable record with a deterministic id, so a made-up
+        /// zero would spend the leftover for good.
+        case unknown
+    }
+
+    /// What a period being materialized carries in from the one before it.
+    /// `spentCents` is nil when the read failed; `previousAmountCents` nil when
+    /// there is no previous period.
+    static func carryIntoNewPeriod(
+        wantsRollover: Bool, previousAmountCents: Int?, spentCents: Int?
+    ) -> Carry {
+        guard wantsRollover, let previousAmountCents else { return .carry(0) }
+        guard let spentCents else { return .unknown }
+        return .carry(previousAmountCents - spentCents)
+    }
+
     // MARK: Repeating the budget
 
     /// What the new-period screen's "Repetir" writes, and the leftover it

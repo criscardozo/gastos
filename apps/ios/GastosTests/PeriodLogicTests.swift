@@ -493,4 +493,33 @@ final class PeriodLogicTests: XCTestCase {
             XCTAssertEqual(result?.nextEndDate.raw, vector.expectedNextEndDate, vector.name)
         }
     }
+
+    // MARK: - What a new period carries in
+
+    /// Not a shared vector: the web decides this inline in providers.tsx,
+    /// where a failed read throws and the catch writes nothing. This pins the
+    /// iOS side to the same answer — above all the third case, which used to
+    /// come out as 0 and was written into an immutable period for good.
+    func testCarryIntoNewPeriod() {
+        XCTAssertEqual(
+            PeriodLogic.carryIntoNewPeriod(wantsRollover: false, previousAmountCents: 90000, spentCents: nil),
+            .carry(0), "rollover off carries nothing, and needs no read"
+        )
+        XCTAssertEqual(
+            PeriodLogic.carryIntoNewPeriod(wantsRollover: true, previousAmountCents: 90000, spentCents: 85000),
+            .carry(5000), "what was left"
+        )
+        XCTAssertEqual(
+            PeriodLogic.carryIntoNewPeriod(wantsRollover: true, previousAmountCents: 90000, spentCents: nil),
+            .unknown, "a failed read is not a zero leftover"
+        )
+        XCTAssertEqual(
+            PeriodLogic.carryIntoNewPeriod(wantsRollover: true, previousAmountCents: nil, spentCents: nil),
+            .carry(0), "no previous period, nothing to carry"
+        )
+        XCTAssertEqual(
+            PeriodLogic.carryIntoNewPeriod(wantsRollover: true, previousAmountCents: 90000, spentCents: 100000),
+            .carry(-10000), "a deficit carries too"
+        )
+    }
 }

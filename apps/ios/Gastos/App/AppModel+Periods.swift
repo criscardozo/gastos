@@ -10,6 +10,9 @@ import FirebaseFirestore
 extension AppModel {
     // MARK: Period materialization
 
+    /// The web's CARRYOVER_RETRY_MS, in seconds.
+    static let carryoverRetrySeconds = 20
+
     func materializeIfNeeded() {
         // NEVER materialize from the offline cache. A period's endDate used to
         // be immutable, so a stale copy chained to the same answer as a fresh
@@ -47,15 +50,33 @@ extension AppModel {
         Task {
             // With rollover on, the period that just ended hands over whatever
             // was left (or the deficit). One server-side sum ⇒ one read.
-            var carried = 0
-            if wantsRollover, let previous {
-                let spent = await firestore.fetchSpentCents(
+            let spent: Int? = if wantsRollover, let previous {
+                await firestore.fetchSpentCents(
                     householdId: householdId,
                     startDate: previous.startDate,
                     endDate: previous.endDate,
                     categoryIds: categoryIds
                 )
-                if let spent { carried = previous.amountCents - spent }
+            } else {
+                nil
+            }
+            let carry = PeriodLogic.carryIntoNewPeriod(
+                wantsRollover: wantsRollover,
+                previousAmountCents: previous?.amountCents,
+                spentCents: spent
+            )
+            guard case .carry(let carried) = carry else {
+                // The leftover could not be read, so nothing is written: the
+                // period doc is an immutable record with a deterministic id,
+                // and a made-up zero spent the leftover for good — the next
+                // pass sees the period exists and never recomputes it. Said,
+                // and tried again, as the web does (providers.tsx). Usually a
+                // blip; nothing else would bring this back round on its own.
+                self.materializing = false
+                self.readError = "periodBudgets: what the last period left over could not be read, so the new one waits"
+                try? await Task.sleep(for: .seconds(Self.carryoverRetrySeconds))
+                self.materializeIfNeeded()
+                return
             }
             await firestore.materializePeriods(
                 householdId: householdId,
