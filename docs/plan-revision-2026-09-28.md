@@ -21,8 +21,56 @@ cambiar las reglas).
 
 Lo que queda fuera del repo: `parse.js` (tarea 5) no llega al buzón hasta
 pegarlo en el proyecto de Apps Script y publicar una versión nueva del web
-app (README de `tools/gmail-bank-ingest`, paso 2). El segundo barrido de la
-última sección sigue pendiente.
+app (README de `tools/gmail-bank-ingest`, paso 2).
+
+## Segundo barrido: ejecutado el 29/9/2026
+
+Sobre lo que la última sección de abajo lista como no leído a fondo. Cada
+hallazgo quedó en su commit, con el test o la sonda fallando antes:
+
+- `64a98c0` — «Repetir presupuesto» con la lectura del sobrante fallida o
+  todavía en vuelo escribía el default pelado encima del arrastre que la
+  materialización ya había puesto. Grupo nuevo `repeatBudget` en
+  `shared/period-test-vectors.json` (101 casos).
+- `a8f063a` — los `withDb` de Servicios, Tarjetas, Ajustes y la bandeja de
+  tarjetas tiraban la escritura con `void` y se tragaban el rechazo; el
+  administrador de categorías la esperaba y congelaba la tarjeta offline.
+  Ahora todo pasa por `useDbWrite`.
+- `5aa68e6` (web) y `3774674` (iOS) — un listener rechazado se dibujaba vacío:
+  la web tenía el flag `failed` y ninguna pantalla lo leía; iOS sólo lo
+  logueaba. **Y la alerta de escritura rechazada de iOS no se mostraba
+  nunca** con una hoja presentada o cerrándose (medido: UIKit loguea
+  «already presenting» y SwiftUI no reintenta). Ahora vive en una ventana
+  propia (`RefusalAlert.swift`).
+- `5e1308f` — iOS materializaba el período nuevo con arrastre cero si fallaba
+  la lectura del sobrante; la web ya no lo hacía. Medido en el emulador con
+  el binario viejo (escribió 90000 sin arrastre) y con el nuevo (nada, y al
+  reintento 110000 con 20000).
+- `5ea903a` — el deshacer de un gasto cargado desde un cargo se ofrecía con
+  el cargo ya barrido (y fallaba), y en la web no se ofrecía para «Crear
+  gasto».
+- `33aaab5` — borrar un gasto fuera de `write`; «Guardar» de la edición
+  activo con un importe ilegible; un servicio con AUD ilegible guardado como
+  sólo-USD; categoría preseleccionada por orden de clave; la tasa con coma
+  fija.
+- `01a9a85` — Datos mostraba «No hay gastos» cuando la lectura fallaba.
+- `e4ec3a3` — Estadísticas promediaba un mes o período en curso sobre días
+  que todavía no pasaron.
+- `f03958d` — el reloj fechaba el gasto con la zona horaria del reloj.
+- `2b781fa` — con la alerta de iOS funcionando, el barrido de cargos vencidos
+  habría interrumpido por un rechazo que no es del usuario: ahora loguea.
+
+Leído sin hallazgos en esta pasada: el widget (`BudgetWidget.swift`,
+`BudgetSnapshot.swift`: una instantánea vieja da `daysLeft` nil y no un
+número), `WatchSyncService` y el lado del reloj salvo la fecha,
+`create-from-charge-dialog`, `recurring-prompt`, `recurring-rule-dialog`,
+`service-dialog` salvo lo de arriba, `DatePickerSheet`, el onboarding de iOS
+(la zona `Australia/Sydney` fija al crear el hogar es el default del esquema).
+**Barridos por patrón, no leídos línea por línea:** `charts.tsx`,
+`card-taxes-panel.tsx`, `cards-card.tsx`, `SummaryView` y el resto de
+`SettingsView` — se buscaron escrituras esperadas o tragadas, fechas del
+dispositivo y divisiones sin guarda, y no apareció nada; eso no es haberlos
+leído.
 
 El resto de este documento es el plan tal como se escribió.
 
