@@ -43,6 +43,15 @@ enum BankChargeInbox {
         charge.dismissedAt != nil && !isExpired(charge, now: now)
     }
 
+    /// Whether the undo on an expense filed from `chargeId` can work. Its batch
+    /// deletes the expense and UPDATES the charge, so once the sweep has taken
+    /// the charge — or is about to — the undo can only fail, and it used to be
+    /// offered anyway. Nil `chargeId` is an expense somebody typed.
+    static func canUndoFiling(chargeId: String?, charges: [BankCharge], now: Date) -> Bool {
+        guard let chargeId else { return false }
+        return charges.contains { $0.id == chargeId && !isExpired($0, now: now) }
+    }
+
     struct Partition: Equatable {
         /// Never dismissed — the working list.
         var pending: [BankCharge] = []

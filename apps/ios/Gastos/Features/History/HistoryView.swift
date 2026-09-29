@@ -429,7 +429,13 @@ struct HistoryView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if expense.isAutomatic, let id = expense.id {
+            // Only while the charge is there to be restored: see
+            // BankChargeInbox.canUndoFiling.
+            if BankChargeInbox.canUndoFiling(
+                chargeId: expense.filedFromChargeId,
+                charges: model.bankCharges,
+                now: Date()
+            ), let id = expense.id {
                 Button {
                     model.undoRecurring(expenseId: id)
                 } label: {

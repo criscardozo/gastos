@@ -102,4 +102,28 @@ final class BankChargeInboxTests: XCTestCase {
     func testEmptyInEmptyOut() {
         XCTAssertEqual(BankChargeInbox.partition([], now: now), BankChargeInbox.Partition())
     }
+
+    /// The undo on a filed expense's row updates its charge, so it is only
+    /// offered while the charge is still there to update. Offered after the
+    /// sweep, it failed with "No se pudo guardar" (the web's e2e drives the
+    /// same case through the screen).
+    func testAFilingCanBeUndoneOnlyWhileItsChargeIsThere() {
+        let charges = [
+            charge("kept", dismissedAt: ago(1)),
+            charge("stale", dismissedAt: ago(49)),
+        ]
+        XCTAssertTrue(BankChargeInbox.canUndoFiling(chargeId: "kept", charges: charges, now: now))
+        XCTAssertFalse(
+            BankChargeInbox.canUndoFiling(chargeId: "stale", charges: charges, now: now),
+            "past the window: the sweep is about to take it"
+        )
+        XCTAssertFalse(
+            BankChargeInbox.canUndoFiling(chargeId: "swept", charges: charges, now: now),
+            "already gone"
+        )
+        XCTAssertFalse(
+            BankChargeInbox.canUndoFiling(chargeId: nil, charges: charges, now: now),
+            "typed, not filed"
+        )
+    }
 }

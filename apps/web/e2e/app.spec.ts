@@ -2811,6 +2811,26 @@ test("a charge with nothing to match is created as its own expense", async ({
       ].join("/");
     })
     .toBe("dismissed/5000/verified");
+
+  // The way back is the undo on the row — the discarded list above says so by
+  // leaving this charge out. It used to key on `autoRuleId`, which only a RULE
+  // sets, so an expense made with "Crear gasto" had no way back at all. iOS
+  // read it off the id all along.
+  const undo = page.getByRole("button", {
+    name: /Deshacer la carga automática — Bunnings Alexandria/,
+  });
+  await expect(undo).toBeVisible();
+
+  // And once the charge is gone the undo has nothing to bring back: its batch
+  // updates the charge, so it failed with "No se pudo guardar". Offered only
+  // while the charge is there. Deleted by hand here, which is what the sweep
+  // does to it 48 hours after it was filed.
+  const swept = await request.delete(
+    `${REST}/households/${householdId}/bankCharges/gmail-new1`,
+    { headers: admin },
+  );
+  expect(swept.ok()).toBe(true);
+  await expect(undo).toHaveCount(0, { timeout: 20_000 });
 });
 
 /**

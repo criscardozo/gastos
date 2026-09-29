@@ -183,6 +183,10 @@ export default function ExpensesPage() {
   // being decided three times — and the fourth caller is the one that decides
   // whether the prompt is shown at all.
   const pendingCharges = charges.filter(isPending);
+  // Every charge still in the collection — pending, or dismissed and inside
+  // its window (the hook leaves the expired ones out). What an undo needs:
+  // its batch updates the charge, so with the charge swept it can only fail.
+  const liveChargeIds = new Set(charges.map((c) => c.id));
 
   // Pure over what is already loaded, so it can sit above the early return and
   // feed the effect below.
@@ -469,6 +473,8 @@ export default function ExpensesPage() {
     // raw doc id.
     const catLabel =
       categories.find((c) => c.id === e.categoryId)?.label ?? tCat("deleted");
+    // Filed from a charge rather than typed, by a rule or by "Crear gasto".
+    const fromChargeId = chargeIdFromAutoExpense(e.id);
 
     if (verifyingId === e.id) {
       return (
@@ -556,15 +562,17 @@ export default function ExpensesPage() {
               The undo lives on the row rather than in a menu because its
               window is short: it lasts exactly as long as the charge does,
               48 hours, and then the sweep takes the charge and this becomes
-              an ordinary expense. */}
-          {e.autoRuleId !== null && (
+              an ordinary expense — so it is offered only while the charge
+              is there. Read off the id, not `autoRuleId`: only a rule sets
+              that, and "Crear gasto" files the same way (iOS's isAutomatic). */}
+          {fromChargeId !== null && liveChargeIds.has(fromChargeId) && (
             <button
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
                 const fb = getFirebaseClient();
-                const chargeId = chargeIdFromAutoExpense(e.id);
-                if (fb === null || chargeId === null) return;
+                const chargeId = fromChargeId;
+                if (fb === null) return;
                 write(
                   undoRecurringExpense(fb.db, household.id, e.id, chargeId),
                 );
