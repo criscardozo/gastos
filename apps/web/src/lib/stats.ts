@@ -42,6 +42,21 @@ export interface Totals {
   daysWithoutSpending: number;
 }
 
+/**
+ * The part of `range` that has already happened: up to today, and null when
+ * none of it has. What every average is taken over — a month or a period
+ * still running used to be averaged over all its days, so on the 5th the
+ * figure "per day" was the month divided by 30 and every day left counted as
+ * a day without spending.
+ */
+export function elapsedRange(
+  range: { startDate: string; endDate: string },
+  today: string,
+): { startDate: string; endDate: string } | null {
+  if (today < range.startDate) return null;
+  return today < range.endDate ? { startDate: range.startDate, endDate: today } : range;
+}
+
 export function totals(
   expenses: readonly StatExpense[],
   range: { startDate: string; endDate: string },

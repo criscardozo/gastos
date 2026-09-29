@@ -53,6 +53,7 @@ import {
   cumulative,
   pace as paceLine,
   totals as totalsOf,
+  elapsedRange,
   verification,
   type StatExpense,
 } from "@/lib/stats";
@@ -180,20 +181,28 @@ export default function StatsPage() {
   }, [householdId, from, to]);
 
   const rows = state.rows;
+  // Averages are taken over the days that have happened. The day chart and
+  // the pace line keep the whole range: they are an axis, and the days still
+  // to come are drawn as still to come, not as spendless.
+  const averaged = useMemo(
+    () =>
+      range === null || today === null ? range : (elapsedRange(range, today) ?? range),
+    [range, today],
+  );
   const stats = useMemo(
     () =>
-      range === null
+      range === null || averaged === null
         ? null
         : {
-            totals: totalsOf(rows, range),
+            totals: totalsOf(rows, averaged),
             categories: byCategory(rows),
             days: byDay(rows, range),
-            weekdays: byWeekday(rows, range),
+            weekdays: byWeekday(rows, averaged),
             members: byMember(rows),
             checks: verification(rows),
             top: biggestOf(rows, 5),
           },
-    [rows, range],
+    [rows, range, averaged],
   );
 
   if (household === null) return null;

@@ -7,6 +7,7 @@ import {
   byMember,
   byWeekday,
   cumulative,
+  elapsedRange,
   pace,
   totals,
   verification,
@@ -262,5 +263,42 @@ describe("the bank's USD, alongside every AUD figure", () => {
     const none = [expense({ amountCents: 9999, usdCents: null })];
     expect(totals(none, range).totalUsdCents).toBe(0);
     expect(totals(none, range).verifiedCount).toBe(0);
+  });
+});
+
+describe("elapsedRange", () => {
+  // A month or a period still running used to be averaged over ALL its days,
+  // including the ones that have not happened: on the 5th, "per day" was the
+  // month's spend divided by 30, and every day left in the month counted as a
+  // day without spending.
+  const MONTH = { startDate: "2026-09-01", endDate: "2026-09-30" };
+
+  it("stops a running range at today", () => {
+    expect(elapsedRange(MONTH, "2026-09-05")).toEqual({
+      startDate: "2026-09-01",
+      endDate: "2026-09-05",
+    });
+  });
+  it("leaves a finished range whole", () => {
+    expect(elapsedRange(MONTH, "2026-10-02")).toEqual(MONTH);
+    expect(elapsedRange(MONTH, "2026-09-30")).toEqual(MONTH);
+  });
+  it("has nothing elapsed in a range that has not started", () => {
+    expect(elapsedRange(MONTH, "2026-08-31")).toBeNull();
+  });
+  it("is what makes the per-day figure and the empty days honest", () => {
+    const rows = [
+      expense({ amountCents: 5000, date: "2026-09-01" }),
+      expense({ amountCents: 5000, date: "2026-09-03" }),
+    ];
+    const elapsed = elapsedRange(MONTH, "2026-09-05");
+    expect(elapsed).not.toBeNull();
+    const t = totals(rows, elapsed!);
+    expect(t.perDayCents).toBe(2000); // 10000 over 5 days, not over 30
+    expect(t.daysWithoutSpending).toBe(3); // the 2nd, 4th and 5th
+    // The weekday averages divide by how many of each weekday have passed:
+    // 1 Sep 2026 is a Tuesday, and only one has.
+    const tuesday = byWeekday(rows, elapsed!)[1];
+    expect(tuesday.averageCents).toBe(5000);
   });
 });
