@@ -62,9 +62,12 @@ interface ListState<T> {
  * - no Firebase client (no config) resolves as not loading. Every copy used to
  *   `return` without setting state there, so a screen waited on "loading" for
  *   ever.
- * - a key change marks the list loading until the new snapshot arrives, as the
- *   ranged hooks already did — a list must not present the previous key's rows
- *   as the new one's.
+ * - a key change reads as empty and loading until the new snapshot arrives —
+ *   a list must not present the previous key's rows as the new one's. Decided
+ *   in RENDER, from which key the rows belong to: the effect that used to mark
+ *   the change ran after the first render with the new key, and kept the old
+ *   rows besides, so /gastos drew one range's expenses under another's name
+ *   until the server answered (the e2e counted two such commits).
  *
  * `key` must change exactly when the query does; the builder is read through a
  * ref so an inline function does not resubscribe on every render.
@@ -78,7 +81,12 @@ function useLiveList<T>(
   options: { includeMetadataChanges?: boolean } = {},
   onItems?: (items: T[]) => T[],
 ): ListState<T> {
-  const [state, setState] = useState<ListState<T>>({ items: [], loading: true });
+  // `key` records whose rows these are; see the note on key changes above.
+  const [state, setState] = useState<ListState<T> & { key: string | null }>({
+    key,
+    items: [],
+    loading: true,
+  });
   const build = useRef(buildQuery);
   const post = useRef(onItems);
   useEffect(() => {
@@ -94,27 +102,31 @@ function useLiveList<T>(
       // Resetting a subscription's state as its key goes away: the listener's
       // lifetime is the external system, so there is nothing to derive in
       // render.
-      setState({ items: [], loading: false });
+      setState({ key, items: [], loading: false });
       return;
     }
-    setState((prev) => (prev.loading ? prev : { ...prev, loading: true }));
     return onSnapshot(
       q,
       { includeMetadataChanges: metadata },
       (snap) => {
         const items = decoded(snap.docs.map((d) => d.data()));
-        setState({ items: post.current ? post.current(items) : items, loading: false });
+        setState({
+          key,
+          items: post.current ? post.current(items) : items,
+          loading: false,
+        });
       },
       // A read that FAILED is not a read that came back empty. Set as an empty
       // list, a listener error rendered as "nothing here" — for expenses, a
       // period showing its whole budget unspent.
       (error) => {
         readFailed(label, error);
-        setState({ items: [], loading: false, failed: true });
+        setState({ key, items: [], loading: false, failed: true });
       },
     );
   }, [key, label, metadata]);
 
+  if (state.key !== key) return { items: [], loading: key !== null };
   return state;
 }
 

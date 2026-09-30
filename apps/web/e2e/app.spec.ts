@@ -1180,6 +1180,58 @@ test("Datos says a range it could not read, rather than an empty one", async ({
   await expect(page.getByText("No hay gastos en este rango.")).toHaveCount(0);
 });
 
+// Switching the range must never draw the old range's rows under the new
+// one's name. The live list kept its rows while the next snapshot was on its
+// way, and — the part a reset in the effect cannot fix — the first render with
+// the new range ran before any effect, so even an effect that emptied the list
+// left one commit with the wrong rows in it. Every DOM commit is watched, so a
+// single frame is enough to fail this.
+test("switching the range never shows the previous range's rows", async ({ page }) => {
+  const email = `e2e-stale-rows-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Stale Rows", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await page.getByLabel("0,00", { exact: true }).fill("12,00");
+  await page.getByLabel("Nota (opcional)").fill("Fila del actual");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Fila del actual")).toBeVisible();
+
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(
+    new Date(),
+  );
+  const [y, m] = today.split("-").map(Number);
+  const lastMonth = `${m === 1 ? y - 1 : y}-${String(m === 1 ? 12 : m - 1).padStart(2, "0")}`;
+
+  await page.evaluate((target) => {
+    const w = window as unknown as { __stale: number };
+    w.__stale = 0;
+    const check = () => {
+      const select = document.querySelector<HTMLSelectElement>('select[aria-label="period"]');
+      if (select?.value === target && document.body.innerText.includes("Fila del actual")) {
+        w.__stale += 1;
+      }
+    };
+    new MutationObserver(check).observe(document.body, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+    });
+  }, `month:${lastMonth}`);
+
+  await page.getByLabel("period").selectOption(`month:${lastMonth}`);
+  await expect(page.getByText("Fila del actual")).toHaveCount(0);
+  // Let the snapshot for the new range land too.
+  await page.waitForTimeout(1500);
+  expect(await page.evaluate(() => (window as unknown as { __stale: number }).__stale)).toBe(0);
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,
