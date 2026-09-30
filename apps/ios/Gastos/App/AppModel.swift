@@ -850,6 +850,13 @@ final class AppModel {
         else { return }
 
         // Idempotency guard: skip payloads we've already processed.
+        //
+        // Marked BEFORE the write is acknowledged, on purpose. Moving the mark
+        // after the ack recovers nothing: WatchConnectivity delivers a
+        // transfer once, so no redelivery would come to retry, and a write the
+        // rules refuse would be refused again with the same payload. What a
+        // refusal needs is to be seen, and createExpense reports it through
+        // the refusal alert. (Re-raised by the 30/9 review plan as D3.)
         var processed = UserDefaults.standard.stringArray(forKey: Self.watchProcessedKey) ?? []
         guard !processed.contains(clientId) else { return }
         processed.append(clientId)
