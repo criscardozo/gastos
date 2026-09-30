@@ -224,15 +224,29 @@ extension AppModel {
         let wantsRollover = household.defaultBudget.rollover == true
         let categoryIds = budgetCategoryIds
         write {
-            var carried = 0
-            if wantsRollover,
-               let spent = await self.firestore.fetchSpentCents(
-                   householdId: householdId,
-                   startDate: current.startDate,
-                   endDate: early.endDate.raw,
-                   categoryIds: categoryIds
-               ) {
-                carried = current.amountCents - spent
+            let spent: Int? = if wantsRollover {
+                await self.firestore.fetchSpentCents(
+                    householdId: householdId,
+                    startDate: current.startDate,
+                    endDate: early.endDate.raw,
+                    categoryIds: categoryIds
+                )
+            } else {
+                nil
+            }
+            // The same decision materialization makes, for the same reason:
+            // the new period is an immutable record with a deterministic id,
+            // so writing it with a made-up zero spends the leftover for good.
+            // It used to keep `carried = 0` on a failed read and write anyway.
+            // Nothing is written and the read alert says so; somebody asked
+            // for this, so they can ask again — no retry of its own.
+            guard case .carry(let carried) = PeriodLogic.carryIntoNewPeriod(
+                wantsRollover: wantsRollover,
+                previousAmountCents: current.amountCents,
+                spentCents: spent
+            ) else {
+                self.readError = "periodBudgets: what this period has left could not be read, so the next one was not started"
+                return
             }
             try await self.firestore.startPeriodEarly(
                 householdId: householdId,
