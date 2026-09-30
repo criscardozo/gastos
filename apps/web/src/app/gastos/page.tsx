@@ -80,6 +80,8 @@ import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
 export default function ExpensesPage() {
   const t = useTranslations("expenses");
   const tEmpty = useTranslations("empty");
+  const tData = useTranslations("data");
+  const tErrors = useTranslations("errors");
   const tDash = useTranslations("dashboard");
   const tCat = useTranslations("categories");
   const { locale } = useLocale();
@@ -160,7 +162,11 @@ export default function ExpensesPage() {
     currentPeriod,
   );
 
-  const { expenses } = useExpensesRange(
+  const {
+    expenses,
+    loading: expensesLoading,
+    failed: expensesFailed,
+  } = useExpensesRange(
     household?.id ?? null,
     selected?.startDate ?? null,
     selected?.endDate ?? null,
@@ -984,7 +990,20 @@ export default function ExpensesPage() {
       )}
 
       {/* Rows */}
-      {sorted.length === 0 ? (
+      {/* Loading and failing are not "no expenses": the hook starts empty and
+          loading, so this drew the empty state on every cold start and every
+          range switch, and a refused read looked like a spendless period. The
+          words are the ones Datos and the error dialog already use. */}
+      {sorted.length === 0 && expensesFailed === true ? (
+        <div className="flex items-center gap-3 rounded-[18px] border border-line bg-surface px-4 py-3.5">
+          <Icon name="error" size={24} className="text-over-text" />
+          <span className="text-[13.5px] font-bold text-over-text">
+            {tErrors("readTitle")}
+          </span>
+        </div>
+      ) : sorted.length === 0 && expensesLoading ? (
+        <p className="py-6 text-center text-[13px] text-ink-3">{tData("loading")}</p>
+      ) : sorted.length === 0 ? (
         <div className="flex items-center gap-3 rounded-[18px] border border-line bg-surface px-4 py-3.5">
           <Icon
             name={expenses.length === 0 ? "receipt_long" : "search_off"}

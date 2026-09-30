@@ -1232,6 +1232,42 @@ test("switching the range never shows the previous range's rows", async ({ page 
   expect(await page.evaluate(() => (window as unknown as { __stale: number }).__stale)).toBe(0);
 });
 
+// Gastos read only the rows off its hook, so "loading" and "refused" both
+// drew "Sin gastos todavía". A refused read is the one that can be held still
+// long enough to look at.
+test("Gastos does not call a refused read an empty period", async ({ page, request }) => {
+  const email = `e2e-gastos-failed-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Gastos Failed", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  // The empty state is what a fresh household shows, and what this screen
+  // must keep showing when nothing is wrong.
+  await page.goto("/gastos");
+  await expect(page.getByText("Sin gastos todavía")).toBeVisible({ timeout: 20_000 });
+
+  const denyExpenseReads = REAL_RULES.replace(
+    `      match /expenses/{expenseId} {
+        allow read: if isMember(householdId);`,
+    `      match /expenses/{expenseId} {
+        allow read: if false;`,
+  );
+  expect(denyExpenseReads).not.toBe(REAL_RULES);
+  await loadRules(request, denyExpenseReads);
+
+  await page.goto("/gastos");
+  await expect(page.getByRole("dialog")).toContainText("No se pudieron leer los datos", {
+    timeout: 20_000,
+  });
+  await page.getByRole("button", { name: "Entendido" }).click();
+  await expect(page.getByText("No se pudieron leer los datos")).toBeVisible();
+  await expect(page.getByText("Sin gastos todavía")).toHaveCount(0);
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,
