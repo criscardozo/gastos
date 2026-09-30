@@ -17,6 +17,7 @@ import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { getFirebaseClient } from "@/lib/firebase/client";
+import { commitInChunks } from "@/lib/import-chunks";
 import {
   formatCents,
   formatUsd,
@@ -78,6 +79,10 @@ export function ImportExpenses() {
     "idle" | "working" | "done" | "error"
   >("idle");
   const [importedCount, setImportedCount] = useState(0);
+  /** Set when a later chunk failed after earlier ones landed. */
+  const [partial, setPartial] = useState<{ written: number; total: number } | null>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   /* Localized category list + lookup maps (before any early return — hooks
@@ -214,37 +219,48 @@ export function ImportExpenses() {
     const fb = getFirebaseClient();
     if (fb === null || importable.length === 0) return;
     setImportPhase("working");
-    try {
-      for (let i = 0; i < importable.length; i += BATCH_CHUNK) {
-        const batch = writeBatch(fb.db);
-        for (const r of importable.slice(i, i + BATCH_CHUNK)) {
-          const ref = doc(
-            collection(fb.db, "households", household.id, "expenses"),
-          );
-          batch.set(ref, {
-            amountCents: r.amountCents as number,
-            categoryId: r.categoryId,
-            note: r.note,
-            date: r.date,
-            createdBy: user.uid,
-            // A row that carries the bank's USD imports already verified; the
-            // rules need the pair to move together, so both keys or neither.
-            ...(r.usdCents !== null
-              ? { usdCents: r.usdCents, verified: true }
-              : { verified: false }),
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
-        }
-        await batch.commit();
+    setPartial(null);
+    const rows = importable;
+    const { written, error } = await commitInChunks(rows, BATCH_CHUNK, async (chunk) => {
+      const batch = writeBatch(fb.db);
+      for (const r of chunk) {
+        const ref = doc(
+          collection(fb.db, "households", household.id, "expenses"),
+        );
+        batch.set(ref, {
+          amountCents: r.amountCents as number,
+          categoryId: r.categoryId,
+          note: r.note,
+          date: r.date,
+          createdBy: user.uid,
+          // A row that carries the bank's USD imports already verified; the
+          // rules need the pair to move together, so both keys or neither.
+          ...(r.usdCents !== null
+            ? { usdCents: r.usdCents, verified: true }
+            : { verified: false }),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
       }
-      setImportedCount(importable.length);
+      await batch.commit();
+    });
+    if (error === null) {
+      setImportedCount(rows.length);
       setImportPhase("done");
       setPreview(null);
       if (fileInputRef.current !== null) fileInputRef.current.value = "";
-    } catch {
-      setImportPhase("error");
+      return;
     }
+    console.error("[gastos] import", error);
+    // What landed leaves the preview, so the button now imports only the
+    // rest. Before, a failed second chunk said "try again" over the whole
+    // file, and trying again imported the first chunk a second time.
+    if (written > 0) {
+      const landed = new Set(rows.slice(0, written));
+      setPreview((prev) => prev?.filter((r) => !landed.has(r)) ?? null);
+      setPartial({ written, total: rows.length });
+    }
+    setImportPhase("error");
   };
 
   const statusBadge = (r: PreviewRow) => {
@@ -384,7 +400,11 @@ export function ImportExpenses() {
                   </span>
                 )}
                 {importPhase === "error" && (
-                  <span className="text-over-text">{t("importError")}</span>
+                  <span className="text-over-text">
+                    {partial !== null
+                      ? t("importPartial", partial)
+                      : t("importError")}
+                  </span>
                 )}
               </div>
               <button

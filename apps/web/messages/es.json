@@ -286,6 +286,7 @@
     "importing": "Importando…",
     "importDone": "{count, plural, one {Importado # gasto} other {Importados # gastos}}",
     "importError": "No se pudieron importar los gastos. Probá de nuevo.",
+    "importPartial": "{written, plural, =0 {No se importó ningún gasto} one {Se importó # gasto} other {Se importaron # gastos}} de {total}; el resto no. Lo que entró salió de la vista previa, así que volver a importar sólo trae lo que falta.",
     "byCategory": "Por categoría",
     "total": "Total",
     "expensesCount": "{count, plural, one {# gasto} other {# gastos}}",

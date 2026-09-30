@@ -1268,6 +1268,54 @@ test("Gastos does not call a refused read an empty period", async ({ page, reque
   await expect(page.getByText("Sin gastos todavía")).toHaveCount(0);
 });
 
+// An import writes in batches of 400, and only each batch is atomic. With the
+// second batch refused, the first was already in and the screen said "try
+// again" over the whole file — which imported those 400 a second time. The
+// emulator refuses one row by its note, placed so it falls in batch two.
+test("an import that fails half way says what landed and offers only the rest", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-import-partial-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Import Partial", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const refuseOne = REAL_RULES.replace(
+    `        allow create: if isMember(householdId)
+          && isValidExpense(request.resource.data)`,
+    `        allow create: if isMember(householdId)
+          && request.resource.data.note != "rechazada"
+          && isValidExpense(request.resource.data)`,
+  );
+  expect(refuseOne).not.toBe(REAL_RULES);
+  await loadRules(request, refuseOne);
+
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(
+    new Date(),
+  );
+  const lines = ["fecha,categoria,nota,monto_aud"];
+  for (let i = 0; i < 400; i += 1) lines.push(`${today},Súper,fila ${i},1.00`);
+  lines.push(`${today},Súper,rechazada,1.00`);
+  await page.getByRole("link", { name: "Ajustes" }).click();
+  await page.getByLabel("Elegir archivo CSV").setInputFiles({
+    name: "import.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(lines.join("\n") + "\n", "utf-8"),
+  });
+  await page.getByRole("button", { name: /Importar 401 gastos/ }).click();
+
+  await expect(page.getByText(/Se importaron 400 gastos de 401/)).toBeVisible({
+    timeout: 30_000,
+  });
+  // Only the refused row is left to import, so trying again cannot duplicate.
+  await expect(page.getByRole("button", { name: /Importar 1 gasto/ })).toBeVisible();
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,

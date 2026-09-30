@@ -286,6 +286,7 @@
     "importing": "Importing…",
     "importDone": "{count, plural, one {Imported # expense} other {Imported # expenses}}",
     "importError": "We couldn't import the expenses. Try again.",
+    "importPartial": "{written, plural, =0 {No expenses were imported} one {# expense was imported} other {# expenses were imported}} of {total}; the rest were not. What landed has left the preview, so importing again brings only what is missing.",
     "byCategory": "By category",
     "total": "Total",
     "expensesCount": "{count, plural, one {# expense} other {# expenses}}",
