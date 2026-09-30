@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
   getAggregateFromServer,
+  getDocs,
   limit,
   onSnapshot,
   orderBy,
@@ -139,6 +140,72 @@ export interface ExpensesState {
    * writes, which Firestore queues instead.
    */
   failed?: boolean;
+}
+
+/**
+ * The expenses of a range, read ONCE — for the screens somebody visits rather
+ * than lives in (Datos, Estadísticas), where a listener would keep paying for
+ * a range nobody is watching change.
+ *
+ * Both pages spelled this out, each with its own reset, loading flag and
+ * failure branch. One copy now, with useLiveList's rule for a range change:
+ * the rows say which range they belong to, and a mismatch reads as empty and
+ * loading in render, so a new range never shows the previous one's rows.
+ */
+export function useExpensesOnce(
+  householdId: string | null,
+  startDate: string | null,
+  endDate: string | null,
+  label: string,
+): { rows: Expense[]; loading: boolean; failed: boolean } {
+  const key =
+    householdId === null || startDate === null || endDate === null
+      ? null
+      : `${householdId}/${startDate}/${endDate}`;
+  const [state, setState] = useState<{
+    key: string | null;
+    rows: Expense[];
+    loading: boolean;
+    failed: boolean;
+  }>({ key: null, rows: [], loading: false, failed: false });
+
+  useEffect(() => {
+    if (key === null || householdId === null || startDate === null || endDate === null) {
+      return;
+    }
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    let cancelled = false;
+    getDocs(
+      query(
+        collection(fb.db, "households", householdId, "expenses"),
+        where("date", ">=", startDate),
+        where("date", "<=", endDate),
+        orderBy("date", "asc"),
+      ).withConverter(expenseConverter),
+    )
+      .then((snap) => {
+        if (cancelled) return;
+        setState({
+          key,
+          rows: decoded(snap.docs.map((d) => d.data())),
+          loading: false,
+          failed: false,
+        });
+      })
+      // A read that failed is not a range with nothing in it.
+      .catch((error: unknown) => {
+        console.error(`[gastos] ${label} read`, error);
+        if (!cancelled) setState({ key, rows: [], loading: false, failed: true });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [key, householdId, startDate, endDate, label]);
+
+  if (key === null) return { rows: [], loading: false, failed: false };
+  if (state.key !== key) return { rows: [], loading: true, failed: false };
+  return state;
 }
 
 /**

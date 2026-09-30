@@ -12,9 +12,8 @@
 // Reads are one-shot and date-bounded (getDocs, not a live listener — this is a
 // page you visit, not one you live in).
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
@@ -26,8 +25,8 @@ import {
 } from "./pieces";
 import { Segmented } from "@/components/ui/segmented";
 import { getFirebaseClient } from "@/lib/firebase/client";
-import { expenseConverter, type Expense } from "@/lib/firebase/converters";
-import { decoded } from "@/lib/firebase/shape";
+import { useExpensesOnce } from "@/lib/firebase/hooks";
+import type { Expense } from "@/lib/firebase/converters";
 import { formatCents, formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 import { addDays, type PeriodRange } from "@/lib/periods";
@@ -67,12 +66,6 @@ export default function DataPage() {
   const [preset, setPreset] = useState<RangePreset>("current");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
-  const [loadState, setLoadState] = useState<{
-    rows: Expense[];
-    loading: boolean;
-    /** The read failed. Not the same as an empty range: see the catch. */
-    failed?: boolean;
-  }>({ rows: [], loading: false });
   /**
    * Which categories the grid is showing; null = all of them.
    *
@@ -144,46 +137,19 @@ export default function DataPage() {
   const householdId = household?.id ?? null;
   const rangeFrom = range?.startDate ?? null;
   const rangeTo = range?.endDate ?? null;
-  useEffect(() => {
-    if (householdId === null || rangeFrom === null || rangeTo === null) {
-      // this effect owns a one-shot bounded read; clearing before it starts
-      // is part of that request's lifecycle, not derived state.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLoadState({ rows: [], loading: false });
-      return;
-    }
-    const fb = getFirebaseClient();
-    if (fb === null) return;
-    let cancelled = false;
-    setLoadState({ rows: [], loading: true });
-    const q = query(
-      collection(fb.db, "households", householdId, "expenses"),
-      where("date", ">=", rangeFrom),
-      where("date", "<=", rangeTo),
-      orderBy("date", "asc"),
-    ).withConverter(expenseConverter);
-    getDocs(q)
-      .then((snap) => {
-        if (cancelled) return;
-        setLoadState({
-          rows: decoded(snap.docs.map((d) => d.data())),
-          loading: false,
-        });
-      })
-      // A read that failed is not a range with nothing in it. As an empty
-      // list it drew "no expenses in this range" with every export
-      // disabled — an answer, and the wrong one. Estadísticas already said so.
-      .catch((error: unknown) => {
-        console.error("[gastos] datos read", error);
-        if (!cancelled) setLoadState({ rows: [], loading: false, failed: true });
-      });
+  const loadState = useExpensesOnce(householdId, rangeFrom, rangeTo, "datos");
+
+  // A new range is a new decision: the category filter and the consent to
+  // export unverified rows never carry across. Adjusted during render, which
+  // is how React says to reset state on a prop change, rather than inside the
+  // read's effect where it used to sit.
+  const rangeKey = `${householdId}/${rangeFrom}/${rangeTo}`;
+  const [seenRange, setSeenRange] = useState(rangeKey);
+  if (seenRange !== rangeKey) {
+    setSeenRange(rangeKey);
     setCategoryFilter(null);
-    // A new range is a new decision — never carry the consent across.
     setAcceptUnverified(false);
-    return () => {
-      cancelled = true;
-    };
-  }, [householdId, rangeFrom, rangeTo]);
+  }
 
   if (household === null || user === null) return null;
 

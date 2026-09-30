@@ -7,9 +7,8 @@
 // in lib/stats.ts. Charts are divs and hand-written SVG: no charting library,
 // same rule as the dashboard's trend bars.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 
 import { useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
@@ -26,9 +25,7 @@ import {
   PaceChart,
   StatCard,
 } from "@/components/charts";
-import { getFirebaseClient } from "@/lib/firebase/client";
-import { expenseConverter } from "@/lib/firebase/converters";
-import { decoded } from "@/lib/firebase/shape";
+import { useExpensesOnce } from "@/lib/firebase/hooks";
 import { categoryColor } from "@/lib/categories";
 import { formatCents, formatCentsCompact, formatUsd } from "@/lib/money";
 import {
@@ -55,7 +52,6 @@ import {
   totals as totalsOf,
   elapsedRange,
   verification,
-  type StatExpense,
 } from "@/lib/stats";
 
 type RangePreset =
@@ -94,11 +90,6 @@ export default function StatsPage() {
   const [dailyMode, setDailyMode] = useState<"bars" | "line">("line");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
-  const [state, setState] = useState<{
-    rows: StatExpense[];
-    loading: boolean;
-    failed: boolean;
-  }>({ rows: [], loading: true, failed: false });
 
   const range = useMemo<PeriodRange | null>(() => {
     if (preset === "custom") {
@@ -142,44 +133,12 @@ export default function StatsPage() {
         );
 
   /* One bounded read per range. */
-  const householdId = household?.id ?? null;
-  const from = range?.startDate ?? null;
-  const to = range?.endDate ?? null;
-  useEffect(() => {
-    if (householdId === null || from === null || to === null) {
-      // same one-shot read lifecycle as /datos.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState({ rows: [], loading: false, failed: false });
-      return;
-    }
-    const fb = getFirebaseClient();
-    if (fb === null) return;
-    let cancelled = false;
-    setState({ rows: [], loading: true, failed: false });
-    getDocs(
-      query(
-        collection(fb.db, "households", householdId, "expenses"),
-        where("date", ">=", from),
-        where("date", "<=", to),
-        orderBy("date", "asc"),
-      ).withConverter(expenseConverter),
-    )
-      .then((snap) => {
-        if (cancelled) return;
-        setState({
-          rows: decoded(snap.docs.map((d) => d.data())),
-          loading: false,
-          failed: false,
-        });
-      })
-      .catch(() => {
-        if (!cancelled) setState({ rows: [], loading: false, failed: true });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [householdId, from, to]);
-
+  const state = useExpensesOnce(
+    household?.id ?? null,
+    range?.startDate ?? null,
+    range?.endDate ?? null,
+    "estadisticas",
+  );
   const rows = state.rows;
   // Averages are taken over the days that have happened. The day chart and
   // the pace line keep the whole range: they are an axis, and the days still
