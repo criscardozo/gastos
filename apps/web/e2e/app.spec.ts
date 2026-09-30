@@ -1750,6 +1750,12 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   // fee's amount appears twice — once as the charge, once inside "21% de ...".
   await expect(taxDialog.getByText("$ 40.413,22").first()).toBeVisible();
   await expect(taxDialog.getByText("$ 8.486,78")).toBeVisible();
+  // Reopened, the fee comes back in the app's own marks. It came back as
+  // "40413.22" — `toFixed(2)` — beside a placeholder of "0,00".
+  await page.getByRole("button", { name: "Ajustes en pesos" }).click();
+  await expect(page.getByLabel("Comisión mensual (ARS)")).toHaveValue("40.413,22");
+  await page.keyboard.press("Escape");
+  await expect(page.getByLabel("Comisión mensual (ARS)")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(taxDialog).toHaveCount(0);
   // 40.413,22 + 8.486,78 + 3.000,00 + 31.500,00 + 67.500,00, on the card.

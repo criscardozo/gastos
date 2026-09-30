@@ -104,6 +104,17 @@ export function formatArs(cents: number): string {
 export const MAX_AMOUNT_CENTS = 10_000_000;
 
 /**
+ * Integer cents as an editable figure in the app's own marks ("6390" →
+ * "63,90" / "63.90"), for pre-filling an amount field; empty for null. Reads
+ * back through parseAmountToCents as the same cents. Two dialogs had this as
+ * a private copy and the card dialogs wrote `toFixed(2)`, a point in Spanish.
+ */
+export function centsToInput(cents: number | null, locale: string): string {
+  if (cents === null) return "";
+  return formatCents(cents, "AUD", locale).replace(/[^\d.,]/g, "");
+}
+
+/**
  * A USD→AUD rate, four places, in the app's own decimal mark. It is shown
  * beside a figure worked out from it, so it reads like the figure does.
  */

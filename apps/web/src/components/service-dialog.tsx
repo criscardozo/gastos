@@ -15,7 +15,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { CurrencyTag } from "@/components/ui/marks";
 import type { ServiceDoc } from "@/lib/firebase/converters";
 import type { ServiceInput } from "@/lib/firebase/mutations";
-import { formatCents, parseAmountToCents } from "@/lib/money";
+import { centsToInput, parseAmountToCents } from "@/lib/money";
 import {
   SERVICE_INTERVALS,
   nextDueDate,
@@ -25,11 +25,6 @@ import {
 import { formatLongDateInYear } from "@/lib/dates";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
 
-/** Integer cents back to an editable string ("2299" → "22,99"). */
-function centsToInput(cents: number | null, locale: string): string {
-  if (cents === null) return "";
-  return formatCents(cents, "AUD", locale).replace(/[^\d.,]/g, "");
-}
 
 export function ServiceDialog({
   service,

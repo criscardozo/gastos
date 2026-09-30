@@ -12,7 +12,7 @@ import { CardMark, CARD_LABELS } from "@/components/ui/marks";
 import type { CardCharge, CardFeeSettings } from "@/lib/firebase/converters";
 import type { CardChargeInput } from "@/lib/firebase/mutations";
 import { formatLongDate, formatShortDate } from "@/lib/dates";
-import { formatUsd, parseAmountToCents } from "@/lib/money";
+import { centsToInput, formatUsd, parseAmountToCents } from "@/lib/money";
 import { CARD_BRANDS, type CardBrand, type StatementRange } from "@/lib/statements";
 import { displayMerchant } from "@/lib/merchant-name";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
@@ -197,7 +197,7 @@ export function CardChargeDialog({
   // service, and the two taxes that depend on it are the ones people forget.
   const [digital, setDigital] = useState(charge?.digital ?? true);
   const [amount, setAmount] = useState(
-    charge !== null ? (charge.usdCents / 100).toFixed(2) : "",
+    centsToInput(charge?.usdCents ?? null, locale),
   );
 
   const usdCents = parseAmountToCents(amount, locale);
@@ -561,7 +561,7 @@ export function CardFeesDialog({
   useEscape(onClose);
 
   const [commission, setCommission] = useState(
-    fees.commissionArsCents > 0 ? (fees.commissionArsCents / 100).toFixed(2) : "",
+    centsToInput(fees.commissionArsCents > 0 ? fees.commissionArsCents : null, locale),
   );
   const [rate, setRate] = useState(
     fees.usdArsRate !== null ? String(fees.usdArsRate) : "",

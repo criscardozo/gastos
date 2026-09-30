@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog-shell";
 import type { Household } from "@/lib/firebase/converters";
 import {
-  formatCents,
+  centsToInput,
   formatRate,
   formatUsd,
   parseAmountToCents,
@@ -67,11 +67,7 @@ export function CreateFromChargeDialog({
   const tCat = useTranslations("categories");
 
   const estimate = estimateAudCents(charge.usdCents, learnedRate);
-  const [amount, setAmount] = useState(
-    estimate === null
-      ? ""
-      : formatCents(estimate, household.currency, locale).replace(/[^\d.,]/g, ""),
-  );
+  const [amount, setAmount] = useState(centsToInput(estimate, locale));
   const [note, setNote] = useState(displayMerchant(charge.merchant));
   const [categoryId, setCategoryId] = useState(
     firstCategoryId(household.categories),

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  centsToInput,
   formatRate,
   formatCents,
   formatCentsCompact,
@@ -96,5 +97,25 @@ describe("formatRate", () => {
   it("keeps four places however many the rate has", () => {
     expect(formatRate(1.234567, "en")).toBe("1.2346");
     expect(formatRate(2, "es")).toBe("2,0000");
+  });
+});
+
+describe("centsToInput", () => {
+  // An editable prefill. The card dialogs wrote `(cents / 100).toFixed(2)`,
+  // a point in Spanish too, beside a placeholder of "0,00".
+  it("uses the locale's marks", () => {
+    expect(centsToInput(6390, "es")).toBe("63,90");
+    expect(centsToInput(6390, "en")).toBe("63.90");
+    expect(centsToInput(123456, "es")).toBe("1.234,56");
+  });
+  it("is empty for nothing", () => {
+    expect(centsToInput(null, "es")).toBe("");
+  });
+  it("reads back as the same cents", () => {
+    for (const cents of [1, 6390, 123456, 987654321]) {
+      for (const locale of ["es", "en"]) {
+        expect(parseAmountToCents(centsToInput(cents, locale), locale, Infinity)).toBe(cents);
+      }
+    }
   });
 });
