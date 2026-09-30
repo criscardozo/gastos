@@ -476,14 +476,18 @@ export function Providers({ children }: { children: ReactNode }) {
     // With rollover on, whatever was left of the period that just ended is
     // added to the new one (a deficit carries too — the envelope has to add
     // up). One server-side sum, so this costs a single read.
-    // null means "could not find out", which is NOT the same as zero. A period
+    // "Could not find out" is NOT the same as zero, so a failed read REJECTS —
+    // it never resolves to a number — and the catch below writes nothing. A period
     // doc is an immutable historical record with a deterministic id, so
     // materializing it with a made-up zero spends the leftover for good: the
     // next pass sees the period already exists and never recomputes it. With
     // rollover on, one failed read at the exact moment a period turns over used
     // to erase the leftover silently, and the only way back was noticing and
     // editing the amount by hand.
-    const carryover = async (): Promise<number | null> => {
+    // Promise<number>, not number | null: it was typed nullable with a
+    // `?? 0` at the call site, which is the made-up zero waiting for the first
+    // version of this function that returns null for "did not know".
+    const carryover = async (): Promise<number> => {
       if (household.defaultBudget.rollover !== true || lastPeriod === null) {
         return 0;
       }
@@ -507,7 +511,7 @@ export function Providers({ children }: { children: ReactNode }) {
           missing,
           household.defaultBudget.period,
           household.defaultBudget.amountCents,
-          rolloverCents ?? 0,
+          rolloverCents,
         ),
       )
       .catch((error) => {
