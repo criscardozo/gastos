@@ -67,6 +67,27 @@ const PLAUSIBLE_RATE = { min: 0.35, max: 1 };
 const MIN_SCORE = 0.35;
 
 /**
+ * What the rate is learned from: the current period's expenses plus the ones
+ * on screen, each once — iOS's `suggestionExpenses`. The RATE is the
+ * household's, not the screen's: learned from the viewed range alone, a past
+ * month with nothing verified had no rate while this period's verified pairs
+ * were one listener away. Matching stays with the rows on screen.
+ */
+export function rateExpenses<T extends { id: string }>(
+  current: readonly T[],
+  viewed: readonly T[],
+): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const e of [...current, ...viewed]) {
+    if (seen.has(e.id)) continue;
+    seen.add(e.id);
+    result.push(e);
+  }
+  return result;
+}
+
+/**
  * The bank's rate as the household's own verified expenses reveal it: the
  * median of usd/aud over every pair we already know. null until there is one.
  *

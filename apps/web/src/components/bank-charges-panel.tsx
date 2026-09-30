@@ -30,7 +30,6 @@ import {
 } from "@/lib/firebase/mutations";
 import type { BankChargeDoc, Expense, Household } from "@/lib/firebase/converters";
 import {
-  learnRate,
   suggestMatches,
   type BankCharge as MatchableCharge,
 } from "@/lib/bank-match";
@@ -60,6 +59,7 @@ export function BankChargesPanel({
   household,
   charges,
   expenses,
+  rate,
   expenseLabel,
   onMakeRecurring,
   locale,
@@ -68,6 +68,12 @@ export function BankChargesPanel({
   charges: BankChargeDoc[];
   /** Expenses of the period on screen — the pool a charge can match. */
   expenses: Expense[];
+  /**
+   * The household's learned rate — from the current period as well as the one
+   * on screen, so a past month with nothing verified still has one. The page
+   * learns it (rateExpenses); this used to learn it from `expenses` alone.
+   */
+  rate: number | null;
   /** Note, or the category name when the note is empty. */
   expenseLabel: (expense: Expense) => string;
   /**
@@ -104,7 +110,6 @@ export function BankChargesPanel({
   /** Manual overrides, charge id → expense id ("" = none chosen). */
   const [choice, setChoice] = useState<Record<string, string>>({});
 
-  const rate = useMemo(() => learnRate(expenses), [expenses]);
   // Only what could be an EXPENSE: the debit card's charges, plus anything the
   // household has not identified — a charge nobody claims must never vanish, so
   // it shows here AND on Tarjetas rather than in neither.

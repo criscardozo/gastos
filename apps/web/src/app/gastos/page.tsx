@@ -39,7 +39,7 @@ import {
   type VerificationFilter,
 } from "./pieces";
 import { EditExpenseRow, VerifyExpenseRow } from "./rows";
-import { learnRate } from "@/lib/bank-match";
+import { learnRate, rateExpenses } from "@/lib/bank-match";
 import {
   claimsOfOneRule,
   planRecurringRun,
@@ -196,7 +196,20 @@ export default function ExpensesPage() {
 
   // Pure over what is already loaded, so it can sit above the early return and
   // feed the effect below.
-  const learnedRate = learnRate(expenses);
+  // The rate is learned from this period too when another range is on screen
+  // (see rateExpenses). A second listener only then, bounded by the current
+  // period's dates — the same query Inicio runs, so usually served from cache.
+  const viewingCurrent =
+    selected !== null &&
+    currentPeriod !== null &&
+    selected.startDate === currentPeriod.startDate &&
+    selected.endDate === currentPeriod.endDate;
+  const { expenses: currentExpenses } = useExpensesRange(
+    viewingCurrent ? null : (household?.id ?? null),
+    currentPeriod?.startDate ?? null,
+    currentPeriod?.endDate ?? null,
+  );
+  const learnedRate = learnRate(rateExpenses(currentExpenses, expenses));
 
   // The run. Above the early return, like every other hook here — see the
   // note on useExpenseFilters for what putting one below it costs.
@@ -825,6 +838,7 @@ export default function ExpensesPage() {
         household={household}
         charges={charges}
         expenses={expenses}
+        rate={learnedRate}
         expenseLabel={(e) =>
           e.note !== ""
             ? e.note
