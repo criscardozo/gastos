@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "comment": "Whether the Gmail ingestion has stopped running, from households/{id}/ingestStatus/latest.ranAt. Its trigger fires every 15 minutes; stale means the last FINISHED run is more than staleAfterMinutes before now (exactly at the limit is still fresh). hours is whole hours since that run, rounded down, for the sentence on screen. A ranAt in the future (a clock ahead of the server's) is fresh with 0 hours — it says the ingestion ran, not that it stopped. ranAt null — no document — is unknown: an ingestion older than the heartbeat, which says nothing about whether it runs, so the apps say nothing either. Times are ISO instants; both implementations compare milliseconds.",
+  "staleAfterMinutes": 120,
+  "cases": [
+    { "name": "no heartbeat yet", "ranAt": null, "now": "2026-10-01T10:00:00Z", "expected": "unknown", "hours": null },
+    { "name": "ran ten minutes ago", "ranAt": "2026-10-01T09:50:00Z", "now": "2026-10-01T10:00:00Z", "expected": "fresh", "hours": 0 },
+    { "name": "exactly at the limit is still fresh", "ranAt": "2026-10-01T08:00:00Z", "now": "2026-10-01T10:00:00Z", "expected": "fresh", "hours": 2 },
+    { "name": "a minute past the limit is stale", "ranAt": "2026-10-01T07:59:00Z", "now": "2026-10-01T10:00:00Z", "expected": "stale", "hours": 2 },
+    { "name": "five hours", "ranAt": "2026-10-01T04:30:00Z", "now": "2026-10-01T10:00:00Z", "expected": "stale", "hours": 5 },
+    { "name": "three days", "ranAt": "2026-09-28T10:00:00Z", "now": "2026-10-01T10:00:00Z", "expected": "stale", "hours": 72 },
+    { "name": "a ranAt in the future is fresh", "ranAt": "2026-10-01T10:05:00Z", "now": "2026-10-01T10:00:00Z", "expected": "fresh", "hours": 0 }
+  ]
+}

@@ -330,13 +330,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fetch"
+            "value": "Fetch from the bank"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Traer"
+            "value": "Traer del banco"
           }
         }
       }
@@ -5354,6 +5354,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "See the other %d"
+          }
+        }
+      }
+    },
+    "bank.fetching": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fetching…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buscando…"
+          }
+        }
+      }
+    },
+    "bank.ingestStale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The bank's emails have not been read for %d h: the script stopped running. Check its trigger in Apps Script."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hace %d h que no se leen los mails del banco: el script dejó de correr. Revisá su activador en Apps Script."
+          }
+        }
+      }
+    },
+    "bank.fetchChip": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fetch"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Traer"
           }
         }
       }

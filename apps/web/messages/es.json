@@ -454,6 +454,7 @@
     "allClear": "Sin cargos pendientes",
     "fetchNow": "Traer del banco",
     "fetching": "Buscando…",
+    "ingestStale": "Hace {hours, plural, one {# hora} other {# horas}} que no se leen los mails del banco: el script dejó de correr. Revisá su activador en Apps Script.",
     "createExpense": "Crear gasto",
     "audAmount": "Importe en AUD",
     "audFromRate": "Estimado con la tasa {rate} que aprendimos de tus gastos ya verificados. Cambialo si no fue eso.",

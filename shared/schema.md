@@ -283,6 +283,30 @@ in whichever client opens the screen. If neither app is opened the odd expired
 charge lingers — invisible either way, since every reader hides anything past
 the window. The clients agree on the cutoff, not on when it is enforced.
 
+### `households/{householdId}/ingestStatus/latest`
+
+The ingestion's heartbeat. Its 15-minute trigger can stop without a word —
+Google disables a trigger that keeps failing, an authorisation lapses — and
+from then on no charge arrives and nothing anywhere says so. This document is
+what lets the apps say so.
+
+| Field | Type | Notes |
+|---|---|---|
+| `ranAt` | timestamp | When the last run FINISHED, written at its end. A run that dies half way does not write it, which is the point |
+| `imported` | int | How many charges that run filed. Informational |
+
+**Who writes this.** Only the ingestion, with the same service-account key as
+`bankCharges` (rules do not apply to it). Read-only from every client: a member
+able to write "it ran a minute ago" could hide exactly the failure this is read
+to show. A separate document rather than a field on the household, because a
+write every 15 minutes to `households/{id}` would wake both apps' household
+listeners 96 times a day.
+
+**How the apps read it.** Once, when the bank section opens, and again after
+"Traer del banco" settles — never with a listener. Stale is decided by
+`shared/ingest-vectors.json`. An absent document is NOT stale: it is an
+ingestion older than this heartbeat, and says nothing about whether it runs.
+
 ### `households/{householdId}/recurringRules/{ruleId}`
 
 A merchant pattern the household recognises, and what to file it as when the

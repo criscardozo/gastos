@@ -443,6 +443,18 @@ service cloud.firestore {
         allow delete: if isMember(householdId);
       }
 
+      // ------------------------ ingestStatus ------------------------
+
+      // The ingestion's heartbeat: `latest` says when it last finished a run.
+      // Written only by its service account (an IAM principal, so rules do not
+      // apply to it) and READ-ONLY from every client: a member able to write
+      // "it ran a minute ago" could hide exactly the failure the apps read
+      // this to show.
+      match /ingestStatus/{docId} {
+        allow read: if isMember(householdId);
+        allow write: if false;
+      }
+
       // ------------------------ bankCharges ------------------------
 
       // A charge the bank reported by email, waiting to be matched to an

@@ -1316,6 +1316,71 @@ test("an import that fails half way says what landed and offers only the rest", 
   await expect(page.getByRole("button", { name: /Importar 1 gasto/ })).toBeVisible();
 });
 
+// The ingestion's trigger can stop without a word, and then the bank panel
+// just looks quiet. It stamps ingestStatus/latest at the end of every run;
+// Gastos reads it once and says when it is old. No document says nothing —
+// that is an ingestion from before the heartbeat — and a fresh one neither.
+test("Gastos says when the bank's emails have stopped being read", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-ingest-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Ingest Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, {
+    headers: { Authorization: "Bearer owner" },
+  });
+  const docs = (await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[];
+  const mine = docs.find((d) => d.fields.name.stringValue === "Hogar de Ingest");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+  const stamp = async (ranAt: Date) => {
+    const res = await request.patch(
+      `${REST}/households/${householdId}/ingestStatus/latest`,
+      {
+        headers: { Authorization: "Bearer owner" },
+        data: {
+          fields: {
+            ranAt: { timestampValue: ranAt.toISOString() },
+            imported: { integerValue: "0" },
+          },
+        },
+      },
+    );
+    expect(res.ok()).toBe(true);
+  };
+  const warning = page.getByText(/que no se leen los mails del banco/);
+
+  // No heartbeat at all: nothing said.
+  await page.goto("/gastos");
+  await expect(page.getByLabel("0,00", { exact: true })).toBeVisible();
+  await page.waitForTimeout(1000);
+  await expect(warning).toHaveCount(0);
+
+  // Five hours old: said, with the hours.
+  await stamp(new Date(Date.now() - 5 * 60 * 60 * 1000 - 60_000));
+  await page.goto("/gastos");
+  await expect(page.getByText(/Hace 5 horas que no se leen los mails del banco/)).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // A run a minute ago: quiet again.
+  await stamp(new Date(Date.now() - 60_000));
+  await page.goto("/gastos");
+  await expect(page.getByLabel("0,00", { exact: true })).toBeVisible();
+  await page.waitForTimeout(1000);
+  await expect(warning).toHaveCount(0);
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,

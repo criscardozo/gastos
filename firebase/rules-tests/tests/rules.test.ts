@@ -792,6 +792,42 @@ describe("households/{id}/expenses", () => {
 
 // ============================ bankCharges ============================
 
+describe("households/{id}/ingestStatus", () => {
+  // The ingestion's own heartbeat: when it last finished a run. Written by its
+  // service account (rules do not apply), read by the apps to say when the
+  // mailbox has stopped being read. Nothing a client should be able to fake:
+  // a member writing "it ran a minute ago" would hide exactly the failure this
+  // exists to show.
+  beforeEach(async () => {
+    await seedHousehold(true);
+    await seed(env, async (admin) => {
+      await setDoc(doc(admin, "households", HOUSEHOLD, "ingestStatus", "latest"), {
+        ranAt: serverTimestamp(),
+        imported: 0,
+      });
+    });
+  });
+
+  it("members can read it, nobody else", async () => {
+    await assertSucceeds(
+      getDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "ingestStatus", "latest")),
+    );
+    await assertFails(
+      getDoc(doc(db(env, CAROL), "households", HOUSEHOLD, "ingestStatus", "latest")),
+    );
+    await assertFails(
+      getDoc(doc(db(env, null), "households", HOUSEHOLD, "ingestStatus", "latest")),
+    );
+  });
+
+  it("no client can write it, a member included", async () => {
+    const ref = doc(db(env, ALICE), "households", HOUSEHOLD, "ingestStatus", "latest");
+    await assertFails(setDoc(ref, { ranAt: serverTimestamp(), imported: 0 }));
+    await assertFails(updateDoc(ref, { ranAt: serverTimestamp() }));
+    await assertFails(deleteDoc(ref));
+  });
+});
+
 describe("households/{id}/bankCharges", () => {
   beforeEach(async () => {
     await seedHousehold(true);

@@ -242,6 +242,9 @@ struct HistoryView: View {
             }
         }
         .newExpenseButton()
+        // One read of the ingestion's heartbeat each time Historial comes up —
+        // glanced at, not listened to (see AppModel.refreshIngestHealth).
+        .onAppear { model.refreshIngestHealth() }
     }
 
     // MARK: Pieces
@@ -464,7 +467,10 @@ struct HistoryView: View {
     @ViewBuilder
     private var verificationBar: some View {
         let pending = model.expenseBankCharges.count
-        if unverifiedCount > 0 || pending > 0 {
+        // The fetch chip is the reason this row can show with nothing else in
+        // it: it is exactly when there is no charge that somebody wants one.
+        let canFetch = AppModel.ingestEndpoint != nil
+        if unverifiedCount > 0 || pending > 0 || canFetch {
             // Both counts on ONE line. The bank's used to be a full-width blue
             // bar of its own below this one, so two numbers cost three lines
             // before anything you came to read — measured on the phone with a
@@ -495,6 +501,27 @@ struct HistoryView: View {
                         onBackground: Theme.infoBg
                     ) { bankOpenedByHand = !bankIsOpen }
                 }
+                // "Traer del banco". It was a toolbar button on the bank
+                // sheet, and when the sheet became the panel on 2026-09-07
+                // the button went with it: the model and the endpoint stayed,
+                // and nothing on the phone could call them. Here it is in the
+                // row that is always on screen.
+                if canFetch {
+                    chip(
+                        icon: model.isFetchingCharges ? "hourglass" : "arrow.clockwise",
+                        // The short label: beside two other chips "Traer del
+                        // banco" broke into two lines inside its capsule
+                        // (measured on the simulator). The icon carries the
+                        // rest, and VoiceOver gets the whole sentence.
+                        label: l10n.t(model.isFetchingCharges ? "bank.fetching" : "bank.fetchChip"),
+                        on: false,
+                        onColor: Theme.infoText,
+                        onBackground: Theme.infoBg
+                    ) { model.requestBankIngest() }
+                    .fixedSize()
+                    .disabled(model.isFetchingCharges)
+                    .accessibilityLabel(l10n.t("bank.fetchNow"))
+                }
                 // AdaptiveGap, not Spacer: at an accessibility size AdaptiveRow
                 // is a VStack, and a Spacer in a VStack expands DOWNWARDS. The
                 // bare Spacer that used to be here pushed the whole list off
@@ -505,6 +532,15 @@ struct HistoryView: View {
                 AdaptiveGap()
             }
             .padding(.bottom, 10)
+        }
+        // Said, not hidden behind a chip: the panel just looks quiet when the
+        // ingestion has stopped, and quiet is what a working week looks like.
+        if case .stale(let hours) = model.ingestHealth {
+            Text(l10n.t("bank.ingestStale", hours))
+                .appFont(12, .semibold)
+                .foregroundStyle(Theme.redText)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 10)
         }
     }
 

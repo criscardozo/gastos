@@ -563,6 +563,16 @@ final class FirestoreService {
         _ = try? await URLSession.shared.data(for: request)
     }
 
+    /// When the Gmail ingestion last finished a run, or nil when it has never
+    /// stamped one (an ingestion older than the heartbeat) — see
+    /// shared/schema.md, ingestStatus. Read once, never listened to. Throws on
+    /// a failed read, which is not the same as "never stamped".
+    func fetchIngestRanAt(householdId: String) async throws -> Date? {
+        let snapshot = try await db.collection("households").document(householdId)
+            .collection("ingestStatus").document("latest").getDocument()
+        return (snapshot.data()?["ranAt"] as? Timestamp)?.dateValue()
+    }
+
     /// Record that somebody answered the start-period screen, accepting the
     /// budget as it stands.
     ///

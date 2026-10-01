@@ -281,6 +281,9 @@ final class AppModel {
     /// extension holds what reads and what acts, the mutators stay with what
     /// they mutate.
     private(set) var isFetchingCharges = false
+    /// See refreshIngestHealth. `.unknown` until read, and for an ingestion
+    /// that has never stamped a heartbeat.
+    private(set) var ingestHealth: IngestHealth = .unknown
 
     /// Delete dismissals past the 48-hour window. Without Cloud Functions there
     /// is nothing server-side to expire them, so whichever client is listening
@@ -311,6 +314,22 @@ final class AppModel {
         }
     }
 
+    /// Whether the ingestion is still running at all. Read when Historial
+    /// appears and again once a "Traer del banco" has settled; a failed read
+    /// leaves it as it was rather than raising the read alert over a list
+    /// that is otherwise fine — this is glanced at, not relied on.
+    func refreshIngestHealth() {
+        guard let householdId = attachedHouseholdId else { return }
+        Task {
+            do {
+                let ranAt = try await firestore.fetchIngestRanAt(householdId: householdId)
+                ingestHealth = IngestHealth.of(ranAt: ranAt, now: Date())
+            } catch {
+                Self.log.error("ingestStatus read failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
     func requestBankIngest() {
         guard let householdId = attachedHouseholdId, !isFetchingCharges else { return }
         isFetchingCharges = true
@@ -321,6 +340,8 @@ final class AppModel {
                 Task { @MainActor in
                     try? await Task.sleep(for: .seconds(4))
                     self.isFetchingCharges = false
+                    // A run the press started has had its chance to stamp.
+                    self.refreshIngestHealth()
                 }
             }
             try await self.firestore.requestBankIngest(

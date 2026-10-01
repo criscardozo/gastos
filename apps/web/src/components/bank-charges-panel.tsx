@@ -10,12 +10,13 @@
 // Suggestions are matched against the expenses of the period the page is
 // showing, which is where a charge that arrived in the last day or two lands.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import { CreateFromChargeDialog } from "@/components/create-from-charge-dialog";
-import { useServices } from "@/lib/firebase/hooks";
+import { fetchIngestRanAt, useServices } from "@/lib/firebase/hooks";
+import { ingestHealth, type IngestHealth } from "@/lib/ingest";
 import { useAppError } from "@/components/app-error";
 import { useAuth } from "@/components/providers";
 import { DismissedCharges } from "@/components/dismissed-charges";
@@ -178,6 +179,34 @@ export function BankChargesPanel({
     );
   };
 
+  // Whether the ingestion is still running at all — read when the panel opens
+  // and again once a "Traer del banco" has settled, which is when a fresh run
+  // would have stamped it. Decided in the effect (it needs the clock) and kept
+  // as the answer, so render stays pure.
+  const [ingest, setIngest] = useState<IngestHealth>({ state: "unknown" });
+  useEffect(() => {
+    if (fetching) return;
+    const fb = getFirebaseClient();
+    if (fb === null) return;
+    let cancelled = false;
+    fetchIngestRanAt(fb.db, household.id)
+      .then((ranAt) => {
+        if (!cancelled) setIngest(ingestHealth(ranAt, Date.now()));
+      })
+      // Glanced at, not relied on: a failed read leaves it unsaid rather than
+      // raising the read dialog over a panel that is otherwise fine.
+      .catch((error: unknown) => console.error("[gastos] ingestStatus read", error));
+    return () => {
+      cancelled = true;
+    };
+  }, [household.id, fetching]);
+  const staleLine =
+    ingest.state !== "stale" ? null : (
+      <p className="text-[12px] font-semibold text-over-text">
+        {t("ingestStale", { hours: ingest.hours })}
+      </p>
+    );
+
   const fetchButton = INGEST_ENDPOINT === null ? null : (
     <button
       type="button"
@@ -194,8 +223,13 @@ export function BankChargesPanel({
   // somebody wants it, and returning null here used to hide the only way to
   // ask for a charge that has not arrived yet.
   if (pending.length === 0 && dismissed.length === 0) {
-    if (fetchButton === null) return null;
-    return <div className="flex justify-end">{fetchButton}</div>;
+    if (fetchButton === null && staleLine === null) return null;
+    return (
+      <div className="flex flex-col items-end gap-1.5">
+        {fetchButton}
+        {staleLine}
+      </div>
+    );
   }
 
   const chosenFor = (chargeId: string, suggested: string | null): string =>
@@ -270,6 +304,7 @@ export function BankChargesPanel({
           </button>
         )}
       </div>
+      {staleLine}
 
       {open && (
         <div className="flex flex-col divide-y divide-soft border-t border-soft">

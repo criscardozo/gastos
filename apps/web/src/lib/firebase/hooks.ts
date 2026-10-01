@@ -7,7 +7,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
+  doc,
   getAggregateFromServer,
+  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -15,6 +17,7 @@ import {
   query,
   sum,
   where,
+  Timestamp,
   type Firestore,
   type Query,
 } from "firebase/firestore";
@@ -140,6 +143,20 @@ export interface ExpensesState {
    * writes, which Firestore queues instead.
    */
   failed?: boolean;
+}
+
+/**
+ * When the Gmail ingestion last finished a run, or null when it has never
+ * stamped one (an ingestion older than the heartbeat). Read once — this is
+ * glanced at, not watched. See shared/schema.md, ingestStatus.
+ */
+export async function fetchIngestRanAt(
+  db: Firestore,
+  householdId: string,
+): Promise<number | null> {
+  const snap = await getDoc(doc(db, "households", householdId, "ingestStatus", "latest"));
+  const ranAt: unknown = snap.data()?.ranAt;
+  return ranAt instanceof Timestamp ? ranAt.toMillis() : null;
 }
 
 /**

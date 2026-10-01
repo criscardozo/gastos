@@ -454,6 +454,7 @@
     "allClear": "Nothing pending",
     "fetchNow": "Fetch from the bank",
     "fetching": "Fetching…",
+    "ingestStale": "The bank's emails have not been read for {hours, plural, one {# hour} other {# hours}}: the script stopped running. Check its trigger in Apps Script.",
     "createExpense": "Create expense",
     "audAmount": "AUD amount",
     "audFromRate": "Estimated at the {rate} rate learned from your already-verified expenses. Change it if that is not what it was.",

@@ -120,6 +120,45 @@ function run() {
     "bank-ingest: " + imported + " imported, " + skipped + " ignored, " +
       seen.length + " remembered",
   );
+
+  // Last, and only on a run that got here: the heartbeat the apps read to say
+  // the mailbox has stopped being read. A run that threw half way leaves the
+  // old stamp, which is exactly what should go stale. A failure to write it is
+  // logged and not thrown — the charges above are already filed.
+  if (token === null) token = getAccessToken(config);
+  var status = writeIngestStatus(config, token, imported);
+  if (status !== "ok") console.warn("bank-ingest: could not stamp the heartbeat: " + status);
+}
+
+/**
+ * households/{id}/ingestStatus/latest — when this run finished, and what it
+ * filed. A separate document, not a field on the household: a write every 15
+ * minutes there would wake both apps' household listeners 96 times a day.
+ * Written whole (PATCH with no mask replaces the document), on purpose: the
+ * two fields are the whole record and nothing else belongs in it.
+ */
+function writeIngestStatus(config, token, imported) {
+  var url =
+    "https://firestore.googleapis.com/v1/projects/" +
+    encodeURIComponent(config.projectId) +
+    "/databases/(default)/documents/households/" +
+    encodeURIComponent(config.householdId) +
+    "/ingestStatus/latest";
+  var response = UrlFetchApp.fetch(url, {
+    method: "patch",
+    contentType: "application/json",
+    headers: { Authorization: "Bearer " + token },
+    payload: JSON.stringify({
+      fields: {
+        ranAt: { timestampValue: new Date().toISOString() },
+        imported: { integerValue: String(imported) },
+      },
+    }),
+    muteHttpExceptions: true,
+  });
+  var code = response.getResponseCode();
+  if (code >= 200 && code < 300) return "ok";
+  return "HTTP " + code + " " + response.getContentText().slice(0, 300);
 }
 
 /**

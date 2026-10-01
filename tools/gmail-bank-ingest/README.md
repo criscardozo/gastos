@@ -22,7 +22,7 @@ project's $0 infrastructure rule leaves no room for Cloud Functions or a server.
 | File | Role |
 |---|---|
 | `parse.js` | Pure parsing of one email. Shared verbatim between Apps Script and the vitest suite here — this is the risky part, so it is the tested part. |
-| `Code.gs` | The sweep: Gmail search → parse → Firestore create, plus the processed-message memory. |
+| `Code.gs` | The sweep: Gmail search → parse → Firestore create, plus the processed-message memory. Every run it finishes ends by stamping `households/{id}/ingestStatus/latest` (`ranAt`, `imported`), which the apps read to say when the trigger has stopped — see `shared/schema.md`. Until the pasted copy has this, the apps say nothing either way. |
 | `config.js` | Repairs the service-account key on its way out of the Script Properties box, which is where this setup most often breaks. Tested, for the same reason. |
 | `ping.js` | Whether a manual "traer ahora" request counts as current. The entire safety of the public endpoint is this one comparison, so it lives apart from `Code.gs` and is tested. |
 | `appsscript.json` | The project manifest, pinning the OAuth scopes to **read-only** Gmail plus outbound HTTPS. Without it Apps Script asks for full mailbox access; with it the script cannot modify or delete a single email even by accident. |
