@@ -17,7 +17,8 @@ import { join } from "node:path";
  * by name.
  *
  * What is compared is the DECLARED string, not the resolved one. What actually
- * gets installed lives in each lockfile and Dependabot moves it; what this
+ * gets installed lives in each lockfile, moved by hand since Dependabot was
+ * stopped on 2026-10-01; what this
  * holds is the intent, which is the thing that drifts silently.
  *
  * `required: false` marks a tool a consumer may legitimately not use — the
