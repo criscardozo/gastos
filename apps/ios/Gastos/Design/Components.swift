@@ -184,16 +184,30 @@ struct SegmentedPill<T: Hashable>: View {
 /// refuses to squash, push the whole page wider than the screen.
 struct AdaptiveRow<Content: View>: View {
     var spacing: CGFloat = 11
+    /// The text size from which the row becomes a column. Accessibility sizes
+    /// by default; a row of several sentences side by side breaks well before
+    /// that — Servicios' status line came out "Cobra/do el 1 oct" at XXL,
+    /// letters split across lines, because XXL is not an accessibility size.
+    var stacksFrom: DynamicTypeSize = .accessibility1
     @ViewBuilder var content: Content
 
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        let layout = typeSize.isAccessibilitySize
+        let stacked = typeSize >= stacksFrom
+        let layout = stacked
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: spacing))
             : AnyLayout(HStackLayout(spacing: spacing))
         layout { content }
+            .environment(\.adaptiveRowIsStacked, stacked)
     }
+}
+
+extension EnvironmentValues {
+    /// Whether the nearest AdaptiveRow is a column. Read by AdaptiveGap, which
+    /// used to decide from the text size alone and so could not follow a row
+    /// that stacks earlier than the accessibility sizes.
+    @Entry var adaptiveRowIsStacked = false
 }
 
 /// The `Spacer()` that pushes a row's control to the right — and does nothing,
@@ -203,10 +217,10 @@ struct AdaptiveRow<Content: View>: View {
 /// over its content, and `AdaptiveRow.Gap()` cannot infer a `Content` it has
 /// no use for.
 struct AdaptiveGap: View {
-    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.adaptiveRowIsStacked) private var stacked
 
     var body: some View {
-        if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
+        if !stacked { Spacer(minLength: 8) }
     }
 }
 

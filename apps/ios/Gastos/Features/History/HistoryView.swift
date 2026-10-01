@@ -479,7 +479,36 @@ struct HistoryView: View {
             // Side by side until neither fits: at an accessibility size they
             // were two round blobs with their labels broken mid-word ("verific"
             // over "ar"), which is what AdaptiveRow is for.
-            AdaptiveRow(spacing: 8) {
+            // In a row while the chips fit on one line, as a column otherwise,
+            // decided by what fits rather than by a text size: three chips side
+            // by side wrapped their labels to two lines inside the capsules at
+            // XXL, which is not an accessibility size, so AdaptiveRow kept
+            // them in a row. The column is leading-aligned; it used to centre.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    chipItems(pending: pending, canFetch: canFetch)
+                    Spacer(minLength: 0)
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    chipItems(pending: pending, canFetch: canFetch)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.bottom, 10)
+        }
+        // Said, not hidden behind a chip: the panel just looks quiet when the
+        // ingestion has stopped, and quiet is what a working week looks like.
+        if case .stale(let hours) = model.ingestHealth {
+            Text(l10n.t("bank.ingestStale", hours))
+                .appFont(12, .semibold)
+                .foregroundStyle(Theme.redText)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 10)
+        }
+    }
+
+    @ViewBuilder
+    private func chipItems(pending: Int, canFetch: Bool) -> some View {
                 if unverifiedCount > 0 {
                     chip(
                         icon: "exclamationmark.circle.fill",
@@ -522,26 +551,6 @@ struct HistoryView: View {
                     .disabled(model.isFetchingCharges)
                     .accessibilityLabel(l10n.t("bank.fetchNow"))
                 }
-                // AdaptiveGap, not Spacer: at an accessibility size AdaptiveRow
-                // is a VStack, and a Spacer in a VStack expands DOWNWARDS. The
-                // bare Spacer that used to be here pushed the whole list off
-                // the bottom of the screen — measured at AX5, where the charges
-                // ended up behind the tab bar with a gap above them the height
-                // of half the screen. It predates this section; it was found
-                // by running the new one at that size.
-                AdaptiveGap()
-            }
-            .padding(.bottom, 10)
-        }
-        // Said, not hidden behind a chip: the panel just looks quiet when the
-        // ingestion has stopped, and quiet is what a working week looks like.
-        if case .stale(let hours) = model.ingestHealth {
-            Text(l10n.t("bank.ingestStale", hours))
-                .appFont(12, .semibold)
-                .foregroundStyle(Theme.redText)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 10)
-        }
     }
 
     private func chip(

@@ -270,18 +270,23 @@ private struct ServiceRow: View {
         let off = status.differenceCents ?? 0
         // A symbol, a sentence and sometimes a button: once the text is big
         // that is more than a line, and the button was the part pushed off.
-        AdaptiveRow(spacing: 6) {
+        // A column from XL up: at XXL the row split words letter by letter.
+        AdaptiveRow(spacing: 6, stacksFrom: .xLarge) {
             if !status.dueThisMonth {
                 Text(l10n.t("services.notThisMonth"))
                     .appFont(11.5, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
             } else if let charge = status.charge {
-                Image(systemName: "checkmark.circle.fill")
-                    .appFont(14)
-                    .foregroundStyle(Theme.green)
-                Text(l10n.t("services.chargedOn", l10n.dayMonth(CalendarDate(charge.date) ?? today, timeZone: timeZone)))
-                    .appFont(11.5, .semibold)
-                    .foregroundStyle(Theme.greenText)
+                // One element, so that in a column the tick stays with its
+                // sentence instead of taking a line of its own.
+                HStack(spacing: 5) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .appFont(14)
+                        .foregroundStyle(Theme.green)
+                    Text(l10n.t("services.chargedOn", l10n.dayMonth(CalendarDate(charge.date) ?? today, timeZone: timeZone)))
+                        .appFont(11.5, .semibold)
+                        .foregroundStyle(Theme.greenText)
+                }
 
                 // The expense is what the bank did; the amount on file is only
                 // what we expected. So the fix always runs one way.
@@ -314,14 +319,18 @@ private struct ServiceRow: View {
                     .buttonStyle(.plain)
                 }
             } else {
-                Image(systemName: "clock")
-                    .appFont(13)
-                    .foregroundStyle(Theme.inkTertiary)
-                Text(l10n.t("services.notChargedYet"))
-                    .appFont(11.5, .semibold)
-                    .foregroundStyle(Theme.inkTertiary)
+                HStack(spacing: 5) {
+                    Image(systemName: "clock")
+                        .appFont(13)
+                        .foregroundStyle(Theme.inkTertiary)
+                    Text(l10n.t("services.notChargedYet"))
+                        .appFont(11.5, .semibold)
+                        .foregroundStyle(Theme.inkTertiary)
+                }
             }
-            Spacer(minLength: 0)
+            // Not a bare Spacer: in the column this row becomes, a Spacer
+            // stretches downwards (see AdaptiveGap).
+            AdaptiveGap()
         }
         // Nothing links a service to its expense but the NAME, so an expense
         // noted the way the bill reads — "Amaysim Internet Casa" for a service
