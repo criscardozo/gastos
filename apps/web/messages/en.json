@@ -162,7 +162,16 @@
     "noCategoryCta": "Create it",
     "linkTitle": "Did one of these pay for it?",
     "linkHint": "An expense links up when its note is the service's name.",
-    "linkAction": "This one"
+    "linkAction": "This one",
+    "lastMonthTitle": "Paid in {month}",
+    "colDate": "Date",
+    "colService": "Service",
+    "colUsdBank": "Bank's USD",
+    "noNote": "No note",
+    "lastMonthTotal": "{count, plural, one {Total · # payment} other {Total · # payments}}",
+    "lastMonthEmpty": "No expenses in the Servicios category that month.",
+    "lastMonthFailed": "We couldn't read that month's expenses. Reload the page to try again.",
+    "lastMonthUsdPartial": "{count, plural, one {The USD leaves out # unverified payment.} other {The USD leaves out # unverified payments.}}"
   },
   "cards": {
     "title": "Cards",

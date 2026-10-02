@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "comment": "Last month's Servicios payments, the table at the bottom of the Servicios screen. previousMonth: the calendar month before the one `today` falls in, as an inclusive YYYY-MM-DD range (January wraps to the previous December). payments: of `expenses` (already bounded to that month), the ones in category `services` — every one, whether or not its note names a service on the register, because the question is what was paid — ordered by date, then id. totalAudCents sums every row's amountCents; totalUsdCents sums usdCents where present (what the bank charged, verified rows only); unverified counts rows without usdCents, so the USD total can say it is partial.",
+  "previousMonth": [
+    { "today": "2026-10-02", "startDate": "2026-09-01", "endDate": "2026-09-30" },
+    { "today": "2026-03-31", "startDate": "2026-02-01", "endDate": "2026-02-28" },
+    { "today": "2028-03-01", "startDate": "2028-02-01", "endDate": "2028-02-29" },
+    { "today": "2027-01-15", "startDate": "2026-12-01", "endDate": "2026-12-31" }
+  ],
+  "payments": [
+    {
+      "name": "nothing paid",
+      "expenses": [
+        { "id": "a", "amountCents": 1200, "categoryId": "groceries", "note": "Coles", "date": "2026-09-03", "usdCents": null }
+      ],
+      "expected": { "ids": [], "totalAudCents": 0, "totalUsdCents": 0, "unverified": 0 }
+    },
+    {
+      "name": "only Servicios, by date then id, verified and not",
+      "expenses": [
+        { "id": "z", "amountCents": 4850, "categoryId": "services", "note": "Telefonía", "date": "2026-09-12", "usdCents": null },
+        { "id": "b", "amountCents": 2299, "categoryId": "services", "note": "Netflix", "date": "2026-09-07", "usdCents": 1494 },
+        { "id": "a", "amountCents": 1599, "categoryId": "services", "note": "Spotify", "date": "2026-09-07", "usdCents": 1039 },
+        { "id": "c", "amountCents": 9000, "categoryId": "groceries", "note": "Coles", "date": "2026-09-08", "usdCents": 5850 }
+      ],
+      "expected": { "ids": ["a", "b", "z"], "totalAudCents": 8748, "totalUsdCents": 2533, "unverified": 1 }
+    },
+    {
+      "name": "a Servicios expense naming no service still counts",
+      "expenses": [
+        { "id": "x", "amountCents": 3000, "categoryId": "services", "note": "Amaysim Internet Casa", "date": "2026-09-20", "usdCents": null },
+        { "id": "y", "amountCents": 500, "categoryId": "services", "note": "", "date": "2026-09-21", "usdCents": null }
+      ],
+      "expected": { "ids": ["x", "y"], "totalAudCents": 3500, "totalUsdCents": 0, "unverified": 2 }
+    }
+  ]
+}

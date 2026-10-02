@@ -162,7 +162,16 @@
     "noCategoryCta": "Crearla",
     "linkTitle": "¿Lo pagaste con alguno de estos?",
     "linkHint": "Un gasto queda vinculado cuando su nota es el nombre del servicio.",
-    "linkAction": "Es este"
+    "linkAction": "Es este",
+    "lastMonthTitle": "Pagado en {month}",
+    "colDate": "Fecha",
+    "colService": "Servicio",
+    "colUsdBank": "USD del banco",
+    "noNote": "Sin nota",
+    "lastMonthTotal": "{count, plural, one {Total · # pago} other {Total · # pagos}}",
+    "lastMonthEmpty": "Ese mes no hay gastos en la categoría Servicios.",
+    "lastMonthFailed": "No pudimos leer los gastos de ese mes. Recargá la página para volver a intentar.",
+    "lastMonthUsdPartial": "{count, plural, one {El USD no incluye # pago sin verificar.} other {El USD no incluye # pagos sin verificar.}}"
   },
   "cards": {
     "title": "Tarjetas",

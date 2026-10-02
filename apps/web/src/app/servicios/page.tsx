@@ -22,6 +22,7 @@ import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { CurrencyTag } from "@/components/ui/marks";
 import { ServiceDialog } from "@/components/service-dialog";
+import { LastMonthServices } from "@/components/last-month-services";
 import { useDbWrite } from "@/components/use-db-write";
 import { useServices } from "@/lib/firebase/hooks";
 import type { ServiceDoc } from "@/lib/firebase/converters";
@@ -453,6 +454,17 @@ export default function ServicesPage() {
           );
         })}
       </div>
+
+      {/* Last month, to the cent. Below the register on purpose: the rows
+          above are what is coming, this is what already went out. */}
+      {today !== null && (
+        <LastMonthServices
+          householdId={household.id}
+          today={today}
+          currency={household.currency}
+          locale={locale}
+        />
+      )}
 
       {editing !== null && today !== null && (
         <ServiceDialog

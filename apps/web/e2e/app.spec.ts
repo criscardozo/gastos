@@ -1381,6 +1381,64 @@ test("Gastos says when the bank's emails have stopped being read", async ({
   await expect(warning).toHaveCount(0);
 });
 
+// Last month on Servicios, to the cent: every Servicios expense of the month
+// before, a service on the register or not, and nothing from another category.
+test("Servicios shows what was paid last month, to the cent", async ({ page, request }) => {
+  const email = `e2e-last-month-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Pagos Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households`, {
+    headers: { Authorization: "Bearer owner" },
+  });
+  const docs = (await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[];
+  const mine = docs.find((d) => d.fields.name.stringValue === "Hogar de Pagos");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(
+    new Date(),
+  );
+  const [y, m] = today.split("-").map(Number);
+  const last = `${m === 1 ? y - 1 : y}-${String(m === 1 ? 12 : m - 1).padStart(2, "0")}`;
+  const file = async (id: string, cents: number, categoryId: string, note: string, day: string) => {
+    const res = await request.patch(`${REST}/households/${householdId}/expenses/${id}`, {
+      headers: { Authorization: "Bearer owner" },
+      data: {
+        fields: {
+          amountCents: { integerValue: String(cents) },
+          categoryId: { stringValue: categoryId },
+          note: { stringValue: note },
+          date: { stringValue: `${last}-${day}` },
+          createdBy: { stringValue: "e2e" },
+          verified: { booleanValue: false },
+          createdAt: { timestampValue: new Date().toISOString() },
+          updatedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    });
+    expect(res.ok()).toBe(true);
+  };
+  await file("p1", 2299, "services", "Netflix", "07");
+  await file("p2", 3000, "services", "Amaysim Internet Casa", "20");
+  await file("p3", 9000, "groceries", "Coles", "08");
+
+  await page.getByRole("link", { name: "Servicios", exact: true }).click();
+  await expect(page.getByText(/^Pagado en /)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Total · 2 pagos")).toBeVisible();
+  await expect(page.getByText("$52,99")).toBeVisible();
+  await expect(page.getByText("Amaysim Internet Casa")).toBeVisible();
+  await expect(page.getByText("Coles")).toHaveCount(0);
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,
