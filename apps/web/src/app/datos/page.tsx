@@ -312,13 +312,7 @@ export default function DataPage() {
       </div>
 
       {today !== null && (
-        <Reckonings
-          householdId={household.id}
-          uid={user.uid}
-          today={today}
-          locale={locale}
-          memberName={(id) => household.memberProfiles[id]?.displayName ?? "—"}
-        />
+        <Reckonings householdId={household.id} today={today} locale={locale} />
       )}
 
       {/* Range on the left, everything you can do with it on the right.

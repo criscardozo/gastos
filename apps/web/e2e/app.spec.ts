@@ -1561,7 +1561,6 @@ test("Datos records the day the accounts were done, and keeps the history", asyn
       data: {
         fields: {
           date: { stringValue: "2026-09-01" },
-          createdBy: { stringValue: "someone-else" },
           createdAt: { timestampValue: "2026-09-01T09:00:00Z" },
         },
       },
@@ -1587,7 +1586,9 @@ test("Datos records the day the accounts were done, and keeps the history", asyn
   await page.getByRole("button", { name: "Hacemos las cuentas hoy" }).click();
   await expect(page.getByText("Hechas hoy")).toBeVisible();
   await expect(page.getByRole("button", { name: "Hacemos las cuentas hoy" })).toHaveCount(0);
-  await expect(page.getByText(/Últimas: .* · Cuentas Tester/)).toBeVisible();
+  // Only the date — who pressed it is not kept or shown.
+  await expect(page.getByText(/Últimas: \w+ \d+ de \w+$/)).toBeVisible();
+  await expect(page.getByText(/Cuentas Tester/)).toHaveCount(0);
 
   // Stored, not just on screen.
   await expect.poll(stored).toBe(200);

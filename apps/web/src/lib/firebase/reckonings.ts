@@ -14,7 +14,7 @@ export const MAX_RECKONINGS = 24;
 export async function fetchReckonings(
   db: Firestore,
   householdId: string,
-): Promise<{ date: string; createdBy: string }[]> {
+): Promise<string[]> {
   const snap = await getDocs(
     query(
       collection(db, "households", householdId, "reckonings"),
@@ -23,9 +23,7 @@ export async function fetchReckonings(
     ),
   );
   return snap.docs.flatMap((d) => {
-    const data = d.data();
-    return typeof data.date === "string" && typeof data.createdBy === "string"
-      ? [{ date: data.date, createdBy: data.createdBy }]
-      : [];
+    const date: unknown = d.data().date;
+    return typeof date === "string" ? [date] : [];
   });
 }

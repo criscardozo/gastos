@@ -325,7 +325,7 @@
     "filterCategory": "Filter by category",
     "reckoningTitle": "Doing the accounts",
     "reckoningNever": "You haven't done the accounts yet",
-    "reckoningLast": "Last: {date} · {who}",
+    "reckoningLast": "Last: {date}",
     "reckoningFailed": "We couldn't read when you last did the accounts.",
     "reckoningRecord": "Doing the accounts today",
     "reckoningDoneToday": "Done today",

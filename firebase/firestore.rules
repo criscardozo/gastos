@@ -464,16 +464,16 @@ service cloud.firestore {
 
       // "Hacemos las cuentas": the day the household checked the numbers.
       // The date (household timezone) is the id, so a second press the same
-      // day is the same document; the collection is the history. Written by
-      // a member in their own name with the server's clock, never edited —
-      // deleting is how a mistaken press is taken back.
+      // day is the same document; the collection is the history. Only the
+      // date is kept — not who pressed it (Cristian's call). Written by a
+      // member with the server's clock, never edited — deleting is how a
+      // mistaken press is taken back.
       match /reckonings/{date} {
         allow read: if isMember(householdId);
         allow create: if isMember(householdId)
-          && request.resource.data.keys().hasOnly(['date', 'createdBy', 'createdAt'])
+          && request.resource.data.keys().hasOnly(['date', 'createdAt'])
           && isCalendarDate(date)
           && request.resource.data.date == date
-          && request.resource.data.createdBy == request.auth.uid
           && isServerTimestamp(request.resource.data.createdAt);
         allow delete: if isMember(householdId);
       }

@@ -833,9 +833,8 @@ describe("households/{id}/reckonings", () => {
   });
   const ref = (uid: string | null, id: string) =>
     doc(db(env, uid), "households", HOUSEHOLD, "reckonings", id);
-  const entry = (uid: string, date: string) => ({
+  const entry = (_uid: string, date: string) => ({
     date,
-    createdBy: uid,
     createdAt: serverTimestamp(),
   });
 
@@ -848,9 +847,12 @@ describe("households/{id}/reckonings", () => {
     await assertFails(getDoc(ref(CAROL, "2026-10-02")));
   });
 
-  it("refuses an outsider, someone else's name, a date that is not the id, or a client clock", async () => {
+  it("refuses an outsider, a name, a date that is not the id, or a client clock", async () => {
     await assertFails(setDoc(ref(CAROL, "2026-10-02"), entry(CAROL, "2026-10-02")));
-    await assertFails(setDoc(ref(ALICE, "2026-10-02"), entry(BOB, "2026-10-02")));
+    // Only the date is kept — who pressed it is not.
+    await assertFails(
+      setDoc(ref(ALICE, "2026-10-02"), { ...entry(ALICE, "2026-10-02"), createdBy: ALICE }),
+    );
     await assertFails(setDoc(ref(ALICE, "2026-10-02"), entry(ALICE, "2026-10-01")));
     await assertFails(setDoc(ref(ALICE, "hoy"), entry(ALICE, "hoy")));
     await assertFails(
@@ -864,7 +866,7 @@ describe("households/{id}/reckonings", () => {
   it("is not rewritten, but can be taken back", async () => {
     await assertSucceeds(setDoc(ref(ALICE, "2026-10-02"), entry(ALICE, "2026-10-02")));
     await assertFails(
-      updateDoc(ref(BOB, "2026-10-02"), { createdBy: BOB, createdAt: serverTimestamp() }),
+      updateDoc(ref(BOB, "2026-10-02"), { createdAt: serverTimestamp() }),
     );
     await assertSucceeds(deleteDoc(ref(BOB, "2026-10-02")));
   });

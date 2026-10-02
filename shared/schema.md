@@ -303,11 +303,12 @@ collection is the history.
 | Field | Type | Notes |
 |---|---|---|
 | `date` | string `YYYY-MM-DD` | Equal to the document id |
-| `createdBy` | string | The member who pressed it; must be the writer |
 | `createdAt` | timestamp | Server time |
 
-**Rules.** Members read; a member creates one in their own name with the server's
-clock and exactly these three fields. Never updated — a second press the same day is
+Only the date is kept, not who pressed it (Cristian's call, 2026-10-02).
+
+**Rules.** Members read; a member creates one with the server's clock and exactly
+these two fields. Never updated — a second press the same day is
 not offered — and deletable, which is how a mistaken press is taken back.
 
 **How the web reads it.** Once, on Datos, newest first, at most 24

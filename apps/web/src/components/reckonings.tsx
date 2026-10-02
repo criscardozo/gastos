@@ -18,24 +18,19 @@ import { fetchReckonings } from "@/lib/firebase/reckonings";
 import { deleteReckoning, recordReckoning } from "@/lib/firebase/mutations";
 import { formatLongDate, formatShortDateInYear } from "@/lib/dates";
 
-type Entry = { date: string; createdBy: string };
-
 export function Reckonings({
   householdId,
-  uid,
   today,
   locale,
-  memberName,
 }: {
   householdId: string;
-  uid: string;
   today: string;
   locale: string;
-  memberName: (uid: string) => string;
 }) {
   const t = useTranslations("data");
   const { write } = useAppError();
-  const [entries, setEntries] = useState<Entry[] | null>(null);
+  // The dates, newest first. Only the date is kept, not who pressed it.
+  const [entries, setEntries] = useState<string[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -57,13 +52,13 @@ export function Reckonings({
   }, [householdId]);
 
   const last = entries?.[0] ?? null;
-  const doneToday = last?.date === today;
+  const doneToday = last === today;
 
   const record = () => {
     const fb = getFirebaseClient();
     if (fb === null || entries === null || doneToday) return;
-    write(recordReckoning(fb.db, householdId, uid, today));
-    setEntries([{ date: today, createdBy: uid }, ...entries]);
+    write(recordReckoning(fb.db, householdId, today));
+    setEntries([today, ...entries]);
   };
 
   const undo = () => {
@@ -85,10 +80,7 @@ export function Reckonings({
                 ? t("loading")
                 : last === null
                   ? t("reckoningNever")
-                  : t("reckoningLast", {
-                      date: formatLongDate(last.date, locale),
-                      who: memberName(last.createdBy),
-                    })}
+                  : t("reckoningLast", { date: formatLongDate(last, locale) })}
           </span>
         </div>
         <div className="ml-auto flex items-center gap-2">
@@ -133,12 +125,9 @@ export function Reckonings({
           </button>
           {open && (
             <ul className="mt-1 flex flex-col divide-y divide-soft">
-              {entries.map((e) => (
-                <li key={e.date} className="flex items-baseline justify-between gap-3 py-1.5 text-[13px]">
-                  <span className="font-semibold text-ink">
-                    {formatShortDateInYear(e.date, today, locale)}
-                  </span>
-                  <span className="text-ink-3">{memberName(e.createdBy)}</span>
+              {entries.map((date) => (
+                <li key={date} className="py-1.5 text-[13px] font-semibold text-ink">
+                  {formatShortDateInYear(date, today, locale)}
                 </li>
               ))}
             </ul>

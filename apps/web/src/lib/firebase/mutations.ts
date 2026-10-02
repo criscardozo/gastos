@@ -1221,12 +1221,11 @@ export async function renameExpenseNote(
 export async function recordReckoning(
   db: Firestore,
   householdId: string,
-  uid: string,
   date: string,
 ): Promise<void> {
+  // Only the date: who pressed it is not kept.
   await setDoc(doc(db, "households", householdId, "reckonings", date), {
     date,
-    createdBy: uid,
     createdAt: serverTimestamp(),
   });
 }
