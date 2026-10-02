@@ -449,10 +449,18 @@ struct ExpenseFormView: View {
         return l10n.dayHeader(effectiveDate, timeZone: timeZone)
     }
 
+    /// Archived categories are not offered (the rules refuse a new expense in
+    /// one) — except the one an expense being edited is already in, so that
+    /// editing it never moves it elsewhere.
+    private var offeredCategories: [(id: String, category: Category)] {
+        let keep: String? = if case .edit(let item) = mode { item.expense.categoryId } else { nil }
+        return model.household?.entryCategories(keeping: keep) ?? []
+    }
+
     private var categoryRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(model.household?.sortedCategories ?? [], id: \.id) { entry in
+                ForEach(offeredCategories, id: \.id) { entry in
                     let selected = entry.id == selectedCategoryId
                     // The most-pressed control in the app, and until now a
                     // shape with a tap gesture — which VoiceOver cannot focus
@@ -539,7 +547,7 @@ struct ExpenseFormView: View {
     private func load() {
         guard case .edit(let item) = mode else {
             if selectedCategoryId == nil {
-                selectedCategoryId = model.household?.sortedCategories.first?.id
+                selectedCategoryId = offeredCategories.first?.id
             }
             return
         }

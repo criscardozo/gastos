@@ -194,10 +194,11 @@ struct RecurringRuleSheet: View {
         )
     }
 
+    /// Archived ones are not offered — a rule filing there would be refused —
+    /// except the one a rule being edited already points at.
     private var sortedCategories: [(String, Category)] {
-        (model.household?.categories ?? [:])
-            .sorted { $0.value.sortOrder < $1.value.sortOrder }
-            .map { ($0.key, $0.value) }
+        (model.household?.entryCategories(keeping: rule?.categoryId) ?? [])
+            .map { ($0.id, $0.category) }
     }
 
     /// The display rule lives in `L10n.categoryName`, which prefixes the key

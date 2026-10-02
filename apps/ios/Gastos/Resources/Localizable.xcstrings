@@ -952,18 +952,18 @@
       }
     },
     "categories.delete.foot": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Existing expenses are kept and will show as “Other”."
+            "value": "Existing expenses are kept but lose the name: they show as “Other”. To keep it, leave the category archived."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los gastos existentes se conservan y pasan a mostrarse como “Otros”."
+            "value": "Los gastos existentes se conservan pero pierden el nombre: pasan a mostrarse como “Otros”. Para conservarlo, dejala desactivada."
           }
         }
       }
@@ -1066,6 +1066,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "Renombrar categoría"
+          }
+        }
+      }
+    },
+    "categories.archive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desactivar"
+          }
+        }
+      }
+    },
+    "categories.unarchive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reactivar"
+          }
+        }
+      }
+    },
+    "categories.archived.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archived"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desactivadas"
+          }
+        }
+      }
+    },
+    "categories.archived.foot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not offered for new expenses. The ones already filed keep showing their name. Swipe to delete one for good."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ofrecen para cargar gastos. Los que ya tienen siguen mostrando su nombre. Deslizá para eliminar una para siempre."
           }
         }
       }

@@ -12,7 +12,11 @@ struct WatchEntryView: View {
     @State private var showConfirmation = false
     @FocusState private var crownFocused: Bool
 
-    private let categories = WatchCategories.all
+    /// The seed list less what the phone says is archived: filing into one
+    /// is refused by the rules, after the watch has said "guardado".
+    private var categories: [WatchCategory] {
+        WatchCategories.all.filter { !connectivity.archivedCategoryIds.contains($0.id) }
+    }
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 3)
 
     private var amountCents: Int { Int((dollars * 100).rounded()) }
@@ -33,6 +37,13 @@ struct WatchEntryView: View {
         }
         .background(WatchTheme.bg.ignoresSafeArea())
         .overlay { if showConfirmation { confirmationOverlay } }
+        // The choice made before the phone said it was archived moves to the
+        // first one still offered.
+        .onChange(of: connectivity.archivedCategoryIds) { _, archived in
+            if let id = selectedCategoryId, archived.contains(id) {
+                selectedCategoryId = categories.first?.id
+            }
+        }
         .onAppear {
             if selectedCategoryId == nil { selectedCategoryId = categories.first?.id }
             crownFocused = true

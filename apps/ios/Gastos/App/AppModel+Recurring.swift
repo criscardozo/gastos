@@ -140,8 +140,12 @@ extension AppModel {
     /// makes, held to the same shared vectors — and this only carries it out.
     func runRecurringRulesIfNeeded() async {
         guard recurringInputsReady, phase == .ready else { return }
+        // A rule filing into an archived category would be refused by the
+        // rules on every arrival; it files nothing until the category is back.
+        let categories = household?.categories ?? [:]
+        let liveRules = recurringRules.filter { !(categories[$0.categoryId]?.isArchived ?? false) }
         let plan = RecurringRules.planRun(
-            pending: expenseBankCharges, rules: recurringRules,
+            pending: expenseBankCharges, rules: liveRules,
             learnedRate: learnedBankRate,
             seen: evaluatedChargeIds, filed: filedChargeIds
         )

@@ -14,8 +14,16 @@ struct CategoriesManagerView: View {
 
     private var l10n: L10n { model.l10n }
 
+    /// Everything, for the count against the cap — archived ones still take
+    /// a slot in the map.
     private var entries: [(id: String, category: Category)] {
         model.household?.sortedCategories ?? []
+    }
+    private var active: [(id: String, category: Category)] {
+        model.household?.entryCategories() ?? []
+    }
+    private var archived: [(id: String, category: Category)] {
+        entries.filter { $0.category.isArchived }
     }
 
     private var footerText: String {
@@ -30,23 +38,57 @@ struct CategoriesManagerView: View {
         NavigationStack {
             List {
                 Section {
-                    ForEach(entries, id: \.id) { entry in
+                    ForEach(active, id: \.id) { entry in
                         row(entry)
                             .listRowBackground(Theme.surface)
                             .listRowSeparatorTint(Theme.separator)
+                            // Archive, not delete: deleting turned every
+                            // expense filed under it into "Categoría
+                            // eliminada". One swipe back from the list below,
+                            // so no confirmation.
+                            .swipeActions(edge: .trailing) {
+                                if active.count > 1 {
+                                    Button {
+                                        model.archiveCategory(id: entry.id)
+                                    } label: {
+                                        Label(l10n.t("categories.archive"), systemImage: "archivebox")
+                                    }
+                                    .tint(Theme.inkSecondary)
+                                }
+                            }
                     }
                     .onMove { from, to in
                         model.moveCategories(fromOffsets: from, toOffset: to)
                     }
-                    .onDelete { offsets in
-                        guard let index = offsets.first, entries.indices.contains(index) else { return }
-                        deletingId = entries[index].id
-                    }
-                    .deleteDisabled(entries.count <= 1)
                 } footer: {
                     Text(footerText)
                         .appFont(12)
                         .foregroundStyle(Theme.inkTertiary)
+                }
+
+                if !archived.isEmpty {
+                    Section {
+                        ForEach(archived, id: \.id) { entry in
+                            archivedRow(entry)
+                                .listRowBackground(Theme.surface)
+                                .listRowSeparatorTint(Theme.separator)
+                                // The permanent one lives only here, behind
+                                // the confirmation it always had.
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        deletingId = entry.id
+                                    } label: {
+                                        Label(l10n.t("history.delete"), systemImage: "trash")
+                                    }
+                                }
+                        }
+                    } header: {
+                        Text(l10n.t("categories.archived.title"))
+                    } footer: {
+                        Text(l10n.t("categories.archived.foot"))
+                            .appFont(12)
+                            .foregroundStyle(Theme.inkTertiary)
+                    }
                 }
             }
             .listStyle(.insetGrouped)
@@ -115,6 +157,24 @@ struct CategoriesManagerView: View {
         }
         .sheet(isPresented: $showAdd) {
             AddCategorySheet()
+        }
+    }
+
+    private func archivedRow(_ entry: (id: String, category: Category)) -> some View {
+        HStack(spacing: 11) {
+            CategoryCircle(categoryId: entry.id, category: entry.category, size: 34)
+                .opacity(0.55)
+            Text(l10n.categoryName(entry.category))
+                .appFont(14.5, .semibold)
+                .foregroundStyle(Theme.inkSecondary)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            Button(l10n.t("categories.unarchive")) {
+                model.unarchiveCategory(id: entry.id)
+            }
+            .appFont(13, .bold)
+            .foregroundStyle(Theme.accentStrong)
+            .buttonStyle(.borderless)
         }
     }
 

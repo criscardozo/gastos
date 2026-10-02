@@ -33,9 +33,50 @@ struct Category: Codable, Equatable {
     /// Whether spending here counts against the period budget. Absent ⇒ true,
     /// so categories that predate the field keep counting (shared/schema.md).
     var countsToBudget: Bool?
+    /// Archived: kept, so its expenses still show its name, but offered for
+    /// nothing new — and the rules refuse a new expense in it. Absent ⇒ active.
+    var archived: Bool? = nil
 
     /// Only an explicit `false` opts a category out.
     var isBudgeted: Bool { countsToBudget != false }
+
+    var isArchived: Bool { archived == true }
+
+    /// The stored entry, written whole (setCategory replaces it). Every field
+    /// the schema has must be here: `archived` was missing, so renaming an
+    /// archived category or flipping its budget switch on the phone wrote it
+    /// back ACTIVE. Optional flags are written only when set, as the web does.
+    var firestoreData: [String: Any] {
+        var data: [String: Any] = ["icon": icon, "color": color, "sortOrder": sortOrder]
+        if let key { data["key"] = key }
+        if let name { data["name"] = name }
+        if countsToBudget == false { data["countsToBudget"] = false }
+        if archived == true { data["archived"] = true }
+        return data
+    }
+
+    /// What a form may offer, by sortOrder: the active categories, plus
+    /// `keeping` — the one the thing being edited is already in — even when
+    /// archived, so editing an old expense never moves it elsewhere. Kept
+    /// last, out of the way of the ones a new entry would pick.
+    static func entryOrder(
+        _ categories: [String: Category], keeping keep: String? = nil
+    ) -> [(id: String, category: Category)] {
+        let pairs: [(id: String, category: Category)] = categories.map { entry in
+            (id: entry.key, category: entry.value)
+        }
+        let sorted = pairs.sorted { (lhs: (id: String, category: Category), rhs: (id: String, category: Category)) -> Bool in
+            if lhs.category.sortOrder != rhs.category.sortOrder {
+                return lhs.category.sortOrder < rhs.category.sortOrder
+            }
+            return lhs.id < rhs.id
+        }
+        let active = sorted.filter { !$0.category.isArchived }
+        guard let keep, let kept = sorted.first(where: { $0.id == keep }),
+              kept.category.isArchived
+        else { return active }
+        return active + [kept]
+    }
 }
 
 extension Category {
@@ -131,7 +172,12 @@ struct Household: Codable, Identifiable {
         routing(forCardLast4: cardLast4) != .credit
     }
 
-    /// Categories sorted for display.
+    /// What an entry form offers — see Category.entryOrder.
+    func entryCategories(keeping keep: String? = nil) -> [(id: String, category: Category)] {
+        Category.entryOrder(categories, keeping: keep)
+    }
+
+    /// Categories sorted for display — archived ones included, for listings.
     var sortedCategories: [(id: String, category: Category)] {
         categories
             .map { (id: $0.key, category: $0.value) }

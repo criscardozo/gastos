@@ -571,7 +571,8 @@ struct SettingsView: View {
     /// count in the header already answers "how many", and the sheet is where
     /// any actual editing happens.
     private var categoriesRow: some View {
-        let preview = Array((model.household?.sortedCategories ?? []).prefix(5))
+        // Active ones: an archived category is not one of "your categories".
+        let preview = Array((model.household?.entryCategories() ?? []).prefix(5))
         return AdaptiveRow {
             // A few of them, overlapping, as a hint at what is behind the row.
             HStack(spacing: -6) {

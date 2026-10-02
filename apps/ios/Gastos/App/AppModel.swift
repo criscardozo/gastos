@@ -992,7 +992,7 @@ final class AppModel {
         category.key = nil
         category.name = trimmed
         household?.categories[id] = category  // optimistic; listener confirms
-        let data = Self.categoryData(category)
+        let data = category.firestoreData
         write { try await self.firestore.setCategory(householdId: householdId, id: id, data: data) }
     }
 
@@ -1007,7 +1007,7 @@ final class AppModel {
         let sortOrder = (household.categories.values.map(\.sortOrder).max() ?? -1) + 1
         let category = Category(key: nil, name: trimmed, icon: materialIcon, color: colorHex, sortOrder: sortOrder)
         self.household?.categories[id] = category
-        let data = Self.categoryData(category)
+        let data = category.firestoreData
         write { try await self.firestore.setCategory(householdId: householdId, id: id, data: data) }
     }
 
@@ -1018,13 +1018,42 @@ final class AppModel {
         else { return }
         category.countsToBudget = counts ? nil : false
         household?.categories[id] = category  // optimistic; listener confirms
-        let data = Self.categoryData(category)
+        let data = category.firestoreData
         write { try await self.firestore.setCategory(householdId: householdId, id: id, data: data) }
         publishWidgetSnapshot()  // the remaining figure just changed
     }
 
-    /// Existing expenses keep their categoryId; display falls back to the
-    /// gray "Otros" placeholder (Category.missing).
+    /// Archive instead of delete: the entry stays, so its expenses keep their
+    /// name, and nothing new can go in (the rules refuse it). The last ACTIVE
+    /// one stays — with none, no expense could be added at all.
+    func archiveCategory(id: String) {
+        guard let householdId = attachedHouseholdId,
+              var category = household?.categories[id],
+              (household?.entryCategories().count ?? 0) > 1
+        else { return }
+        category.archived = true
+        household?.categories[id] = category  // optimistic; listener confirms
+        let data = category.firestoreData
+        write { try await self.firestore.setCategory(householdId: householdId, id: id, data: data) }
+        publishWidgetSnapshot()
+    }
+
+    /// Back to active. The entry is written whole, so the flag is simply left
+    /// out — absent is what "active" means in the schema.
+    func unarchiveCategory(id: String) {
+        guard let householdId = attachedHouseholdId,
+              var category = household?.categories[id]
+        else { return }
+        category.archived = nil
+        household?.categories[id] = category
+        let data = category.firestoreData
+        write { try await self.firestore.setCategory(householdId: householdId, id: id, data: data) }
+        publishWidgetSnapshot()
+    }
+
+    /// The permanent one, offered only from the archived list. Existing
+    /// expenses keep their categoryId and fall back to the gray "Otros"
+    /// placeholder (Category.missing) — which is why archiving is the default.
     func deleteCategory(id: String) {
         guard let householdId = attachedHouseholdId,
               (household?.categories.count ?? 0) > 1  // rules require >= 1
@@ -1033,10 +1062,12 @@ final class AppModel {
         write { try await self.firestore.deleteCategory(householdId: householdId, id: id) }
     }
 
-    /// List reorder: rewrites sortOrder to the new visual index.
+    /// List reorder: rewrites sortOrder to the new visual index. The offsets
+    /// are the ACTIVE list's — the one the manager lets you drag — so the
+    /// reorder is worked out on that list, not on all of them.
     func moveCategories(fromOffsets: IndexSet, toOffset: Int) {
         guard let householdId = attachedHouseholdId, let household else { return }
-        var ordered = household.sortedCategories
+        var ordered = household.entryCategories()
         ordered.move(fromOffsets: fromOffsets, toOffset: toOffset)
         var orders: [String: Int] = [:]
         for (index, entry) in ordered.enumerated() where entry.category.sortOrder != index {
@@ -1047,22 +1078,10 @@ final class AppModel {
         write { try await self.firestore.updateCategorySortOrders(householdId: householdId, orders: orders) }
     }
 
-    private static func categoryData(_ category: Category) -> [String: Any] {
-        var data: [String: Any] = [
-            "icon": category.icon,
-            "color": category.color,
-            "sortOrder": category.sortOrder,
-        ]
-        if let key = category.key { data["key"] = key }
-        if let name = category.name { data["name"] = name }
-        // Written only when opted out, keeping the default shape untouched.
-        if category.countsToBudget == false { data["countsToBudget"] = false }
-        return data
-    }
-
     // MARK: Widget snapshot
 
     private var lastPublishedSnapshot: WidgetBridge.Snapshot?
+    private var lastPublishedArchivedIds: [String] = []
 
     /// Publishes the budget snapshot the widget renders. Called whenever
     /// period/expense state changes; skips the write when nothing visible
@@ -1078,17 +1097,23 @@ final class AppModel {
             timezone: household.timezone,
             updatedAtEpoch: Int(Date().timeIntervalSince1970)
         )
+        // The watch also learns which categories are archived: it carries its
+        // own list (the seed categories) and would go on offering one the
+        // household archived, which the rules then refuse.
+        let archivedIds = household.categories.filter { $0.value.isArchived }.map(\.key).sorted()
         if var last = lastPublishedSnapshot {
             last.updatedAtEpoch = snapshot.updatedAtEpoch
-            if last == snapshot { return }
+            if last == snapshot && archivedIds == lastPublishedArchivedIds { return }
         }
         lastPublishedSnapshot = snapshot
+        lastPublishedArchivedIds = archivedIds
         WidgetBridge.publish(snapshot)
         WatchSyncService.shared.updateBudgetContext(
             remainingCents: snapshot.remainingCents,
             budgetCents: snapshot.budgetCents,
             state: snapshot.state,
-            currency: snapshot.currency
+            currency: snapshot.currency,
+            archivedCategoryIds: archivedIds
         )
     }
 }

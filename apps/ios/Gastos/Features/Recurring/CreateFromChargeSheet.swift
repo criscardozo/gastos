@@ -149,10 +149,9 @@ struct CreateFromChargeSheet: View {
         return merchant.isEmpty ? day : "\(day) · \(merchant)"
     }
 
+    /// Archived ones are not offered: the rules refuse a new expense there.
     private var sortedCategories: [(String, Category)] {
-        (model.household?.categories ?? [:])
-            .sorted { $0.value.sortOrder < $1.value.sortOrder }
-            .map { ($0.key, $0.value) }
+        (model.household?.entryCategories() ?? []).map { ($0.id, $0.category) }
     }
 
     private func name(of category: Category, id: String) -> String {

@@ -36,6 +36,8 @@ final class WatchSyncService: NSObject {
         static let budgetCents = "budgetCents"
         static let state = "state"
         static let currency = "currency"
+        /// Ids of the archived categories, so the watch stops offering them.
+        static let archivedCategoryIds = "archivedCategoryIds"
     }
 
     #if canImport(WatchConnectivity)
@@ -62,7 +64,8 @@ final class WatchSyncService: NSObject {
         remainingCents: Int,
         budgetCents: Int,
         state: String,
-        currency: String
+        currency: String,
+        archivedCategoryIds: [String] = []
     ) {
         #if canImport(WatchConnectivity)
         let context: [String: Any] = [
@@ -70,6 +73,7 @@ final class WatchSyncService: NSObject {
             Key.budgetCents: budgetCents,
             Key.state: state,
             Key.currency: currency,
+            Key.archivedCategoryIds: archivedCategoryIds,
         ]
         guard let session, session.activationState == .activated else {
             pendingContext = context

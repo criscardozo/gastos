@@ -13,6 +13,9 @@ import WatchConnectivity
 final class WatchConnectivityModel: NSObject, ObservableObject {
 
     @Published var budget: WatchBudget?
+    /// Categories the household archived — pushed by the phone, since the
+    /// watch's own list is the bundled seed and cannot know.
+    @Published var archivedCategoryIds: Set<String> = []
 
     private var session: WCSession { WCSession.default }
 
@@ -41,6 +44,7 @@ final class WatchConnectivityModel: NSObject, ObservableObject {
     /// Parses off the main actor — the dictionary is not Sendable, so it is
     /// read here and only the resulting value crosses.
     nonisolated private func apply(_ context: [String: Any]) {
+        let archived = Set(context["archivedCategoryIds"] as? [String] ?? [])
         guard let remaining = context["remainingCents"] as? Int else { return }
         let budget = WatchBudget(
             remainingCents: remaining,
@@ -48,7 +52,10 @@ final class WatchConnectivityModel: NSObject, ObservableObject {
             state: context["state"] as? String ?? "comfortable",
             currency: context["currency"] as? String ?? "AUD"
         )
-        Task { @MainActor in self.budget = budget }
+        Task { @MainActor in
+            self.budget = budget
+            self.archivedCategoryIds = archived
+        }
     }
 }
 
