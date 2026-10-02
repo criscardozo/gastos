@@ -30,6 +30,7 @@ import type { Expense } from "@/lib/firebase/converters";
 import { formatCents, formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 import { addDays, type PeriodRange } from "@/lib/periods";
+import { previousMonth } from "@/lib/service-payments";
 import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
 import { exportExpensesPdf, type PdfExportOptions } from "@/lib/export/pdf";
 import { buildExportPayload } from "@/lib/export/payload";
@@ -41,7 +42,7 @@ import { DriveExportError, exportToGoogleDrive } from "@/lib/export/drive";
 
 /* ── Pure helpers ──────────────────────────────────────────────────────── */
 
-type RangePreset = "week" | "current" | "previous" | "custom";
+type RangePreset = "week" | "current" | "lastMonth" | "custom";
 
 /** Monday–Sunday week containing `today` (already a household-tz date). */
 function weekRange(today: string): PeriodRange {
@@ -121,16 +122,14 @@ export default function DataPage() {
       }
       return { startDate: customFrom, endDate: customTo };
     }
-    const currentIdx = currentPeriod
-      ? periods.findIndex((p) => p.startDate === currentPeriod.startDate)
-      : periods.length - 1;
     if (preset === "current") {
       const p = currentPeriod ?? periods[periods.length - 1] ?? null;
       return p ? { startDate: p.startDate, endDate: p.endDate } : null;
     }
-    // previous
-    const prev = periods[currentIdx - 1] ?? null;
-    return prev ? { startDate: prev.startDate, endDate: prev.endDate } : null;
+    // The calendar month before this one, the 1st to its last day. It was
+    // the previous PERIOD, a fortnight; a month is what statements and
+    // bills are counted in.
+    return today !== null ? previousMonth(today) : null;
   }, [preset, today, customFrom, customTo, currentPeriod, periods]);
 
   /* One-shot bounded read for the resolved range. */
@@ -321,7 +320,7 @@ export default function DataPage() {
           options={[
             { value: "week", label: t("rangeWeek") },
             { value: "current", label: t("rangeCurrent") },
-            { value: "previous", label: t("rangePrevious") },
+            { value: "lastMonth", label: t("rangeLastMonth") },
             { value: "custom", label: t("rangeCustom") },
           ]}
           value={preset}
