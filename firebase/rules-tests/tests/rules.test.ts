@@ -824,6 +824,52 @@ describe("households/{id}/expenses", () => {
 
 // ============================ bankCharges ============================
 
+describe("households/{id}/reckonings", () => {
+  // "Hacemos las cuentas": the day the household sat down and checked the
+  // numbers. One document per day, the date as its id, so pressing twice is
+  // the same write; kept as a history.
+  beforeEach(async () => {
+    await seedHousehold(true);
+  });
+  const ref = (uid: string | null, id: string) =>
+    doc(db(env, uid), "households", HOUSEHOLD, "reckonings", id);
+  const entry = (uid: string, date: string) => ({
+    date,
+    createdBy: uid,
+    createdAt: serverTimestamp(),
+  });
+
+  it("a member records a day, and either member reads the history", async () => {
+    await assertSucceeds(setDoc(ref(ALICE, "2026-10-02"), entry(ALICE, "2026-10-02")));
+    await assertSucceeds(getDoc(ref(BOB, "2026-10-02")));
+    await assertSucceeds(
+      getDocs(collection(db(env, BOB), "households", HOUSEHOLD, "reckonings")),
+    );
+    await assertFails(getDoc(ref(CAROL, "2026-10-02")));
+  });
+
+  it("refuses an outsider, someone else's name, a date that is not the id, or a client clock", async () => {
+    await assertFails(setDoc(ref(CAROL, "2026-10-02"), entry(CAROL, "2026-10-02")));
+    await assertFails(setDoc(ref(ALICE, "2026-10-02"), entry(BOB, "2026-10-02")));
+    await assertFails(setDoc(ref(ALICE, "2026-10-02"), entry(ALICE, "2026-10-01")));
+    await assertFails(setDoc(ref(ALICE, "hoy"), entry(ALICE, "hoy")));
+    await assertFails(
+      setDoc(ref(ALICE, "2026-10-02"), { ...entry(ALICE, "2026-10-02"), createdAt: new Date() }),
+    );
+    await assertFails(
+      setDoc(ref(ALICE, "2026-10-02"), { ...entry(ALICE, "2026-10-02"), note: "x" }),
+    );
+  });
+
+  it("is not rewritten, but can be taken back", async () => {
+    await assertSucceeds(setDoc(ref(ALICE, "2026-10-02"), entry(ALICE, "2026-10-02")));
+    await assertFails(
+      updateDoc(ref(BOB, "2026-10-02"), { createdBy: BOB, createdAt: serverTimestamp() }),
+    );
+    await assertSucceeds(deleteDoc(ref(BOB, "2026-10-02")));
+  });
+});
+
 describe("households/{id}/ingestStatus", () => {
   // The ingestion's own heartbeat: when it last finished a run. Written by its
   // service account (rules do not apply), read by the apps to say when the

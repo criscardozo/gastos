@@ -13,6 +13,7 @@
 // page you visit, not one you live in).
 
 import { useMemo, useState } from "react";
+import { Reckonings } from "@/components/reckonings";
 import { useTranslations } from "next-intl";
 
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
@@ -309,6 +310,16 @@ export default function DataPage() {
         <h1 className="text-[22px] font-bold text-ink">{t("title")}</h1>
         <p className="text-[13px] text-ink-3">{t("subtitle")}</p>
       </div>
+
+      {today !== null && (
+        <Reckonings
+          householdId={household.id}
+          uid={user.uid}
+          today={today}
+          locale={locale}
+          memberName={(id) => household.memberProfiles[id]?.displayName ?? "—"}
+        />
+      )}
 
       {/* Range on the left, everything you can do with it on the right.
           The card that used to be here held four export buttons, category

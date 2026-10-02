@@ -322,7 +322,15 @@
     "searchNote": "Search the note",
     "personAll": "Everyone",
     "categoriesSome": "{count} categories",
-    "filterCategory": "Filter by category"
+    "filterCategory": "Filter by category",
+    "reckoningTitle": "Doing the accounts",
+    "reckoningNever": "You haven't done the accounts yet",
+    "reckoningLast": "Last: {date} · {who}",
+    "reckoningFailed": "We couldn't read when you last did the accounts.",
+    "reckoningRecord": "Doing the accounts today",
+    "reckoningDoneToday": "Done today",
+    "reckoningUndo": "Undo",
+    "reckoningHistory": "{count, plural, one {History · # time} other {History · # times}}"
   },
   "settings": {
     "title": "Settings",

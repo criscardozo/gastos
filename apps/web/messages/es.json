@@ -322,7 +322,15 @@
     "searchNote": "Buscar en la nota",
     "personAll": "Todos",
     "categoriesSome": "{count} categorías",
-    "filterCategory": "Filtrar por categoría"
+    "filterCategory": "Filtrar por categoría",
+    "reckoningTitle": "Hacemos las cuentas",
+    "reckoningNever": "Todavía no hicieron las cuentas",
+    "reckoningLast": "Últimas: {date} · {who}",
+    "reckoningFailed": "No pudimos leer cuándo hicieron las cuentas.",
+    "reckoningRecord": "Hacemos las cuentas hoy",
+    "reckoningDoneToday": "Hechas hoy",
+    "reckoningUndo": "Deshacer",
+    "reckoningHistory": "{count, plural, one {Historial · # vez} other {Historial · # veces}}"
   },
   "settings": {
     "title": "Ajustes",

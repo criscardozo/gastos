@@ -293,6 +293,26 @@ in whichever client opens the screen. If neither app is opened the odd expired
 charge lingers — invisible either way, since every reader hides anything past
 the window. The clients agree on the cutoff, not on when it is enforced.
 
+### `households/{householdId}/reckonings/{date}`
+
+"Hacemos las cuentas": the days the household sat down, checked the numbers
+against the bank and settled up. The document id **is** the date, `YYYY-MM-DD` in
+the household timezone, so pressing twice on one day is the same document and the
+collection is the history.
+
+| Field | Type | Notes |
+|---|---|---|
+| `date` | string `YYYY-MM-DD` | Equal to the document id |
+| `createdBy` | string | The member who pressed it; must be the writer |
+| `createdAt` | timestamp | Server time |
+
+**Rules.** Members read; a member creates one in their own name with the server's
+clock and exactly these three fields. Never updated — a second press the same day is
+not offered — and deletable, which is how a mistaken press is taken back.
+
+**How the web reads it.** Once, on Datos, newest first, at most 24
+(`lib/firebase/reckonings.ts`). Not a listener: the screen is visited.
+
 ### `households/{householdId}/ingestStatus/latest`
 
 The ingestion's heartbeat. Its 15-minute trigger can stop without a word —

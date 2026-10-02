@@ -1209,3 +1209,33 @@ export async function renameExpenseNote(
   });
 }
 
+
+/* ── "Hacemos las cuentas" ─────────────────────────────────────────────── */
+
+/**
+ * Record that the household checked the numbers on `date` (household
+ * timezone). The date is the document id, so the history holds one entry a
+ * day; the rules refuse rewriting one, which is why the screen stops offering
+ * the button once today is recorded. See shared/schema.md, reckonings.
+ */
+export async function recordReckoning(
+  db: Firestore,
+  householdId: string,
+  uid: string,
+  date: string,
+): Promise<void> {
+  await setDoc(doc(db, "households", householdId, "reckonings", date), {
+    date,
+    createdBy: uid,
+    createdAt: serverTimestamp(),
+  });
+}
+
+/** Take back a mistaken press. */
+export async function deleteReckoning(
+  db: Firestore,
+  householdId: string,
+  date: string,
+): Promise<void> {
+  await deleteDoc(doc(db, "households", householdId, "reckonings", date));
+}

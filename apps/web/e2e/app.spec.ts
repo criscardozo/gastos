@@ -32,6 +32,10 @@ const AUTH_PORT = process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT ?? "9390";
 const FIRESTORE_PORT = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? "8390";
 /** Admin-side REST, for standing in as the Gmail ingestion (rules bypassed). */
 const REST = `http://localhost:${FIRESTORE_PORT}/v1/projects/${PROJECT}/databases/(default)/documents`;
+// Listing households: always with a page size. The REST list returns one
+// page by default, and once the suite had made more households than fit in
+// it, a test looking for its own found nothing — first seen when the suite
+// passed 38 tests (2026-10-02), as "Cannot read properties of undefined".
 
 test.beforeAll(async ({ request }) => {
   // Wipe emulator state so every run starts clean.
@@ -272,7 +276,7 @@ test("a bank charge is matched to the expense it paid for", async ({
 
   // Now do the ingestion's job by hand: file a charge of US$ 41,54, which at
   // the learned rate can only be the 63,90 expense.
-  const households = await request.get(`${REST}/households`, {
+  const households = await request.get(`${REST}/households?pageSize=300`, {
     headers: { Authorization: "Bearer owner" },
   });
   // Pick THIS test's household by name — the other test in this file has one
@@ -416,7 +420,7 @@ test("starting a period asks, and carries the leftover", async ({
 
   // Find the household onboarding just created — by name, since the other
   // tests in this file have theirs too.
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const mine = ((await households.json()).documents as {
     name: string;
     fields: { name: { stringValue: string } };
@@ -633,7 +637,7 @@ test("a period can be stretched so the next one starts later", async ({
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const mine = ((await households.json()).documents as {
     name: string;
     fields: { name: { stringValue: string } };
@@ -826,7 +830,7 @@ test("a leftover that could not be read is not materialized as zero", async ({
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const mine = ((await households.json()).documents as {
     name: string;
     fields: { name: { stringValue: string } };
@@ -1333,7 +1337,7 @@ test("Gastos says when the bank's emails have stopped being read", async ({
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, {
+  const households = await request.get(`${REST}/households?pageSize=300`, {
     headers: { Authorization: "Bearer owner" },
   });
   const docs = (await households.json()).documents as {
@@ -1393,7 +1397,7 @@ test("Servicios shows what was paid last month, to the cent", async ({ page, req
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, {
+  const households = await request.get(`${REST}/households?pageSize=300`, {
     headers: { Authorization: "Bearer owner" },
   });
   const docs = (await households.json()).documents as {
@@ -1524,6 +1528,84 @@ test("an archived category keeps its expenses' name and takes no new ones", asyn
   await expect(formCategory.locator("option", { hasText: "Salud" })).toHaveCount(1);
 });
 
+// "Hacemos las cuentas" on Datos: one press records today, the last time is
+// always shown beside the button, and the history is kept.
+test("Datos records the day the accounts were done, and keeps the history", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-cuentas-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Cuentas Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  // An earlier time, so the history has two and the order can be checked.
+  const households = await request.get(`${REST}/households?pageSize=300`, {
+    headers: { Authorization: "Bearer owner" },
+  });
+  const docs = (await households.json()).documents as {
+    name: string;
+    fields: { name: { stringValue: string } };
+  }[];
+  const mine = docs.find((d) => d.fields.name.stringValue === "Hogar de Cuentas");
+  expect(mine).toBeDefined();
+  const householdId = (mine as { name: string }).name.split("/").pop() as string;
+  const seeded = await request.patch(
+    `${REST}/households/${householdId}/reckonings/2026-09-01`,
+    {
+      headers: { Authorization: "Bearer owner" },
+      data: {
+        fields: {
+          date: { stringValue: "2026-09-01" },
+          createdBy: { stringValue: "someone-else" },
+          createdAt: { timestampValue: "2026-09-01T09:00:00Z" },
+        },
+      },
+    },
+  );
+  expect(seeded.ok()).toBe(true);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(
+    new Date(),
+  );
+  // The writes are not awaited (they never are here), so a reload straight
+  // after a press can beat the write to the server. Wait for the server.
+  const stored = async () =>
+    (
+      await request.get(`${REST}/households/${householdId}/reckonings/${today}`, {
+        headers: { Authorization: "Bearer owner" },
+      })
+    ).status();
+
+  await page.goto("/datos");
+  await expect(page.getByText(/Últimas: martes 1 de septiembre/)).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByRole("button", { name: "Hacemos las cuentas hoy" }).click();
+  await expect(page.getByText("Hechas hoy")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Hacemos las cuentas hoy" })).toHaveCount(0);
+  await expect(page.getByText(/Últimas: .* · Cuentas Tester/)).toBeVisible();
+
+  // Stored, not just on screen.
+  await expect.poll(stored).toBe(200);
+  await page.reload();
+  await expect(page.getByText("Hechas hoy")).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("button", { name: /Historial · 2 veces/ }).click();
+  await expect(page.getByText("1 sept")).toBeVisible();
+
+  // A mistaken press can be taken back.
+  await page.getByRole("button", { name: "Deshacer" }).click();
+  await expect(page.getByRole("button", { name: "Hacemos las cuentas hoy" })).toBeVisible();
+  await expect.poll(stored).toBe(404);
+  await page.reload();
+  await expect(page.getByText(/Últimas: martes 1 de septiembre/)).toBeVisible({
+    timeout: 20_000,
+  });
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,
@@ -1555,7 +1637,7 @@ test("renaming a category keeps it out of the budget", async ({
   // The stored category must still carry countsToBudget: false.
   await expect
     .poll(async () => {
-      const households = await request.get(`${REST}/households`, {
+      const households = await request.get(`${REST}/households?pageSize=300`, {
         headers: admin,
       });
       const doc = ((await households.json()).documents as {
@@ -1601,7 +1683,7 @@ test("the statistics page adds up what the ledger says", async ({ page, request 
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const mine = ((await households.json()).documents as {
     name: string;
     fields: { name: { stringValue: string } };
@@ -1842,7 +1924,7 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   // is correct — statements chain forward and only ever close in the future.
   // A statement that HAS closed can only be arrived at by time passing, so the
   // test has to arrive at it the same way, by planting one.
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const householdId = (
     ((await households.json()).documents as {
       name: string;
@@ -2126,7 +2208,7 @@ test("a closed statement offers its charges to be checked off, once", async ({
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const householdId = (
     ((await households.json()).documents as {
       name: string;
@@ -2248,7 +2330,7 @@ test("a service is reconciled against the expense that paid it", async ({
   // would report "pendiente" forever with no way to find out why. Take the
   // category away to stand in for one of those, and the screen offers to
   // create the thing the link needs.
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const householdId = (
     ((await households.json()).documents as {
       name: string;
@@ -2323,7 +2405,7 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
   // here for: leaving it behind gives 8 of those days two budgets at once.
   // That is not hypothetical. It is what the production household carried for
   // three weeks: a fortnight 7–20 August beside the week 14–20.
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const householdId = (
     ((await households.json()).documents as {
       name: string;
@@ -2465,7 +2547,7 @@ test("starting the next period early drops every later period it overlaps", asyn
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const householdId = (
     ((await households.json()).documents as {
       name: string;
@@ -2558,7 +2640,7 @@ test("charges are routed by the card they came from", async ({ page, request }) 
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const mine = ((await households.json()).documents as {
     name: string;
     fields: { name: { stringValue: string } };
@@ -2677,7 +2759,7 @@ test("a recurring rule files the charge it recognises, and it can be taken back"
   await expect(page.getByText("Opal*")).toBeVisible();
 
   // The ingestion's job, by hand.
-  const households = await request.get(`${REST}/households`, {
+  const households = await request.get(`${REST}/households?pageSize=300`, {
     headers: { Authorization: "Bearer owner" },
   });
   const docs = (await households.json()).documents as {
@@ -2812,7 +2894,7 @@ test("restoring a charge filed OUTSIDE the range on screen does not count it twi
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const docs = (await households.json()).documents as {
     name: string;
     fields: { name: { stringValue: string } };
@@ -2909,7 +2991,7 @@ async function householdWithRule(
   await page.getByText("Crear nuestro hogar").click();
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const docs = (await households.json()).documents as {
     name: string;
     fields: { name: { stringValue: string } };
@@ -3058,7 +3140,7 @@ test("a rule made from a charge files that charge on the spot", async ({
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, {
+  const households = await request.get(`${REST}/households?pageSize=300`, {
     headers: { Authorization: "Bearer owner" },
   });
   const docs = (await households.json()).documents as {
@@ -3176,7 +3258,7 @@ test("a charge with nothing to match is created as its own expense", async ({
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, {
+  const households = await request.get(`${REST}/households?pageSize=300`, {
     headers: { Authorization: "Bearer owner" },
   });
   const docs = (await households.json()).documents as {
@@ -3327,7 +3409,7 @@ test("a recurring rule can be pointed at the service it pays", async ({
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Todavía no se cobró")).toBeVisible();
 
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const householdId = (
     ((await households.json()).documents as {
       name: string;
@@ -3464,7 +3546,7 @@ test("the period can be left unstarted while the numbers are read", async ({
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const householdId = (
     ((await households.json()).documents as {
       name: string;
@@ -3614,7 +3696,7 @@ test("repeating the budget without the leftover is not an adjustment", async ({
   await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
-  const households = await request.get(`${REST}/households`, { headers: admin });
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
   const householdId = (
     ((await households.json()).documents as {
       name: string;
