@@ -391,7 +391,11 @@ export default function DataPage() {
           <p className="py-6 text-center text-[13px] font-semibold text-over-text">
             {t("loadFailed")}
           </p>
-        ) : rows.length === 0 ? (
+        ) : rangeRows.length === 0 ? (
+          // Only when the RANGE is empty. When it is the category filter that
+          // left nothing, the grid stays — its heading is where the filter
+          // lives, and this used to take it away, leaving no way back short
+          // of changing the range.
           <p className="py-6 text-center text-[13px] text-ink-3">
             {t("exportEmpty")}
           </p>
@@ -468,6 +472,13 @@ export default function DataPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-soft">
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-6 text-center text-[13px] text-ink-3">
+                      {t("filterLeftNothing")}
+                    </td>
+                  </tr>
+                )}
                 {rows.map((e) => (
                   <tr key={e.id}>
                     <td className="tnum whitespace-nowrap px-3 py-2 text-ink">

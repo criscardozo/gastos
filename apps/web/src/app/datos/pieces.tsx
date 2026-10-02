@@ -191,7 +191,9 @@ export function CategoryFilter({
   const label =
     selected === null
       ? t("categoriesAll")
-      : selected.length === 1
+      : selected.length === 0
+        ? t("categoriesNone")
+        : selected.length === 1
         ? labelOf(selected[0])
         : t("categoriesSome", { count: selected.length });
 

@@ -1439,6 +1439,48 @@ test("Servicios shows what was paid last month, to the cent", async ({ page, req
   await expect(page.getByText("Coles")).toHaveCount(0);
 });
 
+// The category filter lives in the grid's heading, and the grid used to give
+// way to "no expenses in this range" as soon as the filter left nothing — the
+// filter going with it, so unticking every category left no way back short
+// of changing the range, under a sentence that was not even true.
+test("Datos keeps its category filter when the filter leaves nothing", async ({ page }) => {
+  const email = `e2e-datos-filter-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Filtro Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await page.getByLabel("0,00", { exact: true }).fill("12,00");
+  await page.getByLabel("Nota (opcional)").fill("Filtrable");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Filtrable")).toBeVisible();
+
+  await page.goto("/datos");
+  await expect(page.getByText("Filtrable")).toBeVisible({ timeout: 20_000 });
+  const filter = page.getByRole("button", { name: "Filtrar por categoría" });
+  await filter.click();
+  // The one category this range has, unticked: nothing is left.
+  const boxes = page.getByRole("checkbox");
+  await expect(boxes).toHaveCount(1);
+  await boxes.first().click();
+  await expect(page.getByText("Filtrable")).toHaveCount(0);
+
+  // The filter is still there, and says what happened rather than "no
+  // expenses in this range".
+  await expect(filter).toBeVisible();
+  await expect(filter).toHaveText(/Ninguna/);
+  await expect(page.getByText("No hay gastos en este rango.")).toHaveCount(0);
+  await expect(page.getByText(/Ninguna categoría elegida/)).toBeVisible();
+
+  // And it is the way back.
+  await page.getByRole("button", { name: "Todas", exact: true }).click();
+  await expect(page.getByText("Filtrable")).toBeVisible();
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,
