@@ -133,7 +133,7 @@ export function RecurringPrompt({
                 inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="0,00"
+                placeholder="0.00"
                 aria-label={t("promptAmount")}
                 className="tnum w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
               />

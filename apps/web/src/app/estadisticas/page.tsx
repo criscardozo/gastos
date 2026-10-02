@@ -27,7 +27,7 @@ import {
 } from "@/components/charts";
 import { useExpensesOnce } from "@/lib/firebase/hooks";
 import { categoryColor } from "@/lib/categories";
-import { formatCents, formatCentsCompact, formatUsd } from "@/lib/money";
+import { formatCents, formatCentsCompact, formatRate, formatUsd } from "@/lib/money";
 import {
   formatMonthLabel,
   formatPeriodRange,
@@ -458,13 +458,7 @@ export default function StatsPage() {
                   {stats.checks.rate !== null && (
                     <span className="text-[11.5px] text-ink-3">
                       {t("learnedRate", {
-                        rate: new Intl.NumberFormat(
-                          locale === "es" ? "es-AR" : "en-AU",
-                          {
-                            minimumFractionDigits: 3,
-                            maximumFractionDigits: 3,
-                          },
-                        ).format(stats.checks.rate),
+                        rate: formatRate(stats.checks.rate, locale, 3),
                         aud: compact(stats.checks.verifiedAudCents),
                       })}
                     </span>

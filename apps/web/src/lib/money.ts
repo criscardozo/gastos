@@ -1,46 +1,53 @@
 // Money display helpers. Money is ALWAYS integer cents in memory and in
 // Firestore; these helpers convert to display strings only.
 
-/** App locale → BCP 47 tag used for number formatting. */
-function numberLocale(locale: string): string {
-  return locale === "es" ? "es-AR" : "en-AU";
-}
+// ONE number format for the whole app, in both languages: a point for the
+// decimals and nothing grouping the thousands — "$1050.00", "US$ 186.90",
+// "$ 241402.75". Cristian's call on 2026-10-02. Until then Spanish followed
+// es-AR ("$1.050,00") and English en-AU ("$1,050.00").
+//
+// The number is formatted in en-AU, which already writes a point, with the
+// grouping turned off; the LANGUAGE of the app no longer enters into it, which
+// is why the `locale` parameters below are kept but unused — every caller
+// passes one, and dates still follow it (lib/dates.ts).
+//
+// iOS still writes es-AR until it is moved too.
+const NUMBER_LOCALE = "en-AU";
 
 /** Strip the space some locales put between the symbol and the digits
- * ("$ 1.050,00" → "$1.050,00") to match the design reference. */
+ * ("$ 1050.00" → "$1050.00") to match the design reference. */
 function tighten(formatted: string): string {
   return formatted.replace(/^(-?[^\d\s]*)[\s  ]+/, "$1");
 }
 
-/**
- * Format integer cents as a currency string, es-AR style comma decimals in
- * Spanish ("$1.050,00") and en-AU style in English ("$1,050.00").
- */
+/** Integer cents as a currency string: "$1050.00". */
 export function formatCents(
   cents: number,
   currency: string,
-  locale: string,
+  _locale: string,
 ): string {
-  const formatter = new Intl.NumberFormat(numberLocale(locale), {
+  const formatter = new Intl.NumberFormat(NUMBER_LOCALE, {
     style: "currency",
     currency,
     currencyDisplay: "narrowSymbol",
+    useGrouping: false,
   });
   return tighten(formatter.format(cents / 100));
 }
 
 /** Like formatCents but drops the decimals when the amount is whole
- * ("$900" instead of "$900,00") — used in chips and compact labels. */
+ * ("$900" instead of "$900.00") — used in chips and compact labels. */
 export function formatCentsCompact(
   cents: number,
   currency: string,
-  locale: string,
+  _locale: string,
 ): string {
   const whole = cents % 100 === 0;
-  const formatter = new Intl.NumberFormat(numberLocale(locale), {
+  const formatter = new Intl.NumberFormat(NUMBER_LOCALE, {
     style: "currency",
     currency,
     currencyDisplay: "narrowSymbol",
+    useGrouping: false,
     minimumFractionDigits: whole ? 0 : 2,
     maximumFractionDigits: whole ? 0 : 2,
   });
@@ -48,49 +55,46 @@ export function formatCentsCompact(
 }
 
 /**
- * "US$ 186,90" — the amount the bank actually charged in USD. Always exact:
+ * "US$ 186.90" — the amount the bank actually charged in USD. Always exact:
  * the app no longer converts anything, it only ever displays a figure that
  * came from the bank, so there is no "≈" variant any more.
  */
-export function formatUsd(cents: number, locale: string): string {
-  const formatter = new Intl.NumberFormat(numberLocale(locale), {
+export function formatUsd(cents: number, _locale: string): string {
+  const formatter = new Intl.NumberFormat(NUMBER_LOCALE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+    useGrouping: false,
   });
   return `US$ ${formatter.format(cents / 100)}`;
 }
 
 /**
- * "$ 241.402,75" — Argentine pesos, always in es-AR regardless of the app's
- * language. A peso figure written with English separators reads as a different
- * number to the person comparing it against a BBVA statement, and this figure
- * exists only to be compared against one.
+ * "$ 241402.75" — Argentine pesos. They were kept in es-AR ("$ 241.402,75")
+ * whatever the language, to read like a BBVA statement; since 2026-10-02 they
+ * follow the app's one format like everything else (Cristian's call).
  */
 export function formatArs(cents: number): string {
-  const formatter = new Intl.NumberFormat("es-AR", {
+  const formatter = new Intl.NumberFormat(NUMBER_LOCALE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+    useGrouping: false,
   });
   return `$ ${formatter.format(cents / 100)}`;
 }
 
 /**
- * Parse free-form amount input into integer cents, in the caller's locale.
+ * Parse free-form amount input into integer cents.
  *
- * The locale is not decoration: without it the two separators cannot be told
- * apart, and the old version assumed "." was always thousands and "," always
- * decimal. That made the app unable to re-read its own output — in en-AU it
- * turned the "$1,050.00" it had just printed into 105 cents, and in es-AR the
- * perfectly ordinary "1.050" into 1,05. A thousandth of the intended amount,
- * plausible enough to be written to the ledger unnoticed.
+ * It must re-read whatever the app prints — an old version could not, and
+ * turned a "$1,050.00" it had just written into 105 cents: a thousandth of
+ * the amount, plausible enough to reach the ledger unnoticed.
  *
- * The rules, in order:
+ * The rules, in order (the point is the decimal mark; see NUMBER_LOCALE):
  *   - both separators present → the LAST one is the decimal point;
- *   - one separator, and it is the locale's decimal → decimal;
- *   - one separator, and it is the locale's grouping mark → grouping, but only
- *     if it is followed by exactly three digits. "1.050" groups; "12.50" and
- *     "1.5" do not, and nobody typing those means fifteen hundredths, so they
- *     are read as decimals.
+ *   - only points → decimal;
+ *   - only commas → grouping, but only if each is followed by exactly three
+ *     digits. "1,050" groups; "12,50" and "1,5" do not, and nobody typing
+ *     those means fifteen hundredths, so they are read as decimals.
  *
  * Returns null when the input is not a positive amount.
  */
@@ -104,24 +108,30 @@ export function formatArs(cents: number): string {
 export const MAX_AMOUNT_CENTS = 10_000_000;
 
 /**
- * Integer cents as an editable figure in the app's own marks ("6390" →
- * "63,90" / "63.90"), for pre-filling an amount field; empty for null. Reads
- * back through parseAmountToCents as the same cents. Two dialogs had this as
- * a private copy and the card dialogs wrote `toFixed(2)`, a point in Spanish.
+ * Integer cents as an editable figure ("6390" → "63.90"), for pre-filling an
+ * amount field; empty for null. Reads back through parseAmountToCents as the
+ * same cents. The one way any field is pre-filled: there were copies written
+ * with toLocaleString and toFixed on half a dozen screens.
  */
-export function centsToInput(cents: number | null, locale: string): string {
+export function centsToInput(cents: number | null, _locale: string): string {
   if (cents === null) return "";
-  return formatCents(cents, "AUD", locale).replace(/[^\d.,]/g, "");
+  return (cents / 100).toFixed(2);
 }
 
 /**
- * A USD→AUD rate, four places, in the app's own decimal mark. It is shown
- * beside a figure worked out from it, so it reads like the figure does.
+ * A rate — USD→AUD, or pesos per dollar — with `digits` places (4 by
+ * default; 3 where it sits beside a match). `minDigits` lets a peso rate
+ * drop the places it does not need: "1500", but "1500.5".
  */
-export function formatRate(rate: number, locale: string): string {
-  return new Intl.NumberFormat(numberLocale(locale), {
-    minimumFractionDigits: 4,
-    maximumFractionDigits: 4,
+export function formatRate(
+  rate: number,
+  _locale: string,
+  digits = 4,
+  minDigits = digits,
+): string {
+  return new Intl.NumberFormat(NUMBER_LOCALE, {
+    minimumFractionDigits: minDigits,
+    maximumFractionDigits: digits,
     useGrouping: false,
   }).format(rate);
 }
@@ -134,14 +144,17 @@ export function formatRate(rate: number, locale: string): string {
  */
 export function parseAmountToCents(
   input: string,
-  locale: string,
+  _locale: string,
   max: number = MAX_AMOUNT_CENTS,
 ): number | null {
   const raw = input.replace(/[^\d.,-]/g, "").trim();
   if (raw === "") return null;
 
-  const decimalMark = locale === "es" ? "," : ".";
-  const groupMark = locale === "es" ? "." : ",";
+  // The app's one format: a point for decimals. A comma is still read — as
+  // grouping when it groups three digits, as a decimal otherwise — because
+  // that is how amounts were typed until 2026-10-02.
+  const decimalMark = ".";
+  const groupMark = ",";
   const hasDecimal = raw.includes(decimalMark);
   const hasGroup = raw.includes(groupMark);
 

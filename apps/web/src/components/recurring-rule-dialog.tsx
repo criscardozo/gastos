@@ -223,7 +223,7 @@ export function RecurringRuleDialog({
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="0,00"
+              placeholder="0.00"
               aria-label={t("amount")}
               className={`${field} tnum`}
             />

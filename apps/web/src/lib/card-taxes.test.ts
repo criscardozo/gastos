@@ -151,8 +151,8 @@ describe("taxLines", () => {
   it("explains where each number came from", () => {
     // The basis line answers "why is this number" without a calculator, which
     // is the whole reason a statement prints its bases too.
-    expect(lineFor("IIBB")?.basis).toBe("2% de $ 48.765,94");
-    expect(lineFor("DB.RG")?.basis).toBe("30% de $ 804.675,86");
+    expect(lineFor("IIBB")?.basis).toBe("2% de $ 48765.94");
+    expect(lineFor("DB.RG")?.basis).toBe("30% de $ 804675.86");
   });
 });
 

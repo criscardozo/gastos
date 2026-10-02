@@ -36,7 +36,7 @@ import {
 } from "@/lib/firebase/mutations";
 import { fetchPeriodSpent } from "@/lib/firebase/hooks";
 import { allCategoriesCount, budgetCategoryIds } from "@/lib/categories";
-import { formatCents, formatCentsCompact } from "@/lib/money";
+import { centsToInput, formatCents, formatCentsCompact } from "@/lib/money";
 import { formatLongDate, formatPeriodRange } from "@/lib/dates";
 import {
   MAX_STRETCHED_DAYS,
@@ -418,12 +418,7 @@ export function StartPeriodScreen({
               <button
                 type="button"
                 onClick={() => {
-                  setAmount(
-                    (defaultAmount / 100).toLocaleString(
-                      locale === "es" ? "es-AR" : "en-AU",
-                      { maximumFractionDigits: 2, useGrouping: false },
-                    ),
-                  );
+                  setAmount(centsToInput(defaultAmount, locale));
                   setMode("custom");
                 }}
                 className="h-13 rounded-full bg-accent-soft py-3.5 text-[15px] font-bold text-accent-strong"

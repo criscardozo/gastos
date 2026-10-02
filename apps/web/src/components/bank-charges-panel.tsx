@@ -36,18 +36,11 @@ import {
 } from "@/lib/bank-match";
 import { partitionCharges, wasFiledAsExpense } from "@/lib/bank-charges";
 import { belongsToExpenses } from "@/lib/cards";
-import { formatCents, formatUsd } from "@/lib/money";
+import { formatCents, formatRate, formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 import { displayMerchant } from "@/lib/merchant-name";
 import { useTransientFlag } from "@/components/use-transient-flag";
 
-/** "0,652" / "0.652" — the bank's rate, as many decimals as it deserves. */
-function formatRate(rate: number, locale: string): string {
-  return new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-AU", {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  }).format(rate);
-}
 
 /**
  * The Apps Script web app that runs the Gmail ingestion, from
@@ -288,7 +281,7 @@ export function BankChargesPanel({
           {pending.length > 0 && (
             <span className="text-[11.5px] text-ink-3">
               {rate !== null
-                ? t("hintWithRate", { rate: formatRate(rate, locale) })
+                ? t("hintWithRate", { rate: formatRate(rate, locale, 3) })
                 : t("hint")}
             </span>
           )}
@@ -352,7 +345,7 @@ export function BankChargesPanel({
                     {expenseId === null
                       ? t("noCandidate")
                       : t("suggested", {
-                          rate: formatRate(impliedRate ?? 0, locale),
+                          rate: formatRate(impliedRate ?? 0, locale, 3),
                           score: Math.round(score * 100),
                         })}
                   </span>

@@ -251,7 +251,7 @@ export function CardChargeDialog({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             inputMode="decimal"
-            placeholder="0,00"
+            placeholder="0.00"
             className={`${FIELD} tnum`}
           />
           {usdCents !== null && (
@@ -612,7 +612,7 @@ export function CardFeesDialog({
             value={commission}
             onChange={(e) => setCommission(e.target.value)}
             inputMode="decimal"
-            placeholder="0,00"
+            placeholder="0.00"
             className={`${FIELD} tnum`}
           />
           <span className="text-[11.5px] text-ink-3">{t("commissionHelp")}</span>

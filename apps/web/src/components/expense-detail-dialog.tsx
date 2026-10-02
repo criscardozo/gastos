@@ -15,7 +15,7 @@ import { Avatar } from "@/components/ui/avatar";
 import type { Expense, Household, PeriodBudget } from "@/lib/firebase/converters";
 import { categoryCircleBg, categoryColor, countsToBudget } from "@/lib/categories";
 import { containsDate } from "@/lib/periods";
-import { formatCents, formatUsd } from "@/lib/money";
+import { formatCents, formatRate, formatUsd } from "@/lib/money";
 import {
   capitaliseFirst,
   formatLongDate,
@@ -34,13 +34,6 @@ function formatInstant(date: Date, locale: string): string {
   }).format(date);
 }
 
-/** "0,652" — three decimals is where a bank rate stops being noise. */
-function formatRate(rate: number, locale: string): string {
-  return new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-AU", {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  }).format(rate);
-}
 
 export function ExpenseDetailDialog({
   expense,
@@ -193,7 +186,7 @@ export function ExpenseDetailDialog({
               {expense.verified && expense.usdCents !== null
                 ? `${formatUsd(expense.usdCents, locale)}${
                     impliedRate !== null
-                      ? ` · ${t("rate", { rate: formatRate(impliedRate, locale) })}`
+                      ? ` · ${t("rate", { rate: formatRate(impliedRate, locale, 3) })}`
                       : ""
                   }`
                 : t("unverifiedHint")}

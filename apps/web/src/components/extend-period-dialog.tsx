@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
-import { formatCents, parseAmountToCents } from "@/lib/money";
+import { centsToInput, formatCents, parseAmountToCents } from "@/lib/money";
 import { capitaliseFirst, formatLongDate } from "@/lib/dates";
 import { extendToFortnight, type PeriodBudgetLike } from "@/lib/periods";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
@@ -41,7 +41,7 @@ export function ExtendPeriodDialog({
   const tCommon = useTranslations("expenses");
 
   const [amount, setAmount] = useState(
-    (defaultAmountCents / 100).toFixed(2).replace(".", locale === "es" ? "," : "."),
+    centsToInput(defaultAmountCents, locale),
   );
   /** The second press. Nothing is written until this is true. */
   const [confirming, setConfirming] = useState(false);

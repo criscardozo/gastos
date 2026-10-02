@@ -36,7 +36,7 @@ import {
   updatePeriodAmount,
   updateUserLanguage,
 } from "@/lib/firebase/mutations";
-import { formatCents } from "@/lib/money";
+import { centsToInput, formatCents } from "@/lib/money";
 import { formatPeriodRange } from "@/lib/dates";
 import { startNextEarly, type PeriodType } from "@/lib/periods";
 import { fetchPeriodSpent } from "@/lib/firebase/hooks";
@@ -95,12 +95,7 @@ function EditableAmount({
     <button
       type="button"
       onClick={() => {
-        setValue(
-          (cents / 100).toLocaleString(locale === "es" ? "es-AR" : "en-AU", {
-            minimumFractionDigits: 2,
-            useGrouping: false,
-          }),
-        );
+        setValue(centsToInput(cents, locale));
         setEditing(true);
       }}
       className={`tnum text-sm ${

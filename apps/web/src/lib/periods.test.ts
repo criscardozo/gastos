@@ -236,35 +236,31 @@ describe("startNextEarly (shared vectors)", () => {
 });
 
 describe("money formatting", () => {
-  it("formats es with comma decimals and dot thousands", () => {
-    expect(formatCents(105000, "AUD", "es")).toBe("$1.050,00");
-    expect(formatCents(90000, "AUD", "es")).toBe("$900,00");
-    expect(formatCents(1250, "AUD", "es")).toBe("$12,50");
-  });
-
-  it("formats en with dot decimals and comma thousands", () => {
-    expect(formatCents(105000, "AUD", "en")).toBe("$1,050.00");
-    expect(formatCents(1250, "AUD", "en")).toBe("$12.50");
+  // One format in both languages since 2026-10-02: a point for the decimals,
+  // nothing for the thousands. The full set lives in money.test.ts.
+  it("writes a point and no grouping, in either language", () => {
+    expect(formatCents(105000, "AUD", "es")).toBe("$1050.00");
+    expect(formatCents(90000, "AUD", "es")).toBe("$900.00");
+    expect(formatCents(1250, "AUD", "es")).toBe("$12.50");
+    expect(formatCents(105000, "AUD", "en")).toBe("$1050.00");
   });
 
   it("formats negatives", () => {
-    expect(formatCents(-9731, "AUD", "es")).toBe("-$97,31");
+    expect(formatCents(-9731, "AUD", "es")).toBe("-$97.31");
   });
 
   it("drops decimals for whole compact amounts", () => {
     expect(formatCentsCompact(90000, "AUD", "es")).toBe("$900");
     expect(formatCentsCompact(45000, "AUD", "en")).toBe("$450");
-    expect(formatCentsCompact(105050, "AUD", "es")).toBe("$1.050,50");
+    expect(formatCentsCompact(105050, "AUD", "es")).toBe("$1050.50");
   });
 
   it("formats the USD charge the bank reported", () => {
-    expect(formatUsd(18690, "es")).toBe("US$ 186,90");
+    expect(formatUsd(18690, "es")).toBe("US$ 186.90");
     expect(formatUsd(18690, "en")).toBe("US$ 186.90");
   });
 
-  it("parses comma and dot decimal input to cents", () => {
-    // Amount parsing has its own suite now (money.test.ts), where the
-    // locale-dependent cases live.
+  it("still reads a comma typed as a decimal", () => {
     expect(parseAmountToCents("12,50", "es")).toBe(1250);
   });
 });

@@ -92,7 +92,7 @@
     "searchPlaceholder": "Buscar en las notas…",
     "exportCsv": "Exportar CSV",
     "addPlaceholder": "Agregar gasto: monto · categoría · nota · fecha",
-    "amountPlaceholder": "0,00",
+    "amountPlaceholder": "0.00",
     "notePlaceholder": "Nota (opcional)",
     "save": "Guardar",
     "cancel": "Cancelar",

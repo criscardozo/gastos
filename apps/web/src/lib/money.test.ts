@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   centsToInput,
+  formatArs,
   formatRate,
   formatCents,
   formatCentsCompact,
+  formatUsd,
   MAX_AMOUNT_CENTS,
   parseAmountToCents,
 } from "./money";
@@ -42,48 +44,57 @@ describe("parseAmountToCents round-trips what the app prints", () => {
 });
 
 describe("parseAmountToCents on what a person types", () => {
-  it("reads Spanish grouping and decimals", () => {
-    expect(parseAmountToCents("12,50", "es")).toBe(1250);
-    expect(parseAmountToCents("1.050", "es")).toBe(105000);
-    expect(parseAmountToCents("1.050,00", "es")).toBe(105000);
-    expect(parseAmountToCents("99.999,99", "es")).toBe(9999999);
-    // Two grouping marks parse fine and are then refused by the ceiling — with
-    // a $100.000 cap nobody can type an amount that has two of them.
-    expect(parseAmountToCents("1.234.567,89", "es")).toBeNull();
-    expect(parseAmountToCents("900", "es")).toBe(90000);
-    expect(parseAmountToCents("$42,80", "es")).toBe(4280);
-  });
+  // One rule in both languages since 2026-10-02 (Cristian's call): the point
+  // is the decimal mark and nothing groups thousands. A comma is still read,
+  // the way the app wrote amounts until then: as a decimal when it does not
+  // group three digits, and as grouping when it does.
+  for (const locale of ["es", "en"] as const) {
+    it(`${locale}: reads a point as the decimal mark`, () => {
+      expect(parseAmountToCents("12.50", locale)).toBe(1250);
+      expect(parseAmountToCents("1050.00", locale)).toBe(105000);
+      expect(parseAmountToCents("1.5", locale)).toBe(150);
+      expect(parseAmountToCents("900", locale)).toBe(90000);
+      expect(parseAmountToCents("$42.80", locale)).toBe(4280);
+    });
 
-  it("reads English grouping and decimals", () => {
-    expect(parseAmountToCents("12.50", "en")).toBe(1250);
-    expect(parseAmountToCents("1,050", "en")).toBe(105000);
-    expect(parseAmountToCents("1,050.00", "en")).toBe(105000);
-    expect(parseAmountToCents("99,999.99", "en")).toBe(9999999);
-    expect(parseAmountToCents("1,234,567.89", "en")).toBeNull();  // ceiling
-  });
+    it(`${locale}: still reads the comma a hand used to type`, () => {
+      expect(parseAmountToCents("12,50", locale)).toBe(1250);
+      expect(parseAmountToCents("1,050", locale)).toBe(105000);
+      expect(parseAmountToCents("1,050.00", locale)).toBe(105000);
+      expect(parseAmountToCents("99,999.99", locale)).toBe(9999999);
+    });
 
-  it("treats a lone mark that does not group as a decimal point", () => {
-    // Nobody typing "12.50" in Spanish means twelve hundred fifty, and nobody
-    // typing "1.5" means fifteen hundredths of a peso.
-    expect(parseAmountToCents("12.50", "es")).toBe(1250);
-    expect(parseAmountToCents("1.5", "es")).toBe(150);
-    expect(parseAmountToCents("12,50", "en")).toBe(1250);
-  });
+    it(`${locale}: rejects an amount the security rules would refuse anyway`, () => {
+      expect(parseAmountToCents("100000", locale)).toBe(MAX_AMOUNT_CENTS);
+      expect(parseAmountToCents("100000.01", locale)).toBeNull();
+      expect(parseAmountToCents("1,234,567.89", locale)).toBeNull();
+    });
 
-  it("rejects an amount the security rules would refuse anyway", () => {
-    // The ceiling used to be checked only by the CSV importer, so the entry
-    // form let $200.000 through to be refused by the server.
-    expect(parseAmountToCents("100000", "es")).toBe(MAX_AMOUNT_CENTS);
-    expect(parseAmountToCents("100000,01", "es")).toBeNull();
-    expect(parseAmountToCents("999999", "es")).toBeNull();
-  });
+    it(`${locale}: rejects what is not a positive amount`, () => {
+      expect(parseAmountToCents("", locale)).toBeNull();
+      expect(parseAmountToCents("0", locale)).toBeNull();
+      expect(parseAmountToCents("-5", locale)).toBeNull();
+      expect(parseAmountToCents("abc", locale)).toBeNull();
+      expect(parseAmountToCents("1,2,3", locale)).toBeNull();
+      expect(parseAmountToCents("1.2.3", locale)).toBeNull();
+    });
+  }
+});
 
-  it("rejects what is not a positive amount", () => {
-    expect(parseAmountToCents("", "es")).toBeNull();
-    expect(parseAmountToCents("0", "es")).toBeNull();
-    expect(parseAmountToCents("-5", "es")).toBeNull();
-    expect(parseAmountToCents("abc", "es")).toBeNull();
-    expect(parseAmountToCents("1,2,3", "en")).toBeNull();
+describe("what the app prints", () => {
+  // Written out by hand rather than worked out by the formatter under test.
+  for (const locale of ["es", "en"] as const) {
+    it(`${locale}: a point for decimals, nothing for thousands`, () => {
+      expect(formatCents(105000, "AUD", locale)).toBe("$1050.00");
+      expect(formatCents(4280, "AUD", locale)).toBe("$42.80");
+      expect(formatCentsCompact(90000, "AUD", locale)).toBe("$900");
+      expect(formatCentsCompact(123456, "AUD", locale)).toBe("$1234.56");
+      expect(formatUsd(18690, locale)).toBe("US$ 186.90");
+      expect(formatUsd(123456, locale)).toBe("US$ 1234.56");
+    });
+  }
+  it("pesos too, whatever the language", () => {
+    expect(formatArs(24140275)).toBe("$ 241402.75");
   });
 });
 
@@ -91,12 +102,15 @@ describe("formatRate", () => {
   // The learned USD→AUD rate beside a pre-filled amount. It was
   // `toFixed(4).replace(".", ",")`, a comma in every language.
   it("uses the locale's decimal mark", () => {
-    expect(formatRate(0.65, "es")).toBe("0,6500");
+    expect(formatRate(0.65, "es")).toBe("0.6500");
     expect(formatRate(0.65, "en")).toBe("0.6500");
   });
   it("keeps four places however many the rate has", () => {
     expect(formatRate(1.234567, "en")).toBe("1.2346");
-    expect(formatRate(2, "es")).toBe("2,0000");
+    expect(formatRate(2, "es")).toBe("2.0000");
+    expect(formatRate(0.6521, "es", 3)).toBe("0.652");
+    expect(formatRate(1500, "es", 2, 0)).toBe("1500");
+    expect(formatRate(1500.5, "es", 2, 0)).toBe("1500.5");
   });
 });
 
@@ -104,9 +118,9 @@ describe("centsToInput", () => {
   // An editable prefill. The card dialogs wrote `(cents / 100).toFixed(2)`,
   // a point in Spanish too, beside a placeholder of "0,00".
   it("uses the locale's marks", () => {
-    expect(centsToInput(6390, "es")).toBe("63,90");
+    expect(centsToInput(6390, "es")).toBe("63.90");
     expect(centsToInput(6390, "en")).toBe("63.90");
-    expect(centsToInput(123456, "es")).toBe("1.234,56");
+    expect(centsToInput(123456, "es")).toBe("1234.56");
   });
   it("is empty for nothing", () => {
     expect(centsToInput(null, "es")).toBe("");

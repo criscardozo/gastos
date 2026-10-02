@@ -24,6 +24,10 @@ const eslintConfig = [
       // worth, so this stays a warning: visible on every lint, not blocking CI,
       // and honest about being unfinished rather than deleted.
       "react-hooks/set-state-in-effect": "warn",
+      // A leading underscore marks a parameter kept on purpose and unused —
+      // lib/money.ts takes a `_locale` from every caller since numbers stopped
+      // following the language, so the 36 call sites did not have to change.
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
     },
   },
 ];

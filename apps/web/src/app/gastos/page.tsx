@@ -57,11 +57,7 @@ import {
 } from "@/lib/firebase/mutations";
 import type { BankChargeDoc, Expense, Household } from "@/lib/firebase/converters";
 import { categoryCircleBg, categoryColor } from "@/lib/categories";
-import {
-  formatCents,
-  formatUsd,
-  parseAmountToCents,
-} from "@/lib/money";
+import { centsToInput, formatCents, formatUsd, parseAmountToCents } from "@/lib/money";
 import {
   capitaliseFirst,
   formatDayHeading,
@@ -387,10 +383,7 @@ export default function ExpensesPage() {
   const startEdit = (e: Expense) => {
     setEditingId(e.id);
     setEditForm({
-      amount: (e.amountCents / 100).toLocaleString(
-        locale === "es" ? "es-AR" : "en-AU",
-        { minimumFractionDigits: 2, useGrouping: false },
-      ),
+      amount: centsToInput(e.amountCents, locale),
       categoryId: e.categoryId,
       note: e.note,
       date: e.date,
@@ -432,10 +425,7 @@ export default function ExpensesPage() {
     setVerifyAmount(
       e.usdCents === null
         ? ""
-        : (e.usdCents / 100).toLocaleString(
-            locale === "es" ? "es-AR" : "en-AU",
-            { minimumFractionDigits: 2, useGrouping: false },
-          ),
+        : centsToInput(e.usdCents, locale),
     );
   };
 

@@ -69,13 +69,13 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   // in the grid is named after its expense — "…— Referencia, $100,00" contains
   // "0,00". Naming that button is what made this selector ambiguous, which is
   // the honest price of a control that says which row it belongs to.
-  await page.getByLabel("0,00", { exact: true }).fill("12,50");
+  await page.getByLabel("0.00", { exact: true }).fill("12,50");
   await page.getByLabel("Nota (opcional)").fill("Café de prueba");
   await page.getByRole("button", { name: "Guardar" }).click();
 
   // The expense shows up with the correct amount.
   await expect(page.getByText("Café de prueba").first()).toBeVisible();
-  await expect(page.getByText("$12,50").first()).toBeVisible();
+  await expect(page.getByText("$12.50").first()).toBeVisible();
 
   // A fresh expense is unverified: the bank's USD charge only arrives later.
   // (Scoped to the row control by role — "Sin verificar" is also a filter
@@ -88,14 +88,14 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   await unverifiedRow.first().click();
   await page.getByLabel("USD que cobró el banco").fill("8,15");
   await page.getByRole("button", { name: "Verificar", exact: true }).click();
-  await expect(page.getByText("US$ 8,15").first()).toBeVisible();
+  await expect(page.getByText("US$ 8.15").first()).toBeVisible();
   await expect(unverifiedRow).toHaveCount(0);
 
   // Tapping the row opens its detail, with the facts the list leaves out.
   await page.getByText("Café de prueba").first().click();
   const detail = page.getByRole("dialog");
   await expect(detail.getByText("Verificado")).toBeVisible();
-  await expect(detail.getByText("US$ 8,15")).toBeVisible();
+  await expect(detail.getByText("US$ 8.15")).toBeVisible();
   await expect(detail.getByText("Cargado por")).toBeVisible();
   await expect(detail.getByText("E2E Tester")).toBeVisible();
   await page.keyboard.press("Escape");
@@ -111,7 +111,7 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
 
   // A second expense, in a different category — the grid's category filter
   // below needs two to have anything to separate.
-  await page.getByLabel("0,00", { exact: true }).fill("31,00");
+  await page.getByLabel("0.00", { exact: true }).fill("31,00");
   await page.getByLabel("Categoría: todas").selectOption("transport");
   await page.getByLabel("Nota (opcional)").fill("Nafta de prueba");
   await page.getByRole("button", { name: "Guardar" }).click();
@@ -138,7 +138,7 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   // Dashboard "Te queda" reflects both: 900,00 − 12,50 − 31,00 = 856,50.
   await page.getByRole("link", { name: "Inicio" }).click();
   await expect(page.getByText("Te queda")).toBeVisible();
-  await expect(page.getByText("$856,50").first()).toBeVisible();
+  await expect(page.getByText("$856.50").first()).toBeVisible();
 
   // Data page: the grid shows the range, and the export carries the same rows.
   await page.getByRole("link", { name: "Datos", exact: true }).click();
@@ -147,7 +147,7 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   // The expense is ON SCREEN before any file exists — the point of the page.
   await expect(page.getByText("Café de prueba")).toBeVisible();
   // `.first()`: the grid prints it in the row and again in the total footer.
-  await expect(page.getByText("US$ 8,15").first()).toBeVisible();
+  await expect(page.getByText("US$ 8.15").first()).toBeVisible();
 
   // Sorting is by column heading, and it is the export's order too.
   await page.getByRole("button", { name: "Monto" }).click();
@@ -166,7 +166,7 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   await expect(page.getByText("Café de prueba")).toBeHidden();
   await expect(page.getByText("Nafta de prueba")).toBeVisible();
   // Twice: the row, and the footer total, which follows the filter.
-  await expect(page.getByText("$31,00")).toHaveCount(2);
+  await expect(page.getByText("$31.00")).toHaveCount(2);
   // Ticking everything back on is the same as no filter at all.
   await page.getByRole("button", { name: "Todas" }).click();
   await expect(page.getByText("Café de prueba")).toBeVisible();
@@ -216,7 +216,7 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   });
   // Preview shows the parsed row, then commit.
   await expect(page.getByText("Gasto importado")).toBeVisible();
-  await expect(page.getByText("$13,00").first()).toBeVisible();
+  await expect(page.getByText("$13.00").first()).toBeVisible();
   await page.getByRole("button", { name: /Importar 1 gasto/ }).click();
   await expect(page.getByText("Importado 1 gasto")).toBeVisible();
 
@@ -252,8 +252,8 @@ test("a bank charge is matched to the expense it paid for", async ({
   ]) {
     // The save clears the add row asynchronously; typing before it does would
     // lose the amount.
-    await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
-    await page.getByLabel("0,00", { exact: true }).fill(amount);
+    await expect(page.getByLabel("0.00", { exact: true })).toHaveValue("");
+    await page.getByLabel("0.00", { exact: true }).fill(amount);
     await page.getByLabel("Nota (opcional)").fill(note);
     await page.getByRole("button", { name: "Guardar" }).click();
     await expect(page.getByText(note).first()).toBeVisible();
@@ -268,7 +268,7 @@ test("a bank charge is matched to the expense it paid for", async ({
     .click();
   await page.getByLabel("USD que cobró el banco").fill("65,00");
   await page.getByRole("button", { name: "Verificar", exact: true }).click();
-  await expect(page.getByText("US$ 65,00").first()).toBeVisible();
+  await expect(page.getByText("US$ 65.00").first()).toBeVisible();
 
   // Now do the ingestion's job by hand: file a charge of US$ 41,54, which at
   // the learned rate can only be the 63,90 expense.
@@ -315,7 +315,7 @@ test("a bank charge is matched to the expense it paid for", async ({
   // toggle also says what the test actually needs.
   await expect(page.getByRole("button", { name: /Descartar/ }).first())
     .toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText("US$ 41,54")).toBeVisible();
+  await expect(page.getByText("US$ 41.54")).toBeVisible();
 
   // Discarding is recoverable for 48 hours. Worth an end-to-end pass because
   // it is the one flow that depends on BOTH the narrow update rule and the
@@ -329,10 +329,10 @@ test("a bank charge is matched to the expense it paid for", async ({
   // And back: the charge returns to the pending list, still matchable. The
   // panel is still expanded from before — it does not collapse just because it
   // briefly had nothing pending — so there is no Revisar to press again.
-  await page.getByRole("button", { name: /^Restaurar US\$ 41,54$/ }).click();
+  await page.getByRole("button", { name: /^Restaurar US\$ 41.54$/ }).click();
   await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible();
   await expect(page.getByRole("button", { name: "Ocultar" })).toBeVisible();
-  await expect(page.getByText("US$ 41,54")).toBeVisible();
+  await expect(page.getByText("US$ 41.54")).toBeVisible();
 
   // It suggested the Coles expense rather than the 12,00 one.
   const picker = page.getByLabel("Gasto a verificar");
@@ -346,7 +346,7 @@ test("a bank charge is matched to the expense it paid for", async ({
 
   // The expense is verified and the charge is gone from Firestore for good.
   await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
-  await expect(page.getByText("US$ 41,54").first()).toBeVisible();
+  await expect(page.getByText("US$ 41.54").first()).toBeVisible();
   // Poll rather than read once: the UI reflects the local write immediately,
   // so a single read here can beat the batch's server ack.
   await expect
@@ -540,7 +540,7 @@ test("starting a period asks, and carries the leftover", async ({
   // appears will happily tick a wrong number and then fail twenty seconds later
   // on the total, which is what CI kept doing while every local run passed.
   const leftoverRow = page.getByRole("button", { name: /Incluir lo que sobró/ });
-  await expect(leftoverRow).toContainText("$200,00");
+  await expect(leftoverRow).toContainText("$200.00");
 
   // And assert the period state directly, so a stray period fails HERE with a
   // count rather than downstream as a missing figure. Verified by injecting one:
@@ -554,8 +554,8 @@ test("starting a period asks, and carries the leftover", async ({
 
   // Ticking the leftover moves the figure and the button.
   await leftoverRow.click();
-  await expect(page.getByText("$1.100,00")).toBeVisible();
-  await expect(page.getByText("Repetir presupuesto · $1.100")).toBeVisible();
+  await expect(page.getByText("$1100.00")).toBeVisible();
+  await expect(page.getByText("Repetir presupuesto · $1100")).toBeVisible();
   await expect(page.getByText("$900 de siempre + $200 del período anterior")).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -567,7 +567,7 @@ test("starting a period asks, and carries the leftover", async ({
 
   await page.getByRole("button", { name: /Repetir presupuesto/ }).click();
   await expect(page.getByText("Te queda")).toBeVisible();
-  await expect(page.getByText("$1.100,00").first()).toBeVisible();
+  await expect(page.getByText("$1100.00").first()).toBeVisible();
 
   // It wrote both figures — the amount and what of it was carried in — and
   // stamped the answer on the DOCUMENT, so no other device asks again.
@@ -739,7 +739,7 @@ test("a period can be stretched so the next one starts later", async ({
   // Back on the dashboard, still inside the stretched period — and the money
   // did not move: 900 budgeted, 700 spent, 200 left.
   await expect(page.getByText("Te queda")).toBeVisible();
-  await expect(page.getByText("$200,00").first()).toBeVisible();
+  await expect(page.getByText("$200.00").first()).toBeVisible();
 
   // One period, ending on the chosen day. The one that was starting today is
   // gone, and NOTHING new was materialized: the chain resumes the day after
@@ -784,13 +784,13 @@ test("an expense saved offline does not freeze the form", async ({
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("0.00", { exact: true })).toHaveValue("");
 
   // Cut the network the way a phone does. Firestore queues the write and
   // serves it straight back from the local cache — but its promise stays
   // pending until a server acknowledges, so anything awaiting it is stuck.
   await context.setOffline(true);
-  await page.getByLabel("0,00", { exact: true }).fill("12,50");
+  await page.getByLabel("0.00", { exact: true }).fill("12,50");
   await page.getByLabel("Nota (opcional)").fill("Sin señal");
   await page.getByRole("button", { name: "Guardar" }).click();
 
@@ -800,7 +800,7 @@ test("an expense saved offline does not freeze the form", async ({
   await expect(page.getByText("Sin señal").first()).toBeVisible({
     timeout: 10_000,
   });
-  await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("0.00", { exact: true })).toHaveValue("");
 
   // And no error dialog: Firestore queues a write made without signal and sends
   // it later, so there is nothing to report. This is the other half of "a write
@@ -990,14 +990,14 @@ test("a write the server refuses says so", async ({ page, request }) => {
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("0.00", { exact: true })).toHaveValue("");
 
   // One expense saved while the server still accepts, for the delete below.
-  await page.getByLabel("0,00", { exact: true }).fill("20,00");
+  await page.getByLabel("0.00", { exact: true }).fill("20,00");
   await page.getByLabel("Nota (opcional)").fill("Borrable");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Borrable")).toBeVisible();
-  await expect(page.getByLabel("0,00", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("0.00", { exact: true })).toHaveValue("");
 
   // Make the server refuse. Loading rules into the emulator is how a real
   // rejection is produced without touching the repo's own rules file. The
@@ -1012,7 +1012,7 @@ test("a write the server refuses says so", async ({ page, request }) => {
     }`;
   await loadRules(request, deny);
 
-  await page.getByLabel("0,00", { exact: true }).fill("33,00");
+  await page.getByLabel("0.00", { exact: true }).fill("33,00");
   await page.getByLabel("Nota (opcional)").fill("Rechazado");
   await page.getByRole("button", { name: "Guardar" }).click();
 
@@ -1122,12 +1122,12 @@ test("a figure that does not parse cannot be saved", async ({ page }) => {
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await page.getByLabel("0,00", { exact: true }).fill("12,00");
+  await page.getByLabel("0.00", { exact: true }).fill("12,00");
   await page.getByLabel("Nota (opcional)").fill("Editable");
   await page.getByRole("button", { name: "Guardar" }).click();
   await page.getByRole("button", { name: "Editar", exact: true }).click();
 
-  const amounts = page.getByLabel("0,00", { exact: true });
+  const amounts = page.getByLabel("0.00", { exact: true });
   await expect(amounts).toHaveCount(2);
   const editAmount = amounts.nth(1);
   await expect(editAmount).toHaveValue(/12/);
@@ -1197,7 +1197,7 @@ test("switching the range never shows the previous range's rows", async ({ page 
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await page.getByLabel("0,00", { exact: true }).fill("12,00");
+  await page.getByLabel("0.00", { exact: true }).fill("12,00");
   await page.getByLabel("Nota (opcional)").fill("Fila del actual");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Fila del actual")).toBeVisible();
@@ -1362,7 +1362,7 @@ test("Gastos says when the bank's emails have stopped being read", async ({
 
   // No heartbeat at all: nothing said.
   await page.goto("/gastos");
-  await expect(page.getByLabel("0,00", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("0.00", { exact: true })).toBeVisible();
   await page.waitForTimeout(1000);
   await expect(warning).toHaveCount(0);
 
@@ -1376,7 +1376,7 @@ test("Gastos says when the bank's emails have stopped being read", async ({
   // A run a minute ago: quiet again.
   await stamp(new Date(Date.now() - 60_000));
   await page.goto("/gastos");
-  await expect(page.getByLabel("0,00", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("0.00", { exact: true })).toBeVisible();
   await page.waitForTimeout(1000);
   await expect(warning).toHaveCount(0);
 });
@@ -1434,7 +1434,7 @@ test("Servicios shows what was paid last month, to the cent", async ({ page, req
   await page.getByRole("link", { name: "Servicios", exact: true }).click();
   await expect(page.getByText(/^Pagado en /)).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Total · 2 pagos")).toBeVisible();
-  await expect(page.getByText("$52,99")).toBeVisible();
+  await expect(page.getByText("$52.99")).toBeVisible();
   await expect(page.getByText("Amaysim Internet Casa")).toBeVisible();
   await expect(page.getByText("Coles")).toHaveCount(0);
 });
@@ -1454,7 +1454,7 @@ test("Datos keeps its category filter when the filter leaves nothing", async ({ 
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await page.getByLabel("0,00", { exact: true }).fill("12,00");
+  await page.getByLabel("0.00", { exact: true }).fill("12,00");
   await page.getByLabel("Nota (opcional)").fill("Filtrable");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Filtrable")).toBeVisible();
@@ -1620,7 +1620,7 @@ test("the statistics page adds up what the ledger says", async ({ page, request 
   await expect(page.getByText("Total gastado")).toBeVisible();
   await expect(page.getByText("Por categoría")).toBeVisible();
   await expect(page.getByText("Confirmado por el banco")).toBeVisible();
-  await expect(page.getByText(/Tasa aprendida: 0,712/)).toBeVisible();
+  await expect(page.getByText(/Tasa aprendida: 0.712/)).toBeVisible();
 
   // The current period shows the pace chart, which the other ranges cannot.
   await page.getByRole("tab", { name: "Período actual" }).click();
@@ -1664,8 +1664,8 @@ test("services and card statements keep their own books", async ({ page }) => {
   await expect(page.getByText("Netflix")).toBeVisible();
   // Twice on screen on purpose: once in the row, once in this month's total
   // (a monthly service falls due every month, so it is all of it).
-  await expect(page.getByText("$22,99").first()).toBeVisible();
-  await expect(page.getByText("US$ 14,99").first()).toBeVisible();
+  await expect(page.getByText("$22.99").first()).toBeVisible();
+  await expect(page.getByText("US$ 14.99").first()).toBeVisible();
 
   // The two figures the screen leads with. Nothing has been charged yet, so
   // one is empty and the other is the whole month.
@@ -1720,7 +1720,7 @@ test("services and card statements keep their own books", async ({ page }) => {
   await page.getByLabel("Detalle").fill("Steam");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Steam")).toBeVisible();
-  await expect(page.getByText("US$ 19,99").first()).toBeVisible();
+  await expect(page.getByText("US$ 19.99").first()).toBeVisible();
 
   // Close it and open the next: both dates are proposed a month on, keeping
   // their day of the month, and the window starts the day after — so no charge
@@ -1751,7 +1751,7 @@ test("services and card statements keep their own books", async ({ page }) => {
 
   /* Neither register touched the budget: the dashboard still reads $900. */
   await page.getByRole("link", { name: "Inicio", exact: true }).click();
-  await expect(page.getByText("$900,00").first()).toBeVisible();
+  await expect(page.getByText("$900.00").first()).toBeVisible();
 });
 
 /**
@@ -1902,10 +1902,10 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
     timeout: 20_000,
   });
   await expect(
-    page.getByRole("button", { name: /Agregar US\$ 42,42/ }),
+    page.getByRole("button", { name: /Agregar US\$ 42.42/ }),
   ).toBeDisabled();
   await expect(
-    page.getByRole("button", { name: /Agregar US\$ 18,99/ }),
+    page.getByRole("button", { name: /Agregar US\$ 18.99/ }),
   ).toBeEnabled();
   // And again where the charge is actually being typed.
   await page.getByRole("button", { name: "Agregar gasto" }).click();
@@ -1927,7 +1927,7 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await expect(page.getByText("Este resumen ya cerró")).toBeHidden();
   await expect(page.getByText("Cerrá el resumen antes de agregar")).toBeHidden();
   await expect(
-    page.getByRole("button", { name: /Agregar US\$ 42,42/ }),
+    page.getByRole("button", { name: /Agregar US\$ 42.42/ }),
   ).toBeEnabled();
 
   // Nothing spent and no fee configured: no peso figure at all, rather than a
@@ -1949,15 +1949,15 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   // digital-only lines take 21% and 2% of the same base: 79.500 in all, which
   // is the ONE figure the statement card carries.
   await expect(taxes).toBeVisible();
-  await expect(page.getByText("$ 79.500,00")).toBeVisible();
+  await expect(page.getByText("$ 79500.00")).toBeVisible();
 
   // The five lines live behind the "i" — read once a month, if that.
   await taxes.click();
   const taxDialog = page.getByRole("dialog");
-  await expect(taxDialog.getByText("$ 45.000,00")).toBeVisible();
-  await expect(taxDialog.getByText("$ 31.500,00")).toBeVisible();
-  await expect(taxDialog.getByText("$ 3.000,00")).toBeVisible();
-  await expect(taxDialog.getByText("Al dólar oficial $ 1.500")).toBeVisible();
+  await expect(taxDialog.getByText("$ 45000.00")).toBeVisible();
+  await expect(taxDialog.getByText("$ 31500.00")).toBeVisible();
+  await expect(taxDialog.getByText("$ 3000.00")).toBeVisible();
+  await expect(taxDialog.getByText("Al dólar oficial $ 1500")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(taxDialog).toHaveCount(0);
 
@@ -1970,10 +1970,10 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Kmart")).toBeVisible();
   // 67.500 + 31.500 + 3.000
-  await expect(page.getByText("$ 102.000,00")).toBeVisible();
+  await expect(page.getByText("$ 102000.00")).toBeVisible();
   await taxes.click();
-  await expect(taxDialog.getByText("$ 67.500,00")).toBeVisible();
-  await expect(taxDialog.getByText("$ 31.500,00")).toBeVisible();
+  await expect(taxDialog.getByText("$ 67500.00")).toBeVisible();
+  await expect(taxDialog.getByText("$ 31500.00")).toBeVisible();
 
   // The monthly fee is typed once; its 21% IVA is worked out. Its settings
   // live in this dialog, beside the numbers they change — so the breakdown is
@@ -1983,18 +1983,18 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await page.getByRole("button", { name: "Guardar" }).click();
   // `.first()`: each line also prints the base it was computed from, so the
   // fee's amount appears twice — once as the charge, once inside "21% de ...".
-  await expect(taxDialog.getByText("$ 40.413,22").first()).toBeVisible();
-  await expect(taxDialog.getByText("$ 8.486,78")).toBeVisible();
+  await expect(taxDialog.getByText("$ 40413.22").first()).toBeVisible();
+  await expect(taxDialog.getByText("$ 8486.78")).toBeVisible();
   // Reopened, the fee comes back in the app's own marks. It came back as
   // "40413.22" — `toFixed(2)` — beside a placeholder of "0,00".
   await page.getByRole("button", { name: "Ajustes en pesos" }).click();
-  await expect(page.getByLabel("Comisión mensual (ARS)")).toHaveValue("40.413,22");
+  await expect(page.getByLabel("Comisión mensual (ARS)")).toHaveValue("40413.22");
   await page.keyboard.press("Escape");
   await expect(page.getByLabel("Comisión mensual (ARS)")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(taxDialog).toHaveCount(0);
   // 40.413,22 + 8.486,78 + 3.000,00 + 31.500,00 + 67.500,00, on the card.
-  await expect(page.getByText("$ 150.900,00")).toBeVisible();
+  await expect(page.getByText("$ 150900.00")).toBeVisible();
 
   /* ── Closing carries the unchecked charges forward ───────────────────── */
 
@@ -2228,7 +2228,7 @@ test("a service is reconciled against the expense that paid it", async ({
   // The bill lands in Gastos, in that category, under the service's name —
   // accents and case included, which the matching has to survive.
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await page.getByLabel("0,00", { exact: true }).fill("48,50");
+  await page.getByLabel("0.00", { exact: true }).fill("48,50");
   await page.getByLabel("Categoría: todas").selectOption("services");
   await page.getByLabel("Nota (opcional)").fill("telefonia");
   await page.getByRole("button", { name: "Guardar" }).click();
@@ -2239,13 +2239,13 @@ test("a service is reconciled against the expense that paid it", async ({
   await page.getByRole("link", { name: "Servicios", exact: true }).click();
   await expect(page.getByText(/^Cobrado el/)).toBeVisible();
   await expect(page.getByText("1 de 1 servicios del mes")).toBeVisible();
-  await expect(page.getByText("El gasto dice $48,50")).toBeVisible();
+  await expect(page.getByText("El gasto dice $48.50")).toBeVisible();
   // "Cobrado este mes" follows the EXPENSE, "A pagar" the register.
-  await expect(page.getByText("$48,50").first()).toBeVisible();
+  await expect(page.getByText("$48.50").first()).toBeVisible();
 
   // One tap moves the register onto what actually happened, for next month.
   await page.getByRole("button", { name: "Usar ese importe" }).click();
-  await expect(page.getByText("El gasto dice $48,50")).toBeHidden();
+  await expect(page.getByText("El gasto dice $48.50")).toBeHidden();
   await expect(page.getByText(/^Cobrado el/)).toBeVisible();
 });
 
@@ -2316,7 +2316,7 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
   // The dialog states the change as dates, and proposes the default budget.
   await expect(page.getByText("Pasaría a terminar")).toBeVisible();
   await page.getByLabel("Sumar al presupuesto").fill("900");
-  await expect(page.getByText("$1.800,00")).toBeVisible();
+  await expect(page.getByText("$1800.00")).toBeVisible();
 
   // One press is not enough: this cannot be undone.
   // Scoped to the dialog rather than `.last()`.
@@ -2338,7 +2338,7 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
   await expect(page.getByRole("button", { name: "Extender a 2 semanas" })).toBeHidden();
   await expect(page.getByText("Iniciar la quincena")).toBeVisible();
   // The budget grew by exactly what was added.
-  await expect(page.getByText("$1.800,00").first()).toBeVisible();
+  await expect(page.getByText("$1800.00").first()).toBeVisible();
 
   // And the week it ran over is GONE, in the same write. Two periods claiming
   // the same days is not a cosmetic problem: an expense belongs to whichever
@@ -2385,16 +2385,16 @@ test("the month's spend includes an expense added after Inicio was opened", asyn
 
   // Inicio has asked for the month once, before anything was spent.
   const month = page.getByText("Gastado este mes", { exact: true }).locator("..");
-  await expect(month).toContainText("$0,00");
+  await expect(month).toContainText("$0.00");
 
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await page.getByLabel("0,00", { exact: true }).fill("12,34");
+  await page.getByLabel("0.00", { exact: true }).fill("12,34");
   await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(page.getByText("$12,34").first()).toBeVisible();
+  await expect(page.getByText("$12.34").first()).toBeVisible();
 
   // Back by the sidebar, not by reloading: a reload would hide the bug.
   await page.getByRole("link", { name: "Inicio", exact: true }).click();
-  await expect(month).toContainText("$12,34");
+  await expect(month).toContainText("$12.34");
 });
 
 /**
@@ -2589,7 +2589,7 @@ test("charges are routed by the card they came from", async ({ page, request }) 
   // add buttons are dead and the screen says why, rather than looking broken.
   await expect(page.getByText("Cerrá el resumen antes de agregar")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Agregar US$ 19,99 · STEAM" }),
+    page.getByRole("button", { name: "Agregar US$ 19.99 · STEAM" }),
   ).toBeDisabled();
 
   // Recording one turns it into a card charge and retires the bank charge, so
@@ -2597,7 +2597,7 @@ test("charges are routed by the card they came from", async ({ page, request }) 
   await page.getByRole("button", { name: "Abrir el primer resumen" }).click();
   await page.getByRole("button", { name: "Abrir resumen" }).click();
   await expect(page.getByText("Cerrá el resumen antes de agregar")).toBeHidden();
-  await page.getByRole("button", { name: "Agregar US$ 19,99 · STEAM" }).click();
+  await page.getByRole("button", { name: "Agregar US$ 19.99 · STEAM" }).click();
   // The orphan is still waiting — importing one charge must not retire another.
   await expect(page.getByText("TIENDA RARA")).toBeVisible();
   // And STEAM now appears exactly once: on the statement, no longer in the
@@ -2676,9 +2676,9 @@ test("a recurring rule files the charge it recognises, and it can be taken back"
   // The row's own accessible name carries both figures, which is the tidiest
   // proof that the AUD came from the rule and the USD from the bank.
   await expect(
-    page.getByRole("button", { name: /Verificado.*Opal, \$ ?15,00/ }),
+    page.getByRole("button", { name: /Verificado.*Opal, \$ ?15.00/ }),
   ).toBeVisible();
-  await expect(page.getByText("US$ 12,40").first()).toBeVisible();
+  await expect(page.getByText("US$ 12.40").first()).toBeVisible();
   // And the charge is NO LONGER waiting. This line was missing, which is what
   // made this the one test of the three that a split batch fools completely:
   // the expense commits either way, so the row above proves nothing about the
@@ -2827,7 +2827,7 @@ test("restoring a charge filed OUTSIDE the range on screen does not count it twi
   // filed. That offer is the premise of this test, not the bug: which list it
   // sits in is cosmetic. What Restaurar does to the ledger is not.
   await page.getByRole("button", { name: "1 descartado" }).click();
-  await page.getByRole("button", { name: /^Restaurar US\$ 12,40$/ }).click();
+  await page.getByRole("button", { name: /^Restaurar US\$ 12.40$/ }).click();
 
   await expect
     .poll(async () => {
@@ -3074,7 +3074,7 @@ test("a rule made from a charge files that charge on the spot", async ({
   // title-cased, because the bank shouts and a ledger should not.
   await expect(
     page.getByRole("button", {
-      name: /Verificado.*Opal Auckland St, \$ ?15,00/,
+      name: /Verificado.*Opal Auckland St, \$ ?15.00/,
     }),
   ).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
@@ -3184,10 +3184,10 @@ test("a charge with nothing to match is created as its own expense", async ({
   // Filed, verified by the bank's own figure, and the charge is gone.
   await expect(
     page.getByRole("button", {
-      name: /Verificado.*Bunnings Alexandria, \$ ?50,00/,
+      name: /Verificado.*Bunnings Alexandria, \$ ?50.00/,
     }),
   ).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText("US$ 32,50").first()).toBeVisible();
+  await expect(page.getByText("US$ 32.50").first()).toBeVisible();
   await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
 
   // And it is NOT listed as discarded.
@@ -3342,7 +3342,7 @@ test("a recurring rule can be pointed at the service it pays", async ({
 
   // Filed on the spot, under the service's own name.
   await expect(
-    page.getByRole("button", { name: /Verificado.*YouTube, \$ ?11,99/ }),
+    page.getByRole("button", { name: /Verificado.*YouTube, \$ ?11.99/ }),
   ).toBeVisible({ timeout: 20_000 });
 
   // ...and that is what Servicios was waiting for.
@@ -3453,7 +3453,7 @@ test("the period can be left unstarted while the numbers are read", async ({
 
   // And adding an expense brings the question back instead of writing.
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await page.getByPlaceholder("0,00").first().fill("12,00");
+  await page.getByPlaceholder("0.00").first().fill("12,00");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByRole("button", { name: /Repetir presupuesto/ })).toBeVisible({
     timeout: 20_000,
@@ -3474,7 +3474,7 @@ test("the period can be left unstarted while the numbers are read", async ({
   // now" from "still refusing, quietly".
   await page.getByRole("button", { name: /Repetir presupuesto/ }).click();
   await expect(page.getByRole("button", { name: /Repetir presupuesto/ })).toHaveCount(0);
-  await page.getByPlaceholder("0,00").first().fill("12,00");
+  await page.getByPlaceholder("0.00").first().fill("12,00");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect
     .poll(async () => {
@@ -3518,7 +3518,7 @@ test("a service can be pointed at the expense that paid it", async ({
 
   // The expense, noted the way the bill reads.
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
-  await page.getByPlaceholder("0,00").first().fill("50,00");
+  await page.getByPlaceholder("0.00").first().fill("50,00");
   await page
     .getByRole("combobox", { name: "Categoría: todas" })
     .first()

@@ -26,7 +26,7 @@ import {
   type StatementSpend,
 } from "@/lib/card-taxes";
 import { formatShortDate } from "@/lib/dates";
-import { formatArs, formatUsd } from "@/lib/money";
+import { formatArs, formatRate, formatUsd } from "@/lib/money";
 import { fetchTodayRate, resolveRate, type RateSource } from "@/lib/usd-rate";
 
 /**
@@ -102,7 +102,7 @@ export function CardTaxes({
     rate === null
       ? ""
       : t(rateMessage, {
-          rate: rate.rate.toLocaleString("es-AR", { maximumFractionDigits: 2 }),
+          rate: formatRate(rate.rate, locale, 2, 0),
           date:
             rate.asOf !== undefined && rate.asOf !== ""
               ? formatShortDate(rate.asOf, locale)
