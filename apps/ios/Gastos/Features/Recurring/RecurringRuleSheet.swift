@@ -30,7 +30,7 @@ struct RecurringRuleSheet: View {
     private var l10n: L10n { model.l10n }
 
     /// Same rule the entry form uses: the app's language, not the device's.
-    private var separator: String { l10n.language == "en" ? "." : "," }
+    private var separator: String { MoneyFormatter.decimalSeparator }
 
     var body: some View {
         NavigationStack {
@@ -80,7 +80,7 @@ struct RecurringRuleSheet: View {
                                 Text(verbatim: "$")
                                     .appFont(15, .semibold)
                                     .foregroundStyle(Theme.inkTertiary)
-                                TextField("0,00", text: amountText)
+                                TextField("0.00", text: amountText)
                                     .appFont(15, .semibold)
                                     .keyboardType(.decimalPad)
                             }

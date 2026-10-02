@@ -409,7 +409,7 @@ private struct CardTaxesSheet: View {
     }
 
     private func rateLine(_ rate: UsdArsRate) -> String {
-        let value = MoneyFormatter.plainAmount(Int(rate.rate * 100), locale: Locale(identifier: "es_AR"))
+        let value = MoneyFormatter.rate(rate.rate, digits: 2, minDigits: 0)
         return rate.fromApi
             ? l10n.t("cards.arsRateApi", value)
             : l10n.t("cards.arsRateManual", value)

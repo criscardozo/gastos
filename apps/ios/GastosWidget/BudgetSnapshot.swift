@@ -63,12 +63,15 @@ struct BudgetSnapshot: Codable {
         return days >= 0 ? days + 1 : nil
     }
 
-    /// "$287,60" / "$287.60" via the widget's own locale; bare "$" like the
-    /// design. Whole amounts drop decimals when `compact`.
+    /// "$287.60", in the app's one format; bare "$" like the design. Whole
+    /// amounts drop decimals when `compact`.
     func formattedRemaining(compact: Bool = false) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.locale = .autoupdatingCurrent
+        // The app's one number format (MoneyFormatter): a point, no
+        // grouping — not the device's region, since 2026-10-02.
+        formatter.locale = Locale(identifier: "en_AU")
+        formatter.usesGroupingSeparator = false
         formatter.currencySymbol = "$"
         let decimals = compact && remainingCents % 100 == 0 ? 0 : 2
         formatter.minimumFractionDigits = decimals

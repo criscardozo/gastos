@@ -315,7 +315,7 @@ private struct BudgetSetupStep: View {
     @State private var creating = false
 
     private var l10n: L10n { model.l10n }
-    private var separator: String { l10n.language == "en" ? "." : "," }
+    private var separator: String { MoneyFormatter.decimalSeparator }
     private var timeZone: TimeZone { TimeZone(identifier: "Australia/Sydney")! }
     private var effectiveStart: CalendarDate {
         startDate ?? PeriodLogic.todayInTimezone(Date(), timeZone)

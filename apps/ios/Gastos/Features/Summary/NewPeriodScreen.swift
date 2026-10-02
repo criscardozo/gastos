@@ -35,7 +35,7 @@ struct NewPeriodScreen: View {
     @State private var loaded = false
 
     private var l10n: L10n { model.l10n }
-    private var separator: String { l10n.language == "en" ? "." : "," }
+    private var separator: String { MoneyFormatter.decimalSeparator }
     private var period: PeriodBudget? { model.currentPeriod }
     private var isWeekly: Bool { period?.period == .weekly }
     private var defaultAmount: Int { model.household?.defaultBudget.amountCents ?? 0 }

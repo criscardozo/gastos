@@ -22,7 +22,7 @@ struct RecurringPromptSheet: View {
     @FocusState private var amountFocused: Bool
 
     private var l10n: L10n { model.l10n }
-    private var separator: String { l10n.language == "en" ? "." : "," }
+    private var separator: String { MoneyFormatter.decimalSeparator }
     /// The questions captured when the run was planned — NOT the live list.
     /// Read live, answering one removed it from under the index and the next
     /// question slid into the slot just passed, so a second was never asked.
@@ -103,7 +103,7 @@ struct RecurringPromptSheet: View {
                                 Text(verbatim: "$")
                                     .appFont(17, .semibold)
                                     .foregroundStyle(Theme.inkTertiary)
-                                TextField("0,00", text: amountText)
+                                TextField("0.00", text: amountText)
                                     .appFont(17, .semibold)
                                     .keyboardType(.decimalPad)
                                     .focused($amountFocused)

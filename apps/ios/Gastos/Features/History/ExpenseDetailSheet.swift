@@ -220,12 +220,8 @@ struct ExpenseDetailSheet: View {
         .padding(.vertical, 12)
     }
 
-    /// "0,652" — three decimals is where a bank rate stops being noise.
+    /// "0.652" — three decimals is where a bank rate stops being noise.
     private func rateText(_ rate: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = l10n.locale
-        formatter.minimumFractionDigits = 3
-        formatter.maximumFractionDigits = 3
-        return formatter.string(from: NSNumber(value: rate)) ?? "—"
+        MoneyFormatter.rate(rate)
     }
 }

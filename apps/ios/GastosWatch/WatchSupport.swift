@@ -77,11 +77,14 @@ struct WatchBudget: Equatable {
     let state: String
     let currency: String
 
-    /// "$287,60" via the watch's own locale; bare "$" like the design.
+    /// "$287.60", in the app's one format; bare "$" like the design.
     var formattedRemaining: String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.locale = .autoupdatingCurrent
+        // The app's one number format (MoneyFormatter): a point, no
+        // grouping — not the device's region, since 2026-10-02.
+        formatter.locale = Locale(identifier: "en_AU")
+        formatter.usesGroupingSeparator = false
         formatter.currencySymbol = "$"
         let decimals = remainingCents % 100 == 0 ? 0 : 2
         formatter.minimumFractionDigits = decimals

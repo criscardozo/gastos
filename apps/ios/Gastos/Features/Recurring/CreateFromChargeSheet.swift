@@ -24,7 +24,7 @@ struct CreateFromChargeSheet: View {
     @State private var servicePicker = ServiceNotePicker()
 
     private var l10n: L10n { model.l10n }
-    private var separator: String { l10n.language == "en" ? "." : "," }
+    private var separator: String { MoneyFormatter.decimalSeparator }
 
     var body: some View {
         NavigationStack {
@@ -51,7 +51,7 @@ struct CreateFromChargeSheet: View {
                             Text(verbatim: "$")
                                 .appFont(17, .semibold)
                                 .foregroundStyle(Theme.inkTertiary)
-                            TextField("0,00", text: amountText)
+                            TextField("0.00", text: amountText)
                                 .appFont(17, .semibold)
                                 .keyboardType(.decimalPad)
                         }

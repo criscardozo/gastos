@@ -534,7 +534,7 @@ struct AdjustPeriodBudgetSheet: View {
     @State private var loaded = false
 
     private var l10n: L10n { model.l10n }
-    private var separator: String { l10n.language == "en" ? "." : "," }
+    private var separator: String { MoneyFormatter.decimalSeparator }
 
     var body: some View {
         VStack(spacing: 16) {

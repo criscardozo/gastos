@@ -91,7 +91,7 @@ struct ExpenseFormView: View {
     @FocusState private var focus: Field?
 
     private var l10n: L10n { model.l10n }
-    private var separator: String { l10n.language == "en" ? "." : "," }
+    private var separator: String { MoneyFormatter.decimalSeparator }
 
     private var isEditing: Bool {
         if case .edit = mode { return true }

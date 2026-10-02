@@ -172,7 +172,10 @@ struct WatchEntryView: View {
     private var formattedAmount: String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        formatter.locale = .autoupdatingCurrent
+        // The app's one number format (MoneyFormatter): a point, no
+        // grouping — not the device's region, since 2026-10-02.
+        formatter.locale = Locale(identifier: "en_AU")
+        formatter.usesGroupingSeparator = false
         let decimals = amountCents % 100 == 0 ? 0 : 2
         formatter.minimumFractionDigits = decimals
         formatter.maximumFractionDigits = 2

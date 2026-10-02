@@ -420,13 +420,9 @@ enum BankChargeText {
         return "\(name) · \(amount) · \(l10n.dayMonth(date, timeZone: model.householdTimeZone))"
     }
 
-    /// "0,712" — three decimals is where a bank rate stops being noise.
-    static func rate(_ rate: Double, l10n: L10n) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = l10n.locale
-        formatter.minimumFractionDigits = 3
-        formatter.maximumFractionDigits = 3
-        return formatter.string(from: NSNumber(value: rate)) ?? "—"
+    /// "0.712" — three decimals is where a bank rate stops being noise.
+    static func rate(_ rate: Double, l10n _: L10n) -> String {
+        MoneyFormatter.rate(rate)
     }
 }
 

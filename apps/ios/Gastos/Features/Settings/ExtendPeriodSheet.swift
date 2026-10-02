@@ -28,7 +28,7 @@ struct ExtendPeriodSheet: View {
     @FocusState private var focused: Bool
 
     private var l10n: L10n { model.l10n }
-    private var separator: String { l10n.language == "en" ? "." : "," }
+    private var separator: String { MoneyFormatter.decimalSeparator }
 
     private var addedCents: Int { input.cents }
     private var newTotalCents: Int { period.amountCents + addedCents }

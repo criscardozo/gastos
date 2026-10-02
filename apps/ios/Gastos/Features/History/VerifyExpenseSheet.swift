@@ -18,7 +18,7 @@ struct VerifyExpenseSheet: View {
     @FocusState private var focused: Bool
 
     private var l10n: L10n { model.l10n }
-    private var separator: String { l10n.language == "en" ? "." : "," }
+    private var separator: String { MoneyFormatter.decimalSeparator }
     private var category: Category {
         model.household?.categories[item.expense.categoryId] ?? .missing
     }
