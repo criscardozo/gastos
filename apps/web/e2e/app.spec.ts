@@ -1773,6 +1773,25 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
     },
   );
 
+  // And one bought BEFORE the closing date that the bank reported late: it
+  // still belongs to the closed statement, so the inbox must not freeze it
+  // along with the one bought after.
+  await request.post(
+    `${REST}/households/${householdId}/bankCharges?documentId=gmail-late`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          usdCents: { integerValue: "1899" },
+          date: { stringValue: "2026-01-25" },
+          merchant: { stringValue: "UBER TRIP" },
+          cardLast4: { stringValue: "5678" },
+          importedAt: { timestampValue: new Date().toISOString() },
+        },
+      },
+    },
+  );
+
   // Charges are filed by their own date, so anything bought now belongs to the
   // NEXT statement — and the screen has to say so instead of silently
   // back-dating it into a month that is over.
@@ -1785,6 +1804,9 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await expect(
     page.getByRole("button", { name: /Agregar US\$ 42,42/ }),
   ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: /Agregar US\$ 18,99/ }),
+  ).toBeEnabled();
   // And again where the charge is actually being typed.
   await page.getByRole("button", { name: "Agregar gasto" }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(

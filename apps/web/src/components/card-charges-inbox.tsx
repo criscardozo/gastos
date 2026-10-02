@@ -38,19 +38,23 @@ export function CardChargesInbox({
   charges,
   uid,
   locale,
-  statementClosed,
+  openClosingDate,
 }: {
   household: Household;
   charges: BankChargeDoc[];
   uid: string | null;
   locale: string;
   /**
-   * Today is past the open statement's closing date, so there is no statement
-   * these charges can honestly go into. Adding is blocked until the next one is
-   * opened — otherwise a September purchase gets filed into a closed August,
-   * back-dated to make it fit.
+   * The open statement's closing date, or null when none has ever been opened.
+   *
+   * A charge keeps its own date, so it lands in whichever statement contains
+   * it: one dated on or before the closing date still belongs to the open
+   * statement even once that date has gone by — the bank often emails a
+   * purchase days later. Only a charge dated AFTER the closing date has nowhere
+   * honest to go until the next statement is opened, so it alone is blocked,
+   * rather than the whole inbox.
    */
-  statementClosed: boolean;
+  openClosingDate: string | null;
 }) {
   const t = useTranslations("cardsInbox");
   const withDb = useDbWrite();
@@ -71,6 +75,10 @@ export function CardChargesInbox({
   );
 
   if (pending.length === 0 && dismissed.length === 0) return null;
+
+  const isBlocked = (charge: BankChargeDoc) =>
+    openClosingDate === null || charge.date > openClosingDate;
+  const blockedCount = pending.filter(isBlocked).length;
 
   const unidentifiedCount = pending.filter(
     (c) => classifyCharge(c.cardLast4, household.cards) === "unknown",
@@ -106,7 +114,7 @@ export function CardChargesInbox({
 
       {/* Says WHY the buttons are dead, where the buttons are. A row of
           disabled controls with no explanation reads as a broken screen. */}
-      {statementClosed && pending.length > 0 && (
+      {blockedCount > 0 && (
         <div
           className="flex flex-col gap-px rounded-[12px] bg-warn-bg px-3 py-2.5"
           role="alert"
@@ -121,7 +129,12 @@ export function CardChargesInbox({
             className="text-[11.5px] leading-snug"
             style={{ color: "var(--warn-text)" }}
           >
-            {tCards("inboxClosedBody")}
+            {openClosingDate === null
+              ? tCards("inboxNoStatementBody")
+              : tCards("inboxClosedBody", {
+                  count: blockedCount,
+                  date: formatShortDate(openClosingDate, locale),
+                })}
           </span>
         </div>
       )}
@@ -172,7 +185,7 @@ export function CardChargesInbox({
                   aria-label={`${t("add")} ${formatUsd(charge.usdCents, locale)}${
                     charge.merchant !== "" ? ` · ${displayMerchant(charge.merchant)}` : ""
                   }`}
-                  disabled={brand === null || uid === null || statementClosed}
+                  disabled={brand === null || uid === null || isBlocked(charge)}
                   onClick={() => {
                     if (brand === null || uid === null) return;
                     withDb((db) =>

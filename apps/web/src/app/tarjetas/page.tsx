@@ -150,10 +150,6 @@ export default function CardsPage() {
   // Only ever true on the OPEN statement: a past one is meant to be past, and
   // saying so about it would be noise on every screen but the current one.
   const pastClosing = isCurrent && isPastClosing(today ?? "", shown);
-  // The same question asked of the OPEN statement rather than the one on
-  // screen, because the bank inbox files into the open one wherever the pager
-  // has been walked back to.
-  const openStatementClosed = isPastClosing(today ?? "", statements[0] ?? null);
 
   const householdId = household?.id ?? null;
   // Read once, after mount: localStorage does not exist while the shell is
@@ -222,7 +218,7 @@ export default function CardsPage() {
           uid={user?.uid ?? null}
           locale={locale}
           // No statement has ever been opened: there is nowhere to file these.
-          statementClosed
+          openClosingDate={null}
         />
         <div className="flex flex-col items-center gap-2.5 rounded-[18px] border border-line bg-surface px-6 py-10 text-center">
           <Icon name="credit_card" size={30} className="text-ink-3" />
@@ -431,10 +427,9 @@ export default function CardsPage() {
         charges={bankCharges}
         uid={user?.uid ?? null}
         locale={locale}
-        // Blocked once the open statement's closing date has gone by, whichever
-        // statement the pager happens to be showing: the inbox always files
-        // into the open one, not the one being looked at.
-        statementClosed={openStatementClosed}
+        // The OPEN statement's, whichever one the pager happens to be showing:
+        // the inbox always files into the open one, not the one being looked at.
+        openClosingDate={statements[0]?.closingDate ?? null}
       />
 
       {chargesLoading && charges.length === 0 && (
