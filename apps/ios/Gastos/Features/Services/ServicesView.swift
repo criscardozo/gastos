@@ -67,6 +67,12 @@ struct ServicesView: View {
             .padding(.horizontal, 20)
             .padding(.top, 6)
             .padding(.bottom, 16)
+
+            // Last month, to the cent. Below the register on purpose: the
+            // rows above are what is coming, this is what already went out.
+            LastMonthPayments(state: store.lastMonth, l10n: l10n, timeZone: model.householdTimeZone)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
         }
         .background(Theme.bg)
         .toolbar(.hidden, for: .navigationBar)
@@ -370,6 +376,15 @@ final class ServicesStore {
     private(set) var monthExpenses: [Expense] = []
     private(set) var loading = true
 
+    enum LastMonth: Equatable {
+        case loading
+        case failed
+        case loaded(start: CalendarDate, rows: [ServicePayment])
+    }
+    /// Last month's Servicios payments, read once: that month no longer
+    /// changes. See ServicePayments.
+    private(set) var lastMonth: LastMonth = .loading
+
     private var serviceListener: ListenerRegistration?
     private var expenseListener: ListenerRegistration?
     private var month = 1
@@ -389,6 +404,21 @@ final class ServicesStore {
     func start(householdId: String?, today: CalendarDate, db: FirestoreService) {
         guard let householdId, serviceListener == nil else { return }
         month = Int(today.raw.dropFirst(5).prefix(2)) ?? 1
+        let previous = ServicePayments.previousMonth(today: today)
+        Task { [weak self] in
+            do {
+                let expenses = try await db.fetchExpenses(
+                    householdId: householdId,
+                    startDate: previous.start.raw,
+                    endDate: previous.end.raw
+                )
+                self?.lastMonth = .loaded(start: previous.start, rows: expenses.map(ServicePayment.init))
+            } catch {
+                // Not an empty month: a read that failed says nothing about
+                // whether anything was paid.
+                self?.lastMonth = .failed
+            }
+        }
         let bounds = PeriodLogic.monthRange(containing: today)
         serviceListener = db.listenServices(householdId: householdId) { [weak self] docs in
             self?.services = docs
@@ -468,5 +498,110 @@ final class ServicesStore {
                 db.onWriteRejected?(error)
             }
         }
+    }
+}
+
+// MARK: - Last month
+
+/// What the services actually cost last month: every Servicios expense of the
+/// calendar month before this one, with the bank's USD beside the verified
+/// ones, and the total. The web's LastMonthServices.
+private struct LastMonthPayments: View {
+    let state: ServicesStore.LastMonth
+    let l10n: L10n
+    let timeZone: TimeZone
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            switch state {
+            case .loading:
+                Text(l10n.t("common.loading"))
+                    .appFont(13)
+                    .foregroundStyle(Theme.inkTertiary)
+            case .failed:
+                Text(l10n.t("services.lastMonth.failed"))
+                    .appFont(13, .semibold)
+                    .foregroundStyle(Theme.redText)
+            case .loaded(let start, let rows):
+                let paid = ServicePayments.of(rows)
+                SectionLabel(text: l10n.t("services.lastMonth.title", l10n.monthLabel(start, timeZone: timeZone)))
+                Card(padding: EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16)) {
+                    if paid.rows.isEmpty {
+                        Text(l10n.t("services.lastMonth.empty"))
+                            .appFont(13)
+                            .foregroundStyle(Theme.inkTertiary)
+                            .padding(.vertical, 10)
+                    } else {
+                        VStack(spacing: 0) {
+                            ForEach(paid.rows) { row in
+                                line(row)
+                                Divider().overlay(Theme.separator)
+                            }
+                            total(paid)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func line(_ row: ServicePayment) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(row.note.isEmpty ? l10n.t("services.lastMonth.noNote") : row.note)
+                    .appFont(14, .semibold)
+                    .foregroundStyle(Theme.ink)
+                Text(CalendarDate(row.date).map { l10n.dayMonth($0, timeZone: timeZone) } ?? row.date)
+                    .appFont(11.5)
+                    .foregroundStyle(Theme.inkTertiary)
+            }
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(MoneyFormatter.aud(row.amountCents, locale: l10n.locale))
+                    .appFont(14, .bold)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.ink)
+                Text(row.usdCents.map { MoneyFormatter.usd($0, locale: l10n.locale) } ?? "—")
+                    .appFont(11.5)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.inkTertiary)
+            }
+        }
+        .padding(.vertical, 9)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func total(_ paid: (rows: [ServicePayment], totalAudCents: Int, totalUsdCents: Int, unverified: Int)) -> some View {
+        VStack(alignment: .trailing, spacing: 3) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(paid.rows.count == 1
+                     ? l10n.t("services.lastMonth.total.one")
+                     : l10n.t("services.lastMonth.total.other", paid.rows.count))
+                    .appFont(14, .bold)
+                    .foregroundStyle(Theme.ink)
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(MoneyFormatter.aud(paid.totalAudCents, locale: l10n.locale))
+                        .appFont(15, .bold)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.ink)
+                    if paid.totalUsdCents > 0 {
+                        Text(MoneyFormatter.usd(paid.totalUsdCents, locale: l10n.locale))
+                            .appFont(11.5, .semibold)
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.inkSecondary)
+                    }
+                }
+            }
+            if paid.unverified > 0 && paid.totalUsdCents > 0 {
+                Text(paid.unverified == 1
+                     ? l10n.t("services.lastMonth.usdPartial.one")
+                     : l10n.t("services.lastMonth.usdPartial.other", paid.unverified))
+                    .appFont(11)
+                    .foregroundStyle(Theme.inkTertiary)
+            }
+        }
+        .padding(.vertical, 10)
+        .accessibilityElement(children: .combine)
     }
 }

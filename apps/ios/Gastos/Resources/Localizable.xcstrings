@@ -3410,6 +3410,142 @@
         }
       }
     },
+    "services.lastMonth.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paid in %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagado en %@"
+          }
+        }
+      }
+    },
+    "services.lastMonth.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No expenses in the Servicios category that month."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ese mes no hay gastos en la categoría Servicios."
+          }
+        }
+      }
+    },
+    "services.lastMonth.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't read last month's expenses."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No pudimos leer los gastos del mes pasado."
+          }
+        }
+      }
+    },
+    "services.lastMonth.noNote": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No note"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin nota"
+          }
+        }
+      }
+    },
+    "services.lastMonth.total.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total · 1 payment"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total · 1 pago"
+          }
+        }
+      }
+    },
+    "services.lastMonth.total.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total · %d payments"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total · %d pagos"
+          }
+        }
+      }
+    },
+    "services.lastMonth.usdPartial.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The USD leaves out 1 unverified payment."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El USD no incluye 1 pago sin verificar."
+          }
+        }
+      }
+    },
+    "services.lastMonth.usdPartial.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The USD leaves out %d unverified payments."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El USD no incluye %d pagos sin verificar."
+          }
+        }
+      }
+    },
     "settings.about": {
       "extractionState": "stale",
       "localizations": {

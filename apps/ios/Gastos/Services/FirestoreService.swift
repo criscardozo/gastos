@@ -563,6 +563,19 @@ final class FirestoreService {
         _ = try? await URLSession.shared.data(for: request)
     }
 
+    /// The expenses of a closed range, read ONCE — for a figure that no longer
+    /// changes (last month on Servicios), where a listener would keep paying
+    /// for nothing. Bounded by date like every expense query. Throws on a
+    /// failed read, which is not an empty month.
+    func fetchExpenses(householdId: String, startDate: String, endDate: String) async throws -> [Expense] {
+        let snapshot = try await db.collection("households").document(householdId)
+            .collection("expenses")
+            .whereField("date", isGreaterThanOrEqualTo: startDate)
+            .whereField("date", isLessThanOrEqualTo: endDate)
+            .getDocuments()
+        return snapshot.documents.compactMap { Self.decode($0, as: Expense.self, in: "expenses") }
+    }
+
     /// When the Gmail ingestion last finished a run, or nil when it has never
     /// stamped one (an ingestion older than the heartbeat) — see
     /// shared/schema.md, ingestStatus. Read once, never listened to. Throws on

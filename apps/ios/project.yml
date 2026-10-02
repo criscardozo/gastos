@@ -268,6 +268,8 @@ targets:
         buildPhase: resources
       - path: ../../shared/ingest-vectors.json
         buildPhase: resources
+      - path: ../../shared/service-payments-vectors.json
+        buildPhase: resources
     settings:
       base:
         # Test bundles have no Info.plist of their own; codesigning requires one.
