@@ -17,7 +17,7 @@ import type { Household, RecurringRuleDoc } from "@/lib/firebase/converters";
 import type { RecurringRuleInput } from "@/lib/firebase/mutations";
 import { centsToInput, parseAmountToCents } from "@/lib/money";
 import { matchesPattern } from "@/lib/recurring";
-import { firstCategoryId } from "@/lib/categories";
+import { firstCategoryId, offeredForEntry } from "@/lib/categories";
 import { displayMerchant } from "@/lib/merchant-name";
 import {
   ServiceNoteField,
@@ -128,9 +128,8 @@ export function RecurringRuleDialog({
   // dialog.
   const hits = pendingMerchants.filter((m) => matchesPattern(pattern, m));
 
-  const categories = Object.entries(household.categories).sort(
-    ([, a], [, b]) => a.sortOrder - b.sortOrder,
-  );
+  // Archived ones are not offered: the rules refuse a new expense there.
+  const categories = offeredForEntry(household.categories, rule?.categoryId);
   const label = (id: string) => {
     const def = household.categories[id];
     if (def === undefined) return id;

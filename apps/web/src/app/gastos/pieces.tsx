@@ -11,6 +11,7 @@
  */
 
 import { useId, useMemo, type ChangeEvent, type ReactNode } from "react";
+import { isArchived } from "@/lib/categories";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
@@ -127,11 +128,15 @@ export function ExpenseFormFields({
         aria-label={t("categoryAll")}
         className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink outline-none"
       >
-        {categories.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.label}
-          </option>
-        ))}
+        {/* Active categories, plus the one this expense is already in even
+            when it is archived — editing an old expense must not move it. */}
+        {categories
+          .filter((c) => !isArchived(c.def) || c.id === form.categoryId)
+          .map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
+          ))}
       </select>
       <input
         type="text"

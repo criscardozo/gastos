@@ -11,6 +11,7 @@
 // the security rules validate.
 
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { isArchived } from "@/lib/categories";
 import { useTranslations } from "next-intl";
 import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 
@@ -58,7 +59,7 @@ interface PreviewRow {
   /** The bank's USD charge from the optional `monto_usd` column. */
   usdCents: number | null;
   status: "ok" | "mapped" | "error";
-  reasonKey?: "reasonBadDate" | "reasonBadAmount" | "reasonBadUsd";
+  reasonKey?: "reasonBadDate" | "reasonBadAmount" | "reasonBadUsd" | "reasonArchived";
 }
 
 // Amount cap mirrors the security rule (1..10_000_000 cents).
@@ -168,6 +169,11 @@ export function ImportExpenses() {
       } else if (!usdOk) {
         status = "error";
         reasonKey = "reasonBadUsd";
+      } else if (isArchived(household?.categories[categoryId])) {
+        // Refused by the rules — and a batch is all or nothing, so one such
+        // row would sink every row beside it. Said here instead.
+        status = "error";
+        reasonKey = "reasonArchived";
       } else if (matched === null) {
         status = "mapped";
       } else {

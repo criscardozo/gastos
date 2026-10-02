@@ -601,6 +601,38 @@ describe("households/{id}/expenses", () => {
     await seedHousehold(true);
   });
 
+  it("an archived category takes no new expense, and no expense moved into it", async () => {
+    // Archiving keeps the category so its old expenses still read as what
+    // they were; the clients stop offering it, and this is what stops an
+    // older client — or the watch, with its own list — filing into it.
+    await seed(env, async (admin) => {
+      await updateDoc(doc(admin, "households", HOUSEHOLD), {
+        "categories.gym": { name: "Gimnasio", icon: "tag", color: "#000000", sortOrder: 1, archived: true },
+      });
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "expenses", "old-gym"),
+        expenseDoc(ALICE, { categoryId: "gym", createdAt: new Date(), updatedAt: new Date() }),
+      );
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "expenses", "food"),
+        expenseDoc(ALICE, { createdAt: new Date(), updatedAt: new Date() }),
+      );
+    });
+    const col = collection(db(env, ALICE), "households", HOUSEHOLD, "expenses");
+    await assertFails(setDoc(doc(col), expenseDoc(ALICE, { categoryId: "gym" })));
+    // Still active categories, and an id that is no longer in the map — the
+    // ones already deleted — file as before.
+    await assertSucceeds(setDoc(doc(col), expenseDoc(ALICE)));
+    await assertSucceeds(setDoc(doc(col), expenseDoc(ALICE, { categoryId: "gone" })));
+    // An old expense in it can still be corrected; one cannot be moved in.
+    await assertSucceeds(
+      updateDoc(doc(col, "old-gym"), { note: "Cuota", updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(doc(col, "food"), { categoryId: "gym", updatedAt: serverTimestamp() }),
+    );
+  });
+
   it("members can create valid expenses; outsiders cannot", async () => {
     const col = (uid: string) =>
       collection(db(env, uid), "households", HOUSEHOLD, "expenses");

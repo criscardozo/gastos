@@ -56,7 +56,7 @@ import {
   chargeIdFromAutoExpense,
 } from "@/lib/firebase/mutations";
 import type { BankChargeDoc, Expense, Household } from "@/lib/firebase/converters";
-import { categoryCircleBg, categoryColor } from "@/lib/categories";
+import { categoryCircleBg, categoryColor, isArchived } from "@/lib/categories";
 import { centsToInput, formatCents, formatUsd, parseAmountToCents } from "@/lib/money";
 import {
   capitaliseFirst,
@@ -211,11 +211,14 @@ export default function ExpensesPage() {
   // note on useExpenseFilters for what putting one below it costs.
   const householdId = household?.id ?? null;
   const uid = user?.uid ?? null;
+  const categoriesById = household?.categories;
   useEffect(() => {
     if (chargesLoading || rulesLoading || householdId === null || uid === null) return;
     const plan = planRecurringRun(
       charges.filter(isPending),
-      recurringRules,
+      // A rule filing into an archived category would be refused by the
+      // rules on every arrival; it files nothing until the category is back.
+      recurringRules.filter((r) => !isArchived(categoriesById?.[r.categoryId])),
       learnedRate,
       seenChargeIds.current,
       filedChargeIds.current,
@@ -255,7 +258,7 @@ export default function ExpensesPage() {
         await filing.catch(() => {});
       }
     })();
-  }, [charges, recurringRules, learnedRate, chargesLoading, rulesLoading, householdId, uid, write]);
+  }, [charges, recurringRules, categoriesById, learnedRate, chargesLoading, rulesLoading, householdId, uid, write]);
 
   const [addForm, setAddForm] = useState<FormState>({
     amount: "",
@@ -274,10 +277,12 @@ export default function ExpensesPage() {
   const effectiveAddForm: FormState = {
     ...addForm,
     date: addForm.date !== "" ? addForm.date : todayDate,
+    // Never an archived one: the rules refuse a new expense there.
     categoryId:
-      household.categories[addForm.categoryId] !== undefined
+      household.categories[addForm.categoryId] !== undefined &&
+      !isArchived(household.categories[addForm.categoryId])
         ? addForm.categoryId
-        : (categories[0]?.id ?? "other"),
+        : (categories.find((c) => !isArchived(c.def))?.id ?? "other"),
   };
 
   /** The last six calendar months, newest first — a look-back window, not a

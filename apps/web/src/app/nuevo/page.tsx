@@ -19,11 +19,7 @@ import { getFirebaseClient } from "@/lib/firebase/client";
 import { addExpense } from "@/lib/firebase/mutations";
 import { canAddExpense } from "@/lib/period-gate";
 import { useExpensesRange } from "@/lib/firebase/hooks";
-import {
-  categoryCircleBg,
-  categoryColor,
-  countsToBudget,
-} from "@/lib/categories";
+import { categoryCircleBg, categoryColor, countsToBudget, offeredForEntry } from "@/lib/categories";
 import {
   formatCents,
   parseAmountToCents,
@@ -59,19 +55,19 @@ export default function QuickEntryPage() {
 
   const categories = useMemo(() => {
     if (household === null) return [];
-    return Object.entries(household.categories)
+    // Archived ones are not offered: the rules refuse a new expense there.
+    return offeredForEntry(household.categories)
       .map(([id, def]) => ({
         id,
         def,
         label: def.key !== undefined ? tCat(def.key) : (def.name ?? id),
-      }))
-      .sort((a, b) => a.def.sortOrder - b.def.sortOrder);
+      }));
   }, [household, tCat]);
 
   if (household === null || user === null) return null;
 
   const effectiveCategoryId =
-    categoryId !== null && household.categories[categoryId] !== undefined
+    categoryId !== null && categories.some((c) => c.id === categoryId)
       ? categoryId
       : (categories[0]?.id ?? null);
   const effectiveDate = date !== "" ? date : (today ?? "");

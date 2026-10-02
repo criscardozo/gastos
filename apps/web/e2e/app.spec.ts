@@ -1481,6 +1481,49 @@ test("Datos keeps its category filter when the filter leaves nothing", async ({ 
   await expect(page.getByText("Filtrable")).toBeVisible();
 });
 
+// Archiving a category instead of deleting it. Deleting dropped the entry and
+// every expense filed under it read "Categoría eliminada" from then on; an
+// archived one keeps its name on the old expenses and is offered for nothing
+// new. The rules side — refusing a new expense there — is in the rules suite.
+test("an archived category keeps its expenses' name and takes no new ones", async ({
+  page,
+}) => {
+  const email = `e2e-archive-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Archivo Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  const formCategory = page.getByLabel("Categoría: todas").first();
+  await page.getByLabel("0.00", { exact: true }).fill("12,00");
+  await formCategory.selectOption("health");
+  await page.getByLabel("Nota (opcional)").fill("Consulta");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Consulta")).toBeVisible();
+
+  await page.getByRole("link", { name: "Ajustes" }).click();
+  await page.getByRole("button", { name: "Desactivar Salud" }).click();
+  await expect(page.getByText("Desactivadas")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reactivar Salud" })).toBeVisible();
+
+  // Not offered to file into, and the old expense still says what it was.
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(page.getByText("Consulta")).toBeVisible();
+  await expect(formCategory.locator("option", { hasText: "Salud" })).toHaveCount(0);
+  await expect(page.getByText(/Categoría (eliminada|borrada)/)).toHaveCount(0);
+
+  // And it comes back.
+  await page.getByRole("link", { name: "Ajustes" }).click();
+  await page.getByRole("button", { name: "Reactivar Salud" }).click();
+  await expect(page.getByText("Desactivadas")).toHaveCount(0);
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(formCategory.locator("option", { hasText: "Salud" })).toHaveCount(1);
+});
+
 test("renaming a category keeps it out of the budget", async ({
   page,
   request,

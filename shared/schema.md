@@ -41,7 +41,7 @@ authorization, not this doc.
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
 `Category`: `{ key?: string, name?: string, icon: string, color: string, sortOrder: int,
-countsToBudget?: bool }`
+countsToBudget?: bool, archived?: bool }`
 — seed categories carry `key` (translated client-side from `shared/categories.json` ids);
 user-created/renamed ones carry a literal `name`. Display rule:
 `category.key ? t(category.key) : category.name`.
@@ -53,6 +53,16 @@ budget maths (remaining, progress, state, the trend bars) so that things like
 health or nights out don't eat the weekly allowance. The rules do not validate
 category entries (a map's entries cannot be iterated in rules), so this field
 needs no rules change.
+
+`archived` is written **only when true**; absent ⇒ active. An archived category is
+kept — its expenses still show its name, icon and colour, where deleting one made
+them read "Categoría eliminada" — but it is offered for nothing new: no entry form,
+no recurring rule, no CSV row. Unlike `countsToBudget` this one IS enforced: the
+rules refuse a new expense in an archived category, and moving an existing one into
+it, so an older client or the watch (which carries its own category list) cannot
+file there either. Editing an expense already in it is allowed. An id absent from
+the map — a category deleted outright — is left as before. Deleting outright is
+still possible, from the archived list only.
 
 `Card`: `{ kind: "debit" | "credit", brand?: "visa" | "mastercard" }`, in a map
 **keyed by the card's last four digits** — the only identifier the bank ever

@@ -313,6 +313,7 @@
     "acceptUnverified": "Acepto que la exportación tiene datos no verificados",
     "unverifiedNotice": "{count, plural, one {# gasto sin el USD del banco: su columna USD queda vacía y el total en USD es parcial} other {# gastos sin el USD del banco: su columna USD queda vacía y el total en USD es parcial}}",
     "reasonBadUsd": "USD inválido",
+    "reasonArchived": "categoría desactivada",
     "exportDriveStandalone": "Google no puede devolver la sesión a la app instalada. Abrí gastos.cardozo.dev en el navegador para exportar a Drive (el Excel sí funciona acá).",
     "viewTitle": "Qué estás viendo",
     "viewHint": "Elegí el intervalo y filtrá: la tabla de abajo es exactamente lo que se exporta.",
@@ -435,7 +436,12 @@
     "deleteConfirm": "¿Eliminar la categoría \"{name}\"? Los gastos ya cargados van a mostrarla como \"Categoría eliminada\".",
     "maxReached": "Llegaron al máximo de 30 categorías.",
     "countsToBudget": "¿{name} descuenta del presupuesto?",
-    "countsToBudgetHint": "El interruptor define si la categoría descuenta del presupuesto del período. Apagada, el gasto igual queda registrado."
+    "countsToBudgetHint": "El interruptor define si la categoría descuenta del presupuesto del período. Apagada, el gasto igual queda registrado.",
+    "archive": "Desactivar {name}",
+    "archivedTitle": "Desactivadas",
+    "archivedHint": "No se ofrecen para cargar gastos. Los que ya tienen siguen mostrando su nombre.",
+    "unarchive": "Reactivar {name}",
+    "unarchiveShort": "Reactivar"
   },
   "cardsSettings": {
     "title": "Tarjetas",

@@ -552,6 +552,10 @@ export async function updateHouseholdCategories(
         // Written only when opted out, so the stored shape stays unchanged
         // for the default (counting) case.
         ...(def.countsToBudget === false ? { countsToBudget: false } : {}),
+        // Same rule, other way round: written only when archived, so an
+        // entry written without it IS the reactivation. Missing from this
+        // list, archiving wrote the entry back unarchived and said nothing.
+        ...(def.archived === true ? { archived: true } : {}),
       };
       fields[`categories.${id}`] =
         def.key !== undefined

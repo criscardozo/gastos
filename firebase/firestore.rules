@@ -423,19 +423,36 @@ service cloud.firestore {
           : (!('verified' in data) || data.verified == false);
       }
 
+      // An ARCHIVED category takes nothing new. Archiving keeps the entry
+      // (its expenses still show its name) and the clients stop offering it;
+      // this is what stops an older client, or the watch with its own list,
+      // filing into it anyway. An id no longer in the map — a category
+      // deleted before archiving existed — is not this rule's business.
+      // The household was already read by isMember, so this costs no read.
+      function categoryTakesExpenses(householdId, categoryId) {
+        let categories = get(/databases/$(database)/documents/households/$(householdId)).data.categories;
+        return !(categoryId in categories)
+          || categories[categoryId].get('archived', false) != true;
+      }
+
       match /expenses/{expenseId} {
         allow read: if isMember(householdId);
 
         allow create: if isMember(householdId)
           && isValidExpense(request.resource.data)
+          && categoryTakesExpenses(householdId, request.resource.data.categoryId)
           && request.resource.data.createdBy == request.auth.uid
           && isServerTimestamp(request.resource.data.createdAt)
           && isServerTimestamp(request.resource.data.updatedAt);
 
         // Either member can edit any expense (createdBy is attribution, not
         // ownership) — but attribution and createdAt are immutable.
+        // Moving an expense INTO an archived category is refused; editing
+        // one that is already there is not, so old ones stay correctable.
         allow update: if isMember(householdId)
           && isValidExpense(request.resource.data)
+          && (request.resource.data.categoryId == resource.data.categoryId
+              || categoryTakesExpenses(householdId, request.resource.data.categoryId))
           && request.resource.data.createdBy == resource.data.createdBy
           && request.resource.data.createdAt == resource.data.createdAt
           && isServerTimestamp(request.resource.data.updatedAt);

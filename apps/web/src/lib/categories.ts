@@ -24,6 +24,28 @@ export interface CategoryDef {
   /** Whether spending here counts against the period budget. Absent ⇒ true,
    * so categories created before this existed keep counting. */
   countsToBudget?: boolean;
+  /** Archived: kept, so its expenses still show its name, but offered for
+   * nothing new — and the security rules refuse a new expense in it. Written
+   * only when true; absent ⇒ active. */
+  archived?: boolean;
+}
+
+export function isArchived(def: CategoryDef | undefined): boolean {
+  return def?.archived === true;
+}
+
+/**
+ * The categories a form may offer, by sortOrder: every active one, plus
+ * `keep` — the one the thing being edited is already in — even when it is
+ * archived, so editing an old expense never moves it somewhere else.
+ */
+export function offeredForEntry(
+  categories: Record<string, CategoryDef>,
+  keep?: string,
+): [string, CategoryDef][] {
+  return Object.entries(categories)
+    .filter(([id, def]) => !isArchived(def) || id === keep)
+    .sort(([, a], [, b]) => a.sortOrder - b.sortOrder);
 }
 
 /** Absent means "counts" — only an explicit false opts a category out. */
@@ -113,11 +135,7 @@ export const CATEGORY_ICONS: string[] = [
  * is by sortOrder. "" when there are none.
  */
 export function firstCategoryId(categories: Record<string, CategoryDef>): string {
-  let first: [string, number] | null = null;
-  for (const [id, def] of Object.entries(categories)) {
-    if (first === null || def.sortOrder < first[1]) first = [id, def.sortOrder];
-  }
-  return first?.[0] ?? "";
+  return offeredForEntry(categories)[0]?.[0] ?? "";
 }
 
 /**

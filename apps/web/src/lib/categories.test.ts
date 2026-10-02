@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { FIRESTORE_IN_LIMIT, MAX_CATEGORIES, firstCategoryId } from "./categories";
+import {
+  FIRESTORE_IN_LIMIT,
+  MAX_CATEGORIES,
+  firstCategoryId,
+  isArchived,
+  offeredForEntry,
+} from "./categories";
 
 /**
  * The category cap is not a product decision — it is Firestore's `in` limit.
@@ -55,5 +61,39 @@ describe("firstCategoryId", () => {
   });
   it("is empty for a household with none", () => {
     expect(firstCategoryId({})).toBe("");
+  });
+});
+
+describe("archived categories", () => {
+  // Archiving keeps a category's name, icon and colour, so its old expenses
+  // still read as what they were — deleting turned them into "Categoría
+  // borrada" — while it stops being offered for anything new.
+  const categories = {
+    food: { name: "Comida", icon: "tag", color: "#000000", sortOrder: 1 },
+    gym: { name: "Gimnasio", icon: "tag", color: "#000000", sortOrder: 0, archived: true },
+    rent: { name: "Alquiler", icon: "tag", color: "#000000", sortOrder: 2 },
+  };
+
+  it("is archived only when it says so", () => {
+    expect(isArchived(categories.gym)).toBe(true);
+    expect(isArchived(categories.food)).toBe(false);
+    expect(isArchived(undefined)).toBe(false);
+  });
+
+  it("is never the one a form preselects, even sorted first", () => {
+    expect(firstCategoryId(categories)).toBe("food");
+  });
+
+  it("is left out of what a form offers, by sortOrder", () => {
+    expect(offeredForEntry(categories).map(([id]) => id)).toEqual(["food", "rent"]);
+  });
+
+  it("stays offered for an expense that is already in it", () => {
+    // Editing an old gym expense must not silently move it elsewhere.
+    expect(offeredForEntry(categories, "gym").map(([id]) => id)).toEqual([
+      "gym",
+      "food",
+      "rent",
+    ]);
   });
 });

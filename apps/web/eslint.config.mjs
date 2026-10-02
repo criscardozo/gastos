@@ -27,7 +27,12 @@ const eslintConfig = [
       // A leading underscore marks a parameter kept on purpose and unused —
       // lib/money.ts takes a `_locale` from every caller since numbers stopped
       // following the language, so the 36 call sites did not have to change.
-      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      // And a key pulled out of an object only to leave it behind
+      // (`const { archived, ...rest } = def`) is the point, not a leftover.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", ignoreRestSiblings: true },
+      ],
     },
   },
 ];

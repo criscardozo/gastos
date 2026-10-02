@@ -12,7 +12,7 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@/components/ui/icon";
 import { useDbWrite } from "@/components/use-db-write";
 import { updateHouseholdCategories } from "@/lib/firebase/mutations";
-import { countsToBudget } from "@/lib/categories";
+import { countsToBudget, isArchived } from "@/lib/categories";
 import type { Household } from "@/lib/firebase/converters";
 import {
   categoryCircleBg,
@@ -80,6 +80,10 @@ export function CategoriesCard({ household }: { household: Household }) {
   );
 
   const atCap = rows.length >= MAX_CATEGORIES;
+  // Archived ones are listed apart: they are kept so their expenses still show
+  // their name, but nothing new goes into them (see lib/categories.ts).
+  const active = rows.filter((r) => !isArchived(r.def));
+  const archived = rows.filter((r) => isArchived(r.def));
 
   // Fire-and-forget through the app's error dialog. This used to await the
   // write with every button held off meanwhile: offline, where Firestore only
@@ -117,8 +121,8 @@ export function CategoriesCard({ household }: { household: Household }) {
 
   const move = (index: number, dir: -1 | 1) => {
     const target = index + dir;
-    if (target < 0 || target >= rows.length) return;
-    const order = rows.map((r) => r.id);
+    if (target < 0 || target >= active.length) return;
+    const order = active.map((r) => r.id);
     [order[index], order[target]] = [order[target], order[index]];
     // Normalize sortOrder to the new index for every entry that moved.
     const changes: Record<string, CategoryDef | null> = {};
@@ -131,6 +135,24 @@ export function CategoriesCard({ household }: { household: Household }) {
     if (Object.keys(changes).length > 0) write(changes);
   };
 
+  // Archiving instead of deleting: deleting dropped the entry, and the
+  // expenses filed under it read "Categoría eliminada" for ever after. No
+  // confirm — it is one press back. The last active one stays: a household
+  // with nothing to file into cannot add an expense at all.
+  const archive = (row: Row) => {
+    if (active.length <= 1) return;
+    write({ [row.id]: { ...row.def, archived: true } });
+  };
+
+  // Written whole, like every entry, so the key is left OUT rather than set
+  // to false: absent is what "active" means in the schema.
+  const unarchive = (row: Row) => {
+    const { archived, ...rest } = row.def;
+    write({ [row.id]: rest });
+  };
+
+  // Only from the archived list, and still behind a confirm: this is the one
+  // that cannot be taken back, and it is what leaves "Categoría eliminada".
   const remove = (row: Row) => {
     if (rows.length <= 1) return; // rules require ≥ 1 category
     if (!window.confirm(t("deleteConfirm", { name: row.label }))) return;
@@ -167,7 +189,7 @@ export function CategoriesCard({ household }: { household: Household }) {
       </div>
 
       <div className="divide-y divide-soft">
-        {rows.map((row, index) => (
+        {active.map((row, index) => (
           <div key={row.id} className="group flex items-center gap-3 py-2">
             <div
               className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full"
@@ -243,7 +265,7 @@ export function CategoriesCard({ household }: { household: Household }) {
               <IconButton
                 name="keyboard_arrow_down"
                 ariaLabel={t("moveDown", { name: row.label })}
-                disabled={index === rows.length - 1}
+                disabled={index === active.length - 1}
                 onClick={() => move(index, 1)}
               />
               <IconButton
@@ -252,15 +274,57 @@ export function CategoriesCard({ household }: { household: Household }) {
                 onClick={() => startRename(row)}
               />
               <IconButton
-                name="delete"
-                ariaLabel={t("delete", { name: row.label })}
-                disabled={rows.length <= 1}
-                onClick={() => remove(row)}
+                name="archive"
+                ariaLabel={t("archive", { name: row.label })}
+                disabled={active.length <= 1}
+                onClick={() => archive(row)}
               />
             </div>
           </div>
         ))}
       </div>
+
+      {archived.length > 0 && (
+        <div className="mt-2 flex flex-col border-t border-soft pt-3">
+          <span className="section-label">{t("archivedTitle")}</span>
+          <p className="mb-1 mt-0.5 text-[11px] leading-snug text-ink-3">
+            {t("archivedHint")}
+          </p>
+          <div className="divide-y divide-soft">
+            {archived.map((row) => (
+              <div key={row.id} className="flex items-center gap-3 py-2">
+                <div
+                  className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full opacity-60"
+                  style={{ background: categoryCircleBg(row.id, row.def) }}
+                >
+                  <Icon
+                    name={row.def.icon}
+                    size={15}
+                    style={{ color: categoryColor(row.id, row.def) }}
+                  />
+                </div>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-2">
+                  {row.label}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => unarchive(row)}
+                  aria-label={t("unarchive", { name: row.label })}
+                  className="rounded-full border border-pill px-3 py-1 text-[12px] font-bold text-ink"
+                >
+                  {t("unarchiveShort")}
+                </button>
+                <IconButton
+                  name="delete"
+                  ariaLabel={t("delete", { name: row.label })}
+                  disabled={rows.length <= 1}
+                  onClick={() => remove(row)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Add */}
       <div className="mt-2 border-t border-soft pt-3">

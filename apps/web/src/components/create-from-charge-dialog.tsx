@@ -31,7 +31,7 @@ import {
   formatUsd,
   parseAmountToCents,
 } from "@/lib/money";
-import { firstCategoryId } from "@/lib/categories";
+import { firstCategoryId, offeredForEntry } from "@/lib/categories";
 import { formatShortDate } from "@/lib/dates";
 import { estimateAudCents } from "@/lib/recurring";
 import { displayMerchant } from "@/lib/merchant-name";
@@ -89,9 +89,8 @@ export function CreateFromChargeDialog({
     categoryId !== "" &&
     serviceNoteValid(categoryId, note, services, writesOwnNote);
 
-  const categories = Object.entries(household.categories).sort(
-    ([, a], [, b]) => a.sortOrder - b.sortOrder,
-  );
+  // Archived ones are not offered: the rules refuse a new expense there.
+  const categories = offeredForEntry(household.categories);
   const label = (id: string) => {
     const def = household.categories[id];
     if (def === undefined) return id;
