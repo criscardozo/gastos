@@ -658,9 +658,16 @@ claves de este proyecto, que es lo que no viaja:
 
 ## 9. La máquina de Cristian
 
-- **Sin CI, "lo corrí local" no es lo mismo que verde, y la lista de en qué
-  difiere vale más que la frase.** Mientras Actions no pueda correr, la pasada
-  entera es: `pnpm typecheck && pnpm lint && pnpm test:web && pnpm test:rules`,
+- **No hay CI, por decisión: desde el 1/10/2026 el workflow `CI` de este repo
+  (y los de stock y kyber) está deshabilitado y Dependabot se sacó.** Lo
+  decidió Cristian: el único pipeline que le interesa es el backup semanal de
+  `my-apps-backups`, y el deploy lo hace Vercel. No es una factura —los repos
+  son públicos y no facturan—, así que no vence con el ciclo de minutos; se
+  vuelve a prender con `gh workflow enable ci.yml -R criscardozo/gastos`. El
+  riesgo aceptado: un push no se prueba en ninguna máquina limpia, y lo único
+  que corre antes es el hook `pre-push` de esta. **Sin CI, "lo corrí local" no
+  es lo mismo que verde, y la lista de en qué difiere vale más que la frase.**
+  La pasada entera es: `pnpm typecheck && pnpm lint && pnpm test:web && pnpm test:rules`,
   `pnpm --filter web test:e2e` con los emuladores en `demo-gastos-diarios`,
   `pnpm build` + `next start -p 3112` + `pnpm verify:pwa`, `python3
   design-system/emit.py --verify`, y `xcodebuild -scheme Gastos` para iOS.
@@ -692,6 +699,14 @@ claves de este proyecto, que es lo que no viaja:
   verificando **subconjuntos distintos cada vez**, y los dos pasos que siempre
   se salteaban eran los que dependen de un build de producción — justo los que
   más se parecen a lo que CI hacía y ellos no.
+- **El backup semanal volvió a GitHub el 1/10/2026** (`my-apps-backups`,
+  workflow `Backup`, miércoles 20:00 UTC): esa corrida, la primera en un mes que
+  pasó la facturación, encontró que `pnpm/action-setup` buscaba la versión de
+  pnpm en la raíz equivocada y se arregló ahí mismo (`fa376bf`). El launchd de
+  abajo queda cargado como respaldo extra; Cristian dijo que con el de GitHub
+  no hace falta revisarlo, y su log tiene el último backup el 17/9 — si se lo
+  necesitara, hay que investigar por qué dejó de disparar. Lo que sigue es su
+  historia.
 - **El backup semanal lo corre un launchd de esta máquina desde el 15/9/2026**,
   `~/Library/LaunchAgents/dev.cardozo.gastos.backup.plist`, jueves 06:00, log en
   `~/Library/Logs/gastos-backup.log`. No se sumó al de Actions: lo **reemplaza**
