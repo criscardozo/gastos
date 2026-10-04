@@ -498,20 +498,29 @@ export default function SettingsPage() {
               {t("thisPeriodNote")}
             </span>
             <div className="flex flex-wrap items-center gap-2">
-              {/* Re-opens the start-period screen for the period under way —
-                  the way back in when it was answered by accident. */}
-              <button
-                type="button"
-                onClick={openStartPeriod}
-                className="flex items-center gap-2 rounded-full bg-accent-soft px-3.5 py-2 text-[13px] font-bold text-accent-strong"
-              >
-                <Icon name="flag" size={15} style={{ color: "var(--accent-strong)" }} />
-                {t(
-                  currentPeriod.period === "weekly"
-                    ? "startPeriodWeekly"
-                    : "startPeriodFortnightly",
-                )}
-              </button>
+              {/* Only while the period under way has not been started — put
+                  off with "Después" — which is the one time "Iniciar la
+                  semana" does what it says. It used to be offered always and
+                  re-open the question for a week ALREADY started: on its last
+                  day Cristian pressed it to close the week and got that
+                  week's dates with the previous week's leftover ($13.69 for
+                  the $90.55 he had). Closing the week is "Empezar la próxima
+                  semana hoy" below; changing this week's amount is the row
+                  above. */}
+              {!currentPeriod.confirmed && (
+                <button
+                  type="button"
+                  onClick={openStartPeriod}
+                  className="flex items-center gap-2 rounded-full bg-accent-soft px-3.5 py-2 text-[13px] font-bold text-accent-strong"
+                >
+                  <Icon name="flag" size={15} style={{ color: "var(--accent-strong)" }} />
+                  {t(
+                    currentPeriod.period === "weekly"
+                      ? "startPeriodWeekly"
+                      : "startPeriodFortnightly",
+                  )}
+                </button>
+              )}
 
               {/* Only a week can be stretched, and only into a fortnight, so
                   the button simply is not there once it has been. */}

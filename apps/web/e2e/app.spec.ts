@@ -604,12 +604,14 @@ test("starting a period asks, and carries the leftover", async ({
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/Repetir presupuesto/)).toHaveCount(0);
 
-  // Ajustes can bring the screen back, and that one CAN be dismissed.
+  // And Ajustes no longer offers to re-open it. "Iniciar la quincena" used to
+  // re-ask a period already started, with that period's dates and the
+  // previous one's leftover — which is not what anyone pressing it on the
+  // last day wanted (that is "Empezar la próxima … hoy"). It is offered only
+  // while the period has not been started.
   await page.getByRole("link", { name: "Ajustes" }).click();
-  await page.getByRole("button", { name: /Iniciar la quincena/ }).click();
-  await expect(page.getByText("Ahora no")).toBeVisible();
-  await page.getByText("Ahora no").click();
-  await expect(page.getByText(/Repetir presupuesto/)).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Ajustes" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Iniciar la quincena/ })).toHaveCount(0);
 
 });
 
@@ -2462,7 +2464,6 @@ test("a week can be stretched into a fortnight, and swallows the days after it",
 
   // The period is a fortnight now, and the offer is gone: it is one-way.
   await expect(page.getByRole("button", { name: "Extender a 2 semanas" })).toBeHidden();
-  await expect(page.getByText("Iniciar la quincena")).toBeVisible();
   // The budget grew by exactly what was added.
   await expect(page.getByText("$1800.00").first()).toBeVisible();
 
@@ -3576,6 +3577,10 @@ test("the period can be left unstarted while the numbers are read", async ({
 
   // The app is usable — that is the whole request.
   await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  // A period not yet started is the one time Ajustes offers to start it.
+  await page.getByRole("link", { name: "Ajustes" }).click();
+  await expect(page.getByRole("button", { name: /Iniciar la (semana|quincena)/ })).toBeVisible();
 
   // And adding an expense brings the question back instead of writing.
   await page.getByRole("link", { name: "Gastos", exact: true }).click();

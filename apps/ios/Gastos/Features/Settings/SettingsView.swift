@@ -316,8 +316,14 @@ struct SettingsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                // Re-opens the start-period screen for the period under way —
-                // the way back in when it was answered by accident.
+                // Only while the period under way has not been started (put off
+                // with "Después"), the one time "Iniciar la semana" does what
+                // it says. Offered always, it re-opened the question for a week
+                // ALREADY started: on its last day Cristian pressed it to close
+                // the week and got that week's dates with the previous week's
+                // leftover. Closing it is "Empezar la próxima semana hoy"
+                // below; changing this week's amount is the row above.
+                if !period.isConfirmed {
                 Button {
                     model.openNewPeriodPrompt()
                 } label: {
@@ -338,6 +344,7 @@ struct SettingsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                }
                 // Only a week can be stretched, and only into a fortnight, so
                 // the button simply is not there once it has been.
                 if period.period == .weekly {
