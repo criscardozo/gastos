@@ -165,6 +165,16 @@ struct L10n {
         count == 1 ? t("history.bankChargesOne") : t("history.bankChargesOther", count)
     }
 
+    /// "1 cargo del banco sin registrar…" — the Tarjetas inbox's hint.
+    func cardInboxHint(_ count: Int) -> String {
+        count == 1 ? t("cardsInbox.hintOne") : t("cardsInbox.hintOther", count)
+    }
+
+    /// The note about charges from cards nobody identified.
+    func cardInboxUnidentified(_ count: Int) -> String {
+        count == 1 ? t("cardsInbox.unidentifiedOne") : t("cardsInbox.unidentifiedOther", count)
+    }
+
     /// "1 del banco" / "3 del banco" — the Historial chip, which sits beside
     /// the unverified one on a single line and so cannot afford the long form.
     func bankChipCount(_ count: Int) -> String {

@@ -299,6 +299,31 @@ final class ChargeRoutingTests: XCTestCase {
         XCTAssertTrue(h.belongsToExpenses(cardLast4: nil))
     }
 
+    func testTheCardInboxIsTheMirror() {
+        // Credit and unidentified on Tarjetas; debit never. An unidentified
+        // charge is in both places, on purpose.
+        let h = household(cards: configured)
+        XCTAssertFalse(h.belongsToCard(cardLast4: "1234"))
+        XCTAssertTrue(h.belongsToCard(cardLast4: "5678"))
+        XCTAssertTrue(h.belongsToCard(cardLast4: "9999"))
+        XCTAssertTrue(h.belongsToCard(cardLast4: nil))
+    }
+
+    func testPrefillsTheConfiguredBrandOnly() {
+        let h = household(cards: [
+            "5678": HouseholdCard(kind: "credit", brand: "visa"),
+            "4321": HouseholdCard(kind: "credit", brand: nil),
+            "1111": HouseholdCard(kind: "credit", brand: "amex"),
+        ])
+        XCTAssertEqual(h.brand(forCardLast4: "5678"), .visa)
+        // No brand saved, a brand this app does not know, unknown digits, no
+        // digits: the user picks.
+        XCTAssertNil(h.brand(forCardLast4: "4321"))
+        XCTAssertNil(h.brand(forCardLast4: "1111"))
+        XCTAssertNil(h.brand(forCardLast4: "9999"))
+        XCTAssertNil(h.brand(forCardLast4: nil))
+    }
+
     func testEverythingShowsUntilCardsAreConfigured() {
         // The state every household is in today, and returns to if cleared.
         for cards in [nil, [:]] as [[String: HouseholdCard]?] {

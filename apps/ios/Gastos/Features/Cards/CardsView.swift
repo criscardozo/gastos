@@ -13,9 +13,11 @@ import SwiftUI
 /// which the bank charges in pesos and which this screen estimates. The screen
 /// never touches the household budget.
 ///
-/// What the phone is for: reading the statement with the paper bill in hand and
-/// ticking the lines off. Opening and closing statements, editing the fee and
-/// the fallback rate stay on the web, where they are done sitting down.
+/// What the phone is for: reading the statement with the paper bill in hand,
+/// ticking the lines off, and filing the charges the bank emailed about (the
+/// inbox, CardChargesInbox). Opening and closing statements, typing a charge
+/// by hand, editing the fee and the fallback rate stay on the web, where they
+/// are done sitting down.
 struct CardsView: View {
     @Environment(AppModel.self) private var model
     @State private var store = CardsStore()
@@ -39,9 +41,15 @@ struct CardsView: View {
                         .appFont(13)
                         .foregroundStyle(Theme.inkTertiary)
                 } else if store.statements.isEmpty {
+                    // No statement ever opened: there is nowhere to file these.
+                    CardChargesInbox(openClosingDate: nil)
                     emptyState
                 } else {
                     statementCard
+                    // After the statement's card, before its rows: these are the
+                    // charges about to become rows. Files into the OPEN
+                    // statement, whichever one the pager is showing.
+                    CardChargesInbox(openClosingDate: store.statements.first?.closingDate)
                     if store.charges.isEmpty {
                         Text(l10n.t("cards.noCharges"))
                             .appFont(13)

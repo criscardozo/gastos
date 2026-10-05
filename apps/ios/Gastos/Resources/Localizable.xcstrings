@@ -832,6 +832,74 @@
         }
       }
     },
+    "cards.inboxClosedTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close the statement before adding"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerrá el resumen antes de agregar"
+          }
+        }
+      }
+    },
+    "cards.inboxClosedBodyOne": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This charge is after the %@ closing: it goes on the next statement, which is opened on the web."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este cargo es posterior al cierre del %@: va en el próximo resumen, que se abre desde la web."
+          }
+        }
+      }
+    },
+    "cards.inboxClosedBodyOther": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These %d charges are after the %@ closing: they go on the next statement, which is opened on the web."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estos %d cargos son posteriores al cierre del %@: van en el próximo resumen, que se abre desde la web."
+          }
+        }
+      }
+    },
+    "cards.inboxNoStatementBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There is no open statement to put them on yet. One is opened on the web."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todavía no hay un resumen abierto donde cargarlos. Se abre desde la web."
+          }
+        }
+      }
+    },
     "categories.add.cta": {
       "extractionState": "stale",
       "localizations": {
@@ -5694,6 +5762,125 @@
           "stringUnit": {
             "state": "translated",
             "value": "Empezar hoy"
+          }
+        }
+      }
+    },
+    "cardsInbox.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank charges"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargos del banco"
+          }
+        }
+      }
+    },
+    "cardsInbox.hintOne": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 bank charge not yet on a statement."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 cargo del banco sin registrar en un resumen."
+          }
+        }
+      }
+    },
+    "cardsInbox.hintOther": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d bank charges not yet on a statement."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d cargos del banco sin registrar en un resumen."
+          }
+        }
+      }
+    },
+    "cardsInbox.allClear": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No bank charges left to record."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay cargos del banco sin registrar."
+          }
+        }
+      }
+    },
+    "cardsInbox.add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agregar"
+          }
+        }
+      }
+    },
+    "cardsInbox.unidentifiedOne": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 charge is from a card that is not set up (that is done on the web), so it also appears under Expenses."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 cargo es de una tarjeta que no está configurada (se configura en la web), así que también aparece en Gastos."
+          }
+        }
+      }
+    },
+    "cardsInbox.unidentifiedOther": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d charges are from cards that are not set up (that is done on the web), so they also appear under Expenses."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d cargos son de tarjetas que no están configuradas (se configuran en la web), así que también aparecen en Gastos."
           }
         }
       }

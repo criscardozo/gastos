@@ -26,7 +26,7 @@ extension AppModel {
     /// The charges this screen is concerned with: the debit card's, plus any
     /// whose card the household has not identified. A credit-card charge is not
     /// an expense waiting for its USD figure — it is a line on a card statement,
-    /// and belongs to the web's Tarjetas screen. Until cards are configured in
+    /// and belongs to the Tarjetas inbox (`cardInboxCharges`). Until cards are configured in
     /// Ajustes this is every charge, exactly as it was before.
     ///
     /// Dismissed ones are still in here; `expenseBankCharges` is the pending
@@ -34,6 +34,41 @@ extension AppModel {
     private var myBankCharges: [BankCharge] {
         guard let household else { return bankCharges }
         return bankCharges.filter { household.belongsToExpenses(cardLast4: $0.cardLast4) }
+    }
+
+    /// The Tarjetas inbox's half: the credit card's charges, plus the
+    /// unidentified ones (which also appear for expenses, on purpose).
+    private var myCardBankCharges: [BankCharge] {
+        guard let household else { return [] }
+        return bankCharges.filter { household.belongsToCard(cardLast4: $0.cardLast4) }
+    }
+
+    /// Waiting to become a line on a card statement.
+    var cardInboxCharges: [BankCharge] {
+        BankChargeInbox.partition(myCardBankCharges, now: Date()).pending
+    }
+
+    /// Discarded from the card inbox in the last 48 hours. A charge that BECAME
+    /// a card charge is deleted in the same batch, so nothing here can be one.
+    var dismissedCardInboxCharges: [BankCharge] {
+        BankChargeInbox.partition(myCardBankCharges, now: Date()).dismissed
+    }
+
+    /// The bank's charge becomes a line on whichever statement contains its
+    /// date, and leaves the inbox — one batch. The only way this app adds a card
+    /// charge: typing one by hand stays on the web, where what the bank did not
+    /// email gets entered sitting down.
+    func importBankChargeAsCardCharge(_ charge: BankCharge, brand: CardBrand) {
+        guard let householdId = attachedHouseholdId, let uid, !charge.id.isEmpty else { return }
+        firestore.importBankChargeAsCardCharge(
+            householdId: householdId,
+            uid: uid,
+            bankChargeId: charge.id,
+            date: charge.date,
+            detail: charge.merchant,
+            card: brand,
+            usdCents: charge.usdCents
+        )
     }
 
     /// Waiting to be matched — what the sheet works through.

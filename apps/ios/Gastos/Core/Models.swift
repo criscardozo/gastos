@@ -100,8 +100,8 @@ struct HouseholdCard: Codable, Equatable {
     /// "debit" | "credit". A string rather than an enum so an unknown value
     /// from a newer client cannot fail decoding of the whole household.
     var kind: String
-    /// "visa" | "mastercard" — only meaningful for credit, and only used by the
-    /// web's Tarjetas screen. Carried here so the model matches the document.
+    /// "visa" | "mastercard" — only meaningful for credit: it prefills the card
+    /// a charge goes on in the Tarjetas inbox.
     var brand: String?
 }
 
@@ -167,9 +167,24 @@ struct Household: Codable, Identifiable {
 
     /// Charges this app should offer for expense verification: the debit card's,
     /// plus anything unidentified — losing a charge is worse than showing it in
-    /// two places. The credit ones belong to the web's Tarjetas screen.
+    /// two places. The credit ones belong to the Tarjetas inbox.
     func belongsToExpenses(cardLast4: String?) -> Bool {
         routing(forCardLast4: cardLast4) != .credit
+    }
+
+    /// Charges the Tarjetas inbox should offer: the credit card's, plus anything
+    /// unidentified — the mirror of `belongsToExpenses`, and for the same reason
+    /// an unidentified charge shows up in both.
+    func belongsToCard(cardLast4: String?) -> Bool {
+        routing(forCardLast4: cardLast4) != .debit
+    }
+
+    /// The brand to prefill when a charge becomes a card charge: the configured
+    /// one, or nil when the card is unidentified or was saved without a brand,
+    /// in which case the user picks. Twin of `brandFor` in lib/cards.ts.
+    func brand(forCardLast4 last4: String?) -> CardBrand? {
+        guard let last4, let raw = cards?[last4]?.brand else { return nil }
+        return CardBrand(rawValue: raw)
     }
 
     /// What an entry form offers — see Category.entryOrder.
