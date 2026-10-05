@@ -126,6 +126,92 @@ final class CardTaxesTests: XCTestCase {
     }
 }
 
+/// The second real statement (closing 2026-10-01), from the PDF — the one that
+/// showed the old `digital` default wrong. The TypeScript twin asserts the same
+/// figures.
+///
+///   Consumos (13, one DiDi ride the only digital one)  US$ 2.412,04
+///   COMISION CUENTA FULL                            $  45.454,55
+///   DB IVA $ 21%                                    $   9.545,46
+///   IIBB PERCEP-CABA 2,00%( 27002,60 )              $     540,05
+///   IVA RG 4240 21%( 27002,60 )                     $   5.670,54
+///   DB.RG 5617 30% ( 3659064,68 )                   $ 1.097.719,40
+///   SALDO ACTUAL $                                  $ 1.158.930,00
+///
+/// 3.659.064,68 / 2.412,04 = 1517,00, the mayorista of the closing day.
+final class OctoberStatementTests: XCTestCase {
+    private let all = CardTaxes.lines(
+        spend: StatementSpend(usdCents: 241_204, digitalUsdCents: 1_780),
+        rate: 1517,
+        commissionArsCents: 4_545_455,
+        format: { "\($0)" }
+    )
+
+    private func amount(_ prefix: String) -> Int? {
+        all.first { $0.label.hasPrefix(prefix) }?.arsCents
+    }
+
+    func testReproducesEveryLineToTheCent() {
+        XCTAssertEqual(amount("Comisión"), 4_545_455)
+        XCTAssertEqual(amount("DB IVA"), 954_546)
+        XCTAssertEqual(amount("IIBB"), 54_005)
+        XCTAssertEqual(amount("IVA RG 4240"), 567_054)
+        XCTAssertEqual(amount("DB.RG"), 109_771_940)
+    }
+
+    func testAddsUpToThePesoBalance() {
+        XCTAssertEqual(all.reduce(0) { $0 + $1.arsCents }, 115_893_000)
+    }
+}
+
+/// Which day's quote values a statement.
+final class UsdArsRateTests: XCTestCase {
+    private let history = Data(#"{"casa":"mayorista","compra":1508,"venta":1517,"fecha":"2026-10-01"}"#.utf8)
+    private let today = Data(#"{"casa":"mayorista","compra":1511,"venta":1520}"#.utf8)
+
+    private func answering(history: Data?) -> (URL) async -> Data? {
+        let today = self.today
+        return { url in url.host == "api.argentinadatos.com" ? history : today }
+    }
+
+    func testValuesAClosedStatementAtItsClosingDay() async {
+        let rate = await UsdArsRate.fetchStatementRate(
+            closingDate: CalendarDate("2026-10-01")!,
+            today: CalendarDate("2026-10-05")!,
+            fetch: answering(history: history)
+        )
+        XCTAssertEqual(rate?.rate, 1517)
+        XCTAssertEqual(
+            UsdArsRate.historyUrl(CalendarDate("2026-10-01")!)?.absoluteString,
+            "https://api.argentinadatos.com/v1/cotizaciones/dolares/mayorista/2026/10/01"
+        )
+    }
+
+    func testValuesTheOpenStatementAtToday() async {
+        let rate = await UsdArsRate.fetchStatementRate(
+            closingDate: CalendarDate("2026-10-29")!,
+            today: CalendarDate("2026-10-05")!,
+            fetch: answering(history: history)
+        )
+        XCTAssertEqual(rate?.rate, 1520)
+    }
+
+    func testFallsBackToTodayWhenHistorySaysNothing() async {
+        let rate = await UsdArsRate.fetchStatementRate(
+            closingDate: CalendarDate("2026-10-01")!,
+            today: CalendarDate("2026-10-05")!,
+            fetch: answering(history: nil)
+        )
+        XCTAssertEqual(rate?.rate, 1520)
+    }
+
+    func testRefusesARateThatIsNotAPositiveNumber() {
+        XCTAssertNil(UsdArsRate.decode(Data(#"{"venta":"1517"}"#.utf8)))
+        XCTAssertNil(UsdArsRate.decode(Data(#"{"venta":0}"#.utf8)))
+        XCTAssertNil(UsdArsRate.decode(nil))
+    }
+}
+
 /// The statement windows themselves.
 final class CardLogicTests: XCTestCase {
     private func date(_ raw: String) -> CalendarDate { CalendarDate(raw)! }

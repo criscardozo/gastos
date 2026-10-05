@@ -76,6 +76,7 @@ struct CardsView: View {
             store.start(
                 householdId: model.household?.id,
                 fallbackRate: model.household?.cardFees?.usdArsRate,
+                today: model.today,
                 db: model.db
             )
         }
@@ -294,9 +295,9 @@ private struct ChargeRow: View {
 
     private var subtitle: String {
         let date = CalendarDate(charge.date).map { l10n.dayMonth($0, timeZone: timeZone) } ?? charge.date
-        // Only worth saying when it is NOT the default: nearly every charge is
-        // digital, so labelling those would be noise.
-        return charge.isDigital ? date : "\(date) · \(l10n.t("cards.notDigital"))"
+        // Only worth saying when it is NOT the default: almost no charge is
+        // digital, so labelling the rest would be noise.
+        return charge.isDigital ? "\(date) · \(l10n.t("cards.isDigital"))" : date
     }
 }
 
@@ -436,6 +437,9 @@ final class CardsStore {
     private var chargeListener: ListenerRegistration?
     private var householdId: String?
     private var db: FirestoreService?
+    private var fallbackRate: Double?
+    private var today: CalendarDate?
+    private var rateTask: Task<Void, Never>?
 
     var shown: CardStatement? {
         guard !statements.isEmpty else { return nil }
@@ -465,16 +469,17 @@ final class CardsStore {
         )
     }
 
-    func start(householdId: String?, fallbackRate: Double?, db: FirestoreService) {
+    func start(
+        householdId: String?,
+        fallbackRate: Double?,
+        today: CalendarDate,
+        db: FirestoreService
+    ) {
         guard let householdId, statementListener == nil else { return }
         self.householdId = householdId
         self.db = db
-        // Once per visit, not on an interval: the quote moves once a day and
-        // this is a screen somebody opens, looks at, and leaves.
-        Task { [weak self] in
-            let resolved = await UsdArsRate.resolve(fallback: fallbackRate)
-            await MainActor.run { self?.rate = resolved }
-        }
+        self.fallbackRate = fallbackRate
+        self.today = today
         statementListener = db.listenCardStatements(householdId: householdId) { [weak self] docs in
             guard let self else { return }
             let wasEmpty = self.statements.isEmpty
@@ -485,6 +490,8 @@ final class CardsStore {
     }
 
     func stop() {
+        rateTask?.cancel()
+        rateTask = nil
         statementListener?.remove()
         chargeListener?.remove()
         statementListener = nil
@@ -498,12 +505,33 @@ final class CardsStore {
         chargeListener = nil
         charges = []
         guard let householdId, let db, let shown else { return }
+        refreshRate(for: shown)
         chargeListener = db.listenCardCharges(
             householdId: householdId,
             startDate: shown.startDate,
             closingDate: shown.closingDate
         ) { [weak self] docs in
             self?.charges = docs
+        }
+    }
+
+    /// Once per statement shown, not on an interval: the quote moves once a
+    /// day and this is a screen somebody opens, looks at, and leaves. A closed
+    /// statement is valued at its closing day's rate, so stepping to another
+    /// one asks again.
+    private func refreshRate(for statement: CardStatement) {
+        rateTask?.cancel()
+        rate = nil
+        guard let today, let closing = CalendarDate(statement.closingDate) else { return }
+        let fallback = fallbackRate
+        rateTask = Task { [weak self] in
+            let resolved = await UsdArsRate.resolve(
+                closingDate: closing,
+                today: today,
+                fallback: fallback
+            )
+            guard !Task.isCancelled else { return }
+            await MainActor.run { self?.rate = resolved }
         }
     }
 

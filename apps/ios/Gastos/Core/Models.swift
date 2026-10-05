@@ -422,19 +422,19 @@ struct CardCharge: Codable, Identifiable, Equatable {
     /// Integer cents of USD — what the user typed, not the bank's number.
     var usdCents: Int
     /// A digital service from abroad, which the bank taxes with IIBB and
-    /// IVA RG 4240 on top of RG 5617. Absent ⇒ TRUE: nearly everything on this
-    /// card is one, and every charge predates the field.
+    /// IVA RG 4240 on top of RG 5617. Absent ⇒ FALSE: the bank taxes almost
+    /// nothing on this card as one (see shared/schema.md). It read as true
+    /// until 2026-10-05.
     var digital: Bool?
-    /// Somebody checked this line against the paper statement. Absent ⇒ FALSE —
-    /// the opposite default to `digital`, and deliberately: it describes
-    /// something a person did, and nobody did it.
+    /// Somebody checked this line against the paper statement. Absent ⇒ FALSE:
+    /// it describes something a person did, and nobody did it.
     var verified: Bool?
     var createdBy: String
     @ServerTimestamp var createdAt: Date?
     @ServerTimestamp var updatedAt: Date?
 
     var id: String { docId ?? "" }
-    var isDigital: Bool { digital ?? true }
+    var isDigital: Bool { digital == true }
     var isVerified: Bool { verified == true }
 }
 

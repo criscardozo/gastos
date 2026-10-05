@@ -193,9 +193,10 @@ export function CardChargeDialog({
   const [date, setDate] = useState(charge?.date ?? defaultDate);
   const [detail, setDetail] = useState(charge?.detail ?? "");
   const [brand, setBrand] = useState<CardBrand>(charge?.card ?? "visa");
-  // Defaults to on: nearly everything that goes on this card is a digital
-  // service, and the two taxes that depend on it are the ones people forget.
-  const [digital, setDigital] = useState(charge?.digital ?? true);
+  // Defaults to off: on two real statements the bank taxed one merchant as a
+  // digital service (DiDi) — not Uber, Amazon, Bupa or a supermarket. Taxing
+  // everything 23% more overstated the bill by $ 800.000 on the second one.
+  const [digital, setDigital] = useState(charge?.digital ?? false);
   const [amount, setAmount] = useState(
     centsToInput(charge?.usdCents ?? null, locale),
   );

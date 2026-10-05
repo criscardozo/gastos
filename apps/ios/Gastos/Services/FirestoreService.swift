@@ -1340,8 +1340,9 @@ final class FirestoreService {
             "card": card.rawValue,
             "usdCents": usdCents,
             // The bank's email does not say whether the merchant is a digital
-            // service, so this takes the default and can be corrected later.
-            "digital": true,
+            // service, so this takes the default — not digital, which is what
+            // nearly every charge is — and can be corrected later.
+            "digital": false,
             "verified": false,
             "createdBy": uid,
             "createdAt": FieldValue.serverTimestamp(),

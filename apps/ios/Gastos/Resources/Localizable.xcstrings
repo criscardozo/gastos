@@ -549,13 +549,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "At the official rate, $ %@"
+            "value": "At the wholesale rate, $ %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al dólar oficial $ %@"
+            "value": "Al dólar mayorista $ %@"
           }
         }
       }
@@ -747,19 +747,19 @@
         }
       }
     },
-    "cards.notDigital": {
+    "cards.isDigital": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "not digital"
+            "value": "digital"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "no digital"
+            "value": "digital"
           }
         }
       }

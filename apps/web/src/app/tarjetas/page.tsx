@@ -327,6 +327,8 @@ export default function CardsPage() {
                   "i" — they are read once a month, if that. */}
               <CardTaxes
                 spend={spend}
+                closingDate={shown.closingDate}
+                today={today}
                 fees={household.cardFees}
                 locale={locale}
                 onEditFees={() => setFeesDialog(true)}
@@ -466,9 +468,9 @@ export default function CardsPage() {
                 <span className="text-[11.5px] text-ink-3">
                   {formatShortDate(charge.date, locale)}
                   {charge.pendingWrite && ` · ${tCommon("pending")}`}
-                  {/* Only worth saying when it is NOT the default: nearly every
-                      charge is digital, so labelling those would be noise. */}
-                  {!charge.digital && ` · ${t("notDigital")}`}
+                  {/* Only worth saying when it is NOT the default: almost no
+                      charge is digital, so labelling the rest would be noise. */}
+                  {charge.digital && ` · ${t("isDigital")}`}
                 </span>
               </div>
               <span className="tnum flex-none text-[15px] font-bold text-ink">

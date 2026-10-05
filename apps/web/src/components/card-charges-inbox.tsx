@@ -200,9 +200,10 @@ export function CardChargesInbox({
                           card: brand,
                           usdCents: charge.usdCents,
                           // The bank's email does not say whether the merchant
-                          // is a digital service, so this takes the default and
-                          // the charge can be corrected on the Tarjetas screen.
-                          digital: true,
+                          // is a digital service, so this takes the default —
+                          // not digital, which is what nearly every charge is —
+                          // and the charge can be corrected on Tarjetas.
+                          digital: false,
                         },
                       ),
                     );

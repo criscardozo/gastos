@@ -1901,11 +1901,20 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
       contentType: "application/json",
       body: JSON.stringify({
         moneda: "USD",
-        casa: "oficial",
+        casa: "mayorista",
         compra: 1450,
         venta: 1500,
         fechaActualizacion: "2026-08-28T18:55:00.000Z",
       }),
+    }),
+  );
+  // And the closing-day history a closed statement is valued at, in
+  // argentinadatos' shape — the same 1500, so no figure depends on which.
+  await page.route("**/api.argentinadatos.com/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ casa: "mayorista", compra: 1450, venta: 1500, fecha: "2026-08-28" }),
     }),
   );
 
@@ -2068,8 +2077,10 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await expect(page.getByRole("dialog").getByRole("alert")).toBeHidden();
   await page.getByLabel("Monto (USD)").fill("100,00");
   await page.getByLabel("Detalle").fill("Steam");
-  // Digital by default — nearly everything on this card is.
-  await expect(page.getByLabel("Servicio digital del exterior")).toBeChecked();
+  // Not digital by default — the bank treats almost nothing on this card as a
+  // digital service — so this one is ticked by hand.
+  await expect(page.getByLabel("Servicio digital del exterior")).not.toBeChecked();
+  await page.getByLabel("Servicio digital del exterior").check();
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Steam")).toBeVisible();
 
@@ -2085,7 +2096,7 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await expect(taxDialog.getByText("$ 45000.00")).toBeVisible();
   await expect(taxDialog.getByText("$ 31500.00")).toBeVisible();
   await expect(taxDialog.getByText("$ 3000.00")).toBeVisible();
-  await expect(taxDialog.getByText("Al dólar oficial $ 1500")).toBeVisible();
+  await expect(taxDialog.getByText("Al dólar mayorista $ 1500")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(taxDialog).toHaveCount(0);
 
@@ -2094,7 +2105,7 @@ test("a statement estimates its taxes in pesos, and says when it has closed", as
   await page.getByRole("button", { name: "Agregar gasto" }).click();
   await page.getByLabel("Monto (USD)").fill("50,00");
   await page.getByLabel("Detalle").fill("Kmart");
-  await page.getByLabel("Servicio digital del exterior").uncheck();
+  await expect(page.getByLabel("Servicio digital del exterior")).not.toBeChecked();
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Kmart")).toBeVisible();
   // 67.500 + 31.500 + 3.000

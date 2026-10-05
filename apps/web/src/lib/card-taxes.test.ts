@@ -84,6 +84,48 @@ describe("against the real statement", () => {
   });
 });
 
+/**
+ * The second real statement (closing 2026-10-01), written out by hand from the
+ * PDF. It is the one that showed the old default wrong: thirteen charges, and
+ * the bank's digital base 27.002,60 is US$ 17,80 × 1517 — the single DiDi ride.
+ * Uber, Amazon, Bupa, Coles, Starbucks: none of them.
+ *
+ *   Consumos                                        US$ 2.412,04
+ *   COMISION CUENTA FULL                            $  45.454,55
+ *   DB IVA $ 21%                                    $   9.545,46
+ *   IIBB PERCEP-CABA 2,00%( 27002,60 )              $     540,05
+ *   IVA RG 4240 21%( 27002,60 )                     $   5.670,54
+ *   DB.RG 5617 30% ( 3659064,68 )                   $ 1.097.719,40
+ *   SALDO ACTUAL $                                  $ 1.158.930,00
+ *
+ * 3.659.064,68 / 2.412,04 = 1517,00: the mayorista selling rate of the closing
+ * day (see lib/usd-rate.ts). The app had said $ 1968707.04 — every charge
+ * digital, the oficial 1540 and no fee configured.
+ */
+describe("against the statement closing 2026-10-01", () => {
+  const spend = { usdCents: 241204, digitalUsdCents: 1780 };
+  const lines = taxLines(spend, 1517, { commissionArsCents: 4545455 });
+  const amount = (label: string) =>
+    lines.find((line) => line.label.startsWith(label))?.arsCents;
+
+  it("reproduces every line to the cent", () => {
+    expect(amount("Comisión")).toBe(4545455);
+    expect(amount("DB IVA")).toBe(954546);
+    expect(amount("IIBB")).toBe(54005);
+    expect(amount("IVA RG 4240")).toBe(567054);
+    expect(amount("DB.RG")).toBe(109771940);
+  });
+
+  it("adds up to the peso balance", () => {
+    expect(totalArsCents(lines)).toBe(115893000);
+  });
+
+  it("prints the bases the statement prints", () => {
+    expect(usdToArsCents(241204, 1517)).toBe(365906468);
+    expect(usdToArsCents(1780, 1517)).toBe(2700260);
+  });
+});
+
 describe("taxLines", () => {
   const noSpend = { usdCents: 0, digitalUsdCents: 0 };
 

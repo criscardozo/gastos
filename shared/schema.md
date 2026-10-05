@@ -463,7 +463,7 @@ billing currency and nobody types AUD here.
 | `detail` | string | ≤ 200, may be empty |
 | `card` | `"visa"` \| `"mastercard"` | Which card it went on |
 | `usdCents` | int | > 0. Integer cents of USD |
-| `digital` | bool \| absent | A digital service from abroad. **Absent ⇒ true** |
+| `digital` | bool \| absent | A digital service from abroad. **Absent ⇒ false** |
 | `verified` | bool \| absent | Checked against the paper statement. **Absent ⇒ false** |
 | `createdBy` | uid | Attribution only |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
@@ -475,15 +475,13 @@ from abroad. Verified against a real BBVA statement, which prints both bases:
 US$ 531,49 of spend but only US$ 32,21 — the two ride-share charges — under the
 second one. The Kmart and Temu purchases on the same statement attracted
 neither. The bank decides from how the merchant is registered, so the app cannot
-derive it and has to be told; absent means **true** because nearly every charge
-on this card is a digital service and every existing charge predates the field.
+derive it and has to be told. Absent means **false**: the next statement (closing
+2026-10-01) taxed one DiDi ride as digital out of thirteen charges — Uber,
+Amazon, Bupa, Coles and Starbucks were not. It meant true until 2026-10-05, on
+the belief that nearly everything on the card was a digital service, and that
+overstated that statement's peso bill by more than half; every charge in
+production was given an explicit value when the default flipped.
 Only the Tarjetas peso estimate reads it — see `apps/web/src/lib/card-taxes.ts`.
-
-The two booleans default in **opposite** directions, which is not an
-inconsistency: `digital` absent means true because it describes what the charge
-already was and nearly all of them are, while `verified` absent means false
-because it describes something a person did, and nobody did it. Same reasoning
-as `expenses.verified`.
 
 **A charge carries no statement id.** It belongs to the statement whose
 `[startDate, closingDate]` range contains its `date` — the same bucketing rule

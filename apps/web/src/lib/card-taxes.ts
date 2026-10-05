@@ -24,9 +24,10 @@
 // decides which is which from how the merchant is registered.
 //
 // So the app cannot derive it: it has to be told, per charge, which is what
-// `cardCharges.digital` is for. It defaults to true, because nearly everything
-// Cristian puts on this card is a digital service — but a Kmart run is not, and
-// taxing it 23% would overstate the bill by more than the purchase.
+// `cardCharges.digital` is for. It defaults to FALSE. It defaulted to true
+// until the next statement (closing 2026-10-01) taxed exactly one DiDi ride as
+// digital out of thirteen charges — Uber, Amazon, Bupa, Coles were not — and
+// the default had the estimate at $ 1.968.707 for a bill of $ 1.158.930.
 //
 // ROUNDING. The percepciones TRUNCATE and the IVA on the fee ROUNDS. Not a
 // guess: on the statement above, all three percepciones truncate (975,3188 →

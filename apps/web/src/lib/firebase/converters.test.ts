@@ -267,6 +267,12 @@ describe("bankChargeConverter", () => {
     });
   });
 
+  it("reads an explicit digital", () => {
+    expect(decode(cardChargeConverter, "c1", { ...valid, digital: true })).toMatchObject({
+      digital: true,
+    });
+  });
+
   it("refuses a charge with no amount", () => {
     // This collection is written by an Apps Script from whatever the bank's
     // email looked like that morning, so it is the likeliest shape to drift —
@@ -339,11 +345,11 @@ describe("cardStatementConverter", () => {
 describe("cardChargeConverter", () => {
   const valid = { date: "2026-09-01", usdCents: 1718, detail: "DiDi", card: "visa" };
 
-  it("decodes a charge, defaulting digital to true and verified to false", () => {
-    // Opposite defaults on purpose: every charge written before these fields
-    // existed was a digital service, and nobody had checked any of them.
+  it("decodes a charge, defaulting digital and verified to false", () => {
+    // digital read as true until 2026-10-05; the bank taxes almost nothing on
+    // this card as a digital service (see lib/card-taxes.ts).
     expect(decode(cardChargeConverter, "c1", valid)).toMatchObject({
-      digital: true,
+      digital: false,
       verified: false,
       card: "visa",
     });

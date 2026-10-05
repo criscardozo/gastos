@@ -137,7 +137,7 @@ struct StatementSpend: Equatable {
 /// only on digital services from abroad — on that statement, US$ 32,21 of
 /// US$ 531,49. The bank decides which is which from how the merchant is
 /// registered, so the app has to be told: `CardCharge.digital`, which defaults
-/// to true.
+/// to false — on the next statement one DiDi ride of thirteen charges was.
 ///
 /// ROUNDING. The percepciones TRUNCATE and the IVA on the fee ROUNDS — three
 /// data points against one on the same statement, and applying it reproduces

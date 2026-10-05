@@ -27,48 +27,60 @@ import {
 } from "@/lib/card-taxes";
 import { formatShortDate } from "@/lib/dates";
 import { formatArs, formatRate, formatUsd } from "@/lib/money";
-import { fetchTodayRate, resolveRate, type RateSource } from "@/lib/usd-rate";
+import { fetchStatementRate, resolveRate, type RateSource } from "@/lib/usd-rate";
 
 /**
- * Today's official rate, fetched once per mount.
+ * The statement's rate — its closing day's once closed, today's while open —
+ * fetched once per statement shown.
  *
  * Not a Firestore listener and not on an interval: the quote moves once a day
  * and this is a screen somebody opens, looks at, and leaves.
  */
-function useUsdArsRate(fallback: number | null): RateSource | null {
+function useUsdArsRate(
+  closingDate: string,
+  today: string,
+  fallback: number | null,
+): RateSource | null {
   const [fromApi, setFromApi] = useState<{ rate: number; asOf: string } | null>(
     null,
   );
 
   useEffect(() => {
     let live = true;
-    void fetchTodayRate().then((quote) => {
-      // The screen may be gone by the time the network answers.
+    void fetchStatementRate(closingDate, today).then((quote) => {
+      // The screen may be gone — or showing another statement — by the time
+      // the network answers.
       if (live) setFromApi(quote);
     });
     return () => {
       live = false;
     };
-  }, []);
+  }, [closingDate, today]);
 
   return resolveRate(fromApi, fallback);
 }
 
 export function CardTaxes({
   spend,
+  closingDate,
+  today,
   fees,
   locale,
   onEditFees,
 }: {
   /** The statement's foreign spend, and the digital part of it. */
   spend: StatementSpend;
+  /** Which day's rate values the statement; see lib/usd-rate.ts. */
+  closingDate: string;
+  /** In the household's timezone, like every other "today". */
+  today: string;
   fees: CardFeeSettings;
   locale: string;
   onEditFees: () => void;
 }) {
   const t = useTranslations("cards");
   const tCommon = useTranslations("expenses");
-  const rate = useUsdArsRate(fees.usdArsRate);
+  const rate = useUsdArsRate(closingDate, today, fees.usdArsRate);
   const [open, setOpen] = useState(false);
 
   const lines = useMemo(
@@ -228,7 +240,7 @@ export function CardTaxes({
                       {t("arsTotal")}
                     </span>
                     {/* Which day the quote is from, when the service said so: a
-                        rate is only as good as its date, and the official one
+                        rate is only as good as its date, and the mayorista one
                         is published once a day. */}
                     <span className="text-[11px] text-ink-3">{rateLine}</span>
                   </span>
