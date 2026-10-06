@@ -86,7 +86,7 @@ function EditableAmount({
           if (e.key === "Enter") commit();
           if (e.key === "Escape") setEditing(false);
         }}
-        className="tnum w-28 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-right text-sm font-semibold text-ink outline-none"
+        className="tnum w-28 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-right text-sm font-semibold text-ink"
         aria-label={t("editAmount")}
       />
     );
@@ -141,7 +141,7 @@ function EditableHouseholdName({
           if (e.key === "Escape") setEditing(false);
         }}
         aria-label={t("renameHousehold")}
-        className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-sm font-semibold text-ink outline-none"
+        className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-sm font-semibold text-ink"
       />
     );
   }

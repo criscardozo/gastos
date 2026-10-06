@@ -24,6 +24,7 @@ import {
   serviceNoteValid,
 } from "@/components/service-note-field";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 
 
 export function RecurringRuleDialog({
@@ -76,6 +77,7 @@ export function RecurringRuleDialog({
   onDelete: (() => void) | null;
   onClose: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("recurring");
   const tCommon = useTranslations("expenses");
   const tCat = useTranslations("categories");
@@ -137,7 +139,7 @@ export function RecurringRuleDialog({
   };
 
   const field =
-    "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
+    "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink focus:border-accent";
 
   return (
     <div
@@ -147,6 +149,7 @@ export function RecurringRuleDialog({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={t("title")}
         onClick={(event) => event.stopPropagation()}
@@ -242,7 +245,7 @@ export function RecurringRuleDialog({
               amountAudCents: asks ? null : cents,
             });
           }}
-          className="rounded-full bg-accent px-4 py-3 text-sm font-bold text-white primary-disabled"
+          className="rounded-full bg-accent-fill px-4 py-3 text-sm font-bold text-white primary-disabled"
         >
           {t("save")}
         </button>

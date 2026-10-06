@@ -128,7 +128,7 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   })
     .format(new Date())
     .slice(0, 7);
-  await page.getByLabel("period").selectOption(`month:${thisMonth}`);
+  await page.getByLabel("Período", { exact: true }).selectOption(`month:${thisMonth}`);
   // The pill names the month rather than printing its two boundary dates.
   const monthName = new Intl.DateTimeFormat("es-AR", {
     month: "long",
@@ -230,8 +230,12 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
 
   // Settings: switch the language to English and assert a label changes.
   await page.getByRole("link", { name: "Ajustes" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "es");
   await page.getByRole("tab", { name: "English" }).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  // And the page says so: a screen reader picks its voice from <html lang>,
+  // which layout.tsx can only print as "es".
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
 
 test("a bank charge is matched to the expense it paid for", async ({
@@ -1231,7 +1235,7 @@ test("switching the range never shows the previous range's rows", async ({ page 
     });
   }, `month:${lastMonth}`);
 
-  await page.getByLabel("period").selectOption(`month:${lastMonth}`);
+  await page.getByLabel("Período", { exact: true }).selectOption(`month:${lastMonth}`);
   await expect(page.getByText("Fila del actual")).toHaveCount(0);
   // Let the snapshot for the new range land too.
   await page.waitForTimeout(1500);
@@ -2959,7 +2963,7 @@ test("restoring a charge filed OUTSIDE the range on screen does not count it twi
   // Look at LAST month, which does not contain today's expense.
   const [y, m] = sydneyDate().slice(0, 7).split("-").map(Number);
   const lastMonth = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
-  await page.getByLabel("period").selectOption(`month:${lastMonth}`);
+  await page.getByLabel("Período", { exact: true }).selectOption(`month:${lastMonth}`);
 
   // The filed charge is offered back, because nothing on screen says it was
   // filed. That offer is the premise of this test, not the bug: which list it

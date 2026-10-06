@@ -142,7 +142,7 @@ struct NewPeriodScreen: View {
         } label: {
             HStack(spacing: 11) {
                 Image(systemName: includeRollover ? "checkmark.square.fill" : "square")
-                    .font(.system(size: 21, weight: .medium))
+                    .iconFont(21, .medium)
                     .foregroundStyle(includeRollover ? Theme.accent : Theme.inkTertiary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(l10n.t(carried >= 0

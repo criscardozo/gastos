@@ -105,7 +105,7 @@ struct ExpenseDetailSheet: View {
             if item.hasPendingWrites {
                 HStack(spacing: 4) {
                     Image(systemName: "icloud.slash")
-                        .font(.system(size: 11, weight: .medium))
+                        .iconFont(11, .medium)
                     Text(l10n.t("history.pending"))
                         .appFont(12)
                 }
@@ -122,7 +122,7 @@ struct ExpenseDetailSheet: View {
                 Image(systemName: expense.isVerified
                       ? "checkmark.circle.fill"
                       : "exclamationmark.circle.fill")
-                    .font(.system(size: 20, weight: .semibold))
+                    .iconFont(20, .semibold)
                     .foregroundStyle(expense.isVerified ? Theme.greenText : Theme.infoText)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(l10n.t(expense.isVerified ? "history.verified" : "history.unverified"))

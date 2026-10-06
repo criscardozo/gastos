@@ -61,7 +61,7 @@ struct OnboardingView: View {
                         .scaledToFit()
                         .frame(width: 64, height: 64)
                 )
-                .shadow(color: Color(hex: "#FF5C39", alpha: 0.35), radius: 14, y: 12)
+                .shadow(color: Theme.accent.opacity(0.35), radius: 14, y: 12)
                 .padding(.bottom, 24)
 
             Text(verbatim: "Gastos")
@@ -120,7 +120,7 @@ struct OnboardingView: View {
             .background(Theme.surface)
             .clipShape(Capsule())
             .overlay(Capsule().strokeBorder(Theme.ink.opacity(0.12), lineWidth: 1))
-            .shadow(color: Color(hex: "#241A10", alpha: 0.06), radius: 4, y: 2)
+            .shadow(color: Theme.shadowInk.opacity(0.06), radius: 4, y: 2)
         }
         .buttonStyle(.plain)
         .disabled(model.isSigningIn)
@@ -131,7 +131,7 @@ struct OnboardingView: View {
     private var configNeededCard: some View {
         VStack(spacing: 8) {
             Image(systemName: "wrench.and.screwdriver")
-                .font(.system(size: 22))
+                .iconFont(22)
                 .foregroundStyle(Theme.inkTertiary)
             Text(l10n.t("config.needed.title"))
                 .appFont(14.5, .bold)
@@ -201,7 +201,7 @@ struct OnboardingView: View {
                 }
                 Spacer()
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 17, weight: .semibold))
+                    .iconFont(17, .semibold)
                     .foregroundStyle(Theme.accent)
             }
             .padding(18)
@@ -211,7 +211,7 @@ struct OnboardingView: View {
                 RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                     .strokeBorder(Theme.accent, lineWidth: 2)
             )
-            .shadow(color: Color(hex: "#FF5C39", alpha: 0.15), radius: 9, y: 6)
+            .shadow(color: Theme.accent.opacity(0.15), radius: 9, y: 6)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -221,12 +221,12 @@ struct OnboardingView: View {
         VStack(spacing: 12) {
             HStack(spacing: 14) {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(hex: "#2A6FDB", alpha: 0.12))
+                    .fill(Theme.actionBlue.opacity(0.12))
                     .frame(width: 46, height: 46)
                     .overlay(
                         Image(systemName: "key.fill")
                             .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(Color(hex: "#2A6FDB"))
+                            .foregroundStyle(Theme.actionBlue)
                     )
                 VStack(alignment: .leading, spacing: 2) {
                     Text(l10n.t("onboarding.join"))
@@ -326,7 +326,7 @@ private struct BudgetSetupStep: View {
             HStack {
                 Button(action: onBack) {
                     Image(systemName: "arrow.left")
-                        .font(.system(size: 17, weight: .semibold))
+                        .iconFont(17, .semibold)
                         .foregroundStyle(Theme.inkSecondary)
                         .padding(8)
                 }

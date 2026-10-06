@@ -186,7 +186,7 @@ function ChooseStep({ onCreate }: { onCreate: () => void }) {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder={t("codePlaceholder")}
-            className="min-w-0 flex-1 rounded-xl border border-pill bg-bg px-3.5 py-3 text-[15px] font-semibold tracking-[.1em] text-ink outline-none placeholder:text-ink-3"
+            className="min-w-0 flex-1 rounded-xl border border-pill bg-bg px-3.5 py-3 text-[15px] font-semibold tracking-[.1em] text-ink placeholder:text-ink-3"
           />
           <button
             type="button"
@@ -269,7 +269,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
           onChange={(e) => setName(e.target.value)}
           maxLength={MAX_HOUSEHOLD_NAME_CHARACTERS}
           aria-label={t("householdName")}
-          className="rounded-xl border border-pill bg-bg px-3.5 py-3 text-[15px] font-semibold text-ink outline-none"
+          className="rounded-xl border border-pill bg-bg px-3.5 py-3 text-[15px] font-semibold text-ink"
         />
         <div className="flex flex-col gap-2.5">
           <AmountInput value={amount} onChange={setAmount} />
@@ -296,7 +296,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
               onChange={(e) => {
                 if (e.target.value !== "") setStartDate(e.target.value);
               }}
-              className="w-[26px] cursor-pointer border-none bg-transparent text-transparent outline-none"
+              className="w-[26px] cursor-pointer border-none bg-transparent text-transparent"
               aria-label={t("starts")}
             />
           </div>
@@ -314,7 +314,7 @@ function BudgetStep({ onBack }: { onBack: () => void }) {
           type="button"
           onClick={() => void create()}
           disabled={!valid || creating}
-          className="h-14 w-full rounded-full bg-accent text-base font-bold text-white shadow-[0_8px_20px_rgba(255,92,57,.35)] primary-disabled"
+          className="h-14 w-full rounded-full bg-accent-fill text-base font-bold text-white shadow-[0_8px_20px_rgba(203,51,22,.35)] primary-disabled"
         >
           {creating ? t("creating") : t("finish")}
         </button>

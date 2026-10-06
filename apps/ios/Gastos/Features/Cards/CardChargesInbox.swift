@@ -82,7 +82,7 @@ struct CardChargesInbox: View {
                                 Text(l10n.dismissedChargesCount(dismissed.count))
                                     .appFont(12, .semibold)
                                 Image(systemName: showDismissed ? "chevron.up" : "chevron.down")
-                                    .font(.system(size: 10, weight: .semibold))
+                                    .iconFont(10, .semibold)
                             }
                             .foregroundStyle(Theme.inkSecondary)
                         }
@@ -129,57 +129,71 @@ struct CardChargesInbox: View {
                     .foregroundStyle(Theme.inkTertiary)
                     .lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
             }
-            HStack(spacing: 8) {
-                // The card it goes on. Prefilled from the configuration; asked
-                // for only when the digits were never identified.
-                ForEach(CardBrand.allCases, id: \.self) { value in
+            // The card chips and the two actions share a line until the text
+            // is big enough to split "Agregar" into "Agrega / r" (it did, at
+            // XXXL); from XXL they take a line each instead.
+            AdaptiveRow(spacing: 8, stacksFrom: .xxLarge) {
+                HStack(spacing: 8) {
+                    // The card it goes on. Prefilled from the configuration; asked
+                    // for only when the digits were never identified.
+                    ForEach(CardBrand.allCases, id: \.self) { value in
+                        Button {
+                            chosen[charge.id] = value
+                        } label: {
+                            CardMark(brand: value, width: 26)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(brand == value ? Theme.accentSoft : Theme.bg)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: Theme.notice, style: .continuous)
+                                        .stroke(brand == value ? Theme.accent : Theme.separator, lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: Theme.notice, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(value.label)
+                        .accessibilityAddTraits(brand == value ? [.isSelected] : [])
+                    }
+                }
+                AdaptiveGap()
+                HStack(spacing: 8) {
+                    let disabled = brand == nil || model.uid == nil || isBlocked(charge)
                     Button {
-                        chosen[charge.id] = value
+                        guard let brand else { return }
+                        model.importBankChargeAsCardCharge(charge, brand: brand)
                     } label: {
-                        CardMark(brand: value, width: 26)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(brand == value ? Theme.accentSoft : Theme.bg)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: Theme.notice, style: .continuous)
-                                    .stroke(brand == value ? Theme.accent : Theme.separator, lineWidth: 1)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: Theme.notice, style: .continuous))
+                        Text(l10n.t("cardsInbox.add"))
+                            .appFont(12.5, .bold)
+                            .lineLimit(1)
+                            .fixedSize()
+                            // Disabled is neutral, like PrimaryCTA: white on a
+                            // 40%-faded coral read 1.59:1 and still looked like
+                            // the thing to press.
+                            .foregroundStyle(disabled ? Theme.inkTertiary : .white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(disabled ? Theme.fill : Theme.accent)
+                            .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(value.label)
-                    .accessibilityAddTraits(brand == value ? [.isSelected] : [])
+                    .disabled(disabled)
+                    // Named after the charge: "Agregar" three times says nothing
+                    // about which one VoiceOver is on.
+                    .accessibilityLabel("\(l10n.t("cardsInbox.add")) \(MoneyFormatter.usd(charge.usdCents, locale: l10n.locale)) · \(BankChargeText.title(charge, l10n: l10n))")
+                    // Recoverable for 48h from the list below, so no confirm.
+                    Button {
+                        model.discardBankCharge(charge)
+                    } label: {
+                        Text(l10n.t("bank.discard"))
+                            .appFont(12.5, .semibold)
+                            .lineLimit(1)
+                            .fixedSize()
+                            .foregroundStyle(Theme.inkSecondary)
+                            .padding(.vertical, 7)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(l10n.t("bank.discard")) \(MoneyFormatter.usd(charge.usdCents, locale: l10n.locale))")
                 }
-                Spacer(minLength: 4)
-                let disabled = brand == nil || model.uid == nil || isBlocked(charge)
-                Button {
-                    guard let brand else { return }
-                    model.importBankChargeAsCardCharge(charge, brand: brand)
-                } label: {
-                    Text(l10n.t("cardsInbox.add"))
-                        .appFont(12.5, .bold)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
-                        .background(Theme.accent.opacity(disabled ? 0.4 : 1))
-                        .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(disabled)
-                // Named after the charge: "Agregar" three times says nothing
-                // about which one VoiceOver is on.
-                .accessibilityLabel("\(l10n.t("cardsInbox.add")) \(MoneyFormatter.usd(charge.usdCents, locale: l10n.locale)) · \(BankChargeText.title(charge, l10n: l10n))")
-                // Recoverable for 48h from the list below, so no confirm.
-                Button {
-                    model.discardBankCharge(charge)
-                } label: {
-                    Text(l10n.t("bank.discard"))
-                        .appFont(12.5, .semibold)
-                        .foregroundStyle(Theme.inkSecondary)
-                        .padding(.vertical, 7)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(l10n.t("bank.discard")) \(MoneyFormatter.usd(charge.usdCents, locale: l10n.locale))")
             }
         }
         .padding(.vertical, 2)

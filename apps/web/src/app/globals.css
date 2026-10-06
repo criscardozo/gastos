@@ -23,6 +23,7 @@
   --track: rgba(36, 26, 16, 0.08);
   --accent: #ff5c39;
   --accent-strong: #cb3316;
+  --accent-fill: #cb3316;
   --accent-soft: rgba(255, 92, 57, 0.12);
 
   /* Budget states */
@@ -54,6 +55,7 @@
   /* Member avatars */
   --member-blue: #2a6fdb;
   --member-pink: #e0447c;
+  --member-ink: #ffffff;
 
   /* Category colors (shared/categories.json) */
   --cat-groceries: #2e9e5b;
@@ -109,6 +111,7 @@
 
     --member-blue: #4b87e8;
     --member-pink: #ef6d9c;
+    --member-ink: #191410;
 
     --cat-groceries: #57c282;
     --cat-coffee: #c99465;
@@ -155,6 +158,7 @@
 
   --member-blue: #4b87e8;
   --member-pink: #ef6d9c;
+  --member-ink: #191410;
 
   --cat-groceries: #57c282;
   --cat-coffee: #c99465;
@@ -187,6 +191,7 @@
   --color-track: var(--track);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  --color-accent-fill: var(--accent-fill);
   --color-accent-soft: var(--accent-soft);
   --color-good: var(--good);
   --color-good-text: var(--good-text);
@@ -203,6 +208,7 @@
   --color-over-track: var(--over-track);
   --color-member-blue: var(--member-blue);
   --color-member-pink: var(--member-pink);
+  --color-member-ink: var(--member-ink);
   --color-white: #ffffff;
   /* The modal scrim (`bg-black/40`). `--color-*: initial` above removes the
      default palette, and every backdrop on the web was asking for a black
@@ -271,6 +277,25 @@ body {
   textarea {
     font: inherit;
     color: inherit;
+  }
+}
+
+/* Keyboard focus, drawn in the app's own colour.
+ *
+ * Fields used to say `outline-none` and put nothing in its place — 22 of them
+ * on /gastos, /datos, Estadísticas and Ajustes — so tabbing through a form
+ * showed no sign of where you were. Buttons kept the browser's default ring,
+ * which belongs to no design system. One rule for both, in @layer base so a
+ * component can still override it on purpose; `accent-strong` because it
+ * clears the 3:1 that a focus indicator needs against both backgrounds. */
+@layer base {
+  :focus-visible,
+  /* Fields on plain :focus too: Chrome stops matching :focus-visible on a
+     date input once Tab reaches its calendar button, and the ring vanished
+     while the field still had focus. */
+  :is(input:not([type="checkbox"], [type="radio"]), select, textarea):focus {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
   }
 }
 

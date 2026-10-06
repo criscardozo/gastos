@@ -65,14 +65,14 @@ export function VerifyExpenseRow({
           onChange={(event) => setVerifyAmount(event.target.value)}
           placeholder={t("amountPlaceholder")}
           aria-label={t("bankUsd")}
-          className="tnum w-24 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] font-semibold text-ink outline-none"
+          className="tnum w-24 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] font-semibold text-ink"
         />
       </label>
       <button
         type="button"
         onClick={() => submitVerify(typed)}
         disabled={typed === null}
-        className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
+        className="rounded-full bg-accent-fill px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
       >
         {t("markVerified")}
       </button>
@@ -132,7 +132,7 @@ export function EditExpenseRow({
         type="button"
         onClick={submitEdit}
         disabled={!canSave}
-        className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
+        className="rounded-full bg-accent-fill px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
       >
         {t("save")}
       </button>

@@ -631,6 +631,14 @@ export function Providers({ children }: { children: ReactNode }) {
     ],
   );
 
+  // The page's language follows the person's, not the build's. layout.tsx can
+  // only print `lang="es"` — the choice lives on the user doc, read here — and
+  // with it fixed, a screen reader read every English label with a Spanish
+  // voice.
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   return (
     <LocaleContext.Provider value={localeValue}>
       <NextIntlClientProvider

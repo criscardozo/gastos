@@ -208,7 +208,7 @@ export function CardChargesInbox({
                       ),
                     );
                   }}
-                  className="ml-auto rounded-full bg-accent px-3.5 py-[7px] primary-disabled"
+                  className="ml-auto rounded-full bg-accent-fill px-3.5 py-[7px] primary-disabled"
                 >
                   <span className="text-[12.5px] font-bold text-white">
                     {t("add")}

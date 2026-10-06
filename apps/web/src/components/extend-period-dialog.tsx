@@ -20,6 +20,7 @@ import { centsToInput, formatCents, parseAmountToCents } from "@/lib/money";
 import { capitaliseFirst, formatLongDate } from "@/lib/dates";
 import { extendToFortnight, type PeriodBudgetLike } from "@/lib/periods";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 
 export function ExtendPeriodDialog({
   period,
@@ -37,6 +38,7 @@ export function ExtendPeriodDialog({
   onConfirm: (endDate: string, newTotalCents: number) => void;
   onClose: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("extendPeriod");
   const tCommon = useTranslations("expenses");
 
@@ -62,7 +64,7 @@ export function ExtendPeriodDialog({
   if (extension === null) return null;
 
   const field =
-    "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-base text-ink outline-none focus:border-accent";
+    "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-base text-ink focus:border-accent";
 
   return (
     <div
@@ -72,6 +74,7 @@ export function ExtendPeriodDialog({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={t("title")}
         onClick={(event) => event.stopPropagation()}
@@ -151,7 +154,7 @@ export function ExtendPeriodDialog({
             onConfirm(extension.endDate, newTotal);
           }}
           className={`mt-1 rounded-full py-3 text-sm font-bold text-white primary-disabled ${
-            confirming ? "bg-warn-text" : "bg-accent"
+            confirming ? "bg-warn-text" : "bg-accent-fill"
           }`}
         >
           {confirming ? t("confirm") : t("extend")}

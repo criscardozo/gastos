@@ -231,7 +231,7 @@ export default function CardsPage() {
           <button
             type="button"
             onClick={() => setDatesDialog(true)}
-            className="mt-1 rounded-full bg-accent px-4 py-2.5 text-[13px] font-bold text-white"
+            className="mt-1 rounded-full bg-accent-fill px-4 py-2.5 text-[13px] font-bold text-white"
           >
             {t("openFirstStatement")}
           </button>
@@ -264,7 +264,7 @@ export default function CardsPage() {
         <button
           type="button"
           onClick={() => setChargeDialog("new")}
-          className="flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-2"
+          className="flex items-center gap-1.5 rounded-full bg-accent-fill px-3.5 py-2"
         >
           <Icon name="add" size={16} className="text-white" />
           <span className="text-[13px] font-bold text-white">

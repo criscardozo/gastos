@@ -252,14 +252,14 @@ export default function StatsPage() {
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
               aria-label={t("from")}
-              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13px] font-semibold text-ink outline-none"
+              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13px] font-semibold text-ink"
             />
             <input
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
               aria-label={t("to")}
-              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13px] font-semibold text-ink outline-none"
+              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13px] font-semibold text-ink"
             />
           </div>
         )}

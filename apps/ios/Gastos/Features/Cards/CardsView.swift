@@ -26,6 +26,9 @@ struct CardsView: View {
 
     private var l10n: L10n { model.l10n }
 
+    /// When the statement's figures stop sharing a row.
+    private static let figuresStackFrom: DynamicTypeSize = .xxLarge
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
@@ -103,7 +106,7 @@ struct CardsView: View {
         Card {
             VStack(spacing: 6) {
                 Image(systemName: "creditcard")
-                    .font(.system(size: 26))
+                    .iconFont(26)
                     .foregroundStyle(Theme.inkTertiary)
                 Text(l10n.t("cards.emptyTitle"))
                     .appFont(15, .semibold)
@@ -132,12 +135,17 @@ struct CardsView: View {
                             label: l10n.dayMonth(range.closingDate, timeZone: model.householdTimeZone),
                             canGoBack: store.index < store.statements.count - 1,
                             canGoForward: store.index > 0,
+                            backLabel: l10n.t("a11y.previousStatement"),
+                            forwardLabel: l10n.t("a11y.nextStatement"),
                             onBack: { store.index += 1 },
                             onForward: { store.index -= 1 }
                         )
                     }
 
-                    AdaptiveRow {
+                    // Stacks from XXL, not from the accessibility sizes: at
+                    // XXXL the total and the peso figure were splitting mid-
+                    // number ("US$ / 529.60", "$ 423105. / 76") side by side.
+                    AdaptiveRow(stacksFrom: Self.figuresStackFrom) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(MoneyFormatter.usd(store.totalUsdCents, locale: l10n.locale))
                                 .appFont(28, .bold)
@@ -148,7 +156,7 @@ struct CardsView: View {
                         }
                         AdaptiveGap()
                         VStack(
-                            alignment: typeSize.isAccessibilitySize ? .leading : .trailing,
+                            alignment: typeSize >= Self.figuresStackFrom ? .leading : .trailing,
                             spacing: 4
                         ) {
                             ForEach(CardBrand.allCases, id: \.self) { brand in
@@ -258,6 +266,9 @@ private struct ChargeRow: View {
     let onToggleVerified: () -> Void
 
     @Environment(\.dynamicTypeSize) private var typeSize
+    /// The mark's column, growing with it (CardMark scales with Dynamic Type)
+    /// so the details still line up and the mark never spills into them.
+    @ScaledMetric(relativeTo: .footnote) private var markColumn: CGFloat = 34
 
     var body: some View {
         Card {
@@ -267,7 +278,7 @@ private struct ChargeRow: View {
                 // "Mastercard" — the least legible thing in the row.
                 CardMark(brand: charge.card, width: 30)
                     .frame(
-                        width: typeSize.isAccessibilitySize ? nil : 34,
+                        width: typeSize.isAccessibilitySize ? nil : markColumn,
                         alignment: .leading
                     )
                 VStack(alignment: .leading, spacing: 2) {
@@ -290,7 +301,7 @@ private struct ChargeRow: View {
                 // screen is for on a phone.
                 Button(action: onToggleVerified) {
                     Image(systemName: charge.isVerified ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 20))
+                        .iconFont(20)
                         .foregroundStyle(charge.isVerified ? Theme.green : Theme.inkTertiary)
                 }
                 .buttonStyle(.plain)

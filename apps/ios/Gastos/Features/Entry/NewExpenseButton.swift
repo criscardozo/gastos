@@ -19,7 +19,7 @@ struct NewExpenseButton: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "plus")
-                    .font(.system(size: 15, weight: .bold))
+                    .iconFont(15, .bold)
                 Text(model.l10n.t("entry.title"))
                     .appFont(15, .bold)
             }

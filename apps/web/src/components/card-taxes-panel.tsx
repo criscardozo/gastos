@@ -13,10 +13,11 @@
 // gave five numbers nobody reads twice the same weight as the one everybody
 // looks for.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 import { CurrencyTag } from "@/components/ui/marks";
 import type { CardFeeSettings } from "@/lib/firebase/converters";
 import {
@@ -93,16 +94,6 @@ export function CardTaxes({
     [spend, rate, fees.commissionArsCents],
   );
 
-  // Escape closes, like every other dialog in the app.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
-
   const rateMessage =
     rate === null || rate.origin === "manual"
       ? "arsRateManual"
@@ -147,121 +138,153 @@ export function CardTaxes({
       </span>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6"
-          role="presentation"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={t("arsTitle")}
-            onClick={(event) => event.stopPropagation()}
-            className="flex max-h-[92vh] w-full max-w-[440px] flex-col gap-3 overflow-y-auto rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-base font-bold text-ink">
-                {/* The flag carries the currency: every other figure on this
-                    screen is USD, and two amounts side by side need telling
-                    apart at a glance rather than by reading the symbol. */}
-                <span aria-hidden="true">🇦🇷</span> {t("arsTitle")}
-              </h2>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={onEditFees}
-                  aria-label={t("arsSettings")}
-                  className="rounded-full border border-line px-3 py-1.5 text-[11.5px] font-semibold text-ink-2"
-                >
-                  <Icon name="settings" size={14} className="text-ink-2" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  aria-label={tCommon("cancel")}
-                >
-                  <Icon name="expand_more" size={22} className="text-ink-3" />
-                </button>
-              </div>
+        <TaxesDialog label={t("arsTitle")} onClose={() => setOpen(false)}>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base font-bold text-ink">
+              {/* The flag carries the currency: every other figure on this
+                  screen is USD, and two amounts side by side need telling
+                  apart at a glance rather than by reading the symbol. */}
+              <span aria-hidden="true">🇦🇷</span> {t("arsTitle")}
+            </h2>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={onEditFees}
+                aria-label={t("arsSettings")}
+                className="rounded-full border border-line px-3 py-1.5 text-[11.5px] font-semibold text-ink-2"
+              >
+                <Icon name="settings" size={14} className="text-ink-2" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label={tCommon("cancel")}
+              >
+                <Icon name="expand_more" size={22} className="text-ink-3" />
+              </button>
             </div>
+          </div>
 
-            {rate === null ? (
-              <p className="text-[12.5px] text-ink-3">{t("arsNoRate")}</p>
-            ) : (
-              <>
-                {/* What the month's purchases are worth in pesos. Above the
-                    line and NOT added into the total below it, because the bank
-                    bills them in dollars — the peso balance it charges is the
-                    taxes alone. Shown because "how many pesos is this month" is
-                    the actual question. */}
-                {spend.usdCents > 0 && (
-                  <div className="flex items-baseline justify-between gap-3 border-b border-soft pb-3">
-                    <span className="flex flex-col">
-                      <span className="text-[12.5px] font-semibold text-ink-2">
-                        {t("arsSpend")}
-                      </span>
-                      <span className="text-[11px] text-ink-3">
-                        {formatUsd(spend.usdCents, locale)}
-                      </span>
-                    </span>
-                    <span className="flex flex-none items-baseline gap-1.5">
-                      <span className="tnum text-[15px] font-bold text-ink-2">
-                        {formatArs(usdToArsCents(spend.usdCents, rate.rate))}
-                      </span>
-                      <CurrencyTag currency="ARS" />
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-1.5">
-                  {lines.map((line) => (
-                    <div
-                      key={line.label}
-                      className="flex items-baseline justify-between gap-3"
-                    >
-                      <span className="flex min-w-0 flex-col">
-                        <span className="truncate text-[13px] text-ink-2">
-                          {line.label}
-                        </span>
-                        <span className="text-[11px] text-ink-3">
-                          {line.basis}
-                        </span>
-                      </span>
-                      <span className="tnum flex-none text-[13.5px] font-semibold text-ink">
-                        {formatArs(line.arsCents)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-baseline justify-between gap-3 border-t border-soft pt-3">
+          {rate === null ? (
+            <p className="text-[12.5px] text-ink-3">{t("arsNoRate")}</p>
+          ) : (
+            <>
+              {/* What the month's purchases are worth in pesos. Above the
+                  line and NOT added into the total below it, because the bank
+                  bills them in dollars — the peso balance it charges is the
+                  taxes alone. Shown because "how many pesos is this month" is
+                  the actual question. */}
+              {spend.usdCents > 0 && (
+                <div className="flex items-baseline justify-between gap-3 border-b border-soft pb-3">
                   <span className="flex flex-col">
                     <span className="text-[12.5px] font-semibold text-ink-2">
-                      {t("arsTotal")}
+                      {t("arsSpend")}
                     </span>
-                    {/* Which day the quote is from, when the service said so: a
-                        rate is only as good as its date, and the mayorista one
-                        is published once a day. */}
-                    <span className="text-[11px] text-ink-3">{rateLine}</span>
+                    <span className="text-[11px] text-ink-3">
+                      {formatUsd(spend.usdCents, locale)}
+                    </span>
                   </span>
                   <span className="flex flex-none items-baseline gap-1.5">
-                    <span className="tnum text-[19px] font-bold text-ink">
-                      {formatArs(totalArsCents(lines))}
+                    <span className="tnum text-[15px] font-bold text-ink-2">
+                      {formatArs(usdToArsCents(spend.usdCents, rate.rate))}
                     </span>
                     <CurrencyTag currency="ARS" />
                   </span>
                 </div>
+              )}
 
-                {/* Says which lines depend on a flag the user sets, because two
-                    of the five are only as right as that flag is. */}
-                <p className="text-[11px] leading-snug text-ink-3">
-                  {t("arsCaveat")}
-                </p>
-              </>
-            )}
-          </div>
-        </div>
+              <div className="flex flex-col gap-1.5">
+                {lines.map((line) => (
+                  <div
+                    key={line.label}
+                    className="flex items-baseline justify-between gap-3"
+                  >
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-[13px] text-ink-2">
+                        {line.label}
+                      </span>
+                      <span className="text-[11px] text-ink-3">
+                        {line.basis}
+                      </span>
+                    </span>
+                    <span className="tnum flex-none text-[13.5px] font-semibold text-ink">
+                      {formatArs(line.arsCents)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-baseline justify-between gap-3 border-t border-soft pt-3">
+                <span className="flex flex-col">
+                  <span className="text-[12.5px] font-semibold text-ink-2">
+                    {t("arsTotal")}
+                  </span>
+                  {/* Which day the quote is from, when the service said so: a
+                      rate is only as good as its date, and the mayorista one
+                      is published once a day. */}
+                  <span className="text-[11px] text-ink-3">{rateLine}</span>
+                </span>
+                <span className="flex flex-none items-baseline gap-1.5">
+                  <span className="tnum text-[19px] font-bold text-ink">
+                    {formatArs(totalArsCents(lines))}
+                  </span>
+                  <CurrencyTag currency="ARS" />
+                </span>
+              </div>
+
+              {/* Says which lines depend on a flag the user sets, because two
+                  of the five are only as right as that flag is. */}
+              <p className="text-[11px] leading-snug text-ink-3">
+                {t("arsCaveat")}
+              </p>
+            </>
+          )}
+        </TaxesDialog>
       )}
     </>
+  );
+}
+
+/**
+ * The breakdown's panel, mounted only while it is open — which is what lets
+ * useModalFocus read the "i" that opened it and hand focus back to it.
+ */
+function TaxesDialog({
+  label,
+  onClose,
+  children,
+}: {
+  label: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
+
+  // Escape closes, like every other dialog in the app.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        onClick={(event) => event.stopPropagation()}
+        className="flex max-h-[92vh] w-full max-w-[440px] flex-col gap-3 overflow-y-auto rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]"
+      >
+        {children}
+      </div>
+    </div>
   );
 }

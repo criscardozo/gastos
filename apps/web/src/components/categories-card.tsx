@@ -214,7 +214,7 @@ export function CategoriesCard({ household }: { household: Household }) {
                   if (e.key === "Escape") setRenamingId(null);
                 }}
                 aria-label={t("nameLabel")}
-                className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-sm font-semibold text-ink outline-none"
+                className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-2.5 py-1 text-sm font-semibold text-ink"
               />
             ) : (
               <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
@@ -354,13 +354,13 @@ export function CategoriesCard({ household }: { household: Household }) {
                 }}
                 placeholder={t("namePlaceholder")}
                 aria-label={t("nameLabel")}
-                className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] font-semibold text-ink outline-none"
+                className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] font-semibold text-ink"
               />
               <button
                 type="button"
                 onClick={() => submitAdd()}
                 disabled={newName.trim() === ""}
-                className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
+                className="rounded-full bg-accent-fill px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
               >
                 {t("save")}
               </button>

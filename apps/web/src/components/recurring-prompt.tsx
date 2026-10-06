@@ -23,6 +23,7 @@ import { formatCents, formatUsd } from "@/lib/money";
 import type { ClaimedCharge } from "@/lib/recurring";
 import { displayMerchant } from "@/lib/merchant-name";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 
 export function RecurringPrompt({
   filed,
@@ -48,6 +49,7 @@ export function RecurringPrompt({
   /** The prompt is closed; the screen resets what it reported and asked. */
   onDismissed: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("recurring");
   const tCommon = useTranslations("expenses");
 
@@ -73,6 +75,7 @@ export function RecurringPrompt({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={t("promptTitle")}
         className={DIALOG_SHELL}
@@ -135,7 +138,7 @@ export function RecurringPrompt({
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
                 aria-label={t("promptAmount")}
-                className="tnum w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
+                className="tnum w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink focus:border-accent"
               />
             </label>
 
@@ -144,7 +147,7 @@ export function RecurringPrompt({
                 type="button"
                 disabled={cents === null}
                 onClick={() => void saveCurrent()}
-                className="flex-1 rounded-full bg-accent px-4 py-3 text-sm font-bold text-white primary-disabled"
+                className="flex-1 rounded-full bg-accent-fill px-4 py-3 text-sm font-bold text-white primary-disabled"
               >
                 {t("promptSave")}
               </button>
@@ -167,7 +170,7 @@ export function RecurringPrompt({
           <button
             type="button"
             onClick={onDismissed}
-            className="rounded-full bg-accent px-4 py-3 text-sm font-bold text-white"
+            className="rounded-full bg-accent-fill px-4 py-3 text-sm font-bold text-white"
           >
             {t("promptDone")}
           </button>

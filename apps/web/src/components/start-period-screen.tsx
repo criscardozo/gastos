@@ -280,7 +280,7 @@ export function StartPeriodScreen({
               type="button"
               onClick={applyStretch}
               disabled={stretch === null}
-              className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-base font-bold text-white shadow-[0_8px_20px_rgba(255,92,57,.35)] primary-disabled"
+              className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent-fill text-base font-bold text-white shadow-[0_8px_20px_rgba(203,51,22,.35)] primary-disabled"
             >
               <Icon name="check" size={20} className="text-white" />
               {t("stretchConfirm")}
@@ -383,7 +383,7 @@ export function StartPeriodScreen({
                 type="button"
                 onClick={() => confirm(typed ?? 0, 0)}
                 disabled={typed === null}
-                className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-base font-bold text-white shadow-[0_8px_20px_rgba(255,92,57,.35)] primary-disabled"
+                className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent-fill text-base font-bold text-white shadow-[0_8px_20px_rgba(203,51,22,.35)] primary-disabled"
               >
                 <Icon name="check" size={20} className="text-white" />
                 {t("customSave")}
@@ -404,7 +404,7 @@ export function StartPeriodScreen({
                   confirm(repeatAmount, repeated.rolloverCents)
                 }
                 disabled={repeatAmount <= 0}
-                className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-base font-bold text-white shadow-[0_8px_20px_rgba(255,92,57,.35)] primary-disabled"
+                className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent-fill text-base font-bold text-white shadow-[0_8px_20px_rgba(203,51,22,.35)] primary-disabled"
               >
                 <Icon name="check" size={20} className="text-white" />
                 {t("repeat", {

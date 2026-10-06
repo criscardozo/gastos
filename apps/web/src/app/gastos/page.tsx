@@ -80,6 +80,7 @@ export default function ExpensesPage() {
   const tErrors = useTranslations("errors");
   const tDash = useTranslations("dashboard");
   const tCat = useTranslations("categories");
+  const tA11y = useTranslations("a11y");
   const { locale } = useLocale();
   const { write } = useAppError();
   const { user } = useAuth();
@@ -754,7 +755,7 @@ export default function ExpensesPage() {
             </span>
             <Icon name="expand_more" size={16} className="text-ink-3" />
             <select
-              aria-label="period"
+              aria-label={tA11y("period")}
               value={selection ?? selected.startDate}
               onChange={(e) => setSelection(e.target.value)}
               className="absolute inset-0 cursor-pointer appearance-none opacity-0"
@@ -822,7 +823,7 @@ export default function ExpensesPage() {
             value={filters.search}
             onChange={(e) => filters.setSearch(e.target.value)}
             placeholder={t("searchPlaceholder")}
-            className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-ink"
           />
         </div>
       </div>
@@ -940,7 +941,7 @@ export default function ExpensesPage() {
       {/* Quick-entry shortcut — the phone's replacement for the add row below */}
       <Link
         href="/nuevo"
-        className="flex items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-bold text-white shadow-[0_6px_16px_rgba(255,92,57,.3)] lg:hidden"
+        className="flex items-center justify-center gap-2 rounded-full bg-accent-fill py-3 text-sm font-bold text-white shadow-[0_6px_16px_rgba(203,51,22,.3)] lg:hidden"
       >
         <Icon name="add" size={18} className="text-white" />
         {tDash("newExpense")}
@@ -964,7 +965,7 @@ export default function ExpensesPage() {
             type="button"
             onClick={submitAdd}
             disabled={parseAmountToCents(effectiveAddForm.amount, locale) === null}
-            className="rounded-full bg-accent px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
+            className="rounded-full bg-accent-fill px-4 py-[7px] text-[13px] font-bold text-white primary-disabled"
           >
             {t("save")}
           </button>
@@ -1035,7 +1036,7 @@ export default function ExpensesPage() {
             <button
               type="button"
               onClick={() => amountRef.current?.focus()}
-              className="hidden rounded-full bg-accent px-[13px] py-1.5 text-xs font-bold text-white lg:block"
+              className="hidden rounded-full bg-accent-fill px-[13px] py-1.5 text-xs font-bold text-white lg:block"
             >
               {tDash("newExpense")}
             </button>

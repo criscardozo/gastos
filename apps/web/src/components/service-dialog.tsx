@@ -24,6 +24,7 @@ import {
 } from "@/lib/services";
 import { formatLongDateInYear } from "@/lib/dates";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 
 
 export function ServiceDialog({
@@ -42,6 +43,7 @@ export function ServiceDialog({
   onDelete: (() => void) | null;
   onClose: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("services");
   const tCommon = useTranslations("expenses");
 
@@ -115,7 +117,7 @@ export function ServiceDialog({
   };
 
   const field =
-    "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
+    "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink focus:border-accent";
 
   return (
     <div
@@ -125,6 +127,7 @@ export function ServiceDialog({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={service === null ? t("add") : t("edit")}
         onClick={(event) => event.stopPropagation()}
@@ -252,7 +255,7 @@ export function ServiceDialog({
             type="button"
             disabled={!valid}
             onClick={submit}
-            className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white primary-disabled"
+            className="flex-1 rounded-full bg-accent-fill py-3 text-sm font-bold text-white primary-disabled"
           >
             {tCommon("save")}
           </button>

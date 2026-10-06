@@ -152,7 +152,7 @@ struct HistoryView: View {
                                         } label: {
                                             Label(l10n.t("history.edit"), systemImage: "pencil")
                                         }
-                                        .tint(Color(hex: "#2A6FDB"))
+                                        .tint(Theme.actionBlue)
                                     }
                             }
                         } header: {
@@ -260,6 +260,8 @@ struct HistoryView: View {
                     label: l10n.periodRangeCompact(start: start, end: end, timeZone: model.householdTimeZone),
                     canGoBack: (model.viewedPeriodIndex ?? 0) > 0,
                     canGoForward: (model.viewedPeriodIndex ?? 0) < model.periods.count - 1,
+                    backLabel: l10n.t("a11y.previousPeriod"),
+                    forwardLabel: l10n.t("a11y.nextPeriod"),
                     onBack: { model.navigatePeriod(by: -1) },
                     onForward: { model.navigatePeriod(by: 1) }
                 )
@@ -363,7 +365,7 @@ struct HistoryView: View {
                     if item.hasPendingWrites {
                         HStack(spacing: 3) {
                             Image(systemName: "icloud.slash")
-                                .font(.system(size: 10, weight: .medium))
+                                .iconFont(10, .medium)
                             Text(l10n.t("history.pending"))
                                 .appFont(12)
                         }
@@ -397,7 +399,7 @@ struct HistoryView: View {
                     Image(systemName: expense.isVerified
                           ? "checkmark.circle.fill"
                           : "exclamationmark.circle.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
+                        .iconFont(10.5, .semibold)
                         // The text next to it says the same thing.
                         .accessibilityHidden(true)
                     Text(expense.isVerified
@@ -619,7 +621,7 @@ struct HistoryView: View {
                         } label: {
                             HStack(spacing: 7) {
                                 Image(systemName: "checklist")
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .iconFont(13, .semibold)
                                 Text(l10n.t("bank.confirmAll", pendingGuesses.count))
                                     .appFont(13, .bold)
                             }
@@ -646,7 +648,7 @@ struct HistoryView: View {
                                     .foregroundStyle(Theme.inkSecondary)
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .iconFont(11, .semibold)
                                     .foregroundStyle(Theme.inkTertiary)
                                     .accessibilityHidden(true)
                             }
@@ -700,7 +702,7 @@ struct HistoryView: View {
             Card(padding: EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)) {
                 HStack(spacing: 12) {
                     Image(systemName: "list.bullet.rectangle")
-                        .font(.system(size: 22))
+                        .iconFont(22)
                         .foregroundStyle(Theme.inkTertiary)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(l10n.t("empty.expenses.title"))

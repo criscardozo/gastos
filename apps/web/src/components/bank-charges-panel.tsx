@@ -326,7 +326,7 @@ export function BankChargesPanel({
                     onChange={(event) =>
                       setChoice({ ...choice, [charge.id]: event.target.value })
                     }
-                    className="max-w-[260px] cursor-pointer truncate rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13px] font-semibold text-ink outline-none"
+                    className="max-w-[260px] cursor-pointer truncate rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13px] font-semibold text-ink"
                   >
                     <option value="">{t("none")}</option>
                     {unverified.map((e) => (
@@ -356,7 +356,7 @@ export function BankChargesPanel({
                     type="button"
                     onClick={() => assign(charge, chosen)}
                     disabled={chosen === ""}
-                    className="rounded-full bg-accent px-3.5 py-[7px] text-[12.5px] font-bold text-white primary-disabled"
+                    className="rounded-full bg-accent-fill px-3.5 py-[7px] text-[12.5px] font-bold text-white primary-disabled"
                   >
                     {t("assign")}
                   </button>

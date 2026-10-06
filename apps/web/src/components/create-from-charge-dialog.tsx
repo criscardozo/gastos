@@ -35,6 +35,7 @@ import { firstCategoryId, offeredForEntry } from "@/lib/categories";
 import { formatShortDate } from "@/lib/dates";
 import { estimateAudCents } from "@/lib/recurring";
 import { displayMerchant } from "@/lib/merchant-name";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 
 export function CreateFromChargeDialog({
   charge,
@@ -62,6 +63,7 @@ export function CreateFromChargeDialog({
   }) => void;
   onClose: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("bank");
   const tCommon = useTranslations("expenses");
   const tCat = useTranslations("categories");
@@ -101,6 +103,7 @@ export function CreateFromChargeDialog({
     <div className={DIALOG_BACKDROP} role="presentation" onClick={onClose}>
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={t("createExpense")}
         onClick={(event) => event.stopPropagation()}
@@ -178,7 +181,7 @@ export function CreateFromChargeDialog({
             if (cents === null) return;
             onCreate({ categoryId, note: note.trim(), amountAudCents: cents });
           }}
-          className="rounded-full bg-accent px-4 py-3 text-sm font-bold text-white primary-disabled"
+          className="rounded-full bg-accent-fill px-4 py-3 text-sm font-bold text-white primary-disabled"
         >
           {t("createExpense")}
         </button>

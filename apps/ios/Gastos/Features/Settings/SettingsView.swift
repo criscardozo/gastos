@@ -309,7 +309,7 @@ struct SettingsView: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: Theme.card, style: .continuous)
                             .strokeBorder(
-                                period.isCustom ? Color(hex: "#FF5C39", alpha: 0.5) : Theme.border,
+                                period.isCustom ? Theme.accent.opacity(0.5) : Theme.border,
                                 lineWidth: period.isCustom ? 1.5 : 1
                             )
                     )

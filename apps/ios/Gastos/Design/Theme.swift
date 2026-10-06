@@ -96,6 +96,7 @@ enum Theme {
     // Member avatars (Cristian blue / Natalia pink); dark variants per tokens.
     static let avatarBlue = Color.hex(light: "#2A6FDB", dark: "#4B87E8")
     static let avatarPink = Color.hex(light: "#E0447C", dark: "#EF6D9C")
+    static let avatarInk = Color.hex(light: "#FFFFFF", dark: "#191410")
 
     /// Avatar color from a stored memberProfiles hex, adapting known light
     /// values to their dark variants.
@@ -106,6 +107,18 @@ enum Theme {
         default: return Color(hex: hex)
         }
     }
+
+    /// The design's action blue — Edit on a swiped row, "join with a code" in
+    /// onboarding. The same value as member C's avatar, which is where the
+    /// design took it from, but named for what it does here so changing one
+    /// does not quietly change the other. Adapts to dark, which the literal
+    /// `#2A6FDB` it replaces did not.
+    static let actionBlue = Color.hex(light: "#2A6FDB", dark: "#4B87E8")
+
+    /// The colour every drop shadow is cast in: light-theme ink, in BOTH
+    /// themes on purpose — a shadow in the dark theme's ink would be a pale
+    /// glow. Was the literal `#241A10` in four places.
+    static let shadowInk = Color(hex: "#241A10")
 
     /// Category color adapting to dark mode via the seed table.
     static func categoryColor(id: String, lightHex: String) -> Color {
@@ -263,6 +276,19 @@ enum AppFont {
 extension View {
     /// Outfit typography shorthand.
     func appFont(_ size: CGFloat, _ weight: Font.Weight = .regular) -> some View {
+        font(AppFont.font(size, weight))
+    }
+
+    /// An SF Symbol at `size`, growing with Dynamic Type exactly as `appFont`
+    /// does — a symbol beside text that grows must grow with it, or at the
+    /// largest settings a 15pt "+" sat beside a 30pt "Nuevo gasto".
+    ///
+    /// Its own name rather than `appFont` because a symbol's point size is not
+    /// a step of the type scale: design-system/emit.py counts every `appFont`
+    /// size against tokens.json, and the icons were 31 sizes it had no business
+    /// judging. Symbols in a fixed-size badge (a 38pt circle) keep a fixed
+    /// `.font(.system(size:))`, because the badge does not grow.
+    func iconFont(_ size: CGFloat, _ weight: Font.Weight = .regular) -> some View {
         font(AppFont.font(size, weight))
     }
 

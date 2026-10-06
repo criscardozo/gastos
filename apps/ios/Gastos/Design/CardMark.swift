@@ -9,8 +9,17 @@ import SwiftUI
 /// the list nobody could read at a glance.
 struct CardMark: View {
     let brand: CardBrand
-    /// The mark's width; Mastercard's height follows its 48:30 box.
+    /// The mark's width at the default text size; Mastercard's height follows
+    /// its 48:30 box.
     var width: CGFloat = 30
+
+    /// Grows with Dynamic Type like the figures beside it — at the largest
+    /// setting the amount next to a 26pt mark was three times its height.
+    /// Capped, because the mark also sits in fixed-padding chips (the inbox's
+    /// card picker) that should not turn into slabs.
+    @ScaledMetric(relativeTo: .footnote) private var growth: CGFloat = 1
+
+    private var drawnWidth: CGFloat { width * min(growth, 1.8) }
 
     /// `--visa` in globals.css: the wordmark has to stay legible on both
     /// surfaces. design-tokens.test.ts holds the two copies together.
@@ -28,14 +37,14 @@ struct CardMark: View {
                 // The lens where they overlap, darker, as on the card.
                 context.fill(left.intersection(right), with: .color(Color(hex: "#FF5F00")))
             }
-            .frame(width: width, height: width * 30 / 48)
+            .frame(width: drawnWidth, height: drawnWidth * 30 / 48)
             .accessibilityElement()
             .accessibilityLabel(brand.label)
         case .visa:
             Text(verbatim: "VISA")
-                .font(.system(size: width * 0.46, weight: .black))
+                .font(.system(size: drawnWidth * 0.46, weight: .black))
                 .italic()
-                .kerning(-0.02 * width * 0.46)
+                .kerning(-0.02 * drawnWidth * 0.46)
                 .foregroundStyle(Self.visaBlue)
                 .fixedSize()
                 .accessibilityLabel(brand.label)

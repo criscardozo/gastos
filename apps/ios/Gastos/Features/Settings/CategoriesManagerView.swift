@@ -112,7 +112,7 @@ struct CategoriesManagerView: View {
                         showAdd = true
                     } label: {
                         Image(systemName: "plus")
-                            .font(.system(size: 15, weight: .bold))
+                            .iconFont(15, .bold)
                             .foregroundStyle(entries.count < SeedCategories.maxCategories ? Theme.accentStrong : Theme.inkTertiary)
                     }
                     .disabled(entries.count >= SeedCategories.maxCategories)  // rules cap, enforced in UI
@@ -198,7 +198,7 @@ struct CategoriesManagerView: View {
                         }
                     }
                     Image(systemName: "pencil")
-                        .font(.system(size: 13, weight: .semibold))
+                        .iconFont(13, .semibold)
                         .foregroundStyle(Theme.inkTertiary.opacity(0.6))
                     Spacer(minLength: 0)
                 }

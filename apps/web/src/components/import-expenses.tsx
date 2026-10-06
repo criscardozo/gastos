@@ -417,7 +417,7 @@ export function ImportExpenses() {
                 type="button"
                 onClick={() => void doImport()}
                 disabled={importable.length === 0 || importPhase === "working"}
-                className="rounded-full bg-accent px-5 py-2 text-[13px] font-bold text-white primary-disabled"
+                className="rounded-full bg-accent-fill px-5 py-2 text-[13px] font-bold text-white primary-disabled"
               >
                 {importPhase === "working"
                   ? t("importing")

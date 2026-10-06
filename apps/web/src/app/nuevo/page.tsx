@@ -34,6 +34,7 @@ export default function QuickEntryPage() {
   const tDash = useTranslations("dashboard");
   const tCat = useTranslations("categories");
   const tEntry = useTranslations("quickEntry");
+  const tA11y = useTranslations("a11y");
   const { locale } = useLocale();
   const { write } = useAppError();
   const { user } = useAuth();
@@ -161,7 +162,7 @@ export default function QuickEntryPage() {
             // instead of drifting to the edge of the card.
             size={Math.max(amount.length, 1)}
             style={{ maxWidth: "7ch" }}
-            className="w-auto min-w-[1ch] border-none bg-transparent p-0 text-center text-[56px] font-bold leading-none tracking-[-0.03em] text-ink outline-none placeholder:text-ink-3"
+            className="w-auto min-w-[1ch] border-none bg-transparent p-0 text-center text-[56px] font-bold leading-none tracking-[-0.03em] text-ink placeholder:text-ink-3"
           />
         </div>
       </div>
@@ -218,7 +219,7 @@ export default function QuickEntryPage() {
           onChange={(e) => setNote(e.target.value)}
           placeholder={t("notePlaceholder")}
           maxLength={MAX_NOTE_CHARACTERS}
-          className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none"
+          className="min-w-0 flex-1 bg-transparent text-[15px] text-ink"
         />
       </div>
       <div className="flex items-center justify-between gap-3 rounded-[18px] border border-line bg-surface px-4 py-3">
@@ -234,8 +235,8 @@ export default function QuickEntryPage() {
           onChange={(e) => {
             if (e.target.value !== "") setDate(e.target.value);
           }}
-          aria-label="date"
-          className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-1.5 text-[13px] font-semibold text-ink outline-none"
+          aria-label={tA11y("date")}
+          className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-1.5 text-[13px] font-semibold text-ink"
         />
       </div>
 
@@ -244,7 +245,7 @@ export default function QuickEntryPage() {
         type="button"
         onClick={() => void save()}
         disabled={!canSave}
-        className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent text-[15.5px] font-bold text-white shadow-[0_6px_16px_rgba(255,92,57,.3)] primary-disabled"
+        className="flex h-14 items-center justify-center gap-2 rounded-full bg-accent-fill text-[15.5px] font-bold text-white shadow-[0_6px_16px_rgba(203,51,22,.3)] primary-disabled"
       >
         <Icon name={justSaved ? "check" : "add"} size={20} className="text-white" />
         {justSaved ? tEntry("saved") : t("save")}

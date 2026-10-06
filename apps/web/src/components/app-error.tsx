@@ -30,6 +30,7 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import { onReadFailure } from "@/lib/firebase/read-failures";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 
 /**
  * What failed. A refused write and a refused read need different words: the
@@ -141,6 +142,7 @@ function AppErrorDialog({
   kind: AppErrorKind;
   onClose: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("errors");
   const title = kind === "read" ? t("readTitle") : t("title");
   return (
@@ -151,6 +153,7 @@ function AppErrorDialog({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={title}
         onClick={(event) => event.stopPropagation()}

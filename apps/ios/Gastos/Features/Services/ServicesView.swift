@@ -109,7 +109,7 @@ struct ServicesView: View {
         Card {
             VStack(spacing: 6) {
                 Image(systemName: "calendar")
-                    .font(.system(size: 26))
+                    .iconFont(26)
                     .foregroundStyle(Theme.inkTertiary)
                 Text(l10n.t("services.emptyTitle"))
                     .appFont(15, .semibold)

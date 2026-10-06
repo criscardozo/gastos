@@ -16,6 +16,7 @@ import { Icon } from "@/components/ui/icon";
 import { capitaliseFirst, formatLongDate, formatPeriodRange } from "@/lib/dates";
 import { daysBetween, type EarlyStart } from "@/lib/periods";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 
 export function StartEarlyDialog({
   currentEndDate,
@@ -30,6 +31,7 @@ export function StartEarlyDialog({
   onConfirm: () => void;
   onClose: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("startEarly");
   const tCommon = useTranslations("expenses");
 
@@ -51,6 +53,7 @@ export function StartEarlyDialog({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={t("title")}
         onClick={(event) => event.stopPropagation()}
@@ -91,7 +94,7 @@ export function StartEarlyDialog({
         <button
           type="button"
           onClick={onConfirm}
-          className="mt-1 rounded-full bg-accent py-3 text-sm font-bold text-white primary-disabled"
+          className="mt-1 rounded-full bg-accent-fill py-3 text-sm font-bold text-white primary-disabled"
         >
           {t("confirm")}
         </button>

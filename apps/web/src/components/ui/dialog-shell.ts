@@ -24,4 +24,4 @@ export const DIALOG_BACKDROP =
 
 /** A text input inside one. */
 export const DIALOG_FIELD =
-  "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
+  "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink focus:border-accent";

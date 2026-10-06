@@ -354,7 +354,7 @@ export default function DataPage() {
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
               aria-label={t("from")}
-              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink outline-none"
+              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink"
             />
           </label>
           <label className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
@@ -364,7 +364,7 @@ export default function DataPage() {
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
               aria-label={t("to")}
-              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink outline-none"
+              className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink"
             />
           </label>
         </div>

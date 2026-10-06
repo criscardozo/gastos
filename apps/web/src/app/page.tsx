@@ -257,7 +257,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-0.5 rounded-full border border-pill bg-surface px-2 py-[5px]">
             <button
               type="button"
-              aria-label="previous period"
+              aria-label={t("a11y.previousPeriod")}
               disabled={selectedIndex <= 0}
               onClick={() =>
                 setSelectedStart(periods[selectedIndex - 1].startDate)
@@ -275,7 +275,7 @@ export default function DashboardPage() {
             </span>
             <button
               type="button"
-              aria-label="next period"
+              aria-label={t("a11y.nextPeriod")}
               disabled={selectedIndex >= maxIndex}
               onClick={() =>
                 setSelectedStart(periods[selectedIndex + 1].startDate)
@@ -294,7 +294,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/gastos"
-          className="hidden items-center gap-2 rounded-full bg-accent px-[18px] py-2.5 shadow-[0_6px_16px_rgba(255,92,57,.3)] lg:flex"
+          className="hidden items-center gap-2 rounded-full bg-accent-fill px-[18px] py-2.5 shadow-[0_6px_16px_rgba(203,51,22,.3)] lg:flex"
         >
           <Icon name="add" size={18} className="text-white" />
           <span className="text-sm font-bold text-white">

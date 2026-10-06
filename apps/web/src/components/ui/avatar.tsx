@@ -12,7 +12,9 @@ export function Avatar({ name, color, size = 26, ringColor }: AvatarProps) {
   const initial = (name.trim()[0] ?? "?").toUpperCase();
   return (
     <div
-      className="flex items-center justify-center rounded-full font-bold text-white"
+      // `member-ink`, not white: on the dark theme's brightened member colours
+      // white was 2.86:1 (pink) and 3.54:1 (blue).
+      className="flex items-center justify-center rounded-full font-bold text-member-ink"
       style={{
         width: size,
         height: size,

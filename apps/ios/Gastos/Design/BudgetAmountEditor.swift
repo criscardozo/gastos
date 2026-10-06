@@ -30,7 +30,7 @@ struct BudgetAmountEditor: View {
             }
             if showsEditIcon {
                 Image(systemName: "pencil")
-                    .font(.system(size: 15, weight: .medium))
+                    .iconFont(15, .medium)
                     .foregroundStyle(Theme.inkTertiary)
                     .padding(.leading, 6)
             }

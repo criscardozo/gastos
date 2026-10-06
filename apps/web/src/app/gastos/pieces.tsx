@@ -23,7 +23,9 @@ import { MAX_NOTE_CHARACTERS } from "@/lib/limits";
 
 export function FilterPill({ children }: { children: ReactNode }) {
   return (
-    <div className="relative flex items-center gap-1.5 rounded-full border border-pill bg-surface px-3.5 py-2">
+    // The <select> inside is transparent, so its focus ring would be too: the
+    // pill draws it instead, with the same colour and offset as everywhere.
+    <div className="relative flex items-center gap-1.5 rounded-full border border-pill bg-surface px-3.5 py-2 has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-2 has-[select:focus-visible]:outline-accent-strong">
       {children}
     </div>
   );
@@ -106,6 +108,7 @@ export function ExpenseFormFields({
   noteSuggestions?: string[];
 }) {
   const t = useTranslations("expenses");
+  const tA11y = useTranslations("a11y");
   // Unique per instance so the add and edit rows never share a datalist id.
   const noteListId = useId();
   const hasNoteSuggestions =
@@ -120,13 +123,13 @@ export function ExpenseFormFields({
         onChange={(e) => setForm({ ...form, amount: e.target.value })}
         placeholder={t("amountPlaceholder")}
         aria-label={t("amountPlaceholder")}
-        className="tnum w-24 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] font-semibold text-ink outline-none"
+        className="tnum w-24 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] font-semibold text-ink"
       />
       <select
         value={form.categoryId}
         onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
         aria-label={t("categoryAll")}
-        className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink outline-none"
+        className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink"
       >
         {/* Active categories, plus the one this expense is already in even
             when it is archived — editing an old expense must not move it. */}
@@ -146,7 +149,7 @@ export function ExpenseFormFields({
         aria-label={t("notePlaceholder")}
         maxLength={MAX_NOTE_CHARACTERS}
         list={hasNoteSuggestions ? noteListId : undefined}
-        className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] text-ink outline-none"
+        className="min-w-0 flex-1 rounded-[10px] border border-pill bg-bg px-3 py-2 text-[13.5px] text-ink"
       />
       {hasNoteSuggestions && (
         <datalist id={noteListId}>
@@ -161,8 +164,8 @@ export function ExpenseFormFields({
         onChange={(e) => {
           if (e.target.value !== "") setForm({ ...form, date: e.target.value });
         }}
-        aria-label="date"
-        className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink outline-none"
+        aria-label={tA11y("date")}
+        className="cursor-pointer rounded-[10px] border border-pill bg-bg px-2.5 py-2 text-[13.5px] font-semibold text-ink"
       />
     </>
   );

@@ -45,7 +45,7 @@ struct KeypadView: View {
                     Text(separatorLabel).appFont(23, .semibold)
                 case .backspace:
                     Image(systemName: "delete.left")
-                        .font(.system(size: 21, weight: .medium))
+                        .iconFont(21, .medium)
                 }
             }
             .foregroundStyle(Theme.ink)
@@ -57,7 +57,7 @@ struct KeypadView: View {
                     : AnyShapeStyle(Color.clear)
             )
             .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-            .shadow(color: filled ? Color(hex: "#241A10", alpha: 0.06) : .clear, radius: 1, y: 1)
+            .shadow(color: filled ? Theme.shadowInk.opacity(0.06) : .clear, radius: 1, y: 1)
         }
         .buttonStyle(.plain)
     }
@@ -351,7 +351,7 @@ struct ExpenseFormView: View {
         let urgent = days <= 1
         HStack(spacing: 9) {
             Image(systemName: expired ? "exclamationmark.octagon.fill" : "exclamationmark.triangle.fill")
-                .font(.system(size: 14, weight: .bold))
+                .iconFont(14, .bold)
                 .foregroundStyle(urgent ? Theme.redText : Theme.accentStrong)
             VStack(alignment: .leading, spacing: 1) {
                 Text(expiryHeadline(days: days, expired: expired))
@@ -423,13 +423,13 @@ struct ExpenseFormView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "calendar")
-                    .font(.system(size: 13, weight: .medium))
+                    .iconFont(13, .medium)
                     .foregroundStyle(Theme.inkSecondary)
                 Text(dateLabel)
                     .appFont(13, .semibold)
                     .foregroundStyle(Theme.ink)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
+                    .iconFont(11, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
             }
             .padding(.horizontal, 14)
@@ -500,7 +500,7 @@ struct ExpenseFormView: View {
     private var noteField: some View {
         HStack(spacing: 8) {
             Image(systemName: "pencil.line")
-                .font(.system(size: 15, weight: .medium))
+                .iconFont(15, .medium)
                 .foregroundStyle(Theme.inkTertiary)
             TextField(l10n.t("entry.note.placeholder"), text: $note)
                 .appFont(15)

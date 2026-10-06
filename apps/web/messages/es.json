@@ -595,5 +595,12 @@
     "undo": "Deshacer",
     "awaiting": "falta importe",
     "promptDone": "Listo"
+  },
+  "a11y": {
+    "previousPeriod": "Período anterior",
+    "nextPeriod": "Período siguiente",
+    "date": "Fecha",
+    "period": "Período",
+    "amount": "Monto"
   }
 }

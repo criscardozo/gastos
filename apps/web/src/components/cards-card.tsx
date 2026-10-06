@@ -70,7 +70,7 @@ export function CardsCard({ household }: { household: Household }) {
   };
 
   const field =
-    "w-24 rounded-xl border border-line bg-bg px-3 py-2 text-base text-ink outline-none focus:border-accent";
+    "w-24 rounded-xl border border-line bg-bg px-3 py-2 text-base text-ink focus:border-accent";
 
   return (
     // `tarjetas` is where Tarjetas' "not configured" note links to.
@@ -164,7 +164,7 @@ export function CardsCard({ household }: { household: Household }) {
               type="button"
               disabled={!valid}
               onClick={add}
-              className="rounded-full bg-accent px-4 py-2 primary-disabled"
+              className="rounded-full bg-accent-fill px-4 py-2 primary-disabled"
             >
               <span className="text-[13px] font-bold text-white">
                 {tCommon("save")}

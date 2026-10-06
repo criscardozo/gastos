@@ -21,6 +21,7 @@ import {
   formatLongDate,
   formatPeriodRange,
 } from "@/lib/dates";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 
 /** "28 jul, 13:48" — an absolute instant, in the reader's own timezone.
  * 24-hour in Spanish, where "01:56 p. m." is not how anyone writes a time. */
@@ -56,6 +57,7 @@ export function ExpenseDetailDialog({
   onVerify: () => void;
   onDelete: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("detail");
   const tExpenses = useTranslations("expenses");
 
@@ -116,6 +118,7 @@ export function ExpenseDetailDialog({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={t("title")}
         onClick={(event) => event.stopPropagation()}
@@ -247,7 +250,7 @@ export function ExpenseDetailDialog({
             <button
               type="button"
               onClick={onEdit}
-              className="flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-[13px] font-bold text-white"
+              className="flex items-center gap-1.5 rounded-full bg-accent-fill px-4 py-2 text-[13px] font-bold text-white"
             >
               <Icon name="edit" size={15} className="text-white" />
               {tExpenses("edit")}

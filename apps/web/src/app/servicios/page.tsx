@@ -171,7 +171,7 @@ export default function ServicesPage() {
         <button
           type="button"
           onClick={() => setEditing("new")}
-          className="flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-2"
+          className="flex items-center gap-1.5 rounded-full bg-accent-fill px-3.5 py-2"
         >
           <Icon name="add" size={16} className="text-white" />
           <span className="text-[13px] font-bold text-white">{t("add")}</span>
@@ -255,7 +255,7 @@ export default function ServicesPage() {
                 }),
               )
             }
-            className="rounded-full bg-accent px-4 py-2 text-[12.5px] font-bold text-white"
+            className="rounded-full bg-accent-fill px-4 py-2 text-[12.5px] font-bold text-white"
           >
             {t("noCategoryCta")}
           </button>

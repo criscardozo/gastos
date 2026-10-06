@@ -76,6 +76,8 @@ struct SummaryView: View {
                 label: l10n.periodRange(start: start, end: end, timeZone: model.householdTimeZone),
                 canGoBack: (model.viewedPeriodIndex ?? 0) > 0,
                 canGoForward: (model.viewedPeriodIndex ?? 0) < model.periods.count - 1,
+                backLabel: l10n.t("a11y.previousPeriod"),
+                forwardLabel: l10n.t("a11y.nextPeriod"),
                 onBack: { model.navigatePeriod(by: -1) },
                 onForward: { model.navigatePeriod(by: 1) }
             )
@@ -223,7 +225,7 @@ struct SummaryView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "pencil")
-                            .font(.system(size: 11, weight: .bold))
+                            .iconFont(11, .bold)
                         Text(l10n.t("summary.adjust"))
                             .appFont(12, .bold)
                     }
@@ -496,7 +498,7 @@ struct SummaryView: View {
                     .clipShape(Capsule())
                 }
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
+                    .iconFont(13, .semibold)
                     .foregroundStyle(Theme.inkTertiary.opacity(0.6))
             }
             .padding(.vertical, 12)
@@ -509,7 +511,7 @@ struct SummaryView: View {
         Card(padding: EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)) {
             HStack(spacing: 12) {
                 Image(systemName: "flag")
-                    .font(.system(size: 22))
+                    .iconFont(22)
                     .foregroundStyle(Theme.inkTertiary)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(l10n.t("empty.noPeriod.title"))

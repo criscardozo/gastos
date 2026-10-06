@@ -46,7 +46,9 @@ struct MemberAvatar: View {
             .overlay(
                 Text(initial)
                     .appFont(size * 0.46, .bold)
-                    .foregroundStyle(.white)
+                    // Not white: on the dark theme's brightened member colours
+                    // white was 2.86:1 (pink), under even HIG's 3:1 for bold.
+                    .foregroundStyle(Theme.avatarInk)
             )
     }
 }
@@ -160,7 +162,7 @@ struct SegmentedPill<T: Hashable>: View {
                                 : AnyShapeStyle(Color.clear)
                         )
                         .clipShape(shape)
-                        .shadow(color: selected ? Color(hex: "#241A10", alpha: 0.12) : .clear, radius: 1.5, y: 1)
+                        .shadow(color: selected ? Theme.shadowInk.opacity(0.12) : .clear, radius: 1.5, y: 1)
                         .contentShape(shape)
                 }
                 .buttonStyle(.plain)
@@ -265,7 +267,7 @@ struct PrimaryCTA: View {
             HStack(spacing: 8) {
                 if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 17, weight: .bold))
+                        .iconFont(17, .bold)
                 }
                 Text(title)
                     .appFont(17, .bold)
@@ -280,7 +282,7 @@ struct PrimaryCTA: View {
             .background(enabled ? Theme.accent : Theme.fill)
             .clipShape(Capsule())
             .shadow(
-                color: enabled ? Color(hex: "#FF5C39", alpha: 0.35) : .clear,
+                color: enabled ? Theme.accent.opacity(0.35) : .clear,
                 radius: 10, y: 8
             )
         }
@@ -295,6 +297,11 @@ struct PeriodNavigator: View {
     let label: String
     let canGoBack: Bool
     let canGoForward: Bool
+    /// What VoiceOver calls the two arrows. Without them it fell back on the
+    /// chevron symbols' own names, which say nothing about moving between
+    /// periods (or card statements).
+    let backLabel: String
+    let forwardLabel: String
     let onBack: () -> Void
     let onForward: () -> Void
 
@@ -311,6 +318,7 @@ struct PeriodNavigator: View {
                     .padding(4)
             }
             .disabled(!canGoBack)
+            .accessibilityLabel(backLabel)
             Text(label)
                 .appFont(13, .semibold)
                 .foregroundStyle(Theme.ink)
@@ -322,6 +330,7 @@ struct PeriodNavigator: View {
                     .padding(4)
             }
             .disabled(!canGoForward)
+            .accessibilityLabel(forwardLabel)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)

@@ -172,7 +172,7 @@ struct ExtendPeriodSheet: View {
                 Image(systemName: confirming
                       ? "exclamationmark.triangle.fill"
                       : "calendar.badge.plus")
-                    .font(.system(size: 16, weight: .bold))
+                    .iconFont(16, .bold)
                 Text(l10n.t(confirming ? "extendPeriod.confirm" : "extendPeriod.extend"))
                     .appFont(16, .bold)
             }

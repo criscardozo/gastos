@@ -83,7 +83,10 @@ describe("colour utilities against the theme", () => {
  */
 describe("disabled primary buttons", () => {
   const CLASS_STRING = /"[^"\n]*"|`[^`]*`/g;
-  const CORAL = /(?<![\w-])bg-accent(?![\w-])/;
+  // `bg-accent-fill` is the coral every button with a label sits on since
+  // 2026-10-06 (white on the brand coral was 3.07:1); bare `bg-accent` is left
+  // for the logo tiles. Both are the coral this test is about.
+  const CORAL = /(?<![\w-])bg-accent(?:-fill)?(?![\w-])/;
 
   it("has the utility to point at", () => {
     expect(CSS).toMatch(/@utility primary-disabled\s*\{/);

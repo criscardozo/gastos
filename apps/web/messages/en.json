@@ -595,5 +595,12 @@
     "undo": "Undo",
     "awaiting": "amount missing",
     "promptDone": "Done"
+  },
+  "a11y": {
+    "previousPeriod": "Previous period",
+    "nextPeriod": "Next period",
+    "date": "Date",
+    "period": "Period",
+    "amount": "Amount"
   }
 }

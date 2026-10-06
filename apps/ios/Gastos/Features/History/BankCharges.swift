@@ -73,7 +73,7 @@ struct BankChargeRow: View {
                     .monospacedDigit()
                     .foregroundStyle(Theme.ink)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .iconFont(11, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
                     .accessibilityHidden(true)
             }
@@ -283,7 +283,7 @@ struct BankChargeSheet: View {
                     .lineLimit(1)
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 12, weight: .semibold))
+                    .iconFont(12, .semibold)
                     .foregroundStyle(Theme.inkTertiary)
                     .accessibilityHidden(true)
             }

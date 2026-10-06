@@ -16,12 +16,13 @@ import { centsToInput, formatUsd, parseAmountToCents } from "@/lib/money";
 import { CARD_BRANDS, type CardBrand, type StatementRange } from "@/lib/statements";
 import { displayMerchant } from "@/lib/merchant-name";
 import { DIALOG_SHELL } from "@/components/ui/dialog-shell";
+import { useModalFocus } from "@/components/ui/use-modal-focus";
 
 /** The peso ceiling the security rules enforce on both `cardFees` fields. */
 const ARS_MAX_CENTS = 100_000_000;
 
 const FIELD =
-  "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
+  "w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink focus:border-accent";
 
 
 /** Escape closes, like every other dialog in the app. */
@@ -65,6 +66,7 @@ export function VerifyStatementDialog({
   onToggle: (charge: CardCharge, verified: boolean) => void;
   onClose: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("cards");
   // "expenses", like every other dialog in this file: it is where the app's
   // save/cancel labels live. There is no `common` namespace — writing one here
@@ -83,6 +85,7 @@ export function VerifyStatementDialog({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={t("verifyTitle")}
         onClick={(event) => event.stopPropagation()}
@@ -152,7 +155,7 @@ export function VerifyStatementDialog({
         <button
           type="button"
           onClick={onClose}
-          className="h-12 rounded-full bg-accent text-[15px] font-bold text-white"
+          className="h-12 rounded-full bg-accent-fill text-[15px] font-bold text-white"
         >
           {done ? t("verifyDone") : t("verifyLater")}
         </button>
@@ -186,6 +189,7 @@ export function CardChargeDialog({
   onDelete: (() => void) | null;
   onClose: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("cards");
   const tCommon = useTranslations("expenses");
   useEscape(onClose);
@@ -212,6 +216,7 @@ export function CardChargeDialog({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={charge === null ? t("addCharge") : t("editCharge")}
         onClick={(event) => event.stopPropagation()}
@@ -332,7 +337,7 @@ export function CardChargeDialog({
               if (usdCents === null) return;
               onSave({ date, detail: detail.trim(), card: brand, usdCents, digital });
             }}
-            className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white primary-disabled"
+            className="flex-1 rounded-full bg-accent-fill py-3 text-sm font-bold text-white primary-disabled"
           >
             {tCommon("save")}
           </button>
@@ -377,6 +382,7 @@ export function StatementDatesDialog({
   onSave: (range: StatementRange, moveUnverified: boolean) => void;
   onClose: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("cards");
   const tCommon = useTranslations("expenses");
   useEscape(onClose);
@@ -429,6 +435,7 @@ export function StatementDatesDialog({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={t("newStatement")}
         onClick={(event) => event.stopPropagation()}
@@ -530,7 +537,7 @@ export function StatementDatesDialog({
             type="button"
             disabled={!valid}
             onClick={primary}
-            className="flex-1 rounded-full bg-accent py-3 text-sm font-bold text-white primary-disabled"
+            className="flex-1 rounded-full bg-accent-fill py-3 text-sm font-bold text-white primary-disabled"
           >
             {confirming
               ? t("confirmCloseCta")
@@ -557,6 +564,7 @@ export function CardFeesDialog({
   onSave: (fees: CardFeeSettings) => void;
   onClose: () => void;
 }) {
+  const dialogRef = useModalFocus<HTMLDivElement>();
   const t = useTranslations("cards");
   const tCommon = useTranslations("expenses");
   useEscape(onClose);
@@ -594,6 +602,7 @@ export function CardFeesDialog({
     >
       <div
         role="dialog"
+        ref={dialogRef}
         aria-modal="true"
         aria-label={t("arsSettings")}
         onClick={(event) => event.stopPropagation()}
@@ -643,7 +652,7 @@ export function CardFeesDialog({
               usdArsRate: rateCents === null ? null : rateCents / 100,
             });
           }}
-          className="mt-1 rounded-full bg-accent py-3 text-sm font-bold text-white primary-disabled"
+          className="mt-1 rounded-full bg-accent-fill py-3 text-sm font-bold text-white primary-disabled"
         >
           {tCommon("save")}
         </button>

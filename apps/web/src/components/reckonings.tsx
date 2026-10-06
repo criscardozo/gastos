@@ -103,7 +103,7 @@ export function Reckonings({
               type="button"
               onClick={record}
               disabled={entries === null}
-              className="flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-2 text-[12.5px] font-bold text-white primary-disabled"
+              className="flex items-center gap-1.5 rounded-full bg-accent-fill px-3.5 py-2 text-[12.5px] font-bold text-white primary-disabled"
             >
               <Icon name="fact_check" size={16} className="text-white" />
               {t("reckoningRecord")}
