@@ -217,7 +217,10 @@ struct BankChargeSheet: View {
             RecurringRuleSheet(rule: nil, seedMerchant: seed.merchant)
         }
         .sheet(isPresented: $creating) {
-            CreateFromChargeSheet(charge: charge)
+            CreateFromChargeSheet(charge: charge) {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                onDone()
+            }
         }
     }
 

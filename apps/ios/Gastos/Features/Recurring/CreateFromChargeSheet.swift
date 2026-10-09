@@ -15,6 +15,12 @@ struct CreateFromChargeSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     let charge: BankCharge
+    /// Called once the expense is filed, INSTEAD of dismissing just this
+    /// sheet. It is opened from the charge's own sheet, and closing only this
+    /// one left that one up with the charge still on it — answered, but one
+    /// press away from "Crear gasto" filing the same purchase twice. The
+    /// caller closes its own sheet, which takes this one with it.
+    var onCreated: (() -> Void)?
 
     @State private var amount = BudgetEntryAmount()
     @State private var note = ""
@@ -111,7 +117,7 @@ struct CreateFromChargeSheet: View {
                             note: trimmedNote,
                             amountAudCents: amount.audCents
                         )
-                        dismiss()
+                        if let onCreated { onCreated() } else { dismiss() }
                     }
                 }
                 .padding(20)
