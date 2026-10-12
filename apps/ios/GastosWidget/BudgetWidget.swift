@@ -84,7 +84,7 @@ struct BudgetWidgetView: View {
     private func small(_ snapshot: BudgetSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
-                piggyTile
+                appMark
                 Text(String(localized: "widget.remaining.label").uppercased())
                     .font(.system(size: 10.5, weight: .bold))
                     .kerning(0.7)
@@ -116,20 +116,14 @@ struct BudgetWidgetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
-    /// The mark on its coral tile, exactly as the app and the web sidebar wear
-    /// it — the one thing that makes the widget identifiable at a glance among
-    /// two dozen others.
-    private var piggyTile: some View {
-        RoundedRectangle(cornerRadius: 7, style: .continuous)
-            .fill(WidgetTheme.accent)
+    /// The app icon, small — the one thing that makes the widget
+    /// identifiable at a glance among two dozen others. Clipped to the same
+    /// squircle the home screen puts on the icon (~22.4% of the side).
+    private var appMark: some View {
+        Image("AppMark")
+            .resizable()
             .frame(width: 21, height: 21)
-            .overlay(
-                PiggyMark(
-                    size: 15,
-                    bodyColor: WidgetTheme.cream,
-                    detailColor: WidgetTheme.accent
-                )
-            )
+            .clipShape(RoundedRectangle(cornerRadius: 21 * 0.224, style: .continuous))
     }
 
     private func bar(_ snapshot: BudgetSnapshot) -> some View {

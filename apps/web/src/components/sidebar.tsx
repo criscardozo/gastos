@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
 import { AvatarPair } from "@/components/ui/avatar";
-import { PiggyMark } from "@/components/brand";
+import { AppMark } from "@/components/brand";
 import { useHousehold } from "@/components/providers";
 
 // No "Nuevo" entry here on purpose: on desktop /gastos carries the inline add
@@ -39,9 +39,7 @@ export function Sidebar() {
   return (
     <aside className="hidden w-[232px] flex-none flex-col gap-1.5 border-r border-line px-4 py-[22px] lg:flex">
       <div className="mb-[22px] flex items-center gap-2.5 px-2">
-        <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-accent">
-          <PiggyMark size={24} variant="cream" />
-        </div>
+        <AppMark size={34} className="flex-none" />
         {/* From the messages, not typed here.
             `app.name` already existed with the same value and NOBODY read it,
             so the name lived in two places and the rebrand had to find both.

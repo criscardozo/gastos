@@ -368,3 +368,23 @@ button {
 .no-scrollbar::-webkit-scrollbar {
   display: none;                  /* WebKit / Blink */
 }
+
+/* The app mark (components/brand.tsx) carries both appearances; show the one
+   the tokens are showing, by the same two selectors as the dark blocks above. */
+.app-mark-dark {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .app-mark-light {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .app-mark-dark {
+    display: inline;
+  }
+}
+:root[data-theme="dark"] .app-mark-light {
+  display: none;
+}
+:root[data-theme="dark"] .app-mark-dark {
+  display: inline;
+}

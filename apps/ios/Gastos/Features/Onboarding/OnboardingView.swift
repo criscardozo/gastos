@@ -52,16 +52,16 @@ struct OnboardingView: View {
     private var signInStep: some View {
         VStack(spacing: 0) {
             Spacer()
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Theme.accent)
+            // The home-screen icon itself, clipped to the same squircle the
+            // system puts on it (a corner of ~22.4% of the side). The asset has
+            // a dark appearance, so it follows the system like the icon does.
+            Image("AppMark")
+                .resizable()
+                .scaledToFit()
                 .frame(width: 88, height: 88)
-                .overlay(
-                    Image("PiggyCream")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 64, height: 64)
-                )
-                .shadow(color: Theme.accent.opacity(0.35), radius: 14, y: 12)
+                .clipShape(RoundedRectangle(cornerRadius: 88 * 0.224, style: .continuous))
+                .shadow(color: Theme.shadowInk.opacity(0.18), radius: 11, y: 10)
+                .accessibilityHidden(true)
                 .padding(.bottom, 24)
 
             Text(verbatim: "Gastos")

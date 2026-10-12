@@ -21,11 +21,9 @@ import { join } from "node:path";
  * first instead of after.
  *
  * SCOPE, stated rather than implied: the app target only. `GastosWidget` is
- * outside on purpose — four of its five `cornerRadius` are geometry of a drawn
- * mark (`8.5 * s`, the piggy), and a sweep that pulled those in would be
- * putting 2.3px into a scale of UI radii. Its one real UI radius, a 7px in
- * BudgetWidget, is therefore NOT covered by anything. That is a known hole and
- * it is written down as one.
+ * outside on purpose — its one `cornerRadius` is the app icon's squircle
+ * (`21 * 0.224`), geometry of the mark rather than a UI radius, and a sweep
+ * that pulled it in would be putting 4.7px into a scale of UI radii.
  */
 describe("iOS radii with a role", () => {
   const ROOT = join(import.meta.dirname, "../../../..");

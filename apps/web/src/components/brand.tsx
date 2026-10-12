@@ -1,57 +1,34 @@
-// Brand marks from the design system (docs/design, turn 5): the geometric
-// piggy with a coin dropping in, plus the official Google "G".
+// Brand marks: the app's own icon as a tile (docs/design/app-icon), plus the
+// official Google "G".
+import { APP_MARK_DARK, APP_MARK_LIGHT } from "@/components/app-mark-art";
 
-interface PiggyMarkProps {
-  /** Pixel size of the square mark. */
-  size?: number;
-  /** Body color scheme: cream body on coral tiles, coral body on light bg. */
-  variant?: "cream" | "coral" | "ink";
-  className?: string;
-}
-
-const PIGGY_COLORS: Record<
-  NonNullable<PiggyMarkProps["variant"]>,
-  { body: string; detail: string; coin: string; slot: string }
-> = {
-  // body = pig + steam; detail = eye/nostrils/slot accents; coin fill; slot on coin
-  cream: { body: "#FAF6EF", detail: "#FF5C39", coin: "#FAF6EF", slot: "#FF5C39" },
-  coral: { body: "#FF5C39", detail: "#FAF6EF", coin: "#FF5C39", slot: "#FAF6EF" },
-  ink: { body: "#FAF6EF", detail: "#241A10", coin: "#FF5C39", slot: "#FAF6EF" },
-};
-
-export function PiggyMark({
+/**
+ * The app icon, drawn inline at any size — the same art as the home-screen
+ * icon and the favicon, generated from the same drawings (app-mark-art.ts).
+ *
+ * Both appearances are in the markup and globals.css shows one, following the
+ * same light/dark rule as the tokens, manual override included: an <img> or a
+ * <picture> could only follow the system setting.
+ */
+export function AppMark({
   size = 24,
-  variant = "cream",
   className,
-}: PiggyMarkProps) {
-  const c = PIGGY_COLORS[variant];
+}: {
+  /** Pixel size of the square tile. */
+  size?: number;
+  className?: string;
+}) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 96 96"
+      viewBox="0 0 512 512"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden
     >
-      <path
-        d="M18 54 a6 6 0 1 1 -1.5 -9.5"
-        fill="none"
-        stroke={c.body}
-        strokeWidth="4.2"
-        strokeLinecap="round"
-      />
-      <rect x="29" y="70" width="10" height="14" rx="5" fill={c.body} />
-      <rect x="55" y="70" width="10" height="14" rx="5" fill={c.body} />
-      <ellipse cx="47" cy="56" rx="31" ry="25" fill={c.body} />
-      <rect x="70" y="47.5" width="20" height="17" rx="8.5" fill={c.body} />
-      <circle cx="81" cy="56" r="2.3" fill={c.detail} />
-      <circle cx="86.5" cy="56" r="2.3" fill={c.detail} />
-      <path d="M54 33.5 Q58 21.5 67 24.5 Q71.5 27.5 64.5 36 Z" fill={c.body} />
-      <circle cx="60.5" cy="49" r="3" fill={c.detail} />
-      <rect x="36" y="34" width="15" height="4.6" rx="2.3" fill={c.detail} />
-      <circle cx="43" cy="16.5" r="8.8" fill={c.coin} />
-      <rect x="41.2" y="11.8" width="3.6" height="9.4" rx="1.8" fill={c.slot} />
+      <g className="app-mark-light" dangerouslySetInnerHTML={{ __html: APP_MARK_LIGHT }} />
+      <g className="app-mark-dark" dangerouslySetInnerHTML={{ __html: APP_MARK_DARK }} />
     </svg>
   );
 }

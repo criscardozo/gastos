@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 
 import { useAuth, useLocale, ackNewPeriod } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
-import { GoogleG, PiggyMark } from "@/components/brand";
+import { AppMark, GoogleG } from "@/components/brand";
 import { AmountInput } from "@/components/ui/amount-input";
 import { MAX_HOUSEHOLD_NAME_CHARACTERS } from "@/lib/limits";
 import { Segmented } from "@/components/ui/segmented";
@@ -79,9 +79,10 @@ function LoginStep() {
 
   return (
     <div className="flex w-full max-w-[380px] flex-col items-center">
-      <div className="mb-6 flex h-[88px] w-[88px] items-center justify-center rounded-[28px] bg-accent shadow-[0_12px_28px_rgba(255,92,57,.35)]">
-        <PiggyMark size={64} variant="cream" />
-      </div>
+      <AppMark
+        size={88}
+        className="mb-6 drop-shadow-[0_10px_22px_rgba(36,26,16,.18)]"
+      />
       {/* From the messages, like the sidebar. Typed in, this was the last
           place the old two-word name survived: it was split across a `<br />`,
           so searching for it as one string found nothing. See

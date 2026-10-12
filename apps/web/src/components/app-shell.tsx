@@ -11,7 +11,7 @@ import { Onboarding } from "@/components/onboarding/onboarding";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { StartPeriodScreen } from "@/components/start-period-screen";
-import { PiggyMark } from "@/components/brand";
+import { AppMark } from "@/components/brand";
 
 function LoadingScreen() {
   return (
@@ -19,9 +19,10 @@ function LoadingScreen() {
       {/* The pulse stops for anyone who asked for less motion. This is the
           loading mark — the screen shown on EVERY cold start — which makes it
           the worst possible place for an animation that ignores the setting. */}
-      <div className="flex h-[64px] w-[64px] animate-pulse items-center justify-center rounded-[20px] bg-accent shadow-[0_12px_28px_rgba(255,92,57,.35)] motion-reduce:animate-none">
-        <PiggyMark size={44} variant="cream" />
-      </div>
+      <AppMark
+        size={64}
+        className="animate-pulse drop-shadow-[0_10px_22px_rgba(36,26,16,.18)] motion-reduce:animate-none"
+      />
     </div>
   );
 }
