@@ -314,6 +314,11 @@ struct Expense: Codable, Identifiable, Equatable {
     /// Filed from a charge rather than typed, by a rule or by hand.
     var isAutomatic: Bool { filedFromChargeId != nil }
 
+    /// Filed by a RULE, with nobody pressing anything — what "se cargó solo"
+    /// means. Narrower than `isAutomatic`, which also covers "Crear gasto" on
+    /// a charge: announcing those told you about expenses you had just typed.
+    var isFiledByRule: Bool { isAutomatic && autoRuleId != nil }
+
     /// The prefix filing puts on the expense id. The write side is
     /// `FirestoreService.autoExpenseId`; both must agree, which
     /// ModelDecodingTests checks.

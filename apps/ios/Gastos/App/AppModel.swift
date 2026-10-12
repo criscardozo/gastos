@@ -253,7 +253,7 @@ final class AppModel {
     func markBankAlertsSeen() {
         BankAlerts.markSeen(
             chargeIds: BankChargeInbox.partition(bankCharges, now: Date()).pending.map(\.id),
-            expenseIds: currentExpenses.compactMap { $0.expense.isAutomatic ? $0.expense.id : nil }
+            expenseIds: currentExpenses.compactMap { $0.expense.isFiledByRule ? $0.expense.id : nil }
         )
     }
 

@@ -12,6 +12,11 @@ import Foundation
 /// - **No baseline, no announcement.** The first time a device ever looks, it
 ///   records everything and says nothing. Turning the alerts on must not dump
 ///   the last fifty charges on the lock screen.
+/// - **Only a run starts the baseline.** The open app marks what it showed,
+///   but it shows less than a run reads — one period against the run's 45
+///   days — so a baseline it started covered a fraction of the window, and
+///   the first run announced the rest: 44 "filed itself" banners on the phone,
+///   for expenses that were weeks old.
 /// - **Bounded.** The list keeps the most recent `cap` ids; an id old enough to
 ///   fall off is long out of the bank's window, which is capped at 50.
 enum NotificationLedger {
@@ -31,10 +36,12 @@ enum NotificationLedger {
     }
 
     /// Record `ids` as seen without announcing anything — what the app does
-    /// while it is open, and what starts the baseline when alerts are turned on.
-    static func marking(_ ids: [String], seen: [String]?, cap: Int = NotificationLedger.cap) -> [String] {
-        let known = Set(seen ?? [])
-        return bounded((seen ?? []) + unique(ids).filter { !known.contains($0) }, cap: cap)
+    /// while it is open. Nil while there is no baseline yet: the first run
+    /// takes it, over the whole window it reads.
+    static func marking(_ ids: [String], seen: [String]?, cap: Int = NotificationLedger.cap) -> [String]? {
+        guard let seen else { return nil }
+        let known = Set(seen)
+        return bounded(seen + unique(ids).filter { !known.contains($0) }, cap: cap)
     }
 
     private static func unique(_ ids: [String]) -> [String] {

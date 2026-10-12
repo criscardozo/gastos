@@ -139,18 +139,15 @@ enum BankAlerts {
     // MARK: What the open app has shown
 
     /// Records ids as seen without announcing them — called as the app goes to
-    /// the background with whatever it had on screen. Also what starts the
-    /// baseline, so turning the alerts on never replays the backlog.
+    /// the background with whatever it had on screen. Never starts the
+    /// baseline (see NotificationLedger): the first run does, silently.
     static func markSeen(chargeIds: [String], expenseIds: [String]) {
         let defaults = UserDefaults.standard
-        defaults.set(
-            NotificationLedger.marking(chargeIds, seen: defaults.stringArray(forKey: chargesKey)),
-            forKey: chargesKey
-        )
-        defaults.set(
-            NotificationLedger.marking(expenseIds, seen: defaults.stringArray(forKey: expensesKey)),
-            forKey: expensesKey
-        )
+        for (key, ids) in [(chargesKey, chargeIds), (expensesKey, expenseIds)] {
+            if let seen = NotificationLedger.marking(ids, seen: defaults.stringArray(forKey: key)) {
+                defaults.set(seen, forKey: key)
+            }
+        }
     }
 
     // MARK: The run
@@ -215,7 +212,7 @@ enum BankAlerts {
             let filedChargeIds = Set(filedNow.compactMap { FirestoreService.chargeId(fromAutoExpense: $0.id) })
             let newCharges = pending.filter { !filedChargeIds.contains($0.id) }
             var automatic = filedNow
-            for expense in expenses where expense.isAutomatic {
+            for expense in expenses where expense.isFiledByRule {
                 guard let id = expense.id, !automatic.contains(where: { $0.id == id }) else { continue }
                 automatic.append(Filed(id: id, note: expense.note, amountCents: expense.amountCents))
             }

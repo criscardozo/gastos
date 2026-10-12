@@ -298,6 +298,12 @@ extension ModelDecodingTests {
 
         // Crucially, with no autoRuleId — the case that was broken.
         XCTAssertNil(filed.autoRuleId)
+        // Filed from a charge by hand is not "se cargó solo": the alerts
+        // announced 44 of these at once.
+        XCTAssertFalse(filed.isFiledByRule)
+
+        filed.autoRuleId = "rule-opal"
+        XCTAssertTrue(filed.isFiledByRule)
     }
 
     func testTypedExpenseIsNotAutomatic() {
@@ -307,6 +313,9 @@ extension ModelDecodingTests {
         typed.id = "7ZqK1mN0pQ"
         XCTAssertNil(typed.filedFromChargeId)
         XCTAssertFalse(typed.isAutomatic)
+        // A rule id alone, without the id a filing derives, is not a filing.
+        typed.autoRuleId = "rule-opal"
+        XCTAssertFalse(typed.isFiledByRule)
     }
 
     /// The write side builds the id from `Expense.autoPrefix` rather than
