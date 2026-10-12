@@ -4192,6 +4192,57 @@
         }
       }
     },
+    "settings.bankAlerts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank alerts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avisos del banco"
+          }
+        }
+      }
+    },
+    "settings.bankAlerts.foot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When a charge arrives or an expense files itself. iOS decides when to check, so they can be late, and none arrive if you swiped the app closed."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando llega un cargo o se carga un gasto solo. iOS decide cuándo revisar, así que pueden tardar, y no llegan si cerraste la app deslizándola."
+          }
+        }
+      }
+    },
+    "settings.bankAlerts.lastRun": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last check: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última revisión: %@"
+          }
+        }
+      }
+    },
     "signing.banner.body": {
       "extractionState": "manual",
       "localizations": {
@@ -5949,6 +6000,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "Resumen siguiente"
+          }
+        }
+      }
+    },
+    "alerts.charge.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank charge"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargo del banco"
+          }
+        }
+      }
+    },
+    "alerts.charges.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d new bank charges"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d cargos nuevos del banco"
+          }
+        }
+      }
+    },
+    "alerts.filed.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filed automatically"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se cargó solo"
+          }
+        }
+      }
+    },
+    "alerts.filed.many": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d expenses filed automatically"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d gastos se cargaron solos"
           }
         }
       }

@@ -243,6 +243,20 @@ final class AppModel {
         shared?.selectedTab = .history
     }
 
+    /// Jump to Tarjetas — where a tapped credit-card charge alert lands.
+    static func requestCards() {
+        shared?.selectedTab = .cards
+    }
+
+    /// Hands BankAlerts what this session had on screen, so the background
+    /// refresh does not announce a charge or an expense somebody already saw.
+    func markBankAlertsSeen() {
+        BankAlerts.markSeen(
+            chargeIds: BankChargeInbox.partition(bankCharges, now: Date()).pending.map(\.id),
+            expenseIds: currentExpenses.compactMap { $0.expense.isAutomatic ? $0.expense.id : nil }
+        )
+    }
+
     let googleSignInConfigured = AuthService.isGoogleSignInConfigured
 
     // MARK: Services & listeners

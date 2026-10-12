@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseCore
+import UserNotifications
 
 @main
 struct GastosApp: App {
@@ -11,7 +12,13 @@ struct GastosApp: App {
         // Must run before any Firestore/Auth usage.
         FirestoreService.configureEmulatorsIfRequested()
         AuthService.configureGoogleSignIn()
-        _model = State(initialValue: AppModel())
+        let model = AppModel()
+        _model = State(initialValue: model)
+        // Both before launch finishes: iOS refuses a background-task handler
+        // registered later, and a notification tapped from a cold start is
+        // delivered to whichever delegate is set by then.
+        BankAlerts.register(firestore: model.firestore)
+        UNUserNotificationCenter.current().delegate = NotificationRouter.shared
     }
 
     var body: some Scene {
@@ -31,8 +38,17 @@ struct GastosApp: App {
                     }
                     _ = AuthService.handle(url: url)
                 }
-                .onAppear { model.start() }
+                .onAppear {
+                    model.start()
+                    BankAlerts.runForEmulatorIfRequested(firestore: model.firestore)
+                }
                 .onChange(of: scenePhase) { _, phase in
+                    if phase == .background {
+                        // What was on screen is not news; ask iOS for the
+                        // next background look.
+                        model.markBankAlertsSeen()
+                        BankAlerts.schedule()
+                    }
                     guard phase == .active else { return }
                     // iOS 18 Control (widget process) left a launch request.
                     if QuickEntryBridge.consumePending() {

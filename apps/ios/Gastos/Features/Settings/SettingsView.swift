@@ -19,6 +19,8 @@ struct SettingsView: View {
     @State private var reminderEnabled = ReminderService.isEnabled
     @State private var reminderTime = SettingsView.storedReminderTime()
     @State private var reminderDenied = false
+    // Bank alerts (per-device preference; see BankAlerts).
+    @State private var bankAlertsEnabled = BankAlerts.isEnabled
 
     private var l10n: L10n { model.l10n }
 
@@ -102,6 +104,22 @@ struct SettingsView: View {
                     }
                 } else {
                     ReminderService.disable()
+                }
+            }
+        }
+        .onChange(of: bankAlertsEnabled) { _, enabled in
+            Task {
+                if enabled {
+                    if await BankAlerts.enable() {
+                        reminderDenied = false
+                        // Start from what is on screen now, not the backlog.
+                        model.markBankAlertsSeen()
+                    } else {
+                        bankAlertsEnabled = false
+                        reminderDenied = true
+                    }
+                } else {
+                    BankAlerts.disable()
                 }
             }
         }
@@ -481,6 +499,8 @@ struct SettingsView: View {
                     appearanceRow
                     Divider().overlay(Theme.separator)
                     reminderRows
+                    Divider().overlay(Theme.separator)
+                    bankAlertsRow
                 }
             }
             if reminderDenied {
@@ -513,6 +533,48 @@ struct SettingsView: View {
             )
         }
         .padding(.vertical, 13)
+    }
+
+    /// Bank alerts: a charge arrived, an expense filed itself (per-device).
+    private var bankAlertsRow: some View {
+        AdaptiveRow {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(l10n.t("settings.bankAlerts"))
+                    .appFont(14.5, .semibold)
+                    .foregroundStyle(Theme.ink)
+                // Says how late they can be: iOS decides when the app may
+                // look, and a promise of "instant" would be a lie.
+                Text(l10n.t("settings.bankAlerts.foot"))
+                    .appFont(11.5)
+                    .foregroundStyle(Theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                // When iOS last let the app look. Without it, "no alerts" can
+                // mean nothing new or a phone that never woke the app — and
+                // only this line tells them apart.
+                if bankAlertsEnabled, let last = BankAlerts.lastRunAt {
+                    Text(l10n.t("settings.bankAlerts.lastRun", lastRunText(last)))
+                        .appFont(11.5, .semibold)
+                        .foregroundStyle(Theme.inkSecondary)
+                }
+            }
+            AdaptiveGap()
+            Toggle("", isOn: $bankAlertsEnabled)
+                .labelsHidden()
+                .tint(Theme.green)
+                .accessibilityLabel(l10n.t("settings.bankAlerts"))
+        }
+        .padding(.vertical, 13)
+    }
+
+    /// "hoy 11:47" / "12 oct 09:10", in the device's own clock — this is
+    /// about when THIS phone looked, not about the household's calendar.
+    private func lastRunText(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = l10n.locale
+        formatter.doesRelativeDateFormatting = true
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 
     /// Daily reminder toggle + hour picker (local notification, per-device).

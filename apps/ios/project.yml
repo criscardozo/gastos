@@ -96,6 +96,14 @@ targets:
           - UIInterfaceOrientationPortrait
         UIAppFonts:
           - Outfit-Variable.ttf
+        # Bank alerts (Services/BankAlerts.swift): the app wakes itself to look
+        # for new charges, because push needs a paid Apple team and a server.
+        # Background modes are an Info.plist key, not an entitlement, so the
+        # free team can ship them.
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - dev.cardozo.gastos.refresh
         # Google Sign-In configuration — must match CLIENT_ID /
         # REVERSED_CLIENT_ID in Resources/GoogleService-Info.plist.
         # Copied from CLIENT_ID in Resources/GoogleService-Info.plist, and it

@@ -567,13 +567,65 @@ final class FirestoreService {
     /// changes (last month on Servicios), where a listener would keep paying
     /// for nothing. Bounded by date like every expense query. Throws on a
     /// failed read, which is not an empty month.
-    func fetchExpenses(householdId: String, startDate: String, endDate: String) async throws -> [Expense] {
+    func fetchExpenses(
+        householdId: String, startDate: String, endDate: String,
+        source: FirestoreSource = .default
+    ) async throws -> [Expense] {
         let snapshot = try await db.collection("households").document(householdId)
             .collection("expenses")
             .whereField("date", isGreaterThanOrEqualTo: startDate)
             .whereField("date", isLessThanOrEqualTo: endDate)
-            .getDocuments()
+            .getDocuments(source: source)
         return snapshot.documents.compactMap { Self.decode($0, as: Expense.self, in: "expenses") }
+    }
+
+    // MARK: One-shot reads for the background refresh
+    //
+    // The same documents and the same bounded queries the listeners use, read
+    // ONCE: the refresh runs for a few seconds while the app is not on screen,
+    // and a listener there would be one nobody removes. Each throws on a failed
+    // read, so "could not ask" never reads as "nothing new".
+    //
+    // `.server`, not the default: measured in the Simulator, a backgrounded
+    // app's client counts itself offline and the default source quietly
+    // answers from the cache — a charge added a few seconds earlier simply was
+    // not in the list, and the run announced nothing. From the server or not
+    // at all.
+
+    func fetchUserProfile(uid: String) async throws -> UserProfile? {
+        let snapshot = try await db.collection("users").document(uid).getDocument(source: .server)
+        guard snapshot.exists else { return nil }
+        return Self.decode(snapshot, as: UserProfile.self, in: "users/\(uid)")
+    }
+
+    func fetchHousehold(id: String) async throws -> Household? {
+        let snapshot = try await db.collection("households").document(id).getDocument(source: .server)
+        guard snapshot.exists else { return nil }
+        return Self.decode(snapshot, as: Household.self, in: "households/\(id)")
+    }
+
+    /// Same window as listenBankCharges: the newest 50, oldest first.
+    func fetchBankCharges(householdId: String) async throws -> [BankCharge] {
+        let snapshot = try await db.collection("households").document(householdId)
+            .collection("bankCharges")
+            .order(by: "date", descending: true)
+            .limit(to: 50)
+            .getDocuments(source: .server)
+        return snapshot.documents.compactMap {
+            Self.decode($0, as: BankCharge.self, with: .estimate, in: "bankCharges")
+        }.reversed()
+    }
+
+    /// Same window as listenRecurringRules.
+    func fetchRecurringRules(householdId: String) async throws -> [RecurringRuleDoc] {
+        let snapshot = try await db.collection("households").document(householdId)
+            .collection("recurringRules")
+            .order(by: "pattern")
+            .limit(to: 50)
+            .getDocuments(source: .server)
+        return snapshot.documents.compactMap {
+            Self.decode($0, as: RecurringRuleDoc.self, in: "recurringRules")
+        }
     }
 
     /// When the Gmail ingestion last finished a run, or nil when it has never
