@@ -319,9 +319,16 @@ enum BankAlerts {
 
 /// Where a tapped notification takes you, and what happens to one that
 /// arrives while the app is open.
-/// `@unchecked Sendable`: it holds no state at all, and the system calls it
-/// from its own queue.
-final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
+///
+/// On the main actor, with the completion-handler forms rather than the
+/// `async` ones. The `async` forms ran off the main thread (this type was
+/// nonisolated), so the system's completion handler ran there too — and on a
+/// tap UIKit answers it by taking the app's snapshot, which asserts it is on
+/// the main thread. Tapping any alert killed the app (SIGABRT in
+/// `_performBlockAfterCATransactionCommitSynchronizes`). The system calls a
+/// notification delegate on the main thread, so this is where it already was.
+@MainActor
+final class NotificationRouter: NSObject, @preconcurrency UNUserNotificationCenterDelegate {
     static let shared = NotificationRouter()
 
     /// Not shown while the app is open: the charge or the expense is already
@@ -329,23 +336,23 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate, @unc
     /// was a delegate at all, which is also what the daily reminder relied on.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        []
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([])
     }
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
-        let route = response.notification.request.content.userInfo["route"] as? String
-        await MainActor.run {
-            switch route {
-            case "cargos": AppModel.requestBankCharges()
-            case "tarjetas": AppModel.requestCards()
-            case "historial": AppModel.requestHistory()
-            default: break
-            }
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        switch response.notification.request.content.userInfo["route"] as? String {
+        case "cargos": AppModel.requestBankCharges()
+        case "tarjetas": AppModel.requestCards()
+        case "historial": AppModel.requestHistory()
+        default: break
         }
+        completionHandler()
     }
 }
