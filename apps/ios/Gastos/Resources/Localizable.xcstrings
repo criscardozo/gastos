@@ -6071,6 +6071,108 @@
           }
         }
       }
+    },
+    "payment.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved: %1$@ · %2$@ (%3$@)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargado: %1$@ · %2$@ (%3$@)"
+          }
+        }
+      }
+    },
+    "payment.savedOffline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved offline: %1$@ · %2$@ (%3$@). It goes up when the signal is back."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado sin conexión: %1$@ · %2$@ (%3$@). Se sube cuando vuelva la señal."
+          }
+        }
+      }
+    },
+    "payment.foreignCurrency": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: the payment was in %@ and the app only keeps AUD. Not saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: el pago fue en %@ y la app sólo lleva AUD. No se cargó."
+          }
+        }
+      }
+    },
+    "payment.notASpend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: the amount is not a spend (zero or a refund). Not saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: el monto no es un gasto (cero o devolución). No se cargó."
+          }
+        }
+      }
+    },
+    "payment.tooLarge": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: the amount is over the limit for one expense. Not saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: el monto supera el máximo de un gasto. No se cargó."
+          }
+        }
+      }
+    },
+    "payment.noCategory": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: the household has no active category. Not saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: el hogar no tiene ninguna categoría activa. No se cargó."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

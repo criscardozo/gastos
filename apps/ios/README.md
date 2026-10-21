@@ -70,6 +70,31 @@ Alternative wiring: create a plain Shortcut with "Open URL" →
 `gastos://nuevo` and assign that to Back Tap. Both paths open the same
 sheet; the intent also works via Siri ("Registrar gasto en Gastos").
 
+## Apple Pay → expense, with no tap
+
+A second App Intent, **Cargar pago** (`App/LogPaymentIntent.swift`), saves an
+expense WITHOUT opening the app, for Shortcuts' Transaction automation:
+
+1. Shortcuts → Automation → **+** → **Transaction** → pick the cards that
+   should count (the filter lives here, not in the app) → **Run Immediately**.
+2. Add the **Cargar pago** action and set **Monto** to the trigger's *Amount*
+   and **Comercio** to its *Merchant*.
+
+The note is the merchant (processor prefixes like `SQ *` dropped) and the
+category is wherever that same note was last filed, else "Otros" — the rules
+are in `Core/WalletPayment.swift`. A payment in another currency, a zero or a
+refund is refused, not converted. Each phone runs its own automation, so the
+expense is created by whoever paid.
+
+Do NOT point the automation at **Registrar gasto**: it opens the app, and iOS
+refuses to bring an app forward from an automation that fires over the Wallet
+sheet ("The request was denied by service delegate").
+
+In the Simulator, which has no Wallet: launch with
+`-useEmulators -devSignIn -gd-log-payment 7.98 AUD "SQ *BREADTOP"` and send the
+app to the background; it runs ~15 s later and leaves the result in the
+defaults under `logPayment.debugOutcome`.
+
 ## Firebase emulators
 
 Set the `USE_FIREBASE_EMULATORS` environment variable (e.g. to `1`) in the run

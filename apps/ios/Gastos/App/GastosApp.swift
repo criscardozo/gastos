@@ -41,6 +41,7 @@ struct GastosApp: App {
                 .onAppear {
                     model.start()
                     BankAlerts.runForEmulatorIfRequested(firestore: model.firestore)
+                    LogPaymentIntent.runForEmulatorIfRequested()
                 }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .background {

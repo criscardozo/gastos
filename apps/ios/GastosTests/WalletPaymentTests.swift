@@ -1,0 +1,80 @@
+import XCTest
+
+/// What the Shortcuts payment action decides on its own: the amount, the note
+/// and the category a person would otherwise have picked in the form.
+final class WalletPaymentTests: XCTestCase {
+    private func amount(_ text: String, _ code: String = "AUD") -> Result<Int, WalletPayment.Refusal> {
+        WalletPayment.amountCents(Decimal(string: text)!, currencyCode: code, householdCurrency: "AUD")
+    }
+
+    func testAmountsBecomeHouseholdCents() {
+        XCTAssertEqual(amount("7.98"), .success(798))
+        XCTAssertEqual(amount("40"), .success(4000))
+        // Rounded, not truncated: 0.005 is a fraction of a cent the bank
+        // never charges, but a Decimal that arrives as 12.345 must not lose one.
+        XCTAssertEqual(amount("12.345"), .success(1235))
+        XCTAssertEqual(amount("3.5", "aud"), .success(350))
+        XCTAssertEqual(amount("3.5", ""), .success(350), "a bare number is the household's currency")
+    }
+
+    func testRefusesWhatIsNotAnAudSpend() {
+        XCTAssertEqual(amount("10", "USD"), .failure(.foreignCurrency("USD")))
+        XCTAssertEqual(amount("0"), .failure(.notASpend))
+        XCTAssertEqual(amount("-12.50"), .failure(.notASpend))
+        XCTAssertEqual(amount("100000.01"), .failure(.tooLarge))
+        XCTAssertEqual(amount("100000"), .success(Limits.maxExpenseAmountCents))
+    }
+
+    func testNoteIsTheShopWithoutTheProcessor() {
+        XCTAssertEqual(WalletPayment.note(forMerchant: "  SQ *BREADTOP TOWN HALL "), "Breadtop Town Hall")
+        XCTAssertEqual(WalletPayment.note(forMerchant: "ZLR*Cafe Lulu"), "Cafe Lulu")
+        XCTAssertEqual(WalletPayment.note(forMerchant: "Woolworths"), "Woolworths")
+        XCTAssertEqual(WalletPayment.note(forMerchant: String(repeating: "a", count: 300)).count, Limits.maxNoteCharacters)
+    }
+
+    private let categories: [String: Category] = [
+        "groceries": Category(key: "groceries", name: nil, icon: "x", color: "#000000", sortOrder: 0),
+        "coffee": Category(key: "coffee", name: nil, icon: "x", color: "#000000", sortOrder: 1),
+        "old": Category(key: nil, name: "Old", icon: "x", color: "#000000", sortOrder: 2, archived: true),
+        "other": Category(key: "other", name: nil, icon: "x", color: "#000000", sortOrder: 9),
+    ]
+
+    private func expense(_ note: String, _ categoryId: String, _ date: String) -> Expense {
+        Expense(amountCents: 100, categoryId: categoryId, note: note, date: date, createdBy: "u")
+    }
+
+    func testCategoryFollowsTheLastTimeThisShopWasFiled() {
+        let history = [
+            expense("Breadtop", "groceries", "2026-09-01"),
+            expense("breadtop", "coffee", "2026-10-01"),
+            expense("Woolworths", "groceries", "2026-10-02"),
+        ]
+        XCTAssertEqual(
+            WalletPayment.categoryId(forNote: "Breadtop", expenses: history, categories: categories),
+            .success("coffee")
+        )
+    }
+
+    func testCategoryFallsBackToOther() {
+        let history = [expense("Breadtop", "old", "2026-10-01")]
+        XCTAssertEqual(
+            WalletPayment.categoryId(forNote: "Breadtop", expenses: history, categories: categories),
+            .success("other"),
+            "an archived category takes nothing new"
+        )
+        XCTAssertEqual(
+            WalletPayment.categoryId(forNote: "Nuevo", expenses: [], categories: categories),
+            .success("other")
+        )
+        var noOther = categories
+        noOther["other"] = nil
+        XCTAssertEqual(
+            WalletPayment.categoryId(forNote: "Nuevo", expenses: [], categories: noOther),
+            .success("groceries")
+        )
+        XCTAssertEqual(
+            WalletPayment.categoryId(forNote: "Nuevo", expenses: [], categories: [:]),
+            .failure(.noCategory)
+        )
+    }
+}

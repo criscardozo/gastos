@@ -592,14 +592,14 @@ final class FirestoreService {
     // not in the list, and the run announced nothing. From the server or not
     // at all.
 
-    func fetchUserProfile(uid: String) async throws -> UserProfile? {
-        let snapshot = try await db.collection("users").document(uid).getDocument(source: .server)
+    func fetchUserProfile(uid: String, source: FirestoreSource = .server) async throws -> UserProfile? {
+        let snapshot = try await db.collection("users").document(uid).getDocument(source: source)
         guard snapshot.exists else { return nil }
         return Self.decode(snapshot, as: UserProfile.self, in: "users/\(uid)")
     }
 
-    func fetchHousehold(id: String) async throws -> Household? {
-        let snapshot = try await db.collection("households").document(id).getDocument(source: .server)
+    func fetchHousehold(id: String, source: FirestoreSource = .server) async throws -> Household? {
+        let snapshot = try await db.collection("households").document(id).getDocument(source: source)
         guard snapshot.exists else { return nil }
         return Self.decode(snapshot, as: Household.self, in: "households/\(id)")
     }
@@ -816,7 +816,63 @@ final class FirestoreService {
         // same doc instead of creating a duplicate.
         let collection = db.collection("households").document(householdId).collection("expenses")
         let document = expenseId.map { collection.document($0) } ?? collection.document()
-        let data: [String: Any] = [
+        let data = Self.newExpenseData(
+            uid: uid, amountCents: amountCents, categoryId: categoryId, note: note, date: date
+        )
+        document.setData(data, completion: reportingCompletion())
+    }
+
+    /// `createExpense` for a caller with no screen to come back to: the
+    /// Shortcuts payment action, which runs in the background and is
+    /// suspended the moment it returns. A fire-and-forget write there would
+    /// sit in the local cache until the app is next opened, so this waits for
+    /// the server — up to `timeout`, because offline it would wait forever.
+    ///
+    /// True when the server confirmed it; false when it is only saved locally
+    /// and will go up with the next sync. Throws when the server refused it.
+    func createExpenseConfirmed(
+        householdId: String, uid: String, amountCents: Int, categoryId: String,
+        note: String, date: String, timeout: Duration
+    ) async throws -> Bool {
+        let document = db.collection("households").document(householdId)
+            .collection("expenses").document()
+        let data = Self.newExpenseData(
+            uid: uid, amountCents: amountCents, categoryId: categoryId, note: note, date: date
+        )
+        // Whichever comes first — the server's answer or the timeout — settles
+        // it; the other finds it settled. Both run on the main actor (the SDK
+        // calls back on the main queue), so the flag needs no lock.
+        let settled = Settled()
+        return try await withCheckedThrowingContinuation { continuation in
+            document.setData(data) { error in
+                MainActor.assumeIsolated {
+                    guard settled.claim() else { return }
+                    if let error { continuation.resume(throwing: error) } else { continuation.resume(returning: true) }
+                }
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: timeout)
+                guard settled.claim() else { return }
+                continuation.resume(returning: false)
+            }
+        }
+    }
+
+    @MainActor
+    private final class Settled {
+        private var done = false
+        /// True for the first caller only.
+        func claim() -> Bool {
+            defer { done = true }
+            return !done
+        }
+    }
+
+    /// The fields of a new hand-typed expense — exactly what the rules accept.
+    private static func newExpenseData(
+        uid: String, amountCents: Int, categoryId: String, note: String, date: String
+    ) -> [String: Any] {
+        [
             "amountCents": amountCents,
             "categoryId": categoryId,
             "note": note,
@@ -829,7 +885,6 @@ final class FirestoreService {
             "createdAt": FieldValue.serverTimestamp(),
             "updatedAt": FieldValue.serverTimestamp(),
         ]
-        document.setData(data, completion: reportingCompletion())
     }
 
     func updateExpense(
