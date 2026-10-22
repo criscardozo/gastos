@@ -4,6 +4,27 @@ Decidido por Cristian el 22/10/2026: no va a haber tantas apps como se pensaba,
 así que lo compartido deja de tener sentido como repo aparte. Gastos se queda
 con todo lo que usa de kyber, y Stock con lo suyo en su propio repo.
 
+## Estado: ejecutado el 22/10/2026
+
+Decisiones de Cristian: **archivar** kyber, **Stock después**, **eliminar**
+`stack.json`. Fases 1–3 y 5 hechas; la 4 (Stock) queda para cuando se retome.
+
+- **1** `b99f87e` — mudanza sin cambios de comportamiento. Los 90 tests de los
+  scripts son los mismos 90 (los otros 10 de kyber eran sobre kyber); dos
+  backups de producción, uno con cada script, difieren sólo en `exportedAt`;
+  el emisor de tokens coincide en las 93 y da rojo con un token mutado.
+- **2** `cf7099e` — submódulo fuera. `claude-imports.test.ts` y la mitad de
+  `project-id.test.ts` que quedó, cada una vista en rojo con una mutación.
+  Verificado en un clon limpio: install, typecheck, lint, web (565), scripts,
+  tokens, reglas (125), ingesta (32), build + `verify:pwa` (5/5) e iOS (214).
+- `dd7f8bc` — los comentarios y mensajes de los scripts dejan de hablar de
+  kyber y sus «consumidores» (`ScriptError`, `project.mjs`).
+- **3** — launchd apuntado a `scripts/backup.mjs` y disparado a mano: escribió
+  el dump. `my-apps-backups` corre `pnpm backup`/`pnpm rules:drift` (`fcb8e3a`),
+  Stock tiene el alias `rules:drift` (`0c05390`), y un run disparado a mano
+  respaldó las dos apps. Primer deploy de Vercel sin submódulo: sin `Warning:`.
+- **5** — kyber archivado en GitHub.
+
 Escrito sobre `7ed9f15` (v1.11.1) con kyber en `ba20713`. Está pensado para un
 agente **sin el contexto de la conversación que lo originó**. Leé antes:
 `CLAUDE.md`, `docs/reglas.md` y `kyber/docs/guardas.md` — mientras todavía

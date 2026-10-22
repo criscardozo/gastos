@@ -700,9 +700,11 @@ claves de este proyecto, que es lo que no viaja:
   pasó la facturación, encontró que `pnpm/action-setup` buscaba la versión de
   pnpm en la raíz equivocada y se arregló ahí mismo (`fa376bf`). El launchd de
   abajo queda cargado como respaldo extra; Cristian dijo que con el de GitHub
-  no hace falta revisarlo, y su log tiene el último backup el 17/9 — si se lo
-  necesitara, hay que investigar por qué dejó de disparar. Lo que sigue es su
-  historia.
+  no hace falta revisarlo. Su log (medido el 22/10/2026) tiene corridas el
+  16/9 y el 17/9 y después ninguna hasta el 22/10, que falló por un timeout de
+  Firestore (`UNAVAILABLE ECONNRESET`); disparado a mano ese mismo día con
+  `launchctl kickstart`, escribió el dump. Por qué no disparó en el medio no
+  está investigado. Lo que sigue es su historia.
 - **El backup semanal lo corre un launchd de esta máquina desde el 15/9/2026**,
   `~/Library/LaunchAgents/dev.cardozo.gastos.backup.plist`, jueves 06:00, log en
   `~/Library/Logs/gastos-backup.log`. No se sumó al de Actions: lo **reemplaza**
