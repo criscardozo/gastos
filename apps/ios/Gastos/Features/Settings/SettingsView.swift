@@ -21,6 +21,8 @@ struct SettingsView: View {
     @State private var reminderDenied = false
     // Bank alerts (per-device preference; see BankAlerts).
     @State private var bankAlertsEnabled = BankAlerts.isEnabled
+    // Diagnostic record of the Shortcuts payment action (see PaymentRunLog).
+    @State private var paymentRuns = PaymentRunLog()
 
     private var l10n: L10n { model.l10n }
 
@@ -61,12 +63,16 @@ struct SettingsView: View {
                 recurringSection
                 householdSection
                 signOutRow
+                paymentRunsSection
                 aboutSection
             }
             .padding(.horizontal, 20)
             .padding(.top, 6)
             .padding(.bottom, 24)
         }
+        // Re-read on every visit: the action writes from the background while
+        // this screen may already exist.
+        .onAppear { paymentRuns = PaymentRunLog.load(from: .standard) }
         .background(Theme.bg.ignoresSafeArea())
         .statusBarScrim()
         .sheet(isPresented: $showDefaultAmountSheet) {
@@ -822,6 +828,58 @@ struct SettingsView: View {
     }
 
     // MARK: About
+
+    // MARK: Payments from Shortcuts (diagnostic)
+
+    private var paymentRunsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionLabel(text: l10n.t("paymentRuns.title"))
+                .padding(.horizontal, 4)
+            Card {
+                VStack(alignment: .leading, spacing: 0) {
+                    if paymentRuns.entries.isEmpty {
+                        Text(l10n.t("paymentRuns.empty"))
+                            .appFont(13.5)
+                            .foregroundStyle(Theme.inkSecondary)
+                            .padding(.vertical, 13)
+                    }
+                    ForEach(Array(paymentRuns.entries.enumerated()), id: \.element.id) { index, run in
+                        paymentRunRow(run)
+                        if index < paymentRuns.entries.count - 1 {
+                            Divider().overlay(Theme.separator)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.top, 10)
+    }
+
+    /// Shows what Shortcuts handed over verbatim, so an empty or odd value is
+    /// visible as such rather than formatted into something plausible.
+    private func paymentRunRow(_ run: PaymentRunLog.Entry) -> some View {
+        let missing = l10n.t("paymentRuns.missing")
+        let outcome: String = switch run.outcome {
+        case PaymentRunLog.running: l10n.t("paymentRuns.running")
+        case "saved": l10n.t("paymentRuns.saved")
+        case "savedOffline": l10n.t("paymentRuns.savedOffline")
+        default: run.outcome
+        }
+        return VStack(alignment: .leading, spacing: 3) {
+            Text(run.startedAt.formatted(.dateTime.day().month().hour().minute().second().locale(l10n.locale)))
+                .appFont(11.5)
+                .foregroundStyle(Theme.inkTertiary)
+            Text("\(run.amount ?? missing) \(run.currency ?? "") · \(run.merchant ?? missing)")
+                .appFont(13.5, .semibold)
+                .foregroundStyle(Theme.ink)
+            Text(outcome)
+                .appFont(12.5)
+                .foregroundStyle(Theme.inkSecondary)
+                .textSelection(.enabled)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 11)
+    }
 
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 8) {

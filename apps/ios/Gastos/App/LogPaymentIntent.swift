@@ -21,11 +21,15 @@ struct LogPaymentIntent: AppIntent {
     )
     static let openAppWhenRun = false
 
+    // Both optional on purpose: a required parameter that arrives empty makes
+    // iOS cancel the run before `perform` is called, which leaves nothing
+    // behind to say what Wallet handed over. Optional, the run reaches
+    // `perform`, is written to `PaymentRunLog`, and refuses with a reason.
     @Parameter(title: "Monto")
-    var amount: IntentCurrencyAmount
+    var amount: IntentCurrencyAmount?
 
     @Parameter(title: "Comercio")
-    var merchant: String
+    var merchant: String?
 
     static var parameterSummary: some ParameterSummary {
         Summary("Cargar \(\.$amount) de \(\.$merchant)")
@@ -38,6 +42,34 @@ struct LogPaymentIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        // Written before anything can fail, so a run that iOS cuts short still
+        // shows up — as "running".
+        let run = PaymentRunLog.Entry(
+            id: UUID(), startedAt: Date(),
+            amount: amount.map { "\($0.amount)" }, currency: amount?.currencyCode,
+            merchant: merchant, outcome: PaymentRunLog.running
+        )
+        Self.record { $0.start(run) }
+        do {
+            let (dialog, outcome) = try await file()
+            Self.record { $0.finish(run.id, outcome: outcome) }
+            return .result(dialog: dialog)
+        } catch {
+            Self.record { $0.finish(run.id, outcome: "error: \(String(describing: error))") }
+            throw error
+        }
+    }
+
+    @MainActor
+    private static func record(_ change: (inout PaymentRunLog) -> Void) {
+        var log = PaymentRunLog.load(from: .standard)
+        change(&log)
+        log.save(to: .standard)
+    }
+
+    /// The payment filed as an expense; the dialog and the outcome to record.
+    @MainActor
+    private func file() async throws -> (IntentDialog, String) {
         // The app's init configures Firebase before any intent runs; this is
         // only for a launch that somehow skipped it, where configuring twice
         // would trap.
@@ -52,6 +84,7 @@ struct LogPaymentIntent: AppIntent {
               let household = try await firestore.fetchHousehold(id: householdId, source: .default)
         else { throw Failure.noHousehold }
         let l10n = L10n.resolve(userLanguage: profile.language)
+        guard let amount else { throw Failure.noAmount(l10n) }
 
         let cents: Int
         switch WalletPayment.amountCents(
@@ -62,7 +95,7 @@ struct LogPaymentIntent: AppIntent {
         }
 
         let today = PeriodLogic.todayInTimezone(Date(), household.timeZone)
-        let note = WalletPayment.note(forMerchant: merchant)
+        let note = WalletPayment.note(forMerchant: merchant ?? "")
         // No history is not a reason to lose the payment: it goes in "other".
         let history = (try? await firestore.fetchExpenses(
             householdId: householdId,
@@ -82,7 +115,10 @@ struct LogPaymentIntent: AppIntent {
         let category = household.categories[categoryId].map(l10n.categoryName) ?? ""
         let money = MoneyFormatter.aud(cents, locale: l10n.locale)
         let key = confirmed ? "payment.saved" : "payment.savedOffline"
-        return .result(dialog: IntentDialog(stringLiteral: l10n.t(key, money, note, category)))
+        return (
+            IntentDialog(stringLiteral: l10n.t(key, money, note, category)),
+            confirmed ? "saved" : "savedOffline"
+        )
     }
 
     /// Emulator-only: `-gd-log-payment <amount> <currency> <merchant>` runs
@@ -119,12 +155,15 @@ struct LogPaymentIntent: AppIntent {
     enum Failure: Error, CustomLocalizedStringResourceConvertible {
         case signedOut
         case noHousehold
+        case noAmount(L10n)
         case refused(WalletPayment.Refusal, L10n)
 
         var localizedStringResource: LocalizedStringResource {
             switch self {
             case .signedOut: return "Gastos: iniciá sesión en la app para cargar pagos."
             case .noHousehold: return "Gastos: no encontré tu hogar. Abrí la app una vez con conexión."
+            case .noAmount(let l10n):
+                return LocalizedStringResource(stringLiteral: l10n.t("payment.noAmount"))
             case .refused(let refusal, let l10n):
                 switch refusal {
                 case .foreignCurrency(let code):
