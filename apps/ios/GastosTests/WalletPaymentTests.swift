@@ -25,6 +25,48 @@ final class WalletPaymentTests: XCTestCase {
         XCTAssertEqual(amount("100000"), .success(Limits.maxExpenseAmountCents))
     }
 
+    private func parsed(_ text: String) -> String {
+        switch WalletPayment.parseAmount(text) {
+        case .success(let value): "\(value.amount) \(value.currencyCode)"
+        case .failure(let refusal): "\(refusal)"
+        }
+    }
+
+    func testReadsAmountsAsShortcutsWritesThem() {
+        // The forms the Transaction trigger's Amount can take as text, and the
+        // usual ways a person types one.
+        XCTAssertEqual(parsed("$12.00"), "12 ", "a bare $ is the household's currency")
+        XCTAssertEqual(parsed("A$12.00"), "12 AUD")
+        XCTAssertEqual(parsed("12.00 AUD"), "12 AUD")
+        XCTAssertEqual(parsed("AUD 8.53"), "8.53 AUD")
+        XCTAssertEqual(parsed("12"), "12 ")
+        XCTAssertEqual(parsed("12,50"), "12.5 ", "a comma with cents is the decimal mark")
+        XCTAssertEqual(parsed("1,234.56"), "1234.56 ")
+        XCTAssertEqual(parsed("1.234,56"), "1234.56 ")
+        XCTAssertEqual(parsed("1,234"), "1234 ", "three digits after a lone comma are thousands")
+        XCTAssertEqual(parsed("1.050"), "1050 ")
+        XCTAssertEqual(parsed(" $8.53\n"), "8.53 ")
+    }
+
+    func testKeepsTheCurrencySoAForeignPaymentIsRefused() {
+        XCTAssertEqual(parsed("US$8.53"), "8.53 USD")
+        XCTAssertEqual(parsed("USD 8.53"), "8.53 USD")
+        XCTAssertEqual(parsed("€5"), "5 EUR")
+        XCTAssertEqual(parsed("£5.20"), "5.2 GBP")
+        guard case .success(let usd) = WalletPayment.parseAmount("USD 8.53") else { return XCTFail() }
+        XCTAssertEqual(
+            WalletPayment.amountCents(usd.amount, currencyCode: usd.currencyCode, householdCurrency: "AUD"),
+            .failure(.foreignCurrency("USD"))
+        )
+    }
+
+    func testRefundsReadAsNegativeAndTextWithoutDigitsIsRefused() {
+        XCTAssertEqual(parsed("-$12.00"), "-12 ")
+        XCTAssertEqual(parsed("($12.00)"), "-12 ")
+        XCTAssertEqual(parsed(""), "unreadable(\"\")")
+        XCTAssertEqual(parsed("Amount"), "unreadable(\"Amount\")")
+    }
+
     func testNoteIsTheShopWithoutTheProcessor() {
         XCTAssertEqual(WalletPayment.note(forMerchant: "  SQ *BREADTOP TOWN HALL "), "Breadtop Town Hall")
         XCTAssertEqual(WalletPayment.note(forMerchant: "ZLR*Cafe Lulu"), "Cafe Lulu")

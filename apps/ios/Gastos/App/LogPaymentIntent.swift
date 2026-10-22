@@ -25,8 +25,14 @@ struct LogPaymentIntent: AppIntent {
     // iOS cancel the run before `perform` is called, which leaves nothing
     // behind to say what Wallet handed over. Optional, the run reaches
     // `perform`, is written to `PaymentRunLog`, and refuses with a reason.
+    //
+    // The amount is TEXT, not a currency amount: Shortcuts could not turn the
+    // Transaction trigger's Amount into an `IntentCurrencyAmount` and passed
+    // it empty (23/10/2026, the first real tap), while the merchant — text —
+    // arrived. Any variable becomes text, and `WalletPayment.parseAmount`
+    // reads it, currency included.
     @Parameter(title: "Monto")
-    var amount: IntentCurrencyAmount?
+    var amount: String?
 
     @Parameter(title: "Comercio")
     var merchant: String?
@@ -46,7 +52,7 @@ struct LogPaymentIntent: AppIntent {
         // shows up — as "running".
         let run = PaymentRunLog.Entry(
             id: UUID(), startedAt: Date(),
-            amount: amount.map { "\($0.amount)" }, currency: amount?.currencyCode,
+            amount: amount, currency: nil,
             merchant: merchant, outcome: PaymentRunLog.running
         )
         Self.record { $0.start(run) }
@@ -84,11 +90,18 @@ struct LogPaymentIntent: AppIntent {
               let household = try await firestore.fetchHousehold(id: householdId, source: .default)
         else { throw Failure.noHousehold }
         let l10n = L10n.resolve(userLanguage: profile.language)
-        guard let amount else { throw Failure.noAmount(l10n) }
+        guard let amount, !amount.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw Failure.noAmount(l10n)
+        }
 
+        let parsed: (amount: Decimal, currencyCode: String)
+        switch WalletPayment.parseAmount(amount) {
+        case .success(let value): parsed = value
+        case .failure(let refusal): throw Failure.refused(refusal, l10n)
+        }
         let cents: Int
         switch WalletPayment.amountCents(
-            amount.amount, currencyCode: amount.currencyCode, householdCurrency: household.currency
+            parsed.amount, currencyCode: parsed.currencyCode, householdCurrency: household.currency
         ) {
         case .success(let value): cents = value
         case .failure(let refusal): throw Failure.refused(refusal, l10n)
@@ -130,11 +143,11 @@ struct LogPaymentIntent: AppIntent {
     static func runForEmulatorIfRequested() {
         let args = CommandLine.arguments
         guard FirestoreService.emulatorsRequested,
-              let flag = args.firstIndex(of: "-gd-log-payment"), args.count > flag + 3,
-              let value = Decimal(string: args[flag + 1])
+              let flag = args.firstIndex(of: "-gd-log-payment"), args.count > flag + 3
         else { return }
         let intent = LogPaymentIntent()
-        intent.amount = IntentCurrencyAmount(amount: value, currencyCode: args[flag + 2])
+        // Amount and currency joined into the text Shortcuts would pass.
+        intent.amount = "\(args[flag + 1]) \(args[flag + 2])".trimmingCharacters(in: .whitespaces)
         intent.merchant = args[flag + 3]
         let hold = UIApplication.shared.beginBackgroundTask()
         Task {
@@ -174,6 +187,8 @@ struct LogPaymentIntent: AppIntent {
                     return LocalizedStringResource(stringLiteral: l10n.t("payment.tooLarge"))
                 case .noCategory:
                     return LocalizedStringResource(stringLiteral: l10n.t("payment.noCategory"))
+                case .unreadable(let text):
+                    return LocalizedStringResource(stringLiteral: l10n.t("payment.unreadableAmount", text))
                 }
             }
         }

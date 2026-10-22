@@ -21,6 +21,66 @@ enum WalletPayment {
         case tooLarge
         /// The household has no category an expense may go in.
         case noCategory
+        /// Text that holds no amount this can read; carries the text verbatim.
+        case unreadable(String)
+    }
+
+    /// An amount as Shortcuts hands it over: text.
+    ///
+    /// The action first took a currency amount, and Shortcuts could not turn
+    /// the Transaction trigger's Amount into one — the first real tap, on
+    /// 23/10/2026, arrived with the merchant and an EMPTY amount. Text is the
+    /// one type Shortcuts can make of any variable, so the amount is read here
+    /// instead: "$12.00", "A$12.00", "12.00 AUD", "AUD 12", "12,50",
+    /// "1,234.56", "1.234,56". A currency code or symbol is kept so a foreign
+    /// payment is refused rather than filed as AUD; "$" alone is the
+    /// household's own currency, which is what an Australian card shows.
+    static func parseAmount(_ raw: String) -> Result<(amount: Decimal, currencyCode: String), Refusal> {
+        let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let upper = text.uppercased()
+        var code = ""
+        if let match = upper.range(of: #"\b[A-Z]{3}\b"#, options: .regularExpression) {
+            code = String(upper[match])
+        } else if upper.contains("US$") {
+            code = "USD"
+        } else if upper.contains("A$") {
+            code = "AUD"
+        } else if upper.contains("€") {
+            code = "EUR"
+        } else if upper.contains("£") {
+            code = "GBP"
+        }
+        let negative = text.contains("-") || text.contains("−") || (text.contains("(") && text.contains(")"))
+        let number = text.filter { $0.isASCII && ($0.isNumber || $0 == "." || $0 == ",") }
+        guard number.contains(where: \.isNumber) else { return .failure(.unreadable(raw)) }
+
+        // Which mark is the decimal one. Both present: the last. Only one: a
+        // decimal mark when it appears once with one or two digits after it,
+        // otherwise thousands ("1,234", "1.050").
+        let lastDot = number.lastIndex(of: "."), lastComma = number.lastIndex(of: ",")
+        let decimalMark: Character?
+        switch (lastDot, lastComma) {
+        case let (dot?, comma?): decimalMark = dot > comma ? "." : ","
+        case let (dot?, nil): decimalMark = isDecimal(number, at: dot) ? "." : nil
+        case let (nil, comma?): decimalMark = isDecimal(number, at: comma) ? "," : nil
+        case (nil, nil): decimalMark = nil
+        }
+        var plain = ""
+        for character in number {
+            if character.isNumber { plain.append(character) }
+            else if character == decimalMark { plain.append(".") }
+        }
+        guard var value = Decimal(string: plain, locale: Locale(identifier: "en_US_POSIX")) else {
+            return .failure(.unreadable(raw))
+        }
+        if negative { value = -value }
+        return .success((value, code))
+    }
+
+    private static func isDecimal(_ number: String, at index: String.Index) -> Bool {
+        let mark = number[index]
+        let after = number[number.index(after: index)...]
+        return number.filter { $0 == mark }.count == 1 && (1...2).contains(after.count)
     }
 
     /// The amount in household cents. An empty currency code is taken as the

@@ -6191,6 +6191,23 @@
         }
       }
     },
+    "payment.unreadableAmount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: could not read the amount \"%@\". Not saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: no entendí el monto «%@». No se cargó."
+          }
+        }
+      }
+    },
     "paymentRuns.title": {
       "extractionState": "manual",
       "localizations": {
