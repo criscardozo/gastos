@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * `.kyber/config.json` is what the shared scripts read instead of holding
+ * `scripts/project.json` is what the shared scripts read instead of holding
  * this project's constants themselves.
  *
  * Three projects on the same stack (Gastos, Stock, and a third) had drifted
@@ -26,7 +26,7 @@ import { join } from "node:path";
 describe("the kyber consumer config", () => {
   const ROOT = join(import.meta.dirname, "../../../..");
   const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
-  const config = JSON.parse(read(".kyber/config.json"));
+  const config = JSON.parse(read("scripts/project.json"));
 
   it("is checked out at all", () => {
     // Everything below reads files inside the submodule, and a missing
@@ -123,8 +123,8 @@ describe("the kyber consumer config", () => {
       "firebaseDir",
       "rulesTestsDir",
     ]) {
-      expect(config[key], `.kyber/config.json has no ${key}`).toBeTypeOf("string");
-      expect(config[key], `.kyber/config.json has an empty ${key}`).not.toBe("");
+      expect(config[key], `scripts/project.json has no ${key}`).toBeTypeOf("string");
+      expect(config[key], `scripts/project.json has an empty ${key}`).not.toBe("");
     }
   });
 

@@ -26,25 +26,24 @@ pnpm workspaces for the JS side (web + rules-tests). Swift and TS share no code 
 > — are collected in [`docs/reglas.md`](docs/reglas.md). This section stays the
 > authoritative short form for the technical ones.
 
-The ones that are not specific to this project live in the `kyber` submodule,
-shared with its sibling projects, and are imported here rather than restated —
-a second copy of a rule is a rule that can disagree with itself. If these read
-as missing, the submodule is not checked out (`git submodule update --init`);
-`apps/web/src/lib/kyber.test.ts` is what notices, because a broken import here
-fails silently.
+The general working rules live in `docs/reglas/` and are imported here rather
+than restated — a second copy of a rule is a rule that can disagree with
+itself. They used to be shared with sibling projects through the kyber
+submodule, retired on 2026-10-22. A broken import here fails silently, so
+`apps/web/src/lib/claude-imports.test.ts` checks that each one resolves.
 
-@kyber/docs/publicar.md
-@kyber/docs/costo-cero.md
-@kyber/docs/idiomas.md
-@kyber/docs/firestore-free-tier.md
-@kyber/docs/codigo.md
-@kyber/docs/secretos.md
-@kyber/docs/versiones.md
+@docs/reglas/publicar.md
+@docs/reglas/costo-cero.md
+@docs/reglas/idiomas.md
+@docs/reglas/firestore-free-tier.md
+@docs/reglas/codigo.md
+@docs/reglas/secretos.md
+@docs/reglas/versiones.md
 
-One more shared doc is deliberately NOT imported, because it is ~65k characters
+One more rules doc is deliberately NOT imported, because it is ~65k characters
 and would sit in every session: **before writing or changing a test, a guard, a
 generator or any check — and before reporting something as verified — read
-[`kyber/docs/guardas.md`](kyber/docs/guardas.md)** ("verificar, no suponer").
+[`docs/reglas/guardas.md`](docs/reglas/guardas.md)** ("verificar, no suponer").
 
 - **$0 infra budget** — see the imported `costo-cero`. For this project that means Firebase Spark (never Cloud Functions: they require Blaze) and Vercel Hobby.
 - **No custom backend.** Both clients talk directly to Firebase (Auth + Firestore). **Firestore security rules are the only security boundary** — client-side route gating is cosmetic.
@@ -70,9 +69,9 @@ All JS commands run from the repo root (pnpm workspace):
 - **Servicios is a register of rules; the money lives in `expenses`.** A charged service is an ordinary expense in the `services` category whose note is the service's name — the screen links the two by that name (nothing stored) and offers to move the rule onto whatever was actually charged. The two figures at the top are this month's: what it costs, and how much has landed.
 - `/datos` is a GRID first: the range's expenses on screen with the export's own columns, sortable and filterable, and every export writes exactly what is on screen in that order. Importing a CSV lives in **Ajustes** (`components/import-expenses.tsx`) — it is the one control on either screen that writes rows.
 - Exports live in `apps/web/src/lib/export/`: `pdf.ts` (jsPDF) and `spreadsheet.ts` (exceljs) render the SAME payload, so Excel/Sheets mirror the PDF. Every export carries both money columns (AUD + the bank's USD, blank when unverified) and a range with unverified expenses is only exported after the consent checkbox is ticked; `drive.ts` uploads the workbook to Drive converted to a Google Sheet (needs the Drive API enabled — see `docs/setup.md`). Both libraries are dynamically imported to stay out of the first-load bundle.
-- `pnpm verify:pwa` — PWA smoke check (service worker + offline cold start), shared (`kyber/scripts/verify-pwa.mjs`); the port, routes and on-screen strings it looks for are the `pwa` block of `.kyber/config.json`. Needs a PRODUCTION build already serving: `pnpm build && pnpm --filter web exec next start -p 3112` — against `next dev` the worker never registers and it passes without testing anything.
+- `pnpm verify:pwa` — PWA smoke check (service worker + offline cold start) (`scripts/verify-pwa.mjs`); the port, routes and on-screen strings it looks for are the `pwa` block of `scripts/project.json`. Needs a PRODUCTION build already serving: `pnpm build && pnpm --filter web exec next start -p 3112` — against `next dev` the worker never registers and it passes without testing anything.
 - `pnpm test:rules` — Firestore rules tests. Picks a FREE port rather than
-  insisting on one (`kyber/scripts/run-rules-tests.mjs`, shared) — it tries the
+  insisting on one (`scripts/run-rules-tests.mjs`) — it tries the
   project's own port first and falls back only if it is taken, because on this
   machine a port is often held by a Docker stack or a leftover emulator and the
   failure read as a broken test run. Pin one with `FIRESTORE_EMULATOR_PORT`.

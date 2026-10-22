@@ -11,10 +11,10 @@ contains everything those files say. Wired into CI and the pre-push hook, so
 the two can never drift.
 
 The walking-the-document, spelling-a-value, rewrite-in-place and verify/write
-machinery lives in `kyber/design/tokens.py` — Stock had written the same thing
-independently, down to the same reasoning in the comments, once its own
-emitter existed. What stays HERE, because it is this project's own shape and
-not the other's:
+machinery lives in `tokens.py` beside this file. It used to be shared with
+Stock through a separate repo — Stock had written the same thing
+independently, down to the same reasoning in the comments. What stays HERE,
+because it is this project's own shape rather than the general machinery:
 
   - CSS omits a dark declaration entirely when it repeats the light one
     (`--accent`, `--warn`, `--over`, `--over-text` never appear in either dark
@@ -34,10 +34,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[0]
 
-sys.path.insert(0, str(REPO / "kyber" / "design"))
-import tokens as kyber_tokens  # noqa: E402
+sys.path.insert(0, str(ROOT))
+import tokens as token_tools  # noqa: E402
 
-TOKENS = kyber_tokens.load(ROOT / "tokens.json")
+TOKENS = token_tools.load(ROOT / "tokens.json")
 CSS = REPO / "apps/web/src/app/globals.css"
 SWIFT = REPO / "apps/ios/Gastos/Design/Theme.swift"
 # The widget is a THIRD copy of these values and was outside the generator, so
@@ -104,8 +104,8 @@ def css_declarations(name: str, entry: dict) -> list[str]:
     if entry.get("$type") != "color":
         return []
     css_name = f"--{name}"
-    lv = kyber_tokens.css_value(entry["$value"]["light"])
-    dv = kyber_tokens.css_value(entry["$value"]["dark"])
+    lv = token_tools.css_value(entry["$value"]["light"])
+    dv = token_tools.css_value(entry["$value"]["dark"])
     light_line = f"  {css_name}: {lv};"
     if dv == lv:
         return [light_line]
@@ -146,13 +146,13 @@ def radius_declarations(name: str, entry: dict) -> list[str]:
 
 
 DESTINATIONS = [
-    kyber_tokens.Destination(CSS, css_declarations, css_pattern, label="globals.css"),
-    kyber_tokens.Destination(SWIFT, swift_declarations(SWIFT, "Color.hex"),
+    token_tools.Destination(CSS, css_declarations, css_pattern, label="globals.css"),
+    token_tools.Destination(SWIFT, swift_declarations(SWIFT, "Color.hex"),
                               swift_pattern("Color.hex"), label="Theme.swift"),
-    kyber_tokens.Destination(WIDGET, swift_declarations(WIDGET, "Color.widgetHex"),
+    token_tools.Destination(WIDGET, swift_declarations(WIDGET, "Color.widgetHex"),
                               swift_pattern("Color.widgetHex"), label="WidgetTheme.swift"),
-    kyber_tokens.Block(SWIFT, radius_declarations,
-                       "// kyber:radius start", "// kyber:radius end",
+    token_tools.Block(SWIFT, radius_declarations,
+                       "// tokens:radius start", "// tokens:radius end",
                        label="Theme.swift (radios)"),
 ]
 
@@ -196,7 +196,7 @@ def coverage() -> list[str]:
 
 
 def verify() -> int:
-    code = kyber_tokens.verify(TOKENS, DESTINATIONS, GROUPS)
+    code = token_tools.verify(TOKENS, DESTINATIONS, GROUPS)
     if code != 0:
         return code
     off = coverage()
@@ -221,10 +221,10 @@ def main() -> int:
         print(usage_line)
         return 0
     if "--write" in args:
-        return kyber_tokens.write(TOKENS, DESTINATIONS, GROUPS)
+        return token_tools.write(TOKENS, DESTINATIONS, GROUPS)
     if "--verify" in args:
         return verify()
-    return kyber_tokens.show(TOKENS, DESTINATIONS, GROUPS)
+    return token_tools.show(TOKENS, DESTINATIONS, GROUPS)
 
 
 if __name__ == "__main__":

@@ -11,14 +11,16 @@
     "test:web": "pnpm --filter web test",
     "test:rules": "pnpm --filter rules-tests test",
     "test:ingest": "pnpm --filter gmail-bank-ingest test",
-    "verify:pwa": "node kyber/scripts/verify-pwa.mjs",
+    "verify:pwa": "node scripts/verify-pwa.mjs",
     "emulators": "firebase emulators:start --config firebase/firebase.json --project qcris-gastos-diarios",
     "seed:emulator": "node scripts/seed-emulator.mjs",
-    "backup": "node kyber/scripts/backup.mjs",
-    "restore": "node kyber/scripts/restore.mjs",
+    "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs",
     "periods:check": "node scripts/check-periods.mjs",
-    "version:set": "node kyber/scripts/set-version.mjs",
-    "install:ios": "node kyber/scripts/install-ios.mjs"
+    "version:set": "node scripts/set-version.mjs",
+    "install:ios": "node scripts/install-ios.mjs",
+    "rules:drift": "node scripts/check-rules-drift.mjs",
+    "test:scripts": "node --test 'scripts/test/*.test.mjs' && python3 -m unittest discover -q -s design-system -p 'test_*.py'"
   },
   "devDependencies": {
     "firebase-admin": "^14.4.0"

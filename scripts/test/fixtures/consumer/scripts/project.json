@@ -1,0 +1,9 @@
+{
+  "name": "fixture",
+  "projectId": "fixture-project",
+  "rulesTestsProjectId": "demo-fixture",
+  "emulatorProjectId": "fixture-project",
+  "firebaseDir": "firebase",
+  "rulesTestsDir": "firebase/rules-tests",
+  "somethingForALaterBatch": { "kept": true }
+}

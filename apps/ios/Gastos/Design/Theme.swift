@@ -172,12 +172,12 @@ enum Theme {
     /// The markers are placed by hand, once, because where generated code goes
     /// is a decision. Do not delete them: the emitter fails rather than
     /// guessing where the block belongs.
-    // kyber:radius start
+    // tokens:radius start
     static let card: CGFloat = 18
     static let notice: CGFloat = 12
     static let field: CGFloat = 10
     static let sheet: CGFloat = 24
-    // kyber:radius end
+    // tokens:radius end
 }
 
 // MARK: - Outfit font

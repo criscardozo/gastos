@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import rules from "../../kyber/firebase/vitest-rules.mjs";
+import rules from "./vitest-rules.mjs";
 
 // The settings every consumer's rules suite shares — sequential files, and
 // the timeouts — live in kyber so the sibling projects cannot drift. This

@@ -32,7 +32,7 @@ describe("the app version", () => {
    * shared script reads them, not a second list beside it. Two lists of target
    * names is the shape this whole file exists to complain about.
    */
-  const IOS_TARGETS: string[] = JSON.parse(read(".kyber/config.json")).iosTargets;
+  const IOS_TARGETS: string[] = JSON.parse(read("scripts/project.json")).iosTargets;
 
   /** `{ Gastos: "1.1.0", ... }` — which target says what, not how many say it. */
   const IOS: Record<string, string> = (() => {

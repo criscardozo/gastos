@@ -57,13 +57,13 @@ describe("the Firebase project id", () => {
   it("is what the shared scripts are handed", () => {
     // The backup and restore that broke used to hold this id themselves. They
     // are shared with two sibling projects now and hold nobody's — they read
-    // `.kyber/config.json`, which is the one place this project states it.
+    // `scripts/project.json`, which is the one place this project states it.
     //
     // Still named on purpose rather than left to the sweep above: the sweep
     // only proves the WRONG id is absent, and an empty or missing config would
     // satisfy it perfectly while sending the Thursday backup nowhere.
-    const config = JSON.parse(readFileSync(join(ROOT, ".kyber/config.json"), "utf8"));
-    expect(config.projectId, ".kyber/config.json is what the scripts read").toBe(
+    const config = JSON.parse(readFileSync(join(ROOT, "scripts/project.json"), "utf8"));
+    expect(config.projectId, "scripts/project.json is what the scripts read").toBe(
       CORRECT,
     );
 
