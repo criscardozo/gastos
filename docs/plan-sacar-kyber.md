@@ -7,7 +7,8 @@ con todo lo que usa de kyber, y Stock con lo suyo en su propio repo.
 ## Estado: ejecutado el 22/10/2026
 
 Decisiones de Cristian: **archivar** kyber, **Stock después**, **eliminar**
-`stack.json`. Fases 1–3 y 5 hechas; la 4 (Stock) queda para cuando se retome.
+`stack.json`. Todas las fases hechas; la 4 la ejecutó la sesión de Stock el
+mismo día.
 
 - **1** `b99f87e` — mudanza sin cambios de comportamiento. Los 90 tests de los
   scripts son los mismos 90 (los otros 10 de kyber eran sobre kyber); dos
@@ -24,6 +25,11 @@ Decisiones de Cristian: **archivar** kyber, **Stock después**, **eliminar**
   Stock tiene el alias `rules:drift` (`0c05390`), y un run disparado a mano
   respaldó las dos apps. Primer deploy de Vercel sin submódulo: sin `Warning:`.
 - **5** — kyber archivado en GitHub.
+- **4** — Stock, en su propio repo: `b93e60c` (mudanza), `74a107d`
+  (submódulo fuera + guardas), `a52c818` (`ScriptError`/`project.mjs`),
+  publicado como Stock v1.0.1 (`548fac6`). Sus alias `backup` y `rules:drift`
+  apuntan a `scripts/`; el run 39780266371 de `my-apps-backups` respaldó las
+  dos apps en verde. Pendiente de su lado: instalar en el teléfono.
 
 Escrito sobre `7ed9f15` (v1.11.1) con kyber en `ba20713`. Está pensado para un
 agente **sin el contexto de la conversación que lo originó**. Leé antes:
