@@ -1,8 +1,7 @@
 import { defineConfig } from "vitest/config";
 import rules from "./vitest-rules.mjs";
 
-// The settings every consumer's rules suite shares — sequential files, and
-// the timeouts — live in kyber so the sibling projects cannot drift. This
-// suite used 20 s for a test until 2026-09-29; nothing recorded that as a
-// decision, so it took kyber's 30 s.
+// Sequential files and the timeouts live in vitest-rules.mjs. This suite used
+// 20 s for a test until 2026-09-29; nothing recorded that as a decision, so it
+// took the 30 s that file holds.
 export default defineConfig(rules);

@@ -9,7 +9,7 @@ import UIKit
 ///
 /// WHY LOCAL, AND WHY LATE. A real push needs APNs, which a free Apple team
 /// cannot use, and a server to send it, which on Firebase means Cloud
-/// Functions and the paid plan — both off the table (kyber/docs/costo-cero).
+/// Functions and the paid plan — both off the table (docs/reglas/costo-cero.md).
 /// So the app wakes itself with a background refresh, reads Firestore once,
 /// and posts a local notification. iOS decides when that refresh runs: often
 /// within the hour, sometimes much later, and never for an app the person

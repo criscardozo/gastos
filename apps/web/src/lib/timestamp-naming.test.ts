@@ -10,7 +10,7 @@ import { join } from "node:path";
  * `At`, and the value is a strict ISO instant. A timestamp field named
  * anything else survived the round trip as a STRING.
  *
- * `kyber/scripts/backup.mjs` tags the type now (`{"$timestamp": "..."}`), so
+ * `scripts/backup.mjs` tags the type now (`{"$timestamp": "..."}`), so
  * new dumps do not depend on this convention at all. This guard did not become
  * decorative, it changed what it protects: every dump taken between 17/7 and
  * 14/9 is still read back through the naming rule, and those are the only

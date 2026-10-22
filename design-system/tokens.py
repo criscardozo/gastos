@@ -33,7 +33,7 @@ not — a target that names none of the tokens yet — a `Block` owns the region
 between two anchors the consumer writes by hand, once, and replaces it whole:
 
     main(DOC, [
-        Block(SWIFT, radius_line, "// kyber:radius start", "// kyber:radius end"),
+        Block(SWIFT, radius_line, "// tokens:radius start", "// tokens:radius end"),
     ], groups="radius")
 
 The two mix in one file. Blocks are written last and refuse the run if a
@@ -327,8 +327,8 @@ class Block:
     So this one owns a REGION instead of a set of declarations: everything
     between two anchors, which the consumer writes into the file by hand, once:
 
-        // kyber:radius start
-        // kyber:radius end
+        // tokens:radius start
+        // tokens:radius end
 
     Anchors rather than "append at the end of the enum" or "insert after the
     colours" because where generated code goes is a decision, and a decision

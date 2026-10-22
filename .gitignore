@@ -79,5 +79,5 @@ apps/ios/Gastos.xcodeproj/project.xcworkspace/xcshareddata/*
 apps/ios/Gastos.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
 !apps/ios/Gastos.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
-# Crash reports install-ios brings off the phone (kyber/scripts/install-ios.mjs).
+# Crash reports install-ios brings off the phone (scripts/install-ios.mjs).
 crash-logs/

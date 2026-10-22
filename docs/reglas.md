@@ -24,12 +24,12 @@ Decidido el 10 de septiembre de 2026, con 258 commits y ningún tag.
   falso que este archivo viene coleccionando. No hay a qué volver, así que no
   hay qué taggear.
 - **Qué significa cada número está en
-  [`kyber/docs/versiones.md`](../kyber/docs/versiones.md)** — sobre todo
+  [`docs/reglas/versiones.md`](reglas/versiones.md)** — sobre todo
   `major`, que acá no quiere decir "cambio grande" sino que un cliente viejo no
   puede seguir contra los datos nuevos. Vale igual para los tres proyectos:
   todos tienen un teléfono que puede quedarse atrás.
 - **La versión se mueve con `pnpm version:set <x.y.z>`, nunca a mano.** El
-  script es el compartido (`kyber/scripts/set-version.mjs`) y rechaza **antes
+  script es `scripts/set-version.mjs` y rechaza **antes
   de escribir** si falta un target de los nombrados, si uno no nombrado lleva
   versión, o si algún `CFBundleShortVersionString` es un literal. Vive en cuatro lugares que no se leen entre sí: el `package.json` de
   web (que `next.config.ts` publica como `NEXT_PUBLIC_APP_VERSION`, y se ve en
@@ -47,7 +47,7 @@ Decidido el 10 de septiembre de 2026, con 258 commits y ningún tag.
 
 > *"deja de asumir el deployar, solo deploya cuando te diga"*
 
-**La regla vive en [`kyber/docs/publicar.md`](../kyber/docs/publicar.md)**, que
+**La regla vive en [`docs/reglas/publicar.md`](reglas/publicar.md)**, que
 es la copia que comparten los tres proyectos, y desde el **14/9/2026** está al
 derecho: publicar está autorizado y lo que reemplaza al permiso es el backup
 previo cuando el cambio mueve mucho dato. Acá sólo lo que es de éste:
@@ -65,13 +65,13 @@ previo cuando el cambio mueve mucho dato. Acá sólo lo que es de éste:
 
 ## 2. Cero gastos, sin excepciones
 
-**Entera en [`kyber/docs/costo-cero.md`](../kyber/docs/costo-cero.md)** — no
+**Entera en [`docs/reglas/costo-cero.md`](reglas/costo-cero.md)** — no
 hay nada de este proyecto que agregarle. Lo más caro que se puede hacer sin
 darse cuenta es un runner que no sea Ubuntu.
 
 ## 3. Idiomas
 
-**La regla vive en [`kyber/docs/idiomas.md`](../kyber/docs/idiomas.md)**,
+**La regla vive en [`docs/reglas/idiomas.md`](reglas/idiomas.md)**,
 incluido el «nunca `Co-Authored-By: Claude`». Acá sólo lo de este proyecto:
 
 - Las dos apps se localizan en español e inglés (String Catalogs en iOS,
@@ -108,7 +108,7 @@ incluido el «nunca `Co-Authored-By: Claude`». Acá sólo lo de este proyecto:
 ## 5. Firestore: el free tier es parte del diseño
 
 **La regla vive en
-[`kyber/docs/firestore-free-tier.md`](../kyber/docs/firestore-free-tier.md)** —
+[`docs/reglas/firestore-free-tier.md`](reglas/firestore-free-tier.md)** —
 listeners acotados, `getDocs` para lo que se visita, no esperar la promesa de
 una escritura, y qué le pasa a los campos que una escritura parcial no nombra.
 
@@ -128,7 +128,7 @@ Acá, los casos concretos con los que se ganó cada una:
 
 ## 6. Código
 
-**Entera en [`kyber/docs/codigo.md`](../kyber/docs/codigo.md).** Los vectores
+**Entera en [`docs/reglas/codigo.md`](reglas/codigo.md).** Los vectores
 de este proyecto son `shared/period-test-vectors.json`,
 `shared/bank-match-vectors.json`, `shared/recurring-vectors.json` y
 `shared/service-name-vectors.json`; los corren las dos implementaciones, la de
@@ -140,7 +140,7 @@ Swift y la de TypeScript.
 > código en vez de medirlo.
 
 **Las formulaciones generales viven en
-[`kyber/docs/guardas.md`](../kyber/docs/guardas.md)**, y `CLAUDE.md` manda a
+[`docs/reglas/guardas.md`](reglas/guardas.md)**, y `CLAUDE.md` manda a
 leerlas antes de escribir o cambiar un test, una guarda o un chequeo (no las
 importa: son ~65k caracteres que irían en cada sesión).
 Lo que sigue acá son los **casos**: cada regla con el artefacto concreto que la
@@ -440,7 +440,7 @@ mirar.
   desconfiar.
 - **Y las dos que fallaron acá fueron las dos que no son código**: ese mismo
   `wait-on` y la CSP. La regla general —que ésas son las que se olvidan, y que
-  la lista hay que empezarla por ahí— vive en kyber, ganada también en Stock,
+  la lista hay que empezarla por ahí— vive en `docs/reglas/guardas.md`, ganada también en Stock,
   que sobre nueve copias falló en las mismas dos. Lo que queda acá es cuáles
   fueron las nuestras.
 - **Un fallback silencioso a "la primera cuenta" siembra el hogar para
@@ -584,7 +584,7 @@ mirar.
   describirlo —Firestore, `UIFontMetrics`, un forward de SSH, la caché
   optimista— y ninguna sobre su propio código. Acá el reparto es mitad y mitad:
   dos sobre herramientas (la caché de Firestore, la spec de CSP) y dos sobre
-  artefactos nuestros (el mensaje del runner de rules —hoy en kyber— y la
+  artefactos nuestros (el mensaje del runner de rules —hoy en `scripts/`— y la
   cabecera del spec).
   Así que la protección no es «desconfiá de lo que digas sobre una herramienta»:
   las dos nuestras eran datos que fueron ciertos y dejaron de serlo, que es un
@@ -644,17 +644,15 @@ mirar.
 
 ## 8. Secretos
 
-**La regla vive en [`kyber/docs/secretos.md`](../kyber/docs/secretos.md).** Las
+**La regla vive en [`docs/reglas/secretos.md`](reglas/secretos.md).** Las
 claves de este proyecto, que es lo que no viaja:
 
 - La del **backup** y la de la **ingesta de Gmail** son distintas a propósito,
   para poder revocar una sin romper la otra.
 - La ingesta pide permiso de Gmail **de sólo lectura** (`appsscript.json`).
-- **Ya no hace falta ninguna credencial para kyber.** Existió un
-  `KYBER_DEPLOY_KEY` de sólo lectura mientras el repo era privado; desde que es
-  público, `actions/checkout` lo trae con `submodules: true` y sin secret. El
-  secret y la deploy key quedan para borrar — una credencial que ya no se usa
-  sigue siendo una credencial.
+- **No queda ninguna credencial de kyber.** Hubo un `KYBER_DEPLOY_KEY` y una
+  deploy key mientras ese repo era privado; medido el 22/10/2026, día en que
+  kyber se retiró, ni gastos, ni stock, ni kyber tienen secrets o deploy keys.
 
 ## 9. La máquina de Cristian
 
@@ -687,10 +685,8 @@ claves de este proyecto, que es lo que no viaja:
   jobs se alinearon. Una divergencia anotada se cierra; una no anotada se
   discute desde cero cada vez que muerde.
 
-  Dos que sí se cierran de este lado y conviene cerrar cada vez: que `git -C
-  kyber status` esté limpio y el gitlink sea el sha commiteado —el submódulo
-  acá es un working tree en el que uno estuvo haciendo `checkout` a mano—, y
-  correr la suite bajo otro huso. Un test que ordena por fecha local pasa a
+  Una que sí se cierra de este lado y conviene cerrar cada vez: correr la
+  suite bajo otro huso. Un test que ordena por fecha local pasa a
   las 14:00 y falla a las 22:00, y eso después se llama flake: verificado hoy
   con `TZ=UTC`, `Pacific/Kiritimati` (+14), `Pacific/Midway` (-11) y Buenos
   Aires, 478 en verde en los cuatro.
@@ -746,7 +742,7 @@ claves de este proyecto, que es lo que no viaja:
   qué proceso es.
 - No dejar emuladores ni servidores de dev corriendo al terminar.
 - **Instalar la app SIEMPRE incluye renovar la firma**, y para eso está
-  `kyber/scripts/install-ios.mjs`: hace el procedimiento entero, así no depende de
+  `scripts/install-ios.mjs`: hace el procedimiento entero, así no depende de
   recordarlo. No es una decisión que se tome según cuánto quede — **mirar
   cuánto queda es justamente lo que lleva a saltearlo** ("quedan 23 horas,
   todavía anda"). Se fuerza, sin preguntar, en cada instalación.
@@ -860,29 +856,14 @@ claves de este proyecto, que es lo que no viaja:
   zsh. Se queda por ahora, pero su lugar es el repo `dotfiles` — vale para
   cualquier proyecto que se toque desde esta máquina y para ninguno en
   particular.
-- **Lo compartido con los proyectos hermanos vive en `kyber/docs/`** y se
-  importa desde `CLAUDE.md`. Una regla entra ahí cuando **se ganó en dos
-  proyectos**, no cuando suena general: sin ese filtro, en seis meses es una
-  lista de deseos.
-- **Pendiente de mudarse** (segunda tanda): el método de `design-system/emit.py` con
-  `tokens.json` partido —tipografía, radios y espaciados compartidos, la paleta
-  de cada app en su repo—, y la parte transferible de la sección 7. `set-version`
-  y `verify-pwa` **ya se mudaron**; `.githooks/pre-push` **no entra**: sólo
-  existe acá, así que está ganado en un proyecto y no en dos. De esa
-  sección viaja el método, no el caso: si al sacarle el artefacto concreto la
-  regla deja de decir algo, todavía no estaba lista para viajar. Por eso la
-  prosa compartida **no nombra un puerto**.
-- **`apps/web` ya puede consumir de kyber, y esa restricción duró una tarde.**
-  Vercel no clona un submódulo **privado** —lo dice su documentación y lo
-  medimos dos veces en deploys reales— y no falla: imprime una línea de
-  `Warning:` y sigue en verde sin el submódulo. Durante unas horas eso se
-  sostuvo con una guarda que impedía que algo del bundle alcanzara `kyber/`.
-  Kyber es público desde el 14/9/2026, así que la condición **se eliminó en vez
-  de vigilarse** y la guarda se borró con ella: una guarda que sobrevive a su
-  motivo enseña algo que ya no es cierto. De las tres salidas —leer el log,
-  guardar la condición, eliminarla— la última es la única que no depende de que
-  alguien se acuerde.
-- **`dates.ts` NO es candidato, y no por lo de arriba.** Nuestro `dates.ts` es
+- **Las reglas generales viven en `docs/reglas/`** y se importan desde
+  `CLAUDE.md`. Hasta el 22/10/2026 eran el repo **kyber**, compartido con los
+  proyectos hermanos por un submódulo; Cristian lo retiró porque no iba a
+  haber tantas apps como se pensaba, y Gastos se quedó con todo
+  (`docs/plan-sacar-kyber.md`). El repo quedó archivado, no borrado: los tags
+  hasta `v1.11.1` lo nombran en su gitlink, y borrarlo los dejaría sin poder
+  volver a esas versiones.
+- **`dates.ts` NO era candidato a compartirse con Stock.** Nuestro `dates.ts` es
   formateo; el de Stock, que se llama igual, es aritmética de calendario. Cero
   nombres exportados en común: son dos módulos distintos con el mismo nombre de
   archivo. Lo que sí se parece es nuestro `periods.ts` contra ese `dates.ts`

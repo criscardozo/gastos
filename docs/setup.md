@@ -282,7 +282,7 @@ the only security boundary here, so a fix that was written, merged and never
 deployed reads as done everywhere anyone would look.
 
 ```sh
-node kyber/scripts/check-rules-drift.mjs   # needs the same service-account key
+pnpm rules:drift   # needs the same service-account key
 ```
 
 It prints the serving ruleset and when it was released, or the first line that
@@ -292,9 +292,8 @@ workflow turns a drift into an email.
 ### Weekly, without a machine of your own
 
 **Not in this repo.** The weekly dump lives in the private
-`criscardozo/my-apps-backups`, which checks this repo out (with submodules, so
-it runs the kyber that THIS repo pins), takes the dump, commits it, and runs
-`check-rules-drift` alongside.
+`criscardozo/my-apps-backups`, which checks this repo out, runs its `pnpm backup`,
+commits the dump, and runs `pnpm rules:drift` alongside.
 
 It moved for one reason: a workflow artifact on a **public** repository is
 downloadable by anyone, and the key that takes a dump is a production admin
@@ -311,7 +310,7 @@ had were preserved into that repository before being deleted — verified by
 decoding each one, not by listing them: ten files, ten distinct hashes,
 document counts rising 32 → 119 with no gap. Eight of them predate the tagged
 dump format and need `restore.legacyIsoTimestamps`, which is why that path
-cannot be removed from kyber.
+cannot be removed from `scripts/restore.mjs`.
 
 ## Bank charge ingestion (Gmail → Firestore, free)
 

@@ -9,13 +9,12 @@
   cuelga de la raíz: `firebase/` (con `firebase.json`, `firestore.rules`,
   `firestore.indexes.json` y `rules-tests/`), `.github/workflows/`, `scripts/`,
   `docs/`, `shared/`, `design-system/` (los tokens y su emisor, que escriben en
-  más de un artefacto), `tools/` (lo que se corre a mano y no se despliega) y
-  el submódulo `kyber/`. La regla para decidir dónde va algo es de quién es, no
+  más de un artefacto), y `tools/` (lo que se corre a mano y no se
+  despliega). La regla para decidir dónde va algo es de quién es, no
   quién lo usa: las reglas de Firestore las usa la web y las prueba un runner,
   pero son del proyecto, así que están en la raíz.
   - **No hay `.firebaserc`** en ninguna de las dos. El proyecto se nombra en
-    `.kyber/config.json`, que es también de dónde lo leen los scripts
-    compartidos.
+    `scripts/project.json`, que es también de dónde lo leen los scripts.
   - **`firebase.json` va en `firebase/` mientras no haya Hosting, y a la raíz
     el día que lo haya.** No es un «depende»: es una restricción de la
     herramienta, con nombre. El CLI toma como *project directory* el
@@ -25,7 +24,7 @@
     (verificado en el código de `firebase-tools@15.30.0`, el que declara
     `stack.json`). Con el config en `firebase/` y la web en `apps/web/`, el
     `public` de Hosting sólo puede escribirse `../apps/web`, y eso no compila.
-    Hoy no muerde porque los dos consumidores sirven la web en otro lado y su
+    Hoy no muerde porque las dos apps sirven la web en otro lado y su
     `firebase.json` sólo tiene `firestore` y `emulators`, con rutas que apuntan
     **hacia abajo** (`firestore.rules`, sin prefijo). El día que alguien agregue
     un bloque `hosting`, lo único que sube es `firebase.json`; las reglas y los
@@ -53,7 +52,7 @@
   - La guarda **deriva** el valor esperado en vez de escribirlo. Escribirlo la
     convierte en la copia siguiente de la cadena que existe para sostener, y
     además seguiría pasando con todos los archivos mal de la misma manera.
-  - **Cada consumidor chequea la forma que tiene, no la del otro.** No es
+  - **Cada proyecto chequea la forma que tiene, no la del otro.** No es
     adorno: en un repo el `Info.plist` **copia** el valor y en el otro lo
     **interpola** desde una build setting, así que copiar la guarda del vecino
     afirma algo sobre un archivo que no lo contiene. El primer uso real de una

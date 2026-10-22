@@ -140,7 +140,8 @@ const COPIES: readonly (readonly [string, string, (t: string) => void])[] = [
     (t) => expect(t).toContain(`wait-on tcp:${AUTH} tcp:${FIRESTORE}`),
   ],
   // The restore script left this list on 14/9/2026: it moved to the shared
-  // `kyber/` submodule and reads the port out of firebase.json rather than
+  // kyber repo (back here in `scripts/` since 22/10/2026) and reads the port
+  // out of firebase.json rather than
   // repeating it, so it stopped being a copy. Recorded rather than silently
   // deleted — a list that shrinks with no reason attached looks exactly like
   // one somebody trimmed to make a test pass.

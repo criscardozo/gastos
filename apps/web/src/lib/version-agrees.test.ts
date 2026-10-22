@@ -16,7 +16,7 @@ import { join } from "node:path";
  * no version at all, because both screens answer confidently and a screenshot
  * of one says nothing about the other.
  *
- * Move them with `pnpm version:set <x.y.z>` (kyber/scripts/set-version.mjs),
+ * Move them with `pnpm version:set <x.y.z>` (scripts/set-version.mjs),
  * never by hand. That script refuses before writing anything if a named target
  * is missing, if an unnamed one carries a version, or if any plist key is a
  * literal — so the checks below are the ones a change can still walk past.

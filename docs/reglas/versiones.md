@@ -50,33 +50,13 @@
   rojo en **cada** commit de release en CI, que es la manera de que alguien la
   apague.
 
-- **La regla vive acá; implementarla es de cada consumidor.** La guarda tiene
-  que leer el `package.json` y el `project.yml` de su propio proyecto, así que
-  no puede vivir en un lugar que no los conoce. Kyber dice **qué** y **por
-  qué**; el consumidor que la implementa dice **dónde**. Ésa es la división en
-  todo lo que hay acá, no una excepción de esta regla.
+## Cuando una dependencia se mueve
 
-  Kyber mismo queda afuera: no declara versión y se consume por el sha exacto
-  que registra el gitlink del submódulo, así que no hay nada que taggear.
-
-## Cuando una dependencia declarada se mueve
-
-- **Un bump en una clave de `stack.json` es un cambio de tres repos, no de
-  uno.** El PR del bot no puede mergear solo aunque su diff sea correcto: la
-  guarda del consumidor compara contra kyber, así que mergear primero deja la
-  rama principal en rojo. El orden es **kyber, después cada consumidor** —el
-  valor y el gitlink en el mismo commit— y recién ahí el PR entra. Eso no es
-  una falla del proceso: es la guarda diciendo que la decisión es compartida.
-- **El PR del bot llega con el gitlink viejo.** Ramificó antes del último bump
-  del submódulo, así que mergearlo sin mirar **retrocede kyber** varios commits,
-  y su CI corrió contra esa versión vieja. Es de las que no cambian el color de
-  nada: el PR está verde por haber probado otra cosa. Antes de mergear, comparar
-  `git rev-parse HEAD:kyber` de la rama contra el de la principal.
 - **Restaurar la declaración no restaura la resolución.** Probar un major y
   volver atrás no es revertir: si se devuelve el manifiesto a su valor viejo y
   se corre `install`, el gestor **vuelve a resolver contra el registro de hoy**
   y las transitivas se mueven hacia adelante dentro de rangos que ya estaban
-  declarados. Medido en los dos consumidores: uno lo encontró al volver de un
+  declarados. Medido en dos proyectos: uno lo encontró al volver de un
   experimento —tres `resolution:` movidas, lockfile distinto— y el otro lo
   reprodujo a propósito para ver si le pasaba, con 15 inserciones y 21 borrados.
   Un experimento «revertido» que deja tres dependencias movidas es la versión
@@ -86,11 +66,10 @@
   la resolución no se toca.
 - **Ojo con el bump que no cambia nada.** Un rango `^24.13.3` ya admite
   `24.13.4`, así que mover el rango declarado no cambia qué se instala: mueve
-  la **intención** y arrastra tres repos por algo que el lockfile ya podía
-  hacer solo. Esa es la estrategia `increase` de Dependabot, que es su default
+  la **intención** por algo que el lockfile ya podía hacer solo. Esa es la estrategia `increase` de Dependabot, que es su default
   para aplicaciones. La documentación de GitHub define la alternativa así:
   `increase-if-necessary` — «deja el requisito de versión sin cambios si ya
   admite la nueva release (Dependabot igual actualiza la versión resuelta); si
   no, lo ensancha». Está soportada para `npm`. Con eso, un patch dentro del
-  rango mueve sólo el lockfile y `stack.json` no se entera, que es lo correcto:
-  la declaración es la intención y un patch no la cambia.
+  rango mueve sólo el lockfile, que es lo correcto: la declaración es la
+  intención y un patch no la cambia.

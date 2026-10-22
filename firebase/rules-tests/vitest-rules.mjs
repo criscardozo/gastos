@@ -1,11 +1,8 @@
-// The vitest settings every consumer's rules suite shares.
+// The vitest settings of the rules suite.
 //
-// A plain object with no imports, so it can be spread into the consumer's own
-// `defineConfig` without kyber resolving vitest itself:
-//
-//   import { defineConfig } from "vitest/config";
-//   import rules from "../../kyber/firebase/vitest-rules.mjs";
-//   export default defineConfig(rules);
+// A plain object with no imports, spread into `vitest.config.ts`'s
+// `defineConfig`. (It was written that way to be shared with sibling projects
+// through the retired kyber repo, which could not resolve vitest itself.)
 //
 // The emulator is a single shared instance, so the suites take turns instead
 // of racing each other's seed data: one file's `clearFirestore` must not wipe

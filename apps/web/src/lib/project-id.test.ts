@@ -8,8 +8,8 @@ import { join } from "node:path";
  *
  * It is permanent: renaming the app to Gastos renamed the display name, the
  * repo, the bundle ids and the Vercel project, and could not rename this. The
- * rebranding pass shortened it anyway in the backup and restore scripts (now
- * `kyber/scripts/`), and nothing noticed for two Thursdays — until the
+ * rebranding pass shortened it anyway in the backup and restore scripts (now in
+ * `scripts/`), and nothing noticed for two Thursdays — until the
  * weekly job failed with `Permission denied on resource project qcris-gastos`,
  * a project that does not exist.
  *
@@ -54,10 +54,9 @@ describe("the Firebase project id", () => {
     expect(wrong, `the project id is ${CORRECT}:\n${wrong.join("\n")}`).toEqual([]);
   });
 
-  it("is what the shared scripts are handed", () => {
-    // The backup and restore that broke used to hold this id themselves. They
-    // are shared with two sibling projects now and hold nobody's — they read
-    // `scripts/project.json`, which is the one place this project states it.
+  it("is what the scripts are handed", () => {
+    // The backup and restore that broke used to hold this id themselves. Now
+    // they read `scripts/project.json`, the one place this project states it.
     //
     // Still named on purpose rather than left to the sweep above: the sweep
     // only proves the WRONG id is absent, and an empty or missing config would
@@ -67,11 +66,23 @@ describe("the Firebase project id", () => {
       CORRECT,
     );
 
-    // And the scripts must not have grown their own copy back.
-    const inKyber = (() => {
+    // And the scripts that take it from the config must not have grown their
+    // own copy back. (`seed-emulator.mjs` and `check-periods.mjs` never read
+    // the config and name the id themselves; they are not on this list.)
+    const configured = [
+      "scripts/lib",
+      "scripts/backup.mjs",
+      "scripts/restore.mjs",
+      "scripts/check-rules-drift.mjs",
+      "scripts/run-rules-tests.mjs",
+      "scripts/set-version.mjs",
+      "scripts/install-ios.mjs",
+      "scripts/verify-pwa.mjs",
+    ];
+    const holding = (() => {
       try {
-        return execFileSync("git", ["grep", "-lI", "-e", "qcris-"], {
-          cwd: join(ROOT, "kyber"),
+        return execFileSync("git", ["grep", "--untracked", "-lI", "-e", "qcris-", "--", ...configured], {
+          cwd: ROOT,
           encoding: "utf8",
         })
           .split("\n")
@@ -80,9 +91,6 @@ describe("the Firebase project id", () => {
         return [];
       }
     })();
-    expect(
-      inKyber,
-      `kyber is shared by three projects and must be handed this id, not hold it`,
-    ).toEqual([]);
+    expect(holding, "these scripts must be handed the id, not hold it").toEqual([]);
   });
 });
