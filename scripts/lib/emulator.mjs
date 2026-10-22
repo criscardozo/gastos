@@ -1,8 +1,8 @@
-// The consumer's own Firestore emulator, as firebase.json declares it.
+// The project's own Firestore emulator, as firebase.json declares it.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { KyberError } from "./errors.mjs";
+import { ScriptError } from "./errors.mjs";
 
 /** The parsed firebase.json, which must declare a Firestore emulator port. */
 export function readFirebaseJson(firebaseDir) {
@@ -11,13 +11,13 @@ export function readFirebaseJson(firebaseDir) {
   try {
     config = JSON.parse(readFileSync(path, "utf8"));
   } catch (error) {
-    throw new KyberError(`Cannot read ${path}: ${error.message}`);
+    throw new ScriptError(`Cannot read ${path}: ${error.message}`);
   }
   const port = config?.emulators?.firestore?.port;
   if (!Number.isInteger(port)) {
-    throw new KyberError(
+    throw new ScriptError(
       `${path} has no "emulators.firestore.port".\n` +
-        "  kyber's scripts take the project's own emulator port from there, so\n" +
+        "  The scripts take the project's own emulator port from there, so\n" +
         "  that they never fall back to Firebase's default and talk to whatever\n" +
         "  happens to be listening on it. Add the block and pick a port.",
     );
@@ -25,7 +25,7 @@ export function readFirebaseJson(firebaseDir) {
   return { path, config, port };
 }
 
-/** `host:port` of the consumer's emulator, from firebase.json. */
+/** `host:port` of the project's emulator, from firebase.json. */
 export function emulatorHost(firebaseDir) {
   return `127.0.0.1:${readFirebaseJson(firebaseDir).port}`;
 }

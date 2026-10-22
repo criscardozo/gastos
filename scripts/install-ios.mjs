@@ -22,7 +22,7 @@
 //   3. The profiles go back when the build FAILS, and only then. After a
 //      success Xcode has already issued replacements under new filenames, so
 //      putting the old ones back restores nothing and piles up a dead set
-//      every run. Measured in a consumer: 12 profiles became 16 in two runs.
+//      every run. Measured: 12 profiles became 16 in two runs.
 //   4. It aborts when the freshly issued signature has under a day left, which
 //      is precisely what a silent non-renewal looks like from here.
 //   5. It compares what the built bundle will SHOW against what the project
@@ -34,7 +34,7 @@
 // at the first stage and still printed a plausible "non-zero exit, profiles
 // restored" for a build that had never run.
 //
-// Last run against a real phone: 15 September 2026, in a consumer with three
+// Last run against a real phone: 15 September 2026, in a project with three
 // projects' profiles on the machine. It set aside 3 of 13 — exactly that app's
 // — built, reissued a signature good for 6 days 23 hours, and the bundle
 // reported the same version the manifest declares. The first attempt failed at
@@ -45,7 +45,7 @@
 // time somebody ran it.
 //
 // After installing it brings the app's crash reports back off the phone into
-// <consumer>/crash-logs/ (gitignore it): a free-team sideload never reaches
+// <repo>/crash-logs/ (gitignore it): a free-team sideload never reaches
 // App Store Connect, so Xcode's Organizer collects nothing, and the install is
 // the one moment the phone is on a cable. Matched by the names in
 // `iosTargets` (or `iosScheme`). It never fails the install — that has
@@ -72,8 +72,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import { loadConsumer } from "./lib/consumer.mjs";
-import { KyberError, run } from "./lib/errors.mjs";
+import { loadProject } from "./lib/project.mjs";
+import { ScriptError, run } from "./lib/errors.mjs";
 import { belongsToApp, signingVerdict, versionVerdict } from "./lib/signing.mjs";
 import { crashLogsOf, crashSummary, listedPaths } from "./lib/crash-logs.mjs";
 
@@ -103,7 +103,7 @@ const sh = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: "utf8",
  * "could not look", and never throws: the install has already succeeded.
  */
 function pullCrashLogs(device, targets, root) {
-  const work = mkdtempSync(join(tmpdir(), "kyber-crashes-"));
+  const work = mkdtempSync(join(tmpdir(), "gastos-crashes-"));
   try {
     const listingFile = join(work, "listing.json");
     sh("xcrun", [
@@ -169,7 +169,7 @@ function readProfile(path) {
 }
 
 async function main() {
-  const { root, config, dir } = loadConsumer({ required: ["bundleId", "iosScheme"] });
+  const { root, config, dir } = loadProject({ required: ["bundleId", "iosScheme"] });
   const iosDir = config.iosDir ? dir("iosDir") : join(root, "apps", "ios");
   const manifest = config.webManifest
     ? dir("webManifest")
@@ -181,7 +181,7 @@ async function main() {
   const flag = argv.indexOf("--device");
   const device = flag !== -1 ? argv[flag + 1] : (process.env.IOS_DEVICE ?? config.iosDevice);
   if (device === undefined || device === "") {
-    throw new KyberError(
+    throw new ScriptError(
       "No device. Pass --device <udid or name>, set IOS_DEVICE, or put\n" +
         '  "iosDevice" in scripts/project.json.',
     );
@@ -189,11 +189,11 @@ async function main() {
 
   const project = join(iosDir, `${config.iosScheme}.xcodeproj`);
   if (!existsSync(project)) {
-    throw new KyberError(`No ${basename(project)} in ${iosDir}. Run xcodegen first.`);
+    throw new ScriptError(`No ${basename(project)} in ${iosDir}. Run xcodegen first.`);
   }
 
-  const stash = mkdtempSync(join(tmpdir(), "kyber-profiles-"));
-  const derived = mkdtempSync(join(tmpdir(), "kyber-dd-"));
+  const stash = mkdtempSync(join(tmpdir(), "gastos-profiles-"));
+  const derived = mkdtempSync(join(tmpdir(), "gastos-dd-"));
   let renewed = false;
   // The build directory is a whole Debug build, hundreds of MB, and it was
   // left in $TMPDIR on every run. It goes in `finally` unless the build
@@ -273,7 +273,7 @@ async function main() {
         );
       }
       keepLog = true;
-      throw new KyberError(`   el build terminó en ${status}. Log completo: ${log}`);
+      throw new ScriptError(`   el build terminó en ${status}. Log completo: ${log}`);
     }
     console.log("   BUILD SUCCEEDED (exit 0, no leído del texto)");
     // Past here the old profiles are superseded, not worth putting back.
@@ -297,7 +297,7 @@ async function main() {
     console.log(`   el más corto manda: quedan ${verdict.days} días y ${verdict.hours} horas`);
     // Guard 4.
     if (!verdict.fresh) {
-      throw new KyberError(
+      throw new ScriptError(
         `   ABORTO: una firma recién emitida dura 7 días, no ${verdict.days}d ${verdict.hours}h.\n` +
           "   No se reemitió nada. No instalo para no dejarte una app que muere hoy.",
       );
@@ -317,7 +317,7 @@ async function main() {
     const version = versionVerdict(shipped, declared);
     console.log(`   la app declara ${version.shipped} · el manifiesto dice ${version.declared}`);
     if (!version.agrees) {
-      throw new KyberError(
+      throw new ScriptError(
         `   ABORTO: lo que se instalaría muestra ${version.shipped}, no ${version.declared}.\n` +
           "   Revisá CFBundleShortVersionString en project.yml y corré xcodegen.",
       );
@@ -347,7 +347,7 @@ async function main() {
         return;
       } catch (error) {
         if (attempt === 3) {
-          throw new KyberError(
+          throw new ScriptError(
             `   no pude instalar: ${String(error.stderr ?? error.message).slice(0, 200)}`,
           );
         }

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { credentialsPath, loadServiceAccount } from "../lib/credentials.mjs";
-import { KyberError } from "../lib/errors.mjs";
+import { ScriptError } from "../lib/errors.mjs";
 
 const withEnv = (value, fn) => {
   const before = process.env.GOOGLE_APPLICATION_CREDENTIALS;
@@ -19,15 +19,15 @@ const withEnv = (value, fn) => {
 };
 
 test("credentialsPath prefers the env var, then the gitignored default, then fails", () => {
-  const firebaseDir = mkdtempSync(join(tmpdir(), "kyber-creds-"));
+  const firebaseDir = mkdtempSync(join(tmpdir(), "gastos-creds-"));
   withEnv("/explicit/key.json", () => assert.equal(credentialsPath(firebaseDir), "/explicit/key.json"));
-  withEnv(undefined, () => assert.throws(() => credentialsPath(firebaseDir), KyberError));
+  withEnv(undefined, () => assert.throws(() => credentialsPath(firebaseDir), ScriptError));
   writeFileSync(join(firebaseDir, "service-account.json"), "{}");
   withEnv(undefined, () => assert.equal(credentialsPath(firebaseDir), join(firebaseDir, "service-account.json")));
 });
 
 test("loadServiceAccount refuses a key for another project", () => {
-  const firebaseDir = mkdtempSync(join(tmpdir(), "kyber-creds-"));
+  const firebaseDir = mkdtempSync(join(tmpdir(), "gastos-creds-"));
   writeFileSync(join(firebaseDir, "service-account.json"), JSON.stringify({ project_id: "other" }));
   withEnv(undefined, () => {
     assert.throws(() => loadServiceAccount(firebaseDir, "mine"), /belongs to "other", not "mine"/);

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { KyberError } from "../lib/errors.mjs";
+import { ScriptError } from "../lib/errors.mjs";
 import { readTargets, versionProblems, writeVersion } from "../lib/ios-version.mjs";
 
 const YAML = `name: Fixture
@@ -57,7 +57,7 @@ test("readTargets stops at the next top-level key", () => {
 });
 
 test("readTargets refuses a file without a targets block", () => {
-  assert.throws(() => readTargets("name: Fixture\noptions: {}\n"), KyberError);
+  assert.throws(() => readTargets("name: Fixture\noptions: {}\n"), ScriptError);
 });
 
 test("a project in the expected shape has no problems", () => {

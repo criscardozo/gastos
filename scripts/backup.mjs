@@ -4,13 +4,13 @@
 // export (that needs Blaze), so this is the $0 path: read everything with the
 // Admin SDK and write it to disk.
 //
-// Usage, from the consumer:
+// Usage, from the repo root:
 //   GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json pnpm backup
 //     (or drop the key at <firebaseDir>/service-account.json, gitignored)
 //   FIRESTORE_EMULATOR_HOST=127.0.0.1:<port> pnpm backup
 //     reads the emulator instead, for rehearsing the round trip
 //
-// Output: <consumer>/backups/<name>-<source>-<stamp>.json (gitignored). The
+// Output: <repo>/backups/<name>-<source>-<stamp>.json (gitignored). The
 // name carries where the data came from because a rehearsal against the
 // emulator and a real backup are otherwise the same object, and the day you
 // need one is the day you cannot check.
@@ -20,7 +20,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadFirebaseAdmin } from "./lib/admin.mjs";
-import { loadConsumer } from "./lib/consumer.mjs";
+import { loadProject } from "./lib/project.mjs";
 import { loadServiceAccount } from "./lib/credentials.mjs";
 import { DUMP_FORMAT, createCodec, dumpFileName } from "./lib/dump.mjs";
 import { run } from "./lib/errors.mjs";
@@ -66,7 +66,7 @@ async function dumpCollection(serialize, db, collRef) {
 }
 
 async function main() {
-  const { root, config, dir } = loadConsumer({
+  const { root, config, dir } = loadProject({
     required: ["name", "projectId", "emulatorProjectId", "firebaseDir"],
   });
   const { cert, initializeApp, getFirestore, Timestamp } = await loadFirebaseAdmin();

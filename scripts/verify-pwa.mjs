@@ -15,10 +15,10 @@
 // the browser's own offline error page.
 //
 // Reads from scripts/project.json: the whole `pwa` block, and `webDir` for
-// finding the consumer's Playwright.
+// finding the web workspace's Playwright.
 
 import { join } from "node:path";
-import { loadConsumer } from "./lib/consumer.mjs";
+import { loadProject } from "./lib/project.mjs";
 import { importFrom } from "./lib/bin.mjs";
 import { run } from "./lib/errors.mjs";
 import { precacheVerdict, requirePwa } from "./lib/pwa.mjs";
@@ -43,7 +43,7 @@ async function until(probe, timeoutMs = 25_000, everyMs = 500) {
 }
 
 async function main() {
-  const { root, config, dir } = loadConsumer({ required: [] });
+  const { root, config, dir } = loadProject({ required: [] });
   const pwa = requirePwa(config.pwa);
   const webDir = config.webDir ? dir("webDir") : join(root, "apps", "web");
   const base = process.env.PWA_BASE_URL ?? `http://localhost:${pwa.port}`;
@@ -79,7 +79,7 @@ async function main() {
   // 2) The shell routes AND the hashed assets they point at. The assets are
   // the half that used to be missing: with the HTML cached and none of the
   // code, an offline reload finds the page and nothing it needs.
-  // Every cache, not the first one: both consumers keep a single cache
+  // Every cache, not the first one: both apps keep a single cache
   // today, and the first name is only the right one for as long as that
   // stays true. A worker that opens a runtime cache before its precache
   // finishes would have failed this with every route "missing".

@@ -1,12 +1,12 @@
 // The decidable half of the PWA smoke check, kept out of the browser driving
 // so it can be tested without one.
 //
-// The check itself is the same five steps in every consumer; everything that
+// The check itself is the same five steps in every project; everything that
 // differs between them is a value: the port, the entry route, the shell routes,
 // how many hashed assets count as "the code came too", and the two bits of text
 // that prove a page rendered rather than the browser's offline error.
 
-import { KyberError } from "./errors.mjs";
+import { ScriptError } from "./errors.mjs";
 
 /**
  * The keys a `pwa` block must carry. Exported so the test derives its list
@@ -24,7 +24,7 @@ export const REQUIRED = [
   "deepRoute",
 ];
 
-/** Everything wrong with a consumer's `pwa` block, named. */
+/** Everything wrong with a `pwa` block, named. */
 export function pwaProblems(pwa) {
   if (pwa === undefined || pwa === null || typeof pwa !== "object") {
     return ['"scripts/project.json" has no "pwa" block'];
@@ -59,7 +59,7 @@ export function pwaProblems(pwa) {
 export function requirePwa(pwa) {
   const problems = pwaProblems(pwa);
   if (problems.length > 0) {
-    throw new KyberError(
+    throw new ScriptError(
       "The PWA check needs a complete \"pwa\" block in scripts/project.json:\n" +
         problems.map((p) => `  - ${p}`).join("\n"),
     );

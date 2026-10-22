@@ -2,9 +2,9 @@
 // Put a backup back. A backup nobody has ever read back is a hope, and the day
 // you find out whether it restores is the worst possible day to find out.
 //
-// Usage, from the consumer:
+// Usage, from the repo root:
 //   pnpm restore backups/<file>.json
-//     → into the local EMULATOR (the consumer's own port, from firebase.json,
+//     → into the local EMULATOR (the project's own port, from firebase.json,
 //       unless FIRESTORE_EMULATOR_HOST says otherwise). The default on purpose.
 //   pnpm restore --production backups/<file>.json
 //     → into the real project. Refuses unless the dump names that project AND
@@ -22,22 +22,22 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { loadFirebaseAdmin } from "./lib/admin.mjs";
-import { loadConsumer } from "./lib/consumer.mjs";
+import { loadProject } from "./lib/project.mjs";
 import { loadServiceAccount } from "./lib/credentials.mjs";
 import { createCodec } from "./lib/dump.mjs";
 import { emulatorHost, isLocal } from "./lib/emulator.mjs";
-import { KyberError, run } from "./lib/errors.mjs";
+import { ScriptError, run } from "./lib/errors.mjs";
 
 function readDump(file) {
-  if (!existsSync(file)) throw new KyberError(`No such dump: ${file}`);
+  if (!existsSync(file)) throw new ScriptError(`No such dump: ${file}`);
   let dump;
   try {
     dump = JSON.parse(readFileSync(file, "utf8"));
   } catch (error) {
-    throw new KyberError(`${file} is not JSON: ${error.message}`);
+    throw new ScriptError(`${file} is not JSON: ${error.message}`);
   }
   if (dump === null || typeof dump.collections !== "object" || dump.collections === null) {
-    throw new KyberError(`${file} is not a backup: no top-level "collections".`);
+    throw new ScriptError(`${file} is not a backup: no top-level "collections".`);
   }
   return dump;
 }
@@ -53,24 +53,24 @@ async function confirmProduction(file, dump, projectId) {
   // A closed input is a no. Without this, input that ends before an answer
   // (Ctrl-D) left the question pending forever.
   const answer = await new Promise((settle, fail) => {
-    rl.once("close", () => fail(new KyberError("  No answer. Nothing was written.")));
+    rl.once("close", () => fail(new ScriptError("  No answer. Nothing was written.")));
     rl.question("  Type the project id to continue: ", settle);
   });
   rl.close();
   if (answer.trim() !== projectId) {
-    throw new KyberError("  Did not match. Nothing was written.");
+    throw new ScriptError("  Did not match. Nothing was written.");
   }
 }
 
 async function main() {
-  const { config, dir } = loadConsumer({
+  const { config, dir } = loadProject({
     required: ["projectId", "emulatorProjectId", "firebaseDir"],
   });
   const args = process.argv.slice(2);
   const production = args.includes("--production");
   const arg = args.find((a) => !a.startsWith("--"));
   if (arg === undefined) {
-    throw new KyberError("Usage: pnpm restore [--production] <backup file>");
+    throw new ScriptError("Usage: pnpm restore [--production] <backup file>");
   }
   const file = resolve(arg);
   const dump = readDump(file);
@@ -86,18 +86,18 @@ async function main() {
     // into another is never a thing anyone means to do, so it is refused
     // rather than confirmed.
     if (dump.project !== config.projectId) {
-      throw new KyberError(
+      throw new ScriptError(
         `This dump is from "${dump.project}", not "${config.projectId}". Refusing.`,
       );
     }
     // And WHERE it was read from, which the check above cannot see: a
-    // consumer whose emulator runs under the production project id produces
+    // project whose emulator runs under the production project id produces
     // rehearsal dumps that pass it while holding seed data. Restoring one
     // into production would not fail — it would succeed, and overwrite real
     // data with a fixture. A dump with no `source` predates the field and is
     // refused rather than assumed either way.
     if (dump.source !== "production") {
-      throw new KyberError(
+      throw new ScriptError(
         dump.source === undefined
           ? 'This dump has no "source" field, so it cannot be told apart from a\n' +
             "  rehearsal. Open it, make sure it is real data, and add\n" +
@@ -106,14 +106,14 @@ async function main() {
       );
     }
     if (emulator !== undefined && emulator !== "") {
-      throw new KyberError(
+      throw new ScriptError(
         "FIRESTORE_EMULATOR_HOST is set and --production was passed. Pick one.",
       );
     }
     // The confirmation is a person typing the project id. With no terminal
     // there is no person, and the question used to sit there forever.
     if (!process.stdin.isTTY) {
-      throw new KyberError(
+      throw new ScriptError(
         "--production asks for the project id typed, and stdin is not a terminal.\n" +
           "  Run it from an interactive shell. Nothing was written.",
       );
@@ -123,14 +123,14 @@ async function main() {
     initializeApp({ credential: cert(serviceAccount), projectId: config.projectId });
     console.log(`\nrestoring into PRODUCTION (${config.projectId})`);
   } else {
-    // The consumer's own emulator port, never Firebase's default: on a machine
+    // The project's own emulator port, never Firebase's default: on a machine
     // where something else holds 8080, a restore pointed there would talk to
     // somebody else's database. What makes it safe to write a fixture into a
     // database named after production is that the host is local, so the host
     // is what gets checked, and it is said out loud.
     const host = emulator !== undefined && emulator !== "" ? emulator : emulatorHost(dir("firebaseDir"));
     if (!isLocal(host)) {
-      throw new KyberError(`FIRESTORE_EMULATOR_HOST is "${host}", which is not local. Refusing.`);
+      throw new ScriptError(`FIRESTORE_EMULATOR_HOST is "${host}", which is not local. Refusing.`);
     }
     process.env.FIRESTORE_EMULATOR_HOST = host;
     const project = process.env.BACKUP_PROJECT_ID ?? config.emulatorProjectId;

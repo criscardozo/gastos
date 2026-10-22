@@ -1,7 +1,7 @@
 // The decidable parts of installing on a phone with a free team, kept out of
 // the shelling-out so they can be tested.
 
-import { KyberError } from "./errors.mjs";
+import { ScriptError } from "./errors.mjs";
 
 /**
  * Does a provisioning profile belong to this app?
@@ -36,7 +36,7 @@ export function belongsToApp(applicationIdentifier, bundleId) {
  */
 export function signingVerdict(profiles, now = new Date()) {
   if (profiles.length === 0) {
-    throw new KyberError(
+    throw new ScriptError(
       "The built app has no embedded.mobileprovision at all, so nothing was signed.",
     );
   }

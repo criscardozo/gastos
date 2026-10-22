@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { KyberError } from "../lib/errors.mjs";
+import { ScriptError } from "../lib/errors.mjs";
 import { belongsToApp, signingVerdict, versionVerdict } from "../lib/signing.mjs";
 
 const BUNDLE = "dev.example.app";
@@ -62,7 +62,7 @@ test("exactly a day is fresh; a minute under is not", () => {
 });
 
 test("a bundle with no profile at all is an error, not an empty pass", () => {
-  assert.throws(() => signingVerdict([], NOW), KyberError);
+  assert.throws(() => signingVerdict([], NOW), ScriptError);
 });
 
 test("the shipped version has to equal the declared one", () => {

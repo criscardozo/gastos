@@ -1,17 +1,17 @@
 // Reading version settings out of an XcodeGen project.yml, by TARGET NAME.
 //
-// Deliberately a targeted line scan and not a YAML parser: kyber installs
-// nothing, and the shape being read is two levels of a file this project
+// Deliberately a targeted line scan and not a YAML parser: it needs no
+// dependency, and the shape being read is two levels of a file this project
 // generates its Xcode project from. It fails loudly when the shape is not what
 // it expects rather than guessing.
 //
 // Why by name and not by count — this is the whole point of the file. Both
-// consumers asserted `found.length === 3`, and a count survives a
+// copies asserted `found.length === 3`, and a count survives a
 // substitution: add one target and remove another and it is still three, while
 // the version is now written somewhere nobody meant and missing where somebody
 // expected it. A total answers "how many" to a question that was "which ones".
 
-import { KyberError } from "./errors.mjs";
+import { ScriptError } from "./errors.mjs";
 
 const MARKETING = /^\s*MARKETING_VERSION:\s*"?([^"\n]*)"?\s*$/;
 const SHORT_VERSION = /^\s*CFBundleShortVersionString:\s*(.+?)\s*$/;
@@ -25,7 +25,7 @@ const SHORT_VERSION = /^\s*CFBundleShortVersionString:\s*(.+?)\s*$/;
 export function readTargets(yaml) {
   const lines = yaml.split("\n");
   const start = lines.findIndex((line) => /^targets:\s*$/.test(line));
-  if (start === -1) throw new KyberError('project.yml has no top-level "targets:" block.');
+  if (start === -1) throw new ScriptError('project.yml has no top-level "targets:" block.');
 
   const targets = new Map();
   let current = null;
@@ -43,7 +43,7 @@ export function readTargets(yaml) {
     const short = SHORT_VERSION.exec(line);
     if (short !== null) targets.get(current).shortVersion = short[1];
   }
-  if (targets.size === 0) throw new KyberError('project.yml declares no targets under "targets:".');
+  if (targets.size === 0) throw new ScriptError('project.yml declares no targets under "targets:".');
   return targets;
 }
 

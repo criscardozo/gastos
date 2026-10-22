@@ -1,11 +1,11 @@
-// One error type for "the consumer got something wrong", so scripts can print
-// the message on its own and exit 1, instead of a stack trace pointing into
-// kyber for a problem that lives in `scripts/project.json` or the environment.
+// One error type for "the setup is wrong", so scripts can print the message on
+// its own and exit 1, instead of a stack trace pointing into scripts/ for a
+// problem that lives in `scripts/project.json` or the environment.
 
-export class KyberError extends Error {
+export class ScriptError extends Error {
   constructor(message) {
     super(message);
-    this.name = "KyberError";
+    this.name = "ScriptError";
   }
 }
 
@@ -67,13 +67,13 @@ export function gate(argv, { usage, flags = [], values = [], operands = 0 } = {}
 /**
  * Run a script's `main`, translating failures into exit codes.
  *
- * A KyberError is a message for the person at the keyboard; anything else is a
+ * A ScriptError is a message for the person at the keyboard; anything else is a
  * bug or a network failure and keeps its stack.
  *
  * The argument gate lives HERE, in the one call every script already makes,
  * rather than in a helper each script has to remember to call. It is here
  * because it was forgotten: `--help` on the backup script ran a full dump
- * against production, reported by a consumer who typed it to find out how to
+ * against production, reported by someone who typed it to find out how to
  * invoke the thing. The same bug had already been fixed once, in the install
  * script, by writing the check into that file — which fixed that file and
  * nothing else. A rule you have to remember at the right moment is the rule
@@ -96,7 +96,7 @@ export function run(main, options = {}) {
     return;
   }
   main().catch((error) => {
-    if (error instanceof KyberError) {
+    if (error instanceof ScriptError) {
       console.error(error.message);
     } else {
       console.error(error);

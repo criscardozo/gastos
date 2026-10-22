@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Is the rules file in the consumer's repo the one Firestore is actually
+// Is the rules file in this repo the one Firestore is actually
 // enforcing?
 //
 // Rules are deployed by hand (`firebase deploy --only firestore:rules`) and
@@ -18,7 +18,7 @@
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { loadFirebaseAdmin } from "./lib/admin.mjs";
-import { loadConsumer } from "./lib/consumer.mjs";
+import { loadProject } from "./lib/project.mjs";
 import { loadServiceAccount } from "./lib/credentials.mjs";
 import { run } from "./lib/errors.mjs";
 
@@ -46,7 +46,7 @@ async function get(url, token) {
 const normalise = (text) => text.replace(/[ \t]+$/gm, "").replace(/\r\n/g, "\n").trimEnd();
 
 async function main() {
-  const { root, config, dir } = loadConsumer({ required: ["projectId", "firebaseDir"] });
+  const { root, config, dir } = loadProject({ required: ["projectId", "firebaseDir"] });
   const firebaseDir = dir("firebaseDir");
   const localPath = join(firebaseDir, "firestore.rules");
   const projectId = config.projectId;

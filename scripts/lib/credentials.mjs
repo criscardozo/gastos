@@ -3,7 +3,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { KyberError } from "./errors.mjs";
+import { ScriptError } from "./errors.mjs";
 
 /** Path of the key: the explicit env var, or the gitignored default. */
 export function credentialsPath(firebaseDir) {
@@ -11,7 +11,7 @@ export function credentialsPath(firebaseDir) {
   if (explicit !== undefined && explicit !== "") return explicit;
   const fallback = join(firebaseDir, "service-account.json");
   if (existsSync(fallback)) return fallback;
-  throw new KyberError(
+  throw new ScriptError(
     "No service account key found.\n" +
       "  Set GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json, or place the\n" +
       `  key at ${fallback} (gitignored).\n` +
@@ -32,10 +32,10 @@ export function loadServiceAccount(firebaseDir, expectedProjectId) {
   try {
     account = JSON.parse(readFileSync(path, "utf8"));
   } catch (error) {
-    throw new KyberError(`Cannot read the service account at ${path}: ${error.message}`);
+    throw new ScriptError(`Cannot read the service account at ${path}: ${error.message}`);
   }
   if (account.project_id !== expectedProjectId) {
-    throw new KyberError(
+    throw new ScriptError(
       `That key belongs to "${account.project_id}", not "${expectedProjectId}".\n` +
         "  Refusing rather than touching a project the config does not name.",
     );

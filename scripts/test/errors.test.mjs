@@ -1,5 +1,5 @@
 // The argument gate. Written after `--help` on the backup script ran a full
-// dump against production, reported by a consumer who typed it to find out
+// dump against production, reported by someone who typed it to find out
 // how to invoke the thing — and after noticing the same bug had been fixed
 // once before, in one file, by writing the check into that file.
 

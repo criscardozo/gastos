@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { KyberError } from "../lib/errors.mjs";
+import { ScriptError } from "../lib/errors.mjs";
 import { REQUIRED, precacheVerdict, pwaProblems, requirePwa } from "../lib/pwa.mjs";
 
 const PWA = {
@@ -62,7 +62,7 @@ test("requirePwa throws a message listing everything wrong at once", () => {
   assert.throws(
     () => requirePwa({ port: 3100 }),
     (error) =>
-      error instanceof KyberError &&
+      error instanceof ScriptError &&
       error.message.includes('"pwa.entry" is missing') &&
       error.message.includes('"pwa.deepRoute" is missing'),
   );

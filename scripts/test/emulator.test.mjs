@@ -2,19 +2,19 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import { test } from "node:test";
 import { emulatorHost, isLocal, readFirebaseJson } from "../lib/emulator.mjs";
-import { KyberError } from "../lib/errors.mjs";
-import { CONSUMER, FIXTURES } from "./helpers.mjs";
+import { ScriptError } from "../lib/errors.mjs";
+import { PROJECT, FIXTURES } from "./helpers.mjs";
 
-test("readFirebaseJson returns the consumer's Firestore emulator port", () => {
-  const { port } = readFirebaseJson(join(CONSUMER, "firebase"));
+test("readFirebaseJson returns the project's Firestore emulator port", () => {
+  const { port } = readFirebaseJson(join(PROJECT, "firebase"));
   assert.equal(port, 8181);
-  assert.equal(emulatorHost(join(CONSUMER, "firebase")), "127.0.0.1:8181");
+  assert.equal(emulatorHost(join(PROJECT, "firebase")), "127.0.0.1:8181");
 });
 
 test("readFirebaseJson fails with a message when the Firestore block is missing", () => {
   assert.throws(
     () => readFirebaseJson(join(FIXTURES, "no-port", "firebase")),
-    (error) => error instanceof KyberError && error.message.includes("emulators.firestore.port"),
+    (error) => error instanceof ScriptError && error.message.includes("emulators.firestore.port"),
   );
 });
 

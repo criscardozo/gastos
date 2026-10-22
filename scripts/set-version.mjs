@@ -15,17 +15,17 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { loadConsumer } from "./lib/consumer.mjs";
-import { KyberError, run } from "./lib/errors.mjs";
+import { loadProject } from "./lib/project.mjs";
+import { ScriptError, run } from "./lib/errors.mjs";
 import { readTargets, versionProblems, writeVersion } from "./lib/ios-version.mjs";
 
 const SEMVER = /^\d+\.\d+\.\d+$/;
 
 async function main() {
-  const { root, config, dir } = loadConsumer({ required: [] });
+  const { root, config, dir } = loadProject({ required: [] });
   const targetNames = config.iosTargets;
   if (!Array.isArray(targetNames) || targetNames.length === 0) {
-    throw new KyberError(
+    throw new ScriptError(
       'scripts/project.json needs "iosTargets": the NAMES of the iOS targets that\n' +
         '  carry the version, e.g. ["App", "AppWidget", "AppWatch"]. Names and not a\n' +
         "  count, because a count survives a substitution: swap one target for\n" +
@@ -37,7 +37,7 @@ async function main() {
   // Refused rather than normalised: "v1.2" and "1.2" would each "work" and
   // then disagree with whatever the other file ended up with.
   if (version === undefined || !SEMVER.test(version)) {
-    throw new KyberError(
+    throw new ScriptError(
       "Usage: set-version <major.minor.patch>\n" +
         `  Got ${version === undefined ? "nothing" : `"${version}"`}. Three numbers, no prefix,\n` +
         '  no suffix — "1.0" and "v1.0.0" are both refused.',
@@ -51,7 +51,7 @@ async function main() {
   // the two platforms disagreeing, which is the exact state the script exists
   // to prevent, produced by the tool for preventing it. The order is simply
   // the one you write in.
-  // Defaults, because both consumers already put them here; a project that
+  // Defaults, because both apps already put them here; a project that
   // does not can say so in the config rather than be told it is wrong.
   const manifestPath = config.webManifest
     ? dir("webManifest")
@@ -64,13 +64,13 @@ async function main() {
 
   const currentWeb = /"version":\s*"([^"]+)"/.exec(manifest)?.[1];
   if (currentWeb === undefined) {
-    throw new KyberError(`No "version" field in ${manifestPath}. Refusing.`);
+    throw new ScriptError(`No "version" field in ${manifestPath}. Refusing.`);
   }
 
   const targets = readTargets(project);
   const problems = versionProblems(targets, targetNames);
   if (problems.length > 0) {
-    throw new KyberError(
+    throw new ScriptError(
       `${relative(root, projectPath)} is not in the shape this can move safely:\n` +
         problems.map((p) => `  - ${p}`).join("\n") +
         "\n  Nothing was written.",
@@ -80,7 +80,7 @@ async function main() {
 
   const { yaml, changed } = writeVersion(project, targetNames, version);
   if (changed !== targetNames.length) {
-    throw new KyberError(
+    throw new ScriptError(
       `Would have rewritten ${changed} of ${targetNames.length} targets. Nothing was written.`,
     );
   }
@@ -112,7 +112,7 @@ function read(path) {
   try {
     return readFileSync(path, "utf8");
   } catch (error) {
-    throw new KyberError(`Cannot read ${path}: ${error.message}`);
+    throw new ScriptError(`Cannot read ${path}: ${error.message}`);
   }
 }
 

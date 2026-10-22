@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Run the consumer's Firestore rules tests on a port that is actually free.
+// Run the Firestore rules tests on a port that is actually free.
 //
 // `firebase emulators:exec` takes its port from firebase.json, so a busy port
 // ends the run with "Could not start Firestore Emulator, port taken" — which
@@ -10,12 +10,12 @@
 //
 // So: find a free port, write a copy of firebase.json that uses it, and tell
 // both the emulator and @firebase/rules-unit-testing where to look. The
-// consumer's `firebase.json` is never touched; it keeps the project's own
+// `firebase.json` is never touched; it keeps the project's own
 // block, which is what `pnpm emulators` and the iOS app expect.
 //
 // The tests learn the port through FIRESTORE_EMULATOR_HOST, which
 // rules-unit-testing reads only when the test helper passes no host/port of
-// its own — so the helper must not opine (see docs/consumer-config.md).
+// its own — so the helper must not opine (see scripts/README.md).
 // FIRESTORE_EMULATOR_PORT is exported too, for a helper that reads that.
 //
 // Override with FIRESTORE_EMULATOR_PORT=<n> to pin a port: then it is a
@@ -31,9 +31,9 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveBin } from "./lib/bin.mjs";
-import { loadConsumer } from "./lib/consumer.mjs";
+import { loadProject } from "./lib/project.mjs";
 import { readFirebaseJson } from "./lib/emulator.mjs";
-import { KyberError, run } from "./lib/errors.mjs";
+import { ScriptError, run } from "./lib/errors.mjs";
 
 /** Ask the OS for a free port by binding one and letting go. */
 function freePort() {
@@ -67,10 +67,10 @@ async function usablePort(pinned, requested) {
   // Above 65535 too: listen() throws on it synchronously, inside isFree's
   // promise, and the sentence below became a stack trace.
   if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-    throw new KyberError(`FIRESTORE_EMULATOR_PORT="${requested}" is not a port.`);
+    throw new ScriptError(`FIRESTORE_EMULATOR_PORT="${requested}" is not a port.`);
   }
   if (!(await isFree(port))) {
-    throw new KyberError(`FIRESTORE_EMULATOR_PORT=${port} is already in use.`);
+    throw new ScriptError(`FIRESTORE_EMULATOR_PORT=${port} is already in use.`);
   }
   return port;
 }
@@ -80,13 +80,13 @@ function shellQuote(path) {
 }
 
 async function main() {
-  const { config, dir } = loadConsumer({
+  const { config, dir } = loadProject({
     required: ["name", "rulesTestsProjectId", "firebaseDir", "rulesTestsDir"],
   });
   const firebaseDir = dir("firebaseDir");
   const rulesTestsDir = dir("rulesTestsDir");
   if (!existsSync(join(rulesTestsDir, "package.json"))) {
-    throw new KyberError(`rulesTestsDir ${rulesTestsDir} has no package.json.`);
+    throw new ScriptError(`rulesTestsDir ${rulesTestsDir} has no package.json.`);
   }
   const firebaseBin = resolveBin(rulesTestsDir, "firebase-tools", "firebase");
   const vitestBin = resolveBin(rulesTestsDir, "vitest", "vitest");
@@ -95,7 +95,7 @@ async function main() {
   const port = await usablePort(pinned, process.env.FIRESTORE_EMULATOR_PORT);
 
   // A copy of firebase.json with the ports replaced. The websocket, the hub
-  // and the logging port get free ones too: a consumer that pins them (so its
+  // and the logging port get free ones too: a project that pins them (so its
   // development suite lands in its own block) would otherwise collide with a
   // running `pnpm emulators`, and a pinned port is one firebase-tools will
   // not shift on its own. Rules and indexes are relative to the config file,
@@ -126,7 +126,7 @@ async function main() {
       "--config", configPath,
       // The ONLY shell string in this repo: `emulators:exec` takes a command,
       // not argv, so this one is unavoidable. What goes into it comes from
-      // resolution on disk and never from the consumer's config — a config
+      // resolution on disk and never from the project's config — a config
       // value reaching an interpreter is arbitrary code execution for whoever
       // checks out the branch that edited it. Everything else here spawns with
       // an argv array precisely so this stays the only line to think about.

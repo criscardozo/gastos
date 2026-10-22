@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DUMP_FORMAT, createCodec, dumpFileName } from "../lib/dump.mjs";
-import { KyberError } from "../lib/errors.mjs";
+import { ScriptError } from "../lib/errors.mjs";
 import { FakeTimestamp } from "./helpers.mjs";
 
 const { serialize, revive, reviveLegacy, selectReviver, restorePlan } = createCodec({
@@ -11,9 +11,9 @@ const INSTANT = "2026-09-09T12:34:56.789Z";
 const ts = () => FakeTimestamp.fromDate(new Date(INSTANT));
 
 // assert.throws matches a RegExp against the error's String() form, which
-// carries the "KyberError: " prefix, so anchored checks go through the message.
+// carries the "ScriptError: " prefix, so anchored checks go through the message.
 const startsWith = (prefix) => (error) =>
-  error instanceof KyberError && error.message.startsWith(prefix);
+  error instanceof ScriptError && error.message.startsWith(prefix);
 
 class GeoPointLike {
   constructor() {
@@ -41,11 +41,11 @@ test("serialize tags Timestamps and leaves everything else JSON-shaped", () => {
   });
 });
 
-test("serialize refuses the Firestore types no consumer uses, naming document and field", () => {
+test("serialize refuses the Firestore types no project uses, naming document and field", () => {
   assert.throws(
     () => serialize({ where: new GeoPointLike() }, "households/h1/expenses/e1"),
     (error) =>
-      error instanceof KyberError &&
+      error instanceof ScriptError &&
       error.message.startsWith("households/h1/expenses/e1.where: GeoPointLike is not supported"),
   );
   assert.throws(() => serialize({ blob: Buffer.from("x") }), startsWith("blob: Bytes is not supported"));
@@ -136,9 +136,9 @@ test("selectReviver: no format and no opt-in is refused with instructions", () =
   assert.throws(
     () => selectReviver({ collections: {} }, {}),
     (error) =>
-      error instanceof KyberError && error.message.includes('"legacyIsoTimestamps": true'),
+      error instanceof ScriptError && error.message.includes('"legacyIsoTimestamps": true'),
   );
-  assert.throws(() => selectReviver({ collections: {} }, { restore: { legacyIsoTimestamps: "yes" } }), KyberError);
+  assert.throws(() => selectReviver({ collections: {} }, { restore: { legacyIsoTimestamps: "yes" } }), ScriptError);
 });
 
 test("selectReviver: no format with the opt-in gets the legacy reviver", () => {
@@ -147,7 +147,7 @@ test("selectReviver: no format with the opt-in gets the legacy reviver", () => {
 });
 
 test("selectReviver: a newer format is refused", () => {
-  assert.throws(() => selectReviver({ format: DUMP_FORMAT + 1 }, {}), /Update kyber/);
+  assert.throws(() => selectReviver({ format: DUMP_FORMAT + 1 }, {}), /Update scripts\//);
 });
 
 test("selectReviver: format 1, which is format 2 without missing documents, still reads", () => {
@@ -205,7 +205,7 @@ test("restorePlan refuses documents it could not write where they came from", ()
     ["e1", "is not a document"],
   ]) {
     assert.throws(() => restorePlan(dumpOf({ expenses: [doc] }), {}), (error) =>
-      error instanceof KyberError && error.message.includes(message),
+      error instanceof ScriptError && error.message.includes(message),
     );
   }
   assert.throws(() => restorePlan(dumpOf({ expenses: {} }), {}), /is not a list of documents/);
