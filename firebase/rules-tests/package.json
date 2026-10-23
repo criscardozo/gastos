@@ -6,9 +6,9 @@
     "test": "node ../../scripts/run-rules-tests.mjs"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^5.0.2",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "firebase": "catalog:",
-    "firebase-tools": "^15.30.0",
+    "firebase-tools": "^15.34.1",
     "vitest": "catalog:"
   }
 }
