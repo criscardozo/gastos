@@ -74,7 +74,13 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { loadProject } from "./lib/project.mjs";
 import { ScriptError, run } from "./lib/errors.mjs";
-import { belongsToApp, signingVerdict, versionVerdict } from "./lib/signing.mjs";
+import {
+  accountAdvice,
+  belongsToApp,
+  signingVerdict,
+  versionVerdict,
+  xcodeAccountCount,
+} from "./lib/signing.mjs";
 import { crashLogsOf, crashSummary, listedPaths } from "./lib/crash-logs.mjs";
 
 const PROFILES = join(
@@ -89,6 +95,17 @@ const say = (text) => {
 };
 
 const sh = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: "utf8", ...opts });
+
+/** `defaults read` of Xcode's Apple ID list; null when the key is absent. */
+function readXcodeAccounts() {
+  try {
+    return sh("defaults", ["read", "com.apple.dt.Xcode", "DVTDeveloperAccountManagerAppleIDLists"], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Bring this app's crash reports off the phone. Lists the crash domain, keeps
@@ -192,6 +209,12 @@ async function main() {
     throw new ScriptError(`No ${basename(project)} in ${iosDir}. Run xcodegen first.`);
   }
 
+  // Before touching a profile or spending a two-minute build: with no Apple ID
+  // in Xcode the build can only fail with "No Accounts".
+  if (xcodeAccountCount(readXcodeAccounts()) === 0) {
+    throw new ScriptError(`   ${accountAdvice(0)}`);
+  }
+
   const stash = mkdtempSync(join(tmpdir(), "gastos-profiles-"));
   const derived = mkdtempSync(join(tmpdir(), "gastos-dd-"));
   let renewed = false;
@@ -255,22 +278,13 @@ async function main() {
       for (const line of text.split("\n").filter((l) => l.includes("error:")).slice(0, 5)) {
         console.log(`     ${line.trim()}`);
       }
-      // "No Accounts" is xcodebuild's own message and it is misleading. Xcode
-      // HAS the account; what it could not do is load the account's
-      // credential, and it then PRUNES the account it could not authenticate
-      // — so the empty account list is the consequence, not the cause.
-      //
-      // Read from the LOG and not from the keychain: Xcode keeps that
-      // credential in the data-protection keychain, which the `security` CLI
-      // cannot enumerate at all, so a pre-flight check there fails even with
-      // signing working perfectly.
+      // "No Accounts" is xcodebuild's own message and it is misleading: it
+      // also appears when the account IS there but its credential could not
+      // be loaded, after which xcodebuild prunes the account. So the advice
+      // reads the list as it stands now — empty means add it again with +,
+      // still listed means Sign In.
       if (/missing Xcode-Username|No Accounts/.test(text)) {
-        console.log(
-          "\n   La cuenta está en Xcode pero se perdió su credencial del keychain,\n" +
-            "   así que xcodebuild no puede pedir un perfil nuevo. Se arregla\n" +
-            "   volviendo a firmar: Xcode -> Settings -> Accounts -> Sign In,\n" +
-            "   y corriendo esto otra vez.",
-        );
+        console.log(`\n   ${accountAdvice(xcodeAccountCount(readXcodeAccounts()))}`);
       }
       keepLog = true;
       throw new ScriptError(`   el build terminó en ${status}. Log completo: ${log}`);

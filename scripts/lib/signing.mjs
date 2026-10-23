@@ -65,3 +65,36 @@ export function signingVerdict(profiles, now = new Date()) {
 export function versionVerdict(shipped, declared) {
   return { shipped, declared, agrees: shipped === declared };
 }
+
+/**
+ * How many Apple IDs Xcode has, from `defaults read com.apple.dt.Xcode
+ * DVTDeveloperAccountManagerAppleIDLists`. `null` output (the key is absent)
+ * counts as none.
+ *
+ * This is the one signing fact observable from a shell: the credential itself
+ * lives in the data-protection keychain, which `security` cannot enumerate.
+ * An empty list is fatal for `-allowProvisioningUpdates`, and it is what
+ * xcodebuild leaves behind after failing to load a credential, so it covers
+ * both "never added" and "pruned after a lost credential". Measured on
+ * 2026-10-23: empty, the build failed with "No Accounts"; with one entry
+ * after re-adding the account in Xcode, it signed.
+ */
+export function xcodeAccountCount(defaultsOutput) {
+  if (defaultsOutput === null) return 0;
+  return (defaultsOutput.match(/\bidentifier\s*=/g) ?? []).length;
+}
+
+/**
+ * What to tell the person at the keyboard, by whether the account is still
+ * listed. The old message always said "Sign In", which does not exist for an
+ * account that is no longer there — the fix then is adding it again with +.
+ */
+export function accountAdvice(count) {
+  return count === 0
+    ? "Xcode no tiene ninguna Apple ID cargada, así que no puede pedir perfiles.\n" +
+        "   Se arregla en Xcode -> Settings -> Accounts -> + -> Apple ID, entrando\n" +
+        "   con la cuenta del team, y corriendo esto otra vez."
+    : "La cuenta está en Xcode pero no se pudo cargar su credencial del keychain.\n" +
+        "   Se arregla en Xcode -> Settings -> Accounts -> la cuenta -> Sign In,\n" +
+        "   y corriendo esto otra vez.";
+}

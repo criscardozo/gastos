@@ -107,7 +107,8 @@ All JS commands run from the repo root (pnpm workspace):
   widget, watch — para que se reemitan alineados), captura el exit code del build
   ANTES de leer nada (`xcodebuild | grep` devuelve el código de grep, no del
   build), restaura los perfiles si falla y aborta si la firma emitida dura menos
-  de un día.
+  de un día. Antes de tocar nada lee la lista de Apple IDs de Xcode: si está
+  vacía corta ahí (hay que volver a agregar la cuenta con +), sin compilar.
 - Deploy rules: `firebase deploy --only firestore:rules,firestore:indexes --config firebase/firebase.json --project qcris-gastos-diarios`.
 - `pnpm backup` dumps the whole project to `backups/` (gitignored), and
   `pnpm restore <file>` puts one back — into the EMULATOR unless

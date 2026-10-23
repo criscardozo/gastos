@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ScriptError } from "../lib/errors.mjs";
-import { belongsToApp, signingVerdict, versionVerdict } from "../lib/signing.mjs";
+import {
+  accountAdvice,
+  belongsToApp,
+  signingVerdict,
+  versionVerdict,
+  xcodeAccountCount,
+} from "../lib/signing.mjs";
 
 const BUNDLE = "dev.example.app";
 const at = (days, hours = 0) => new Date(Date.UTC(2026, 8, 15) + days * 86_400_000 + hours * 3_600_000);
@@ -71,4 +77,21 @@ test("the shipped version has to equal the declared one", () => {
   // guard was green, so the phone showed an old number for days.
   assert.equal(versionVerdict("0.1", "1.0.0").agrees, false);
   assert.equal(versionVerdict("(sin clave)", "1.0.0").agrees, false);
+});
+
+test("Xcode's account list is counted from `defaults read` output", () => {
+  // The two shapes measured on 2026-10-23, before and after re-adding the account.
+  const empty = '{\n    "IDE.Identifiers.Prod" =     (\n    );\n}\n';
+  const one =
+    '{\n    "IDE.Identifiers.Prod" =     (\n                {\n' +
+    '            identifier = "7244E32E-645C-409C-9480-8DAACB66BBCF";\n        }\n    );\n}\n';
+  assert.equal(xcodeAccountCount(empty), 0);
+  assert.equal(xcodeAccountCount(one), 1);
+  assert.equal(xcodeAccountCount(null), 0, "the key absent altogether is no account");
+});
+
+test("the advice sends an empty list to + and a listed account to Sign In", () => {
+  assert.match(accountAdvice(0), /\+ -> Apple ID/);
+  assert.doesNotMatch(accountAdvice(0), /Sign In/);
+  assert.match(accountAdvice(1), /Sign In/);
 });
