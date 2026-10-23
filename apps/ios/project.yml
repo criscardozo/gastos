@@ -23,7 +23,7 @@ options:
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
-    # 12.x, the same major the web's JS SDK is on. Two clients talking to one
+    # 13.x, the same major the web's JS SDK is on. Two clients talking to one
     # Firestore is a good reason to keep them on the same generation.
     #
     # This was reverted once, and the note that replaced it blamed two things
@@ -38,13 +38,14 @@ packages:
     # launch) and both screens render on 12.18.0 — statement, four charges, the
     # five peso lines, and the three service states. Verified by running it, not
     # by compiling: the 91 Swift tests compile Core/ without Firebase and would
-    # pass either way.
-    from: 12.0.0
+    # pass either way. The same check was repeated for the move to 13.x.
+    from: 13.0.0
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
     # Moves with Firebase: the two share a dependency graph, so pinning them to
-    # different generations would leave an untested pair.
-    from: 9.0.0
+    # different generations would leave an untested pair. 10.1 is the first
+    # that accepts AppCheckCore 12, which Firebase 13 brings.
+    from: 10.1.0
 
 settings:
   base:
