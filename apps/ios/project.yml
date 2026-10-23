@@ -17,6 +17,11 @@ options:
   deploymentTarget:
     iOS: "27.0"
   developmentLanguage: es
+  # Sets LastUpgradeCheck, so Xcode stops offering "Update to recommended
+  # settings" on every open. The settings it recommended are under
+  # settings.base below; accepting them in Xcode alone did not stick, because
+  # the next xcodegen run rewrites the project from this file.
+  xcodeVersion: "27.1"
   createIntermediateGroups: true
   groupSortPosition: top
 
@@ -57,6 +62,11 @@ settings:
     # and Xcode stops re-writing the generated project on every open. CI
     # builds with CODE_SIGNING_ALLOWED=NO, so this only affects device signing.
     DEVELOPMENT_TEAM: FA737M2U79
+    # Xcode 27.1's recommended settings, accepted by Cristian on 2026-10-23.
+    DEAD_CODE_STRIPPING: "YES"
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: "YES"
+    STRING_CATALOG_GENERATE_SYMBOLS: "YES"
+    CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED: "YES"
 
 targets:
   Gastos:
