@@ -656,16 +656,18 @@ claves de este proyecto, que es lo que no viaja:
 
 ## 9. La máquina de Cristian
 
-- **No hay CI, por decisión: desde el 1/10/2026 el workflow `CI` de este repo
-  (y los de stock y kyber) está deshabilitado y Dependabot se sacó.** Lo
-  decidió Cristian: el único pipeline que le interesa es el backup semanal de
-  `my-apps-backups`, y el deploy lo hace Vercel. No es una factura —los repos
-  son públicos y no facturan—, así que no vence con el ciclo de minutos; se
-  vuelve a prender con `gh workflow enable ci.yml -R criscardozo/gastos`. El
-  riesgo aceptado: un push no se prueba en ninguna máquina limpia, y lo único
-  que corre antes es el hook `pre-push` de esta. **Sin CI, "lo corrí local" no
-  es lo mismo que verde, y la lista de en qué difiere vale más que la frase.**
-  La pasada entera es: `pnpm typecheck && pnpm lint && pnpm test:web && pnpm test:rules`,
+- **La CI volvió el 23/10/2026.** Del 1/10 al 23/10 el workflow `CI` de este
+  repo (y los de stock y kyber) estuvo deshabilitado y Dependabot se sacó. Lo
+  apagó Cristian, para no gastar; el 23/10 confirmó que fue él y pidió
+  prenderla de nuevo **si cuesta cero**, y cuesta cero: el repo es público y
+  los tres jobs corren en `ubuntu-latest`, que en un repo público no factura.
+  Si el repo vuelve a ser privado, esa cuenta cambia y hay que volver a
+  preguntar. Dependabot sigue afuera. Se apaga con
+  `gh workflow disable ci.yml -R criscardozo/gastos`.
+  Lo que sigue es lo que se aprendió en esas tres semanas, y sigue valiendo
+  cuando CI está en rojo o tarda: **"lo corrí local" no es lo mismo que verde,
+  y la lista de en qué difiere vale más que la frase.**
+  La pasada local entera es: `pnpm typecheck && pnpm lint && pnpm test:web && pnpm test:rules`,
   `pnpm --filter web test:e2e` con los emuladores en `demo-gastos-diarios`,
   `pnpm build` + `next start -p 3112` + `pnpm verify:pwa`, `python3
   design-system/emit.py --verify`, y `xcodebuild -scheme Gastos` para iOS.
