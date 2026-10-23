@@ -143,7 +143,7 @@ final class FirestoreService {
                 // with no periods: no current period, no budget, "Quedan
                 // $0,00", and the start-period screen never asking. Saying so
                 // is the difference between a bug you can chase and one you
-                // cannot — see docs/reglas.md.
+                // cannot.
                 if let error { self?.reportListen("periodBudgets", error) }
                 // `.estimate` for confirmedAt: by default a serverTimestamp the
                 // server has not acknowledged yet decodes as nil, so the

@@ -46,7 +46,7 @@ FROM the token file, and the check becomes "regenerate and see that nothing
 changed" — which is stronger than comparing text, because it proves the files
 can be REBUILT rather than that they happen to match today. A file edited by
 hand until it matched would pass the comparison and fail this the next time
-anybody touched the source. See `docs/guardas.md`.
+anybody touched the source.
 """
 
 from __future__ import annotations
@@ -334,8 +334,7 @@ class Block:
     colours" because where generated code goes is a decision, and a decision
     is written down by a person in the file it affects. It also makes the
     write idempotent by construction — the region is replaced whole, so the
-    second run produces the same bytes as the first, which is the first thing
-    `docs/guardas.md` demands of a generator.
+    second run produces the same bytes as the first.
 
     What it does NOT do, and the reason is worth keeping in front of whoever
     wires it: defining the constants is half. Every call site still spells its
@@ -490,7 +489,7 @@ def verify(doc: dict, destinations: list[Destination | Block],
     Reports what is missing and how much was checked. The second number is not
     decoration: a run that checks nothing passes just as quietly as one that
     checks everything, and "0 mismatches" out of zero declarations is the most
-    absorbable result there is (see `docs/guardas.md`).
+    absorbable result there is.
     """
     texts, _, _ = _read(destinations)
     lines = {key: _lines(text) for key, text in texts.items()}

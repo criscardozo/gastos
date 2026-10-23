@@ -21,10 +21,10 @@ pnpm workspaces for the JS side (web + rules-tests). Swift and TS share no code 
 
 ## Hard constraints (do not violate)
 
-> The rules Cristian set, with the reasoning behind each — including the process
-> ones that don't live in code (when to push, what may cost money, how to verify)
-> — are collected in [`docs/reglas.md`](docs/reglas.md). This section stays the
-> authoritative short form for the technical ones.
+> Cristian's decisions, dated, plus this project's process notes are in
+> [`docs/reglas.md`](docs/reglas.md). Only what is dated there as his is his;
+> the rest came out of the work and can be argued with. This section stays the
+> authoritative short form for the technical constraints.
 
 The general working rules live in `docs/reglas/` and are imported here rather
 than restated — a second copy of a rule is a rule that can disagree with
@@ -39,11 +39,7 @@ submodule, retired on 2026-10-22. A broken import here fails silently, so
 @docs/reglas/codigo.md
 @docs/reglas/secretos.md
 @docs/reglas/versiones.md
-
-One more rules doc is deliberately NOT imported, because it is ~65k characters
-and would sit in every session: **before writing or changing a test, a guard, a
-generator or any check — and before reporting something as verified — read
-[`docs/reglas/guardas.md`](docs/reglas/guardas.md)** ("verificar, no suponer").
+@docs/reglas/guardas.md
 
 - **$0 infra budget** — see the imported `costo-cero`. For this project that means Firebase Spark (never Cloud Functions: they require Blaze) and Vercel Hobby.
 - **No custom backend.** Both clients talk directly to Firebase (Auth + Firestore). **Firestore security rules are the only security boundary** — client-side route gating is cosmetic.
@@ -61,15 +57,15 @@ generator or any check — and before reporting something as verified — read
 - Period bucketing: an expense belongs to the materialized period whose `[startDate, endDate]` range contains its `date`. The calendar-date arithmetic (add days, today-in-timezone, boundary derivation, cascade materialization) is implemented twice (Swift + TS), both validated against `shared/period-test-vectors.json` (includes Sydney DST and weekly↔fortnightly switch cases).
 - Category names: seed categories carry a translatable `key`; user-created ones store a literal `name`. Display rule: `category.key ? t(category.key) : category.name`.
 - **Per-period budgets**: `defaultBudget` on the household is only a template. Each real period is a lazily materialized doc in `households/{id}/periodBudgets/{startDate}` recording its own `amountCents`, `period` type (weekly/fortnightly) and date range — an immutable historical record. Periods chain (each starts the day after the previous `endDate`); deterministic doc ID makes materialization idempotent. Changing the default only affects future (not-yet-materialized) periods; the current period is changed by editing its own doc. Editing the amount never moves boundaries, with three sanctioned exceptions, each fenced by its own branch in the rules and described in `shared/schema.md`: **stretching a week into a fortnight** (pushes `endDate` out by 7 days), **stretching a period** to a chosen later date (buys days, not money), and — the only move back — **starting the next period early**, which ends the period under way yesterday and creates the next from today in the same batch, so no day is ever left without a period. Expenses are never touched: they are bucketed by date, so the days re-bucket on their own.
+- **Servicios is a register of rules; the money lives in `expenses`.** A charged service is an ordinary expense in the `services` category whose note is the service's name — the screen links the two by that name (nothing stored) and offers to move the rule onto whatever was actually charged. The two figures at the top are this month's: what it costs, and how much has landed.
+- `/datos` is a GRID first: the range's expenses on screen with the export's own columns, sortable and filterable, and every export writes exactly what is on screen in that order. Importing a CSV lives in **Ajustes** (`components/import-expenses.tsx`) — it is the one control on either screen that writes rows.
+- Exports live in `apps/web/src/lib/export/`: `pdf.ts` (jsPDF) and `spreadsheet.ts` (exceljs) render the SAME payload, so Excel/Sheets mirror the PDF. Every export carries both money columns (AUD + the bank's USD, blank when unverified) and a range with unverified expenses is only exported after the consent checkbox is ticked; `drive.ts` uploads the workbook to Drive converted to a Google Sheet (needs the Drive API enabled — see `docs/setup.md`). Both libraries are dynamically imported to stay out of the first-load bundle.
 
 ## Commands
 
 All JS commands run from the repo root (pnpm workspace):
 
-- **Servicios is a register of rules; the money lives in `expenses`.** A charged service is an ordinary expense in the `services` category whose note is the service's name — the screen links the two by that name (nothing stored) and offers to move the rule onto whatever was actually charged. The two figures at the top are this month's: what it costs, and how much has landed.
-- `/datos` is a GRID first: the range's expenses on screen with the export's own columns, sortable and filterable, and every export writes exactly what is on screen in that order. Importing a CSV lives in **Ajustes** (`components/import-expenses.tsx`) — it is the one control on either screen that writes rows.
-- Exports live in `apps/web/src/lib/export/`: `pdf.ts` (jsPDF) and `spreadsheet.ts` (exceljs) render the SAME payload, so Excel/Sheets mirror the PDF. Every export carries both money columns (AUD + the bank's USD, blank when unverified) and a range with unverified expenses is only exported after the consent checkbox is ticked; `drive.ts` uploads the workbook to Drive converted to a Google Sheet (needs the Drive API enabled — see `docs/setup.md`). Both libraries are dynamically imported to stay out of the first-load bundle.
-- `pnpm verify:pwa` — PWA smoke check (service worker + offline cold start) (`scripts/verify-pwa.mjs`); the port, routes and on-screen strings it looks for are the `pwa` block of `scripts/project.json`. Needs a PRODUCTION build already serving: `pnpm build && pnpm --filter web exec next start -p 3112` — against `next dev` the worker never registers and it passes without testing anything.
+- `pnpm verify:pwa` — PWA smoke check, by hand only (the PWA is deprecated, so CI no longer runs it) (service worker + offline cold start) (`scripts/verify-pwa.mjs`); the port, routes and on-screen strings it looks for are the `pwa` block of `scripts/project.json`. Needs a PRODUCTION build already serving: `pnpm build && pnpm --filter web exec next start -p 3112` — against `next dev` the worker never registers and it passes without testing anything.
 - `pnpm test:rules` — Firestore rules tests. Picks a FREE port rather than
   insisting on one (`scripts/run-rules-tests.mjs`) — it tries the
   project's own port first and falls back only if it is taken, because on this
@@ -89,7 +85,7 @@ All JS commands run from the repo root (pnpm workspace):
   Start it with **`--project qcris-gastos-diarios`** when an app will connect:
   under any other project id the rules resolve `isMember()`'s `get()` in a
   namespace with no household, which is an evaluation error, and every
-  subcollection reads back empty with no error at all (`docs/reglas.md`).
+  subcollection reads back empty with no error at all.
 - iOS: `cd apps/ios && xcodegen && open Gastos.xcodeproj`. **`Gastos.xcodeproj` is
   NOT tracked** (since 2026-09-25, Cristian's decision, same as Stock): it is
   generated from `project.yml`, so run `xcodegen` after cloning and after any
@@ -123,6 +119,7 @@ All JS commands run from the repo root (pnpm workspace):
   downloadable by anyone, and the credential that takes the dump is a
   production admin key. Neither the workflow nor the
   `FIREBASE_SERVICE_ACCOUNT` secret is in this repo now.
-  On this machine a launchd agent also takes one every Thursday — see
-  [`docs/reglas.md`](docs/reglas.md) §9.
+  On this machine a launchd agent also takes one every Thursday — see "La
+  máquina" in [`docs/reglas.md`](docs/reglas.md); its plist hard-codes the
+  repo path, so moving the folder breaks it.
 - One-time console setup (Firestore db creation, Google provider, Vercel): `docs/setup.md`. Distribution is free-account sideload (7-day signing expiry) until the Apple Developer decision (PLAN Phase 5).

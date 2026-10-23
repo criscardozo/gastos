@@ -1,6 +1,7 @@
 # Interfaz
 
-Reglas de interfaz que se ganaron en dos apps. Están escritas como reglas y no
+Reglas de interfaz que salieron del trabajo en Gastos y Stock (no las dictó
+Cristian; describen cómo están hechas las apps y por qué). Están escritas como reglas y no
 como inventario a propósito: un inventario dice «las dos apps hacen X» y eso
 **caduca en silencio** —nada lo ejecuta— mientras que una regla dice «hacé X
 porque Y», y cuando una app deja de cumplirla no queda falsa, queda incumplida,
@@ -16,8 +17,9 @@ que es otra cosa y se puede detectar.
   capa le gana a cualquier utilidad de Tailwind por específica que sea: un
   `bg-*` escrito en un `<input>` pierde en silencio.
 - **`font-size: 16px` en `@media (pointer: coarse)`, y esta *sin* capa a
-  propósito.** Safari en iOS hace zoom al enfocar un campo de menos de 16 px, y
-  estas apps viven como PWA en el teléfono.
+  propósito.** Safari en iOS hace zoom al enfocar un campo de menos de 16 px.
+  Sigue valiendo aunque la PWA esté deprecada desde el 24/9/2026: cualquiera
+  puede abrir la web en el teléfono.
 
 ## Lo que la pantalla tiene que decir
 

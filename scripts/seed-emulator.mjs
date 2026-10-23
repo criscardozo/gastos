@@ -24,7 +24,7 @@
 //      household exists: `isMember()` then raises an EVALUATION ERROR rather
 //      than returning false, and every subcollection gated by it — periods,
 //      expenses, services, cards — comes back empty with no error at all. The
-//      app looks like a household that has nothing in it. See docs/reglas.md.
+//      app looks like a household that has nothing in it.
 //   2. launch the app once with `-useEmulators -devSignIn` so it creates its
 //      auth account, and leave it on the onboarding screen
 //   3. pnpm seed:emulator

@@ -81,16 +81,6 @@ jobs:
           git diff --exit-code apps/web/src/app/globals.css apps/ios/Gastos/Design/Theme.swift apps/ios/GastosWidget/WidgetTheme.swift
       - name: Component anatomy is attributable and representative
         run: python3 design-system/emit.py --verify
-      # The PWA is how the app stays on the phone, so "does it still start with
-      # no network" is a release-blocking question. It needs the PRODUCTION
-      # build above (the service worker is not served by `next dev`), which is
-      # why it lives in this job and not in the e2e one.
-      - name: PWA still installs and starts offline
-        run: |
-          pnpm --filter web exec playwright install --with-deps chromium
-          pnpm --filter web exec next start -p 3112 &
-          npx wait-on http://localhost:3112 --timeout 120000
-          pnpm verify:pwa
 
   e2e:
     name: Web — Playwright E2E (emulators)

@@ -234,9 +234,9 @@ otherwise, because rehearsing a restore is the only way to know the backup was
 ever worth taking — and rehearsing it against production is not rehearsing.
 
 ```sh
-# 1. The emulator, under the app's OWN project id (this matters — see
-#    docs/reglas.md: started under another one, isMember()'s get() resolves in
-#    a namespace with no household and every subcollection reads back empty).
+# 1. The emulator, under the app's OWN project id (this matters: started
+#    under another one, isMember()'s get() resolves in a namespace with no
+#    household and every subcollection reads back empty).
 firebase emulators:start --only auth,firestore \
   --config firebase/firebase.json --project qcris-gastos-diarios
 
@@ -301,7 +301,7 @@ credential. Both the workflow and the `FIREBASE_SERVICE_ACCOUNT` secret were
 removed from here, so publishing this repo cannot publish either.
 
 On this machine, `~/Library/LaunchAgents/dev.cardozo.gastos.backup.plist` takes
-one every Thursday as well — see `docs/reglas.md` §9.
+one every Thursday as well — see "La máquina" in `docs/reglas.md`.
 
 
 One thing to know, and it is why the dump is now COMMITTED rather than kept as

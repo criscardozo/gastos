@@ -64,12 +64,3 @@
   **también el lockfile** desde git e instalar con `--frozen-lockfile`, que no
   puede re-resolver. Eso separa las dos cosas — la declaración vuelve de git y
   la resolución no se toca.
-- **Ojo con el bump que no cambia nada.** Un rango `^24.13.3` ya admite
-  `24.13.4`, así que mover el rango declarado no cambia qué se instala: mueve
-  la **intención** por algo que el lockfile ya podía hacer solo. Esa es la estrategia `increase` de Dependabot, que es su default
-  para aplicaciones. La documentación de GitHub define la alternativa así:
-  `increase-if-necessary` — «deja el requisito de versión sin cambios si ya
-  admite la nueva release (Dependabot igual actualiza la versión resuelta); si
-  no, lo ensancha». Está soportada para `npm`. Con eso, un patch dentro del
-  rango mueve sólo el lockfile, que es lo correcto: la declaración es la
-  intención y un patch no la cambia.

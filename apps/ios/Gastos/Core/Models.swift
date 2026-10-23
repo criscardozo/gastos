@@ -505,8 +505,8 @@ enum SeedCategories {
     ///
     /// Resolved through a type in this module rather than `Bundle.main`: in a
     /// unit-test bundle that is the runner, so the lookup would miss and this
-    /// would answer an EMPTY LIST — a plausible value that is not the truth,
-    /// which is the shape of half the bugs in docs/reglas.md. Same reason L10n
+    /// would answer an EMPTY LIST — a plausible value that is not the truth.
+    /// Same reason L10n
     /// resolves its strings the same way.
     static let all: [SeedCategory] = {
         guard let url = Bundle(for: SeedCategoriesBundleToken.self)

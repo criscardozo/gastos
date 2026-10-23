@@ -68,27 +68,12 @@ const LOGGING = String(config.emulators.logging.port);
  * and the commit message said the prose was covered. Nothing caught it
  * because the sweep below only asks whether a file is ACCOUNTED FOR, and
  * these files still were; what vanished was the part that reads them. Found
- * by mutating a port in docs/reglas.md and watching nothing fail.
+ * by mutating a port in a documented file and watching nothing fail.
  */
 const DOCUMENTED: readonly (readonly [string, readonly string[]])[] = [
   ["CLAUDE.md", [AUTH, FIRESTORE, WEBSOCKET, UI, HUB, LOGGING]],
   ["README.md", [AUTH, FIRESTORE, UI]],
   ["apps/ios/README.md", [AUTH, FIRESTORE]],
-  // Narrates the port move — including the OLD numbers, which is the point of
-  // the entry — but it also states the current block in full, and that half
-  // goes stale like any other copy.
-  //
-  // It used to be excluded from the sweep wholesale, on the strength of the
-  // narration. That exclusion was right about one thing and quietly covered a
-  // second I had never checked: six live ports sitting in a paragraph, in the
-  // file that explains that sentences about ports go stale. The Stock session
-  // found the identical thing inside its own guard twenty minutes after
-  // refusing a per-line exception elsewhere — neither of us evaluated the
-  // exception, we just wrote it as housekeeping.
-  //
-  // Nothing is excluded from the sweep now except firebase.json, which is the
-  // source rather than a copy.
-  ["docs/reglas.md", [AUTH, FIRESTORE, WEBSOCKET, UI, HUB, LOGGING]],
   // The setup guide tells a new machine which ports to expect and hands out a
   // FIRESTORE_EMULATOR_HOST to paste. It sat on Firebase's DEFAULTS —
   // 9099/8080/4000 — for as long as this project has had its own block, so
