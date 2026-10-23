@@ -69,4 +69,3 @@
   primero el vector.
 - Comentar el **por qué**, no el qué; sobre todo cuando la decisión fue contra
   la opción obvia.
-- Sin subagentes ni workflows salvo pedido explícito.
