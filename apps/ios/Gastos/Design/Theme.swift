@@ -95,7 +95,7 @@ enum Theme {
 
     // Member avatars (Cristian blue / Natalia pink); dark variants per tokens.
     static let avatarBlue = Color.hex(light: "#2A6FDB", dark: "#4B87E8")
-    static let avatarPink = Color.hex(light: "#E0447C", dark: "#EF6D9C")
+    static let avatarPink = Color.hex(light: "#D72464", dark: "#EF6D9C")
     static let avatarInk = Color.hex(light: "#FFFFFF", dark: "#191410")
 
     /// Avatar color from a stored memberProfiles hex, adapting known light

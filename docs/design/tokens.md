@@ -64,6 +64,10 @@ inbox, and the `estimado` badge — that last one is amber precisely because it
 DOES ask you to check the number.
 
 Member avatars: Cristian `#2A6FDB`, Natalia `#E0447C` (initials, white, 700).
+Natalia's avatar is PAINTED `#D72464` in light, not the design's `#E0447C`:
+white initials on the design value read 3.97:1, under AA (4.85:1 now).
+`#E0447C` is still what Firestore stores as her colour — the key both apps
+map to the token.
 
 ## Palette — dark
 
