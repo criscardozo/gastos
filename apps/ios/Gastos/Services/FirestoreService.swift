@@ -600,6 +600,22 @@ final class FirestoreService {
     // not in the list, and the run announced nothing. From the server or not
     // at all.
 
+    /// The period containing `today`, or nil when none does (not materialized
+    /// yet). One document: the latest period starting on or before today.
+    func fetchCurrentPeriod(householdId: String, today: CalendarDate) async throws -> PeriodBudget? {
+        let snapshot = try await db.collection("households").document(householdId)
+            .collection("periodBudgets")
+            .whereField("startDate", isLessThanOrEqualTo: today.raw)
+            .order(by: "startDate", descending: true)
+            .limit(to: 1)
+            .getDocuments(source: .server)
+        guard let period = snapshot.documents.first
+            .flatMap({ Self.decode($0, as: PeriodBudget.self, in: "periodBudgets") }),
+              period.contains(today)
+        else { return nil }
+        return period
+    }
+
     func fetchUserProfile(uid: String, source: FirestoreSource = .server) async throws -> UserProfile? {
         let snapshot = try await db.collection("users").document(uid).getDocument(source: source)
         guard snapshot.exists else { return nil }

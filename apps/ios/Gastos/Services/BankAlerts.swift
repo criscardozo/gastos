@@ -74,9 +74,10 @@ enum BankAlerts {
         return granted
     }
 
+    /// The background run stays scheduled: with alerts off it still keeps the
+    /// widget current, and posts nothing.
     nonisolated static func disable() {
         UserDefaults.standard.set(false, forKey: enabledKey)
-        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: taskId)
     }
 
     // MARK: Scheduling
@@ -102,8 +103,10 @@ enum BankAlerts {
     /// Asks iOS for the next run, no sooner than 15 minutes from now — the
     /// same cadence as the ingestion that files the charges. iOS treats it as
     /// "not before", never as "at".
+    /// Scheduled whether or not the alerts are on: with them off a run still
+    /// refreshes the widget (and does nothing else), which otherwise only the
+    /// open app ever did.
     nonisolated static func schedule() {
-        guard isEnabled else { return }
         let request = BGAppRefreshTaskRequest(identifier: taskId)
         request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)
         Task {
@@ -156,7 +159,6 @@ enum BankAlerts {
     /// tells iOS the run failed rather than that there was nothing to say.
     @discardableResult
     static func refresh(firestore: FirestoreService) async -> Bool {
-        guard isEnabled else { return finish("disabled") }
         guard let uid = Auth.auth().currentUser?.uid else { return finish("signed-out") }
         do {
             guard let profile = try await firestore.fetchUserProfile(uid: uid),
@@ -167,6 +169,19 @@ enum BankAlerts {
 
             let today = PeriodLogic.todayInTimezone(Date(), household.timeZone)
             let from = PeriodLogic.addDays(today, -lookbackDays)
+            guard isEnabled else {
+                // Alerts off: the widget, and nothing else — no filing, no
+                // banners.
+                let expenses = try await firestore.fetchExpenses(
+                    householdId: householdId, startDate: from.raw, endDate: today.raw,
+                    source: .server
+                )
+                let widget = await publishWidget(
+                    firestore: firestore, householdId: householdId, household: household,
+                    today: today, from: from, expenses: expenses
+                )
+                return finish("widget only: \(widget.map(String.init) ?? "not published")")
+            }
             let charges = try await firestore.fetchBankCharges(householdId: householdId)
             let rules = try await firestore.fetchRecurringRules(householdId: householdId)
             let expenses = try await firestore.fetchExpenses(
@@ -217,6 +232,16 @@ enum BankAlerts {
                 automatic.append(Filed(id: id, note: expense.note, amountCents: expense.amountCents))
             }
 
+            // 3. The widget. Only the open app used to publish it, so after a
+            // period ended it kept showing the old remaining figure, and the
+            // other member's spending never reached it until this phone opened
+            // the app. One more read — the current period — and the same sum
+            // the app shows, over the expenses already fetched above.
+            await publishWidget(
+                firestore: firestore, householdId: householdId, household: household,
+                today: today, from: from, expenses: expenses
+            )
+
             let defaults = UserDefaults.standard
             let chargeRun = NotificationLedger.fresh(
                 newCharges.map(\.id), seen: defaults.stringArray(forKey: chargesKey)
@@ -245,6 +270,34 @@ enum BankAlerts {
         let id: String
         let note: String
         let amountCents: Int
+    }
+
+    /// The remaining cents it published, or nil when it published nothing.
+    @discardableResult
+    private static func publishWidget(
+        firestore: FirestoreService, householdId: String, household: Household,
+        today: CalendarDate, from: CalendarDate, expenses: [Expense]
+    ) async -> Int? {
+        guard let period = try? await firestore.fetchCurrentPeriod(householdId: householdId, today: today),
+              let start = CalendarDate(period.startDate),
+              // The expenses above reach back `lookbackDays`; a period starting
+              // earlier would be summed short, so it is left to the open app.
+              start.raw >= from.raw
+        else { return nil }
+        let spent = expenses
+            .filter { $0.date >= period.startDate && $0.date <= period.endDate }
+            .filter { household.categories[$0.categoryId]?.isBudgeted ?? true }
+            .reduce(0) { $0 + $1.amountCents }
+        WidgetBridge.publish(WidgetBridge.Snapshot(
+            remainingCents: period.amountCents - spent,
+            budgetCents: period.amountCents,
+            state: PeriodLogic.budgetState(spentCents: spent, budgetCents: period.amountCents).rawValue,
+            periodEndDate: period.endDate,
+            currency: household.currency,
+            timezone: household.timezone,
+            updatedAtEpoch: Int(Date().timeIntervalSince1970)
+        ))
+        return period.amountCents - spent
     }
 
     // MARK: Notifications
