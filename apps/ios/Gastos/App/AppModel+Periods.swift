@@ -318,6 +318,7 @@ extension AppModel {
         UserDefaults.standard.set(previous.startDate, forKey: "seenPeriodStart.\(householdId)")
         showNewPeriodSheet = false
         setNewPeriodPrompt(manual: false)
+        defer { fileHeldExpense() }
         write {
             try await self.firestore.stretchPeriod(
                 householdId: householdId,
@@ -339,6 +340,7 @@ extension AppModel {
         // release on the round-trip leaves a window where the period has been
         // started and adding an expense is still refused.
         clearDeferredPeriod()
+        fileHeldExpense()
     }
 
     /// Answer the start-period screen. `rolloverCents` is how much of
@@ -351,6 +353,7 @@ extension AppModel {
         UserDefaults.standard.set(current.startDate, forKey: "seenPeriodStart.\(householdId)")
         showNewPeriodSheet = false
         setNewPeriodPrompt(manual: false)
+        defer { fileHeldExpense() }
         // Two shapes, and the difference is not cosmetic. Changing the amount
         // re-budgets AND confirms in one write; accepting what was offered
         // changes no figure, so it writes only the confirmation — which this
@@ -369,7 +372,8 @@ extension AppModel {
                     source: PeriodSource.of(
                         amountCents: amountCents,
                         defaultAmountCents: self.household?.defaultBudget.amountCents ?? amountCents
-                    )
+                    ),
+                    confirm: !current.isConfirmed
                 )
             }
         } else if !current.isConfirmed {

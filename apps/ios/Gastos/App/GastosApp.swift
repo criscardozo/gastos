@@ -55,9 +55,16 @@ struct GastosApp: App {
                     if QuickEntryBridge.consumePending() {
                         AppModel.requestQuickEntry()
                     }
+                    model.dayMayHaveChanged()
                     // Past-period aggregations aren't live — refresh on foreground.
                     model.refreshPastTotals()
                     model.publishWidgetSnapshot()
+                }
+                // Midnight with the app open: the device's calendar day, which
+                // for this household is Sydney's too. The check itself reads
+                // the household's timezone, so a false alarm costs nothing.
+                .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+                    model.dayMayHaveChanged()
                 }
         }
     }

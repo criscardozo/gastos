@@ -559,15 +559,18 @@ struct ExpenseFormView: View {
 
     private func save() {
         guard let categoryId = selectedCategoryId, amount.audCents > 0 else { return }
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
         switch mode {
         case .create:
-            model.saveExpense(
+            // Refused while the period is deferred, the model HOLDS the
+            // expense and files it once the period is answered — so the form
+            // can still reset and close. Only the haptic tells the two apart.
+            let saved = model.saveExpense(
                 amountCents: amount.audCents,
                 categoryId: categoryId,
                 note: note.trimmingCharacters(in: .whitespacesAndNewlines),
                 date: pickedDate
             )
+            UINotificationFeedbackGenerator().notificationOccurred(saved ? .success : .warning)
             // Reset for the next quick entry.
             amount = BudgetEntryAmount()
             note = ""
@@ -579,6 +582,7 @@ struct ExpenseFormView: View {
             // there is no handler and the reset above is the whole ending.
             onDone?()
         case .edit(let item):
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
             if let id = item.expense.id, let date = pickedDate ?? CalendarDate(item.expense.date) {
                 model.updateExpense(
                     id: id,

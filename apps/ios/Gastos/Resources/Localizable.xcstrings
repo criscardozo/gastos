@@ -2664,6 +2664,23 @@
         }
       }
     },
+    "newPeriod.heldExpense": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting it files the expense that is waiting: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al iniciarlo se carga el gasto que quedó esperando: %@"
+          }
+        }
+      }
+    },
     "onboarding.budget.sub": {
       "extractionState": "stale",
       "localizations": {

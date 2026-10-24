@@ -165,7 +165,10 @@ struct MainTabView: View {
                 }
                 .tag(AppModel.MainTab.settings)
         }
-        .sheet(isPresented: $model.showQuickEntry) {
+        // onDismiss: an expense held back during a deferred period brings the
+        // start-period question up only once this sheet is gone — asked for
+        // while it is still up, on the same host, it may never appear.
+        .sheet(isPresented: $model.showQuickEntry, onDismiss: { model.quickEntryClosed() }) {
             QuickEntryView { model.showQuickEntry = false }
         }
     }

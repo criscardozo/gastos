@@ -24,7 +24,10 @@ extension AppModel {
     }
 
     var currentPeriod: PeriodBudget? {
-        periods.last(where: { $0.contains(today) })
+        // Read so that views depending on the current period redraw when the
+        // day turns; see `dayMayHaveChanged`.
+        _ = observedDay
+        return periods.last(where: { $0.contains(today) })
     }
 
     var currentPeriodIndex: Int? {

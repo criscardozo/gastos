@@ -41,14 +41,26 @@ enum WalletPayment {
         var code = ""
         if let match = upper.range(of: #"\b[A-Z]{3}\b"#, options: .regularExpression) {
             code = String(upper[match])
-        } else if upper.contains("US$") {
-            code = "USD"
-        } else if upper.contains("A$") {
-            code = "AUD"
-        } else if upper.contains("€") {
-            code = "EUR"
-        } else if upper.contains("£") {
-            code = "GBP"
+        } else if let match = upper.range(of: #"[A-Z]{1,3}\$"#, options: .regularExpression) {
+            // Letters before a dollar say WHOSE dollar. Only "A$"/"AU$" is the
+            // household's; "CA$" used to read as AUD because it contains "A$",
+            // and "NZ$", "HK$", "S$" carried no code at all, which is taken as
+            // the household's. Anything else is kept as written and refused.
+            let prefix = upper[match].dropLast()
+            switch prefix {
+            case "A", "AU": code = "AUD"
+            case "US": code = "USD"
+            default: code = String(upper[match])
+            }
+        } else if let symbol = text.first(where: { $0.isCurrencySymbol && $0 != "$" }) {
+            // A currency sign that is not a dollar is never the household's:
+            // "¥1,500" with no code used to be filed as $1,500 AUD.
+            switch symbol {
+            case "€": code = "EUR"
+            case "£": code = "GBP"
+            case "¥": code = "JPY"
+            default: code = String(symbol)
+            }
         }
         let negative = text.contains("-") || text.contains("−") || (text.contains("(") && text.contains(")"))
         let number = text.filter { $0.isASCII && ($0.isNumber || $0 == "." || $0 == ",") }

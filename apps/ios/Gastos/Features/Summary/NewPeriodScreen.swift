@@ -98,6 +98,14 @@ struct NewPeriodScreen: View {
                 .appFont(13.5)
                 .foregroundStyle(Theme.inkTertiary)
                 .padding(.top, 2)
+            // An expense typed while the period was deferred waits for this
+            // answer. Said here so it is not a surprise when it lands.
+            if let held = model.heldExpense {
+                Text(l10n.t("newPeriod.heldExpense", MoneyFormatter.aud(held.amountCents, locale: l10n.locale)))
+                    .appFont(13, .semibold)
+                    .foregroundStyle(Theme.ink)
+                    .padding(.top, 6)
+            }
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)

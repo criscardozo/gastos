@@ -53,6 +53,20 @@ final class WalletPaymentTests: XCTestCase {
         XCTAssertEqual(parsed("USD 8.53"), "8.53 USD")
         XCTAssertEqual(parsed("€5"), "5 EUR")
         XCTAssertEqual(parsed("£5.20"), "5.2 GBP")
+        // Every other dollar is somebody else's. "CA$" used to read as AUD
+        // because it contains "A$", and a symbol with no code ("¥1,500",
+        // "NZ$12") came back with none, which is taken as the household's —
+        // ¥1,500 would have been filed as $1,500 AUD.
+        XCTAssertEqual(parsed("CA$12.00"), "12 CA$")
+        XCTAssertEqual(parsed("NZ$12"), "12 NZ$")
+        XCTAssertEqual(parsed("HK$30.50"), "30.5 HK$")
+        XCTAssertEqual(parsed("S$9"), "9 S$")
+        XCTAssertEqual(parsed("¥1,500"), "1500 JPY")
+        XCTAssertEqual(parsed("₹250"), "250 ₹")
+        // The household's own dollar, however it is written, still reads as AUD.
+        XCTAssertEqual(parsed("A$12.00"), "12 AUD")
+        XCTAssertEqual(parsed("AU$12.00"), "12 AUD")
+        XCTAssertEqual(parsed("$12.00"), "12 ")
         guard case .success(let usd) = WalletPayment.parseAmount("USD 8.53") else { return XCTFail() }
         XCTAssertEqual(
             WalletPayment.amountCents(usd.amount, currencyCode: usd.currencyCode, householdCurrency: "AUD"),

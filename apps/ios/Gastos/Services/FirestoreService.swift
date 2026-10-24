@@ -522,15 +522,23 @@ final class FirestoreService {
         /// period came out marked "Ajustado" while reading the usual figure.
         /// Not inferable from the numbers either: 170 can be the default with
         /// the carry declined, or a typed figure that happens to match.
-        source: String = "custom"
+        source: String = "custom",
+        /// Stamp `confirmedAt` with this write. True only when answering the
+        /// start-period screen for a period nobody has answered yet:
+        /// answering with a figure IS answering for the period.
+        ///
+        /// It used to be stamped on every call, and the rules keep a
+        /// confirmation write-once — so Ajustes' "this period" editor was
+        /// refused on any period already confirmed, which is nearly all of
+        /// them. Editing in Ajustes is not answering the screen.
+        confirm: Bool = false
     ) async throws {
         var data: [String: Any] = [
             "amountCents": amountCents,
             "source": source,
-            // Answering the screen with a figure IS answering for this period.
-            "confirmedAt": FieldValue.serverTimestamp(),
             "updatedAt": FieldValue.serverTimestamp(),
         ]
+        if confirm { data["confirmedAt"] = FieldValue.serverTimestamp() }
         if let rolloverCents { data["rolloverCents"] = rolloverCents }
         try await db.collection("households").document(householdId)
             .collection("periodBudgets").document(startDate)

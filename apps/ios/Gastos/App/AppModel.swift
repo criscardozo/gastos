@@ -527,11 +527,15 @@ final class AppModel {
                 self.materializeIfNeeded()
                 self.refreshExpenseListeners()
                 self.publishWidgetSnapshot()
+                // The household carries the timezone, so its "today" can move
+                // with no clock involved.
+                self.dayMayHaveChanged()
             }
         }
         periodsListener = firestore.listenPeriodBudgets(householdId: id) { [weak self] periods, fromCache in
             guard let self else { return }
             let hadPeriods = !self.periods.isEmpty
+            if self.observedDay.isEmpty { self.observedDay = self.today.raw }
             self.periods = periods
             self.periodsFromCache = fromCache
             if self.viewedPeriodIndex == nil || !hadPeriods {
@@ -543,9 +547,42 @@ final class AppModel {
             self.loadPastTotals()
             self.loadMonthTotal()
             self.publishWidgetSnapshot()
+            self.flushWatchExpenses()
         }
     }
 
+
+    /// The household's day as of the last look, as "YYYY-MM-DD". Stored so
+    /// that a new day is something SwiftUI can observe: `today` is computed
+    /// fresh on every read, and nothing redrew when it moved.
+    private(set) var observedDay = ""
+
+    /// The day may have turned while the app was away or open.
+    ///
+    /// Nothing reacted to it before. Coming back to the foreground only
+    /// refreshed past totals, so an app suspended on Thursday night and opened
+    /// on Friday — the first day of a new period — kept last week's expense
+    /// listener and showed the new budget minus last week's spending, or, if
+    /// nobody had materialized the period yet, no period at all and no
+    /// start-period screen. Cheap when the day has not moved: one comparison.
+    func dayMayHaveChanged() {
+        let now = today.raw
+        guard now != observedDay else { return }
+        let previous = observedDay
+        observedDay = now
+        guard attachedHouseholdId != nil, !previous.isEmpty else { return }
+        // Screens that were on the period holding the old day follow the day;
+        // one deliberately browsing an older period stays where it was.
+        if let viewed = viewedPeriod, let old = CalendarDate(previous), viewed.contains(old) {
+            viewedPeriodIndex = currentPeriodIndex
+        }
+        materializeIfNeeded()
+        refreshExpenseListeners()
+        checkNewPeriodPrompt()
+        loadPastTotals()
+        loadMonthTotal()
+        publishWidgetSnapshot()
+    }
 
     /// What the period before the current one left over — negative when it was
     /// overspent. nil when there is no previous period, or the read failed.
@@ -838,19 +875,40 @@ final class AppModel {
 
     // MARK: Expense actions
 
+    /// An expense typed while the period under way was deferred. Kept here,
+    /// not thrown away, and filed the moment the period is answered.
+    ///
+    /// The form used to reset and close whatever `saveExpense` did, so an
+    /// expense typed during "Todavía no arrancar" was gone, with a success
+    /// haptic on top. In memory only, like the deferral it waits on.
+    struct HeldExpense: Equatable {
+        var amountCents: Int
+        var categoryId: String
+        var note: String
+        var date: CalendarDate?
+    }
+    private(set) var heldExpense: HeldExpense?
+
+    /// Whether the expense was written. `false` means it was HELD: refused
+    /// while the period under way is deferred, kept in `heldExpense`, and the
+    /// start-period question brought back — straight away, or once the quick
+    /// entry sheet has gone, since a cover asked for while a sheet is up on
+    /// the same host may never appear.
+    @discardableResult
     func saveExpense(
         amountCents: Int,
         categoryId: String,
         note: String,
         date: CalendarDate?
-    ) {
-        // Refused while the period under way was deferred, and refused by
-        // bringing the question back rather than by failing quietly.
+    ) -> Bool {
         guard canAddExpense else {
-            openNewPeriodPrompt()
-            return
+            heldExpense = HeldExpense(
+                amountCents: amountCents, categoryId: categoryId, note: note, date: date
+            )
+            if !showQuickEntry { askToStartPeriodForHeldExpense() }
+            return false
         }
-        guard let householdId = attachedHouseholdId, let uid else { return }
+        guard let householdId = attachedHouseholdId, let uid else { return false }
         firestore.createExpense(
             householdId: householdId,
             uid: uid,
@@ -859,30 +917,110 @@ final class AppModel {
             note: note,
             date: (date ?? today).raw
         )
+        return true
     }
 
-    /// Persists an expense relayed from the Apple Watch. Deduped by `clientId`
-    /// (also used as the Firestore doc id) so a WatchConnectivity redelivery
-    /// never double-writes. Drops gracefully when there's no household/uid yet.
+    /// The quick entry sheet finished closing. If it held an expense back,
+    /// this is when the start-period question can actually come up.
+    func quickEntryClosed() {
+        if heldExpense != nil && !canAddExpense { askToStartPeriodForHeldExpense() }
+    }
+
+    /// The start-period screen as a period starting shows it — answer it, or
+    /// "Todavía no arrancar", which keeps the expense waiting — and not the
+    /// manual one, whose "Cancelar" clears the deferral and would file the
+    /// expense without the period ever being started.
+    private func askToStartPeriodForHeldExpense() {
+        guard currentPeriod != nil else { return }
+        setNewPeriodPrompt(manual: false)
+        showNewPeriodSheet = true
+    }
+
+    /// The period was just answered: file what was held. Written straight
+    /// through rather than via `saveExpense`, whose gate reads the
+    /// confirmation back from the listener and may not have it yet.
+    func fileHeldExpense() {
+        // What the watch sent during the deferral waited for the same answer.
+        defer { flushWatchExpenses() }
+        guard let held = heldExpense, let householdId = attachedHouseholdId, let uid else { return }
+        heldExpense = nil
+        firestore.createExpense(
+            householdId: householdId,
+            uid: uid,
+            amountCents: held.amountCents,
+            categoryId: held.categoryId,
+            note: held.note,
+            date: (held.date ?? today).raw
+        )
+    }
+
+    /// The watch's `clientId`s already written. Also the Firestore doc id, so
+    /// a WatchConnectivity redelivery never double-writes.
     private static let watchProcessedKey = "watchProcessedClientIds"
+
+    /// Expenses from the watch not written yet, in UserDefaults so they
+    /// outlive the app being killed.
+    ///
+    /// They used to be written on arrival or DROPPED: while the period under
+    /// way was deferred (the watch cannot show the start-period screen), and
+    /// on a cold launch, where WatchConnectivity delivers queued transfers
+    /// right after activation — before the household is attached. Either way
+    /// the watch had already said "Guardado", and WatchConnectivity never
+    /// delivers a transfer twice. Now they wait here and are written as soon
+    /// as an expense may be.
+    private static let watchPendingKey = "watchPendingExpenses"
 
     func saveExpenseFromWatch(
         clientId: String, amountCents: Int, categoryId: String, dateYMD: String,
         enteredAt: Double? = nil
     ) {
-        // The watch cannot show the start-period screen, so it cannot be sent
-        // there — but writing anyway would file the expense into a period
-        // nobody started, which is the whole thing being prevented. Dropped,
-        // and the phone asks the next time it is opened.
-        guard canAddExpense else { return }
-        guard let householdId = attachedHouseholdId, let uid else { return }
-        // The household's day, not the watch's: see WatchExpenseDate.
-        guard amountCents > 0,
-              let date = WatchExpenseDate.resolve(
-                  enteredAt: enteredAt, dateYMD: dateYMD,
-                  householdTimeZone: householdTimeZone
-              )
+        guard amountCents > 0 else { return }
+        var pending = UserDefaults.standard.array(forKey: Self.watchPendingKey) as? [[String: Any]] ?? []
+        guard !pending.contains(where: { $0["clientId"] as? String == clientId }) else { return }
+        var entry: [String: Any] = [
+            "clientId": clientId, "amountCents": amountCents,
+            "categoryId": categoryId, "dateYMD": dateYMD,
+        ]
+        if let enteredAt { entry["enteredAt"] = enteredAt }
+        pending.append(entry)
+        UserDefaults.standard.set(pending, forKey: Self.watchPendingKey)
+        flushWatchExpenses()
+    }
+
+    /// Write whatever the watch left waiting, if an expense may be written
+    /// now: the household and its periods loaded, and the period under way not
+    /// deferred. Called on arrival, when the periods load, and when the period
+    /// is answered.
+    func flushWatchExpenses() {
+        guard canAddExpense, !periods.isEmpty, household != nil,
+              let householdId = attachedHouseholdId, let uid
         else { return }
+        let pending = UserDefaults.standard.array(forKey: Self.watchPendingKey) as? [[String: Any]] ?? []
+        guard !pending.isEmpty else { return }
+        UserDefaults.standard.removeObject(forKey: Self.watchPendingKey)
+        for entry in pending {
+            guard let clientId = entry["clientId"] as? String,
+                  let amountCents = entry["amountCents"] as? Int,
+                  let categoryId = entry["categoryId"] as? String,
+                  let dateYMD = entry["dateYMD"] as? String
+            else { continue }
+            writeWatchExpense(
+                householdId: householdId, uid: uid, clientId: clientId,
+                amountCents: amountCents, categoryId: categoryId,
+                dateYMD: dateYMD, enteredAt: entry["enteredAt"] as? Double
+            )
+        }
+    }
+
+    private func writeWatchExpense(
+        householdId: String, uid: String, clientId: String,
+        amountCents: Int, categoryId: String, dateYMD: String, enteredAt: Double?
+    ) {
+        // The household's day, not the watch's: see WatchExpenseDate.
+        guard let date = WatchExpenseDate.resolve(
+            enteredAt: enteredAt, dateYMD: dateYMD,
+            householdTimeZone: householdTimeZone
+        ) else { return }
 
         // Idempotency guard: skip payloads we've already processed.
         //
