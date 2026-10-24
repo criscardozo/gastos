@@ -44,13 +44,13 @@ test("the shortest signature rules, not the app's", () => {
   const verdict = signingVerdict(
     [
       { name: "app", expiry: at(7) },
-      { name: "watch", expiry: at(2) },
-      { name: "widget", expiry: at(5) },
+      { name: "watch", expiry: at(6, 22) },
+      { name: "widget", expiry: at(6, 23) },
     ],
     NOW,
   );
   assert.equal(verdict.soonest.name, "watch");
-  assert.equal(verdict.days, 2);
+  assert.equal(verdict.days, 6);
   assert.equal(verdict.fresh, true);
 });
 
@@ -61,10 +61,16 @@ test("under a day is refused, which is what a silent non-renewal looks like", ()
   assert.equal(verdict.hours, 23);
 });
 
-test("exactly a day is fresh; a minute under is not", () => {
-  assert.equal(signingVerdict([{ name: "a", expiry: at(1) }], NOW).fresh, true);
-  const justUnder = new Date(at(1).getTime() - 60_000);
+test("six days is fresh; a minute under is not", () => {
+  assert.equal(signingVerdict([{ name: "a", expiry: at(6) }], NOW).fresh, true);
+  const justUnder = new Date(at(6).getTime() - 60_000);
   assert.equal(signingVerdict([{ name: "a", expiry: justUnder }], NOW).fresh, false);
+});
+
+test("a profile with days left but well short of seven was reused, not renewed", () => {
+  // The case the old one-day floor let through: two days left installs a
+  // phone that stops opening the app on Monday, with the script saying done.
+  assert.equal(signingVerdict([{ name: "a", expiry: at(2) }], NOW).fresh, false);
 });
 
 test("a bundle with no profile at all is an error, not an empty pass", () => {

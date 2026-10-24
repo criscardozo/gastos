@@ -226,7 +226,7 @@ async function main() {
 
   const restoreProfiles = () => {
     // Guard 3: only on failure, and only what is actually missing.
-    if (renewed) return;
+    if (renewed || !existsSync(stash)) return;
     const held = readdirSync(stash).filter((f) => f.endsWith(".mobileprovision"));
     for (const file of held) {
       const back = join(PROFILES, file);
@@ -235,10 +235,25 @@ async function main() {
     if (held.length > 0) console.log("   (perfiles restaurados: no se emitió ninguno nuevo)");
   };
 
+  // Ctrl-C. Without a listener Node exits 130 the moment the blocking build
+  // returns and `finally` never runs, so the profiles stayed moved aside in a
+  // temp folder nobody was told about (measured). With one, the build's
+  // failure path below runs and restores them; this is the backstop, run once
+  // that has happened, and it only puts back what is still missing.
+  process.once("SIGINT", () => {
+    console.error("\n   Interrumpido: restaurando los perfiles apartados.");
+    restoreProfiles();
+    rmSync(stash, { recursive: true, force: true });
+    process.exit(130);
+  });
+
   try {
     say(`1. Apartando los perfiles de ${config.bundleId}`);
     let moved = 0;
-    for (const file of readdirSync(PROFILES).filter((f) => f.endsWith(".mobileprovision"))) {
+    // A machine where Xcode never signed anything has no folder yet: nothing
+    // to move, rather than a raw ENOENT.
+    const present = existsSync(PROFILES) ? readdirSync(PROFILES) : [];
+    for (const file of present.filter((f) => f.endsWith(".mobileprovision"))) {
       const profile = readProfile(join(PROFILES, file));
       if (profile === null || !belongsToApp(profile.appId, config.bundleId)) continue;
       copyFileSync(join(PROFILES, file), join(stash, file));
@@ -313,7 +328,8 @@ async function main() {
     if (!verdict.fresh) {
       throw new ScriptError(
         `   ABORTO: una firma recién emitida dura 7 días, no ${verdict.days}d ${verdict.hours}h.\n` +
-          "   No se reemitió nada. No instalo para no dejarte una app que muere hoy.",
+          "   Xcode reusó un perfil en vez de emitir uno nuevo. No instalo para no dejarte\n" +
+          "   una app que se cae antes de la semana.",
       );
     }
 

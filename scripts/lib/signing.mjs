@@ -48,7 +48,11 @@ export function signingVerdict(profiles, now = new Date()) {
     msLeft,
     days: Math.floor(msLeft / 86_400_000),
     hours: Math.floor((msLeft % 86_400_000) / 3_600_000),
-    fresh: msLeft >= 86_400_000,
+    // Six days, not one. A free-team profile is issued for seven, so one
+    // that was really reissued shows ~6d 23h; anything well under that was
+    // reused, not renewed — which is the failure this exists to catch. At one
+    // day, a profile with two left installed without a word.
+    fresh: msLeft >= 6 * 86_400_000,
     sorted,
   };
 }
