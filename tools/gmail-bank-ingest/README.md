@@ -189,7 +189,15 @@ python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['private_key'])" 
 
 ## When the bank changes the wording
 
-`parseBankNotification` returns `null` rather than guessing, so a format change
-means charges silently stop appearing — the failure mode is "nothing arrives",
-not "wrong data". Run `debugLatest`, look at the logged text, and adjust the
-regexes in `parse.js` (the tests here will tell you if the old cases break).
+`classifyBankNotification` never guesses. A mail that says it is a purchase
+("autorización de consumo") but whose amount or date it cannot read comes back
+`unparsed`, and that is loud on purpose: the message is NOT remembered as seen,
+the run fails after filing everything else (so Apps Script sends its failure
+email, naming the message ids), and the heartbeat is not stamped, so the apps
+say the mailbox has stopped being read. Until 2026-10-24 such a mail was
+remembered as seen and the run ended green — a wording change would have
+stopped every charge with nothing saying so.
+
+Run `debugLatest`, look at the logged text, and adjust the regexes in
+`parse.js` (the tests here will tell you if the old cases break). Once the new
+`parse.js` is pasted into the script, the next run reads the held messages.

@@ -76,9 +76,17 @@ var NAMED_ENTITIES = {
   ordf: "ª",
 };
 
-/** "63,90" → 6390. Dots are thousands, the comma is the decimal separator. */
+/**
+ * "63,90" → 6390. Dots are thousands, the comma is the decimal separator.
+ *
+ * Only that shape. It used to strip every dot and read the rest, so "63.90"
+ * became 6390 DOLLARS. An amount written any other way is null, which the
+ * caller reports as a purchase it could not read rather than guessing.
+ */
 function moneyToCents(raw) {
-  var normalized = String(raw).replace(/\./g, "").replace(",", ".");
+  var s = String(raw);
+  if (!/^(\d{1,3}(\.\d{3})+|\d+)(,\d{1,2})?$/.test(s)) return null;
+  var normalized = s.replace(/\./g, "").replace(",", ".");
   var value = Number(normalized);
   if (!isFinite(value) || value <= 0) return null;
   var cents = Math.round(value * 100);
@@ -104,27 +112,36 @@ function householdDate(year, month, day, hour, minute, timeZone) {
 }
 
 /**
- * Parse one notification body into a charge, or null when the email is not an
- * authorised-purchase notice (reversals, informational mails, format changes).
- * Returning null is normal and must never be treated as an error.
+ * What one notification email is:
+ * - `{ status: "charge", charge }` — an authorised purchase, read;
+ * - `{ status: "ignored" }` — not a purchase (a reversal, a statement notice);
+ * - `{ status: "unparsed" }` — a purchase notice this could not read.
+ *
+ * The third used to come back as null like the second, so the run remembered
+ * it as seen and never looked again, with the heartbeat green: a change in the
+ * bank's wording would have stopped every charge in silence. Now the run keeps
+ * it unseen and fails loudly instead.
  */
-function parseBankNotification(html, timeZone) {
+function classifyBankNotification(html, timeZone) {
   var text = bankEmailText(html);
 
-  // Only authorised purchases become charges. A reversal ("reverso",
-  // "devolución") is about money coming back and has no expense to verify.
-  if (!/autorizaci[oó]n de consumo/i.test(text)) return null;
-  if (/revers|devoluci[oó]n|rechaz/i.test(text)) return null;
+  if (!/autorizaci[oó]n de consumo/i.test(text)) return { status: "ignored" };
+  // A reversal ("reverso", "devolución", "rechazo") is about money coming
+  // back and has no expense to verify. Looked for only BEFORE the merchant:
+  // read over the whole mail it matched shop names, and "REVERSE CAFE" was
+  // dropped for good.
+  var head = text.split(/en el establecimiento/i)[0];
+  if (/revers|devoluci[oó]n|rechaz/i.test(head)) return { status: "ignored" };
 
   var amount = text.match(/U\$S\s*([\d.,]+)/i) || text.match(/US\$\s*([\d.,]+)/i);
-  if (amount === null) return null;
+  if (amount === null) return { status: "unparsed" };
   var usdCents = moneyToCents(amount[1]);
-  if (usdCents === null) return null;
+  if (usdCents === null) return { status: "unparsed" };
 
   var when = text.match(
     /el d[ií]a\s+(\d{2})\/(\d{2})\/(\d{4})\s+a las\s+(\d{1,2}):(\d{2})/i,
   );
-  if (when === null) return null;
+  if (when === null) return { status: "unparsed" };
   var date = householdDate(
     Number(when[3]),
     Number(when[2]),
@@ -142,11 +159,20 @@ function parseBankNotification(html, timeZone) {
   var cardMatch = text.match(/finalizada en\s+(\d{4})/i);
 
   return {
-    usdCents: usdCents,
-    date: date,
-    merchant: merchant.slice(0, 120),
-    cardLast4: cardMatch === null ? null : cardMatch[1],
+    status: "charge",
+    charge: {
+      usdCents: usdCents,
+      date: date,
+      merchant: merchant.slice(0, 120),
+      cardLast4: cardMatch === null ? null : cardMatch[1],
+    },
   };
+}
+
+/** The charge in one notification, or null for anything else. */
+function parseBankNotification(html, timeZone) {
+  var result = classifyBankNotification(html, timeZone);
+  return result.status === "charge" ? result.charge : null;
 }
 
 if (typeof module !== "undefined" && module.exports) {
@@ -155,5 +181,6 @@ if (typeof module !== "undefined" && module.exports) {
     moneyToCents: moneyToCents,
     householdDate: householdDate,
     parseBankNotification: parseBankNotification,
+    classifyBankNotification: classifyBankNotification,
   };
 }

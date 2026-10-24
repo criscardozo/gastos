@@ -76,8 +76,27 @@ function readMailbox(query) {
   }
 }
 
-/** Entry point for the time-driven trigger. */
+/**
+ * Entry point for the time-driven trigger, and for the app's "traer ahora".
+ *
+ * Under a script lock: the two can overlap, and both end by writing the whole
+ * seen-list, so the slower one used to drop ids the other had just filed. A
+ * run that cannot get the lock leaves the work to the one that has it.
+ */
 function run() {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(30 * 1000)) {
+    console.log("bank-ingest: another run is in progress; leaving it to that one");
+    return;
+  }
+  try {
+    runLocked();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function runLocked() {
   var config = readConfig();
   var seen = readSeen();
   var query =
@@ -87,6 +106,10 @@ function run() {
   var token = null;
   var imported = 0;
   var skipped = 0;
+  // Purchase notices that could not be read, and charges that could not be
+  // written. Either makes the run fail at the end — see below.
+  var unparsed = [];
+  var failed = [];
 
   for (var t = 0; t < messages.length; t++) {
     for (var m = 0; m < messages[t].length; m++) {
@@ -94,23 +117,31 @@ function run() {
       var id = message.getId();
       if (seen.indexOf(id) !== -1) continue;
 
-      var charge = parseBankNotification(message.getBody(), config.timeZone);
-      if (charge === null) {
-        // Not a purchase notice (or a shape we do not understand): remember it
-        // so we do not re-read it every 15 minutes, and move on.
+      var result = classifyBankNotification(message.getBody(), config.timeZone);
+      if (result.status === "ignored") {
+        // Not a purchase notice: remember it so it is not re-read every 15
+        // minutes, and move on.
         seen.push(id);
         skipped++;
         continue;
       }
+      if (result.status === "unparsed") {
+        // A purchase this cannot read. NOT remembered: it stays to be read
+        // again by a parser that understands it, instead of being lost.
+        unparsed.push(id);
+        continue;
+      }
+      var charge = result.charge;
 
       if (token === null) token = getAccessToken(config);
-      var result = createCharge(config, token, id, charge);
-      if (result === "created" || result === "exists") {
+      var written = createCharge(config, token, id, charge);
+      if (written === "created" || written === "exists") {
         seen.push(id);
-        if (result === "created") imported++;
+        if (written === "created") imported++;
       } else {
-        // A transient failure: do NOT mark it seen, so the next run retries.
-        console.warn("bank-ingest: could not file message " + id + ": " + result);
+        // Not marked seen, so the next run retries.
+        console.warn("bank-ingest: could not file message " + id + ": " + written);
+        failed.push(id + " (" + written + ")");
       }
     }
   }
@@ -120,6 +151,22 @@ function run() {
     "bank-ingest: " + imported + " imported, " + skipped + " ignored, " +
       seen.length + " remembered",
   );
+
+  // A run that met a purchase it could not read, or a charge it could not
+  // write, FAILS — after saving what it did file. Two things follow from that,
+  // and both are the point: Apps Script emails its failure notice, and the
+  // heartbeat below is not stamped, so the apps say the mailbox has stopped
+  // being read once it has been long enough. Both used to end green, with
+  // the run logging a warning nobody reads.
+  if (unparsed.length > 0 || failed.length > 0) {
+    throw new Error(
+      "bank-ingest: " + unparsed.length + " purchase notice(s) could not be read" +
+        (unparsed.length > 0 ? " [" + unparsed.join(", ") + "]" : "") +
+        " and " + failed.length + " charge(s) could not be written" +
+        (failed.length > 0 ? " [" + failed.join(", ") + "]" : "") +
+        ". Imported " + imported + ".",
+    );
+  }
 
   // Last, and only on a run that got here: the heartbeat the apps read to say
   // the mailbox has stopped being read. A run that threw half way leaves the

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   bankEmailText,
+  classifyBankNotification,
   householdDate,
   moneyToCents,
   parseBankNotification,
@@ -112,6 +113,54 @@ describe("parseBankNotification", () => {
   });
 });
 
+describe("classifyBankNotification", () => {
+  // A purchase notice this cannot read used to come back as null like any
+  // other mail, get remembered as seen, and never be read again — while the
+  // heartbeat stayed green. A change in the bank's wording would have stopped
+  // every charge with nothing saying so.
+  it("tells a purchase it could not read from a mail that is not a purchase", () => {
+    expect(classifyBankNotification(SAMPLE, SYDNEY).status).toBe("charge");
+    expect(
+      classifyBankNotification("<p>Tu resumen ya está disponible</p>", SYDNEY).status,
+    ).toBe("ignored");
+    expect(classifyBankNotification(body({ withDate: false }), SYDNEY).status).toBe(
+      "unparsed",
+    );
+    // Single-digit day and month: not the shape the bank sends today.
+    expect(classifyBankNotification(body({ date: "1/8/2026" }), SYDNEY).status).toBe(
+      "unparsed",
+    );
+  });
+
+  it("calls a reversal ignored, not unparsed", () => {
+    const reversal = body({}).replace(
+      "autorización de consumo",
+      "reverso de autorización de consumo",
+    );
+    expect(classifyBankNotification(reversal, SYDNEY).status).toBe("ignored");
+  });
+
+  it("does not read a reversal into the merchant's name", () => {
+    // The reversal check read the WHOLE mail, merchant included, so a shop
+    // called this was dropped and remembered as seen for good.
+    for (const merchant of ["REVERSE CAFE", "DEVOLUCION SHOP", "RECHAZO BAR"]) {
+      const result = classifyBankNotification(body({ merchant }), SYDNEY);
+      expect(result.status, merchant).toBe("charge");
+      expect(result.charge?.merchant).toBe(merchant);
+    }
+  });
+
+  it("does not guess at an amount written another way", () => {
+    // "63.90" read as 6390 dollars: the dot was taken as thousands.
+    expect(classifyBankNotification(body({ amount: "63.90" }), SYDNEY).status).toBe(
+      "unparsed",
+    );
+    expect(classifyBankNotification(body({ amount: "1,234.56" }), SYDNEY).status).toBe(
+      "unparsed",
+    );
+  });
+});
+
 describe("moneyToCents", () => {
   it("treats the comma as the decimal separator", () => {
     expect(moneyToCents("63,90")).toBe(6390);
@@ -123,6 +172,11 @@ describe("moneyToCents", () => {
     expect(moneyToCents("0,00")).toBeNull();
     expect(moneyToCents("")).toBeNull();
     expect(moneyToCents("abc")).toBeNull();
+    // Only the bank's own shape: comma for decimals, dots for thousands.
+    expect(moneyToCents("63.90")).toBeNull();
+    expect(moneyToCents("1,234.56")).toBeNull();
+    expect(moneyToCents("63,90,")).toBeNull();
+    expect(moneyToCents("1234,56")).toBe(123456);
   });
 });
 
