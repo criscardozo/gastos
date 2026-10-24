@@ -264,7 +264,16 @@ describe("bankChargeConverter", () => {
       merchant: "STEAM",
       cardLast4: null,
       dismissedAt: null,
+      ruleUndone: false,
     });
+  });
+
+  it("reads an undone rule filing off the charge", () => {
+    // What keeps a run from filing it again, on every client — see
+    // shared/schema.md, bankCharges.ruleUndoneAt.
+    expect(
+      decode(bankChargeConverter, "m1", { ...valid, ruleUndoneAt: new Date("2026-10-24") }),
+    ).toMatchObject({ ruleUndone: true });
   });
 
   it("reads an explicit digital", () => {
