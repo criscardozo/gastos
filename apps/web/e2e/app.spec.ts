@@ -1593,7 +1593,9 @@ test("Datos records the day the accounts were done, and keeps the history", asyn
   await expect(page.getByText("Hechas hoy")).toBeVisible();
   await expect(page.getByRole("button", { name: "Hacemos las cuentas hoy" })).toHaveCount(0);
   // Only the date — who pressed it is not kept or shown.
-  await expect(page.getByText(/Últimas: \w+ \d+ de \w+$/)).toBeVisible();
+  // \p{L}, not \w: JavaScript's \w is ASCII, so "sábado" and "miércoles"
+  // never matched and this failed on two days of the week.
+  await expect(page.getByText(/Últimas: \p{L}+ \d+ de \p{L}+$/u)).toBeVisible();
   await expect(page.getByText(/Cuentas Tester/)).toHaveCount(0);
 
   // Stored, not just on screen.
@@ -3803,4 +3805,158 @@ test("repeating the budget without the leftover is not an adjustment", async ({
       return `${f.amountCents.integerValue}/${f.source.stringValue}`;
     })
     .toBe(`${defaultCents}/default`);
+});
+
+// Ajustes' "this period" editor stamped `confirmedAt` on every save, and the
+// rules keep a confirmation write-once. So on a period somebody had already
+// answered for — which is nearly every period, since answering happens at its
+// start — the edit showed the new figure from the local cache, then reverted
+// with "No se pudo guardar". Editing in Ajustes is not answering the
+// start-period screen, so it must not touch the confirmation at all.
+test("this period's budget can be edited in Ajustes after it was confirmed", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-confirmed-${Date.now()}@test.dev`;
+  await page.goto("/");
+  await page.waitForFunction(() => typeof window.__devSignIn === "function");
+  await page.evaluate((e) => window.__devSignIn!("Confirmed Tester", e), email);
+  await expect(page.getByText("¿Armamos el hogar?")).toBeVisible();
+  await page.getByText("Crear nuestro hogar").click();
+  await page.getByRole("button", { name: "Listo, a gastar con criterio" }).click();
+  await expect(page.getByText("Te queda")).toBeVisible({ timeout: 20_000 });
+
+  const households = await request.get(`${REST}/households?pageSize=300`, { headers: admin });
+  const householdId = (
+    ((await households.json()).documents as {
+      name: string;
+      fields: { name: { stringValue: string } };
+    }[]).find((d) => d.fields.name.stringValue === "Hogar de Confirmed") as {
+      name: string;
+    }
+  ).name
+    .split("/")
+    .pop() as string;
+
+  let start = "";
+  await expect
+    .poll(async () => {
+      const res = await request.get(
+        `${REST}/households/${householdId}/periodBudgets`,
+        { headers: admin },
+      );
+      const docs = ((await res.json()).documents ?? []) as { name: string }[];
+      start = docs[0]?.name.split("/").pop() ?? "";
+      return docs.length;
+    })
+    .toBeGreaterThan(0);
+
+  // Somebody already answered for this period.
+  await request.patch(
+    `${REST}/households/${householdId}/periodBudgets/${start}?updateMask.fieldPaths=confirmedAt`,
+    {
+      headers: admin,
+      data: { fields: { confirmedAt: { timestampValue: "2026-01-01T00:00:00Z" } } },
+    },
+  );
+
+  await page.getByRole("link", { name: "Ajustes", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Ajustes" })).toBeVisible();
+  // The period's editor is the second amount on the screen; the household's
+  // default comes first.
+  await page.getByTitle("Editar monto").last().click();
+  await page.getByLabel("Editar monto").fill("123.45");
+  await page.getByLabel("Editar monto").press("Enter");
+
+  await expect
+    .poll(async () => {
+      const res = await request.get(
+        `${REST}/households/${householdId}/periodBudgets/${start}`,
+        { headers: admin },
+      );
+      const f = ((await res.json()) as {
+        fields: {
+          amountCents: { integerValue: string };
+          confirmedAt: { timestampValue: string };
+        };
+      }).fields;
+      return `${f.amountCents.integerValue}/${f.confirmedAt.timestampValue}`;
+    })
+    .toBe("12345/2026-01-01T00:00:00Z");
+  await expect(page.getByText("No se pudo guardar")).toHaveCount(0);
+});
+
+// The web's recurring run planned over every pending charge, while iOS and the
+// web's own bank panel only look at charges that belong to Gastos. A rule
+// matching a CREDIT-card charge therefore filed it as an AUD expense from the
+// web — off the Tarjetas inbox and onto the weekly budget — and which client
+// happened to be open decided where the money went.
+test("a recurring rule does not file a credit-card charge as an expense", async ({
+  page,
+  request,
+}) => {
+  const householdId = await householdWithRule(page, request, "Credit", {
+    pattern: "Uber",
+    note: "Uber",
+    categoryId: "transport",
+    amountAudCents: 1500,
+  });
+  const cards = await request.patch(
+    `${REST}/households/${householdId}?updateMask.fieldPaths=cards`,
+    {
+      headers: admin,
+      data: {
+        fields: {
+          cards: {
+            mapValue: {
+              fields: {
+                "5678": {
+                  mapValue: {
+                    fields: {
+                      kind: { stringValue: "credit" },
+                      brand: { stringValue: "visa" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  );
+  expect(cards.ok()).toBe(true);
+  for (const [id, last4] of [
+    ["gmail-uber-credit", "5678"],
+    ["gmail-uber-plain", null],
+  ] as const) {
+    const r = await request.post(
+      `${REST}/households/${householdId}/bankCharges?documentId=${id}`,
+      {
+        headers: admin,
+        data: {
+          fields: {
+            usdCents: { integerValue: "980" },
+            date: { stringValue: sydneyDate() },
+            merchant: { stringValue: "UBER *TRIP" },
+            ...(last4 !== null ? { cardLast4: { stringValue: last4 } } : {}),
+            importedAt: { timestampValue: new Date().toISOString() },
+          },
+        },
+      },
+    );
+    expect(r.ok()).toBe(true);
+  }
+
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  const filed = async (id: string) =>
+    (
+      await request.get(`${REST}/households/${householdId}/expenses/auto_${id}`, {
+        headers: admin,
+      })
+    ).status() === 200;
+  // The control: the same rule DID run, and filed the charge that is not a
+  // credit card's — so "not filed" below means refused, not "never ran".
+  await expect.poll(() => filed("gmail-uber-plain"), { timeout: 20_000 }).toBe(true);
+  expect(await filed("gmail-uber-credit")).toBe(false);
 });

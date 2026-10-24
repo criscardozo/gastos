@@ -39,6 +39,7 @@ import {
   categoryCircleBg,
   categoryColor,
   countsToBudget,
+  inBudgetFilter,
 } from "@/lib/categories";
 
 function useCategoryLabel() {
@@ -70,8 +71,11 @@ export default function DashboardPage() {
         : budgetCategoryIds(household.categories),
     [household],
   );
-  const inBudget = (e: Expense): boolean =>
-    budgetCategories === null || budgetCategories.includes(e.categoryId);
+  const countsInBudget = useMemo(
+    () => (household === null ? () => true : inBudgetFilter(household.categories)),
+    [household],
+  );
+  const inBudget = (e: Expense): boolean => countsInBudget(e.categoryId);
 
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
 
@@ -219,19 +223,24 @@ export default function DashboardPage() {
   const maxCategory = breakdown[0]?.amount ?? 0;
 
   /* Trend: last up-to-6 loaded periods. Selected + current come from their
-     live listeners; every other (past) period from the aggregation cache. */
-  const spentForTrend = (p: PeriodBudget): number => {
+     live listeners; every other (past) period from the aggregation cache.
+     null = not known: still loading, or a sum that failed (offline, say).
+     It used to read as 0 and draw an empty bar labelled "$0" — a spendless
+     period, which is a claim, where the truth was "could not read it". */
+  const spentForTrend = (p: PeriodBudget): number | null => {
     if (p.startDate === selected.startDate) {
+      if (expensesLoading) return null;
       return sumCents(
         expenses.filter((e) => containsDate(p, e.date) && inBudget(e)),
       );
     }
     if (currentPeriod !== null && p.startDate === currentPeriod.startDate) {
+      if (currentExpensesLoading) return null;
       return sumCents(
         currentExpenses.filter((e) => containsDate(p, e.date) && inBudget(e)),
       );
     }
-    return pastTotals[p.startDate] ?? 0;
+    return pastTotals[p.startDate] ?? null;
   };
   const trendPeriods = periods.slice(-6);
   const trend = trendPeriods.map((p) => ({
@@ -239,7 +248,7 @@ export default function DashboardPage() {
     spent: spentForTrend(p),
   }));
   const trendScale = Math.max(
-    ...trend.map((x) => Math.max(x.spent, x.period.amountCents)),
+    ...trend.map((x) => Math.max(x.spent ?? 0, x.period.amountCents)),
     1,
   );
 
@@ -310,14 +319,17 @@ export default function DashboardPage() {
             <span className="text-[13px] font-semibold text-ink-2">
               {t("dashboard.remaining")}
             </span>
-            <StatePill state={state} />
+            {!expensesLoading && <StatePill state={state} />}
           </div>
           <div className="flex items-baseline gap-3">
             <span
               className="tnum text-[40px] font-bold leading-none tracking-[-0.03em] sm:text-[54px]"
               style={{ color: state === "over" ? "var(--over)" : "var(--ink)" }}
             >
-              {formatCents(remaining, household.currency, locale)}
+              {/* While switching periods the listener has no rows yet, and
+                  "budget minus nothing" read as the whole budget left, with a
+                  comfortable pill. */}
+              {expensesLoading ? "—" : formatCents(remaining, household.currency, locale)}
             </span>
             {/* The one figure on this screen worth naming a currency for: the
                 other screens now show USD and ARS, and "$" alone stopped
@@ -578,7 +590,7 @@ export default function DashboardPage() {
               without the chrome. */}
           <div className="no-scrollbar flex flex-1 items-stretch gap-3 overflow-x-auto px-1 pt-2 lg:gap-[18px]">
             {trend.map(({ period: p, spent: pSpent }) => {
-              const over = pSpent > p.amountCents;
+              const over = pSpent !== null && pSpent > p.amountCents;
               const isCurrentBar =
                 currentPeriod !== null &&
                 p.startDate === currentPeriod.startDate;
@@ -606,16 +618,18 @@ export default function DashboardPage() {
                     <div
                       className="w-full rounded-t-[10px] rounded-b-[4px]"
                       style={{
-                        height: `${(pSpent / trendScale) * 100}%`,
+                        height: `${((pSpent ?? 0) / trendScale) * 100}%`,
                         background: barColor,
                         opacity: isCurrentBar ? 0.45 : 1,
-                        minHeight: pSpent > 0 ? 4 : 0,
+                        minHeight: pSpent !== null && pSpent > 0 ? 4 : 0,
                       }}
                     />
                   </div>
                   <div className="flex flex-col items-center gap-px">
                     <span className="tnum text-[12.5px] font-bold text-ink">
-                      {formatCentsCompact(pSpent, household.currency, locale)}
+                      {pSpent === null
+                        ? "—"
+                        : formatCentsCompact(pSpent, household.currency, locale)}
                     </span>
                     <span className="whitespace-nowrap text-[11px] font-semibold text-ink-2">
                       {formatPeriodRange(p.startDate, p.endDate, locale, "short")}

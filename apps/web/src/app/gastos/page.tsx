@@ -70,6 +70,7 @@ import {
   recentMonths,
 } from "@/lib/periods";
 import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
+import { belongsToExpenses } from "@/lib/cards";
 
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
@@ -213,10 +214,15 @@ export default function ExpensesPage() {
   const householdId = household?.id ?? null;
   const uid = user?.uid ?? null;
   const categoriesById = household?.categories;
+  const householdCards = household?.cards;
   useEffect(() => {
     if (chargesLoading || rulesLoading || householdId === null || uid === null) return;
     const plan = planRecurringRun(
-      charges.filter(isPending),
+      // Only the charges that belong to Gastos, as on iOS and in the bank
+      // panel below. A credit-card charge belongs to a card statement: filing
+      // it here booked it against the weekly budget and took it off the
+      // Tarjetas inbox, depending on which client happened to be open.
+      charges.filter((c) => isPending(c) && belongsToExpenses(c.cardLast4, householdCards)),
       // A rule filing into an archived category would be refused by the
       // rules on every arrival; it files nothing until the category is back.
       recurringRules.filter((r) => !isArchived(categoriesById?.[r.categoryId])),
@@ -259,7 +265,7 @@ export default function ExpensesPage() {
         await filing.catch(() => {});
       }
     })();
-  }, [charges, recurringRules, categoriesById, learnedRate, chargesLoading, rulesLoading, householdId, uid, write]);
+  }, [charges, recurringRules, categoriesById, householdCards, learnedRate, chargesLoading, rulesLoading, householdId, uid, write]);
 
   const [addForm, setAddForm] = useState<FormState>({
     amount: "",

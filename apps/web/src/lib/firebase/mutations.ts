@@ -250,6 +250,18 @@ export async function updatePeriodAmount(
    * happens to match.
    */
   source: "default" | "custom" = "custom",
+  /**
+   * Stamp `confirmedAt` with this write. True only when answering the
+   * start-period screen for a period nobody has answered yet: answering with a
+   * figure IS answering for the period.
+   *
+   * It used to be stamped on every call, and the rules keep a confirmation
+   * write-once — so Ajustes' "this period" editor was refused on any period
+   * already confirmed, which is nearly all of them, showing the new figure
+   * from the local cache and then reverting with "No se pudo guardar".
+   * Editing in Ajustes is not answering the screen, so it never stamps.
+   */
+  confirm = false,
 ): Promise<void> {
   await updateDoc(
     doc(db, "households", householdId, "periodBudgets", startDate),
@@ -257,8 +269,7 @@ export async function updatePeriodAmount(
       amountCents,
       source,
       ...(rolloverCents === undefined ? {} : { rolloverCents }),
-      // Answering the screen with a figure IS answering for this period.
-      confirmedAt: serverTimestamp(),
+      ...(confirm ? { confirmedAt: serverTimestamp() } : {}),
       updatedAt: serverTimestamp(),
     },
   );

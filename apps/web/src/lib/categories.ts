@@ -71,6 +71,23 @@ export function allCategoriesCount(
   return Object.values(categories).every((def) => countsToBudget(def));
 }
 
+/**
+ * Whether an expense's category counts against the budget — the filter every
+ * budget figure on screen applies: Inicio's spent and remaining, the
+ * carry-over, and Estadísticas' pace line.
+ *
+ * The pace line skipped it, so a household with a category that does not
+ * count (rent, say) saw the line over budget on Estadísticas while Inicio said
+ * comfortable. One function now, so the two screens cannot disagree again.
+ */
+export function inBudgetFilter(
+  categories: Record<string, CategoryDef>,
+): (categoryId: string) => boolean {
+  if (allCategoriesCount(categories)) return () => true;
+  const ids = new Set(budgetCategoryIds(categories));
+  return (categoryId) => ids.has(categoryId);
+}
+
 /** The categories map to store on a new household document. */
 export function seedCategoriesMap(): Record<string, CategoryDef> {
   const map: Record<string, CategoryDef> = {};

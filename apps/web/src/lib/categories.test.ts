@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import {
+  inBudgetFilter,
   FIRESTORE_IN_LIMIT,
   MAX_CATEGORIES,
   firstCategoryId,
@@ -95,5 +96,24 @@ describe("archived categories", () => {
       "food",
       "rent",
     ]);
+  });
+});
+
+describe("inBudgetFilter", () => {
+  const categories = {
+    food: { icon: "x", color: "#000" },
+    rent: { icon: "x", color: "#000", countsToBudget: false },
+  } as unknown as Parameters<typeof inBudgetFilter>[0];
+
+  it("lets through only the categories that count", () => {
+    const counts = inBudgetFilter(categories);
+    expect(counts("food")).toBe(true);
+    expect(counts("rent")).toBe(false);
+  });
+
+  it("lets everything through when every category counts", () => {
+    const counts = inBudgetFilter({ food: categories.food });
+    expect(counts("food")).toBe(true);
+    expect(counts("anything")).toBe(true);
   });
 });

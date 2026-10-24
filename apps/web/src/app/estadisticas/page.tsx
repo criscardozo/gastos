@@ -26,7 +26,7 @@ import {
   StatCard,
 } from "@/components/charts";
 import { useExpensesOnce } from "@/lib/firebase/hooks";
-import { categoryColor } from "@/lib/categories";
+import { categoryColor, inBudgetFilter } from "@/lib/categories";
 import { formatCents, formatCentsCompact, formatRate, formatUsd } from "@/lib/money";
 import {
   formatMonthLabel,
@@ -148,6 +148,10 @@ export default function StatsPage() {
       range === null || today === null ? range : (elapsedRange(range, today) ?? range),
     [range, today],
   );
+  const countsInBudget = useMemo(
+    () => (household === null ? () => true : inBudgetFilter(household.categories)),
+    [household],
+  );
   const stats = useMemo(
     () =>
       range === null || averaged === null
@@ -156,12 +160,15 @@ export default function StatsPage() {
             totals: totalsOf(rows, averaged),
             categories: byCategory(rows),
             days: byDay(rows, range),
+            // The pace line is a budget figure, so it counts what the budget
+            // counts — see inBudgetFilter.
+            budgetDays: byDay(rows.filter((e) => countsInBudget(e.categoryId)), range),
             weekdays: byWeekday(rows, averaged),
             members: byMember(rows),
             checks: verification(rows),
             top: biggestOf(rows, 5),
           },
-    [rows, range, averaged],
+    [rows, range, averaged, countsInBudget],
   );
 
   if (household === null) return null;
@@ -192,7 +199,7 @@ export default function StatsPage() {
   const paceData =
     stats !== null && budgetPeriod !== null && range !== null
       ? {
-          spent: cumulative(stats.days).map((d) => d.totalCents),
+          spent: cumulative(stats.budgetDays).map((d) => d.totalCents),
           pace: paceLine(budgetPeriod.amountCents, stats.days.length),
           budgetCents: budgetPeriod.amountCents,
           // Where "today" falls in the period. A finished period is read to

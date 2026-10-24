@@ -101,6 +101,17 @@ describe("the export payload", () => {
     expect(payload.rows[0].memberLabel).toBe("uid-gone");
   });
 
+  it("says the year once, whether or not the range crosses one", () => {
+    // formatPeriodRange already writes both years across a new year, and the
+    // payload added the end's year again: "28 dic 2025 – 3 ene 2026 2026" on
+    // the header of the PDF, the workbook and the Sheet.
+    const across = buildExportPayload(
+      input({ range: { startDate: "2025-12-28", endDate: "2026-01-03" } }),
+    );
+    expect(across.rangeLabel).toBe("28 dic 2025 – 3 ene 2026");
+    expect(buildExportPayload(input()).rangeLabel).toBe("1 – 30 sept 2026");
+  });
+
   it("names the file from the base and the extension it is asked for", () => {
     expect(buildExportPayload(input({ extension: "xlsx" })).filename).toBe(
       "gastos-septiembre.xlsx",

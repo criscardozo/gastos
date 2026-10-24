@@ -161,6 +161,7 @@ export function StartPeriodScreen({
             amountCents,
             rolloverCents,
             source,
+            !period.confirmed,
           ),
         );
       } else if (!period.confirmed) {

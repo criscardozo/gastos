@@ -72,7 +72,12 @@ export function buildExportPayload({
     filename: `${fileBase}.${extension}`,
     title: "Gastos",
     householdName: household.name,
-    rangeLabel: `${formatPeriodRange(range.startDate, range.endDate, locale, "short")} ${range.endDate.slice(0, 4)}`,
+    // formatPeriodRange already writes the years when the range crosses
+    // one; the year is added here only when it did not.
+    rangeLabel:
+      range.startDate.slice(0, 4) === range.endDate.slice(0, 4)
+        ? `${formatPeriodRange(range.startDate, range.endDate, locale, "short")} ${range.endDate.slice(0, 4)}`
+        : formatPeriodRange(range.startDate, range.endDate, locale, "short"),
     rows: rows.map((e) => ({
       date: e.date,
       categoryLabel: catLabelOf(e.categoryId),
