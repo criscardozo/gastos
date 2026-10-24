@@ -906,7 +906,11 @@ final class FirestoreService {
         // amount itself changed: the bank charged for the old figure, so keeping
         // its USD would leave a pair that never existed — and those pairs are
         // what the matcher learns the bank's rate from.
-        clearVerification: Bool = false
+        clearVerification: Bool = false,
+        // The AUD was typed now, so it is no longer the rule's estimate: drop
+        // `autoEstimated`, which this merge would otherwise keep, leaving the
+        // "Estimado" mark on a figure somebody just entered.
+        dropEstimate: Bool = false
     ) {
         var data: [String: Any] = [
             "amountCents": amountCents,
@@ -919,6 +923,7 @@ final class FirestoreService {
             data["usdCents"] = FieldValue.delete()
             data["verified"] = false
         }
+        if dropEstimate { data["autoEstimated"] = FieldValue.delete() }
         db.collection("households").document(householdId)
             .collection("expenses").document(expenseId)
             .updateData(data, completion: reportingCompletion())

@@ -590,8 +590,14 @@ struct ExpenseFormView: View {
                     categoryId: categoryId,
                     note: note.trimmingCharacters(in: .whitespacesAndNewlines),
                     date: date,
-                    // A new amount invalidates the bank's USD for the old one.
+                    // A new amount invalidates the bank's USD for the old one —
+                    // except on an expense filed FROM a charge (auto_ id),
+                    // whose USD is what the bank charged and whose AUD was the
+                    // guess: correcting the AUD is what should keep the USD.
                     clearVerification: item.expense.isVerified
+                        && item.expense.amountCents != amount.audCents
+                        && FirestoreService.chargeId(fromAutoExpense: id) == nil,
+                    dropEstimate: item.expense.isEstimated
                         && item.expense.amountCents != amount.audCents
                 )
             }

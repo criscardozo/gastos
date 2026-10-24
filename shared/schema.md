@@ -32,6 +32,7 @@ authorization, not this doc.
 | `defaultBudget.amountCents` | int | Template amount for new periods |
 | `defaultBudget.period` | `"weekly"` \| `"fortnightly"` | Template period type |
 | `defaultBudget.anchorDate` | string `YYYY-MM-DD` | Seeds the FIRST period only |
+| `defaultBudget.rollover` | bool \| absent | Whether the start-period screen offers last period's leftover ticked by default. Absent ⇒ false |
 | `memberIds` | array<string> | uids. Hard cap of 2, enforced in rules |
 | `memberProfiles` | map<uid, {displayName, color}> | Denormalized for attribution display |
 | `categories` | map<id, Category> | Map keyed by id, NOT an array (see below) |
@@ -224,6 +225,8 @@ Rules of the chain:
 | `createdBy` | uid | Attribution only, not ownership — either member can edit/delete |
 | `usdCents` | int \| absent | Optional. What the BANK charged for this expense in USD, integer cents. Never typed at entry time and never summed against the budget |
 | `verified` | bool \| absent | Whether `usdCents` is known. Absent ⇒ **false** (expenses created before this field, and by older clients) |
+| `autoRuleId` | string \| absent | The recurring rule that filed it. Only on expenses filed from a bank charge by a rule (id `auto_<chargeId>`) |
+| `autoEstimated` | `true` \| absent | The rule stated no amount, so the AUD was worked out from the bank's USD and the learned rate. Only ever true, only beside `autoRuleId`. Dropped when somebody edits the amount: it is a typed figure from then on. On an expense filed from a charge, editing the AUD KEEPS `usdCents` — that is what the bank charged; on any other expense an amount edit clears the verification |
 | `createdAt`, `updatedAt` | timestamp | Server timestamps |
 
 **Single currency.** `amountCents` is the household currency (AUD) — the only

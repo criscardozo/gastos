@@ -3968,3 +3968,43 @@ test("a recurring rule does not file a credit-card charge as an expense", async 
   await expect.poll(() => filed("gmail-uber-plain"), { timeout: 20_000 }).toBe(true);
   expect(await filed("gmail-uber-credit")).toBe(false);
 });
+
+// An expense filed from a bank charge carries what the bank ACTUALLY charged
+// in USD; its AUD is the rule's figure or an estimate. Correcting that AUD
+// used to delete the USD — "the bank charged for the old figure" is true of a
+// typed expense matched later, not of one made from the charge — and left the
+// "Estimado" mark on a figure somebody had just typed.
+test("correcting a rule-filed expense keeps the bank's USD", async ({ page, request }) => {
+  const householdId = await householdWithRule(page, request, "Corrector", {
+    pattern: "Opal*",
+    note: "Opal",
+    categoryId: "transport",
+    amountAudCents: 1500,
+  });
+  await postCharge(request, householdId, "gmail-correct", "OPAL AUCKLAND ST", 1240);
+  await page.getByRole("link", { name: "Gastos", exact: true }).click();
+  await expect(page.getByText("Se cargó 1 gasto solo")).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("dialog").getByRole("button", { name: "Listo" }).click();
+
+  await page.getByRole("button", { name: "Editar", exact: true }).first().click();
+  const editAmount = page.getByLabel("0.00", { exact: true }).nth(1);
+  await expect(editAmount).toHaveValue(/15/);
+  await editAmount.fill("16.20");
+  await page.getByRole("button", { name: "Guardar", exact: true }).nth(1).click();
+
+  await expect
+    .poll(async () => {
+      const r = await request.get(`${REST}/households/${householdId}/expenses/auto_gmail-correct`, {
+        headers: admin,
+      });
+      const f = ((await r.json()) as {
+        fields: {
+          amountCents: { integerValue: string };
+          usdCents?: { integerValue: string };
+          verified: { booleanValue: boolean };
+        };
+      }).fields;
+      return `${f.amountCents.integerValue}/${f.usdCents?.integerValue ?? "none"}/${f.verified.booleanValue}`;
+    })
+    .toBe("1620/1240/true");
+});

@@ -2294,4 +2294,24 @@ describe("an amount the rule did not state", () => {
       setDoc(ref(), expenseDoc(ALICE, { autoRuleId: "r1", autoEstimated: false })),
     );
   });
+
+  it("drops the flag when somebody types the amount, keeping the bank's USD", async () => {
+    // Correcting an estimated expense: the AUD is now a stated figure, and the
+    // USD — what the bank charged — stays with it.
+    await seed(env, async (admin) => {
+      await setDoc(
+        doc(admin, "households", HOUSEHOLD, "expenses", "e1"),
+        expenseDoc(ALICE, {
+          autoRuleId: "r1", autoEstimated: true, usdCents: 980, verified: true,
+        }),
+      );
+    });
+    await assertSucceeds(
+      updateDoc(ref(), {
+        amountCents: 1620,
+        autoEstimated: deleteField(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
 });

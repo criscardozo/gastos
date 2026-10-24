@@ -424,7 +424,11 @@ export default function ExpensesPage() {
         household.id,
         editingId,
         input,
-        amountChanged && previous.verified,
+        // Not for an expense filed FROM a charge (auto_ id): its USD is what
+        // the bank charged and its AUD was the guess — correcting the AUD is
+        // exactly what should keep the USD.
+        amountChanged && previous.verified && chargeIdFromAutoExpense(previous.id) === null,
+        amountChanged && previous.autoEstimated,
       ),
     );
     setEditingId(null);

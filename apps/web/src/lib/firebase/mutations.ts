@@ -619,6 +619,12 @@ export async function updateExpense(
    * what the matcher learns the bank's rate from.
    */
   clearVerification = false,
+  /**
+   * The AUD was typed now, so it is no longer the rule's estimate: drop
+   * `autoEstimated`, which a merge would otherwise keep, leaving the
+   * "Estimado" mark on a figure somebody just entered.
+   */
+  dropEstimate = false,
 ): Promise<void> {
   await updateDoc(doc(db, "households", householdId, "expenses", expenseId), {
     amountCents: input.amountCents,
@@ -628,6 +634,7 @@ export async function updateExpense(
     ...(clearVerification
       ? { usdCents: deleteField(), verified: false }
       : {}),
+    ...(dropEstimate ? { autoEstimated: deleteField() } : {}),
     updatedAt: serverTimestamp(),
   });
 }

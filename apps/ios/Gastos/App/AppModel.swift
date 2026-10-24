@@ -1054,7 +1054,8 @@ final class AppModel {
         categoryId: String,
         note: String,
         date: CalendarDate,
-        clearVerification: Bool = false
+        clearVerification: Bool = false,
+        dropEstimate: Bool = false
     ) {
         guard let householdId = attachedHouseholdId else { return }
         firestore.updateExpense(
@@ -1064,7 +1065,8 @@ final class AppModel {
             categoryId: categoryId,
             note: note,
             date: date.raw,
-            clearVerification: clearVerification
+            clearVerification: clearVerification,
+            dropEstimate: dropEstimate
         )
         loadPastTotals(refreshAll: true)  // date edits can move expenses across periods
     }
