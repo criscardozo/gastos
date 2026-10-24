@@ -20,12 +20,19 @@
 // --fix only ever removes a period that is BOTH unanswered (no confirmedAt,
 // which is the same condition the security rules enforce) and entirely covered
 // by another. Anything else is reported and left alone.
+//
+// --fix deletes from PRODUCTION, so it asks first, the way `restore
+// --production` does: a terminal, the project id typed back, and a backup
+// taken in the last 24 hours (`pnpm backup`). It used to delete on the flag
+// alone, and `--help` ran the production read too.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { createInterface } from "node:readline";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cert, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { ScriptError, run } from "./lib/errors.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PROJECT_ID = "qcris-gastos-diarios";
@@ -52,7 +59,41 @@ function nextDay(date) {
   return shifted.toISOString().slice(0, 10);
 }
 
+/** The newest production backup in backups/, if one is under a day old. */
+function recentBackup() {
+  const dir = join(repoRoot, "backups");
+  if (!existsSync(dir)) return null;
+  const fresh = readdirSync(dir)
+    .filter((f) => f.endsWith(".json") && f.includes("production"))
+    .map((f) => ({ f, at: statSync(join(dir, f)).mtimeMs }))
+    .filter(({ at }) => Date.now() - at < 24 * 3_600_000)
+    .sort((a, b) => b.at - a.at);
+  return fresh[0]?.f ?? null;
+}
+
+async function confirmFix() {
+  const backup = recentBackup();
+  if (backup === null) {
+    throw new ScriptError(
+      "--fix deletes from production: take a backup first (pnpm backup).\n" +
+        "  No production backup under a day old in backups/. Nothing was deleted.",
+    );
+  }
+  if (!process.stdin.isTTY) {
+    throw new ScriptError("--fix asks for a typed confirmation and there is no terminal. Nothing was deleted.");
+  }
+  console.log(`\n--fix: borra en PRODUCCIÓN (${PROJECT_ID}). Backup de hoy: backups/${backup}`);
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const answer = await new Promise((settle, fail) => {
+    rl.once("close", () => fail(new ScriptError("  Sin respuesta. No se borró nada.")));
+    rl.question("  Escribí el id del proyecto para seguir: ", settle);
+  });
+  rl.close();
+  if (answer.trim() !== PROJECT_ID) throw new ScriptError("  No coincide. No se borró nada.");
+}
+
 async function main() {
+  if (fix) await confirmFix();
   // The credential decides which project this touches, so it is what gets
   // checked — not PROJECT_ID, which is a constant somebody could have edited
   // and which `projectId:` would happily accept alongside a key for something
@@ -74,6 +115,9 @@ async function main() {
   const db = getFirestore();
   let problems = 0;
   let deleted = 0;
+  // Problems still there when this ends: everything without --fix, and with it
+  // whatever --fix will not touch (gaps, partial overlaps, answered periods).
+  let remaining = 0;
 
   for (const household of (await db.collection("households").get()).docs) {
     const snapshot = await household.ref
@@ -106,6 +150,7 @@ async function main() {
       const expected = nextDay(periods[i - 1].end);
       if (periods[i].id > expected) {
         problems += 1;
+        remaining += 1;
         console.log(
           `  ! hueco entre ${periods[i - 1].end} y ${periods[i].id}` +
             ` (faltaría uno desde ${expected})`,
@@ -131,6 +176,7 @@ async function main() {
         deleted += 1;
         console.log(`      BORRADO`);
       }
+      if (!(fix && !p.answered)) remaining += 1;
     }
 
     // Anything overlapping only partially is a shape this script will not
@@ -139,6 +185,7 @@ async function main() {
       const previous = periods[i - 1];
       if (periods[i].id <= previous.end && periods[i].end > previous.end) {
         problems += 1;
+        remaining += 1;
         console.log(
           `  ! ${previous.id}→${previous.end} y ${periods[i].id}→${periods[i].end}` +
             ` se pisan en parte — a mano`,
@@ -155,10 +202,14 @@ async function main() {
           ? " — corré con --fix para borrar los redundantes"
           : ""),
   );
-  process.exit(problems > 0 && !fix ? 1 : 0);
+  // --fix used to exit 0 with gaps and partial overlaps still standing.
+  process.exit(remaining > 0 ? 1 : 0);
 }
 
-main().catch((error) => {
-  console.error("check-periods failed:", error.message);
-  process.exit(1);
+run(main, {
+  usage:
+    "Usage: node scripts/check-periods.mjs [--fix]\n" +
+    "  Without --fix it only reports. --fix asks for the project id and a backup\n" +
+    "  under a day old before deleting anything.",
+  flags: ["--fix"],
 });
