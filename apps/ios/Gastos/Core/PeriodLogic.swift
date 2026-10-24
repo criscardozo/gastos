@@ -184,11 +184,9 @@ enum PeriodLogic {
         period: PeriodType
     ) -> PeriodExtension? {
         guard period == .weekly else { return nil }
-        let extended = periodEndDate(startDate: startDate, period: .fortnightly)
-        return PeriodExtension(
-            endDate: extended,
-            addedDays: daysBetween(endDate, extended)
-        )
+        // Seven days past where the period ACTUALLY ends — not startDate + 13,
+        // which undid a stretch or moved the end backwards. See the vectors.
+        return PeriodExtension(endDate: addDays(endDate, 7), addedDays: 7)
     }
 
     // MARK: Stretching

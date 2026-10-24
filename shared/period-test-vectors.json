@@ -392,7 +392,7 @@
     ]
   },
   "extendToFortnight": {
-    "comment": "Turning the week under way into two weeks, mid-period. The new end date is the SAME date a fortnightly period starting that day would have had (startDate + 13), so the next period still begins on the household's usual weekday — Cristian's weeks run Friday to Thursday, and an extended one ends the Thursday after next. Extending is one-way and only applies to a weekly period; a fortnight has nothing to extend into.",
+    "comment": "Turning the week under way into two weeks, mid-period. The new end date is the old one plus 7 days, so the next period still begins on the weekday it was going to — for an ordinary week that is startDate + 13, the date a fortnight starting that day would have had — Cristian's weeks run Friday to Thursday, and an extended one ends the Thursday after next. Extending is one-way and only applies to a weekly period; a fortnight has nothing to extend into. Plus 7, not startDate + 13: a week that had been stretched, or started early, is not 7 days long, and + 13 from its start undid the stretch (8–13 days) or moved the end BACKWARDS (over 14), which the rules then refused.",
     "cases": [
       {
         "name": "the real case: a Friday week becomes two, next one still starts a Friday",
@@ -440,6 +440,30 @@
         "endDate": "2028-03-01",
         "period": "weekly",
         "expectedEndDate": "2028-03-08",
+        "expectedAddedDays": 7
+      },
+      {
+        "name": "a week stretched to ten days gains seven more, keeping the weekday the stretch chose",
+        "startDate": "2026-10-02",
+        "endDate": "2026-10-11",
+        "period": "weekly",
+        "expectedEndDate": "2026-10-18",
+        "expectedAddedDays": 7
+      },
+      {
+        "name": "an eight-day week, from starting the next one early, gains seven",
+        "startDate": "2026-09-27",
+        "endDate": "2026-10-04",
+        "period": "weekly",
+        "expectedEndDate": "2026-10-11",
+        "expectedAddedDays": 7
+      },
+      {
+        "name": "a week stretched past a fortnight still moves FORWARD by seven",
+        "startDate": "2026-10-02",
+        "endDate": "2026-10-17",
+        "period": "weekly",
+        "expectedEndDate": "2026-10-24",
         "expectedAddedDays": 7
       },
       {

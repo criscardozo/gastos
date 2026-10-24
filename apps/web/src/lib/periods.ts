@@ -186,8 +186,12 @@ export function extendToFortnight(period: {
   period: PeriodType;
 }): PeriodExtension | null {
   if (period.period !== "weekly") return null;
-  const endDate = periodEndDate(period.startDate, "fortnightly");
-  return { endDate, addedDays: daysBetween(period.endDate, endDate) };
+  // Seven days past where the period ACTUALLY ends. For an ordinary week that
+  // is startDate + 13, which is what this used to compute — and is wrong for a
+  // week that was stretched or started early: it undid the stretch, or moved
+  // the end backwards past a fortnight. See the vectors.
+  const endDate = addDays(period.endDate, 7);
+  return { endDate, addedDays: 7 };
 }
 
 /** The most a period may be stretched to, counted from its own start. */

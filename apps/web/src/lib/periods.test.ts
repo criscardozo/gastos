@@ -72,7 +72,7 @@ describe("period vectors", () => {
       vectors.dailyAllowance.cases.length +
       vectors.startNextEarly.cases.length +
       vectors.repeatBudget.cases.length;
-    expect(counted).toBe(101);
+    expect(counted).toBe(104);
   });
 });
 

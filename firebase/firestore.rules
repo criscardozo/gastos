@@ -582,7 +582,7 @@ service cloud.firestore {
         //     period's budget as it stands. Cannot touch a single figure.
         //
         // What the rules cannot check is that the new end date is exactly
-        // startDate + 13: rules have no date arithmetic. That sum is the
+        // the old one + 7: rules have no date arithmetic. That sum is the
         // clients' job, and both compute it from the same
         // `extendToFortnight` vectors, exactly as every other period
         // calculation in this app is kept honest.

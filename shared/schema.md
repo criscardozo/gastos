@@ -125,8 +125,9 @@ Rules of the chain:
   sheet for a period that started before that device ever saw the household.
 - **Extending the week under way** is the FIRST of three exceptions to that boundary rule.
   Mid-period it can become clear that this week has to cover a fortnight, so
-  `period` goes `weekly → fortnightly`, `endDate` moves out by 7 days to exactly
-  what `startDate + 13` would have been, `amountCents` grows by whatever is being
+  `period` goes `weekly → fortnightly`, `endDate` moves out by exactly 7 days — for an
+  ordinary week, what `startDate + 13` would have been; for a week already stretched
+  or started early, 7 days past where it actually ends — `amountCents` grows by whatever is being
   added for the second week, and `source` becomes `"custom"`. `startDate` and
   `rolloverCents` do not move — the latter records what was carried IN at the
   start, which extending does not change.
