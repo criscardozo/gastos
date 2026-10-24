@@ -1290,7 +1290,13 @@ final class FirestoreService {
         let batch = db.batch()
         batch.deleteDocument(household.collection("expenses").document(expenseId))
         batch.updateData(
-            ["dismissedAt": FieldValue.delete()],
+            [
+                "dismissedAt": FieldValue.delete(),
+                // Recorded ON the charge: the session's own memory of the undo
+                // was all that kept a run from filing it straight back, so the
+                // next launch, the other client and the background refresh did.
+                "ruleUndoneAt": FieldValue.serverTimestamp(),
+            ],
             forDocument: household.collection("bankCharges").document(chargeId)
         )
         try await batch.commit()

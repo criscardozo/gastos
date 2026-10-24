@@ -507,10 +507,17 @@ service cloud.firestore {
       match /bankCharges/{messageId} {
         allow read: if isMember(householdId);
         allow create: if false;
+        // dismissedAt: discarded (absent = pending). ruleUndoneAt: a rule
+        // filed it and somebody took that back with undo, so no run files it
+        // again — recorded here because the undo used to live only in the
+        // session that did it. Both on the server's clock; nothing else.
         allow update: if isMember(householdId)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dismissedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dismissedAt', 'ruleUndoneAt'])
           && (!('dismissedAt' in request.resource.data)
-              || isServerTimestamp(request.resource.data.dismissedAt));
+              || isServerTimestamp(request.resource.data.dismissedAt))
+          && (!('ruleUndoneAt' in request.resource.data)
+              || request.resource.data.ruleUndoneAt == resource.data.get('ruleUndoneAt', null)
+              || isServerTimestamp(request.resource.data.ruleUndoneAt));
         allow delete: if isMember(householdId);
       }
 

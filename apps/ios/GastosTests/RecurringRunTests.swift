@@ -14,6 +14,12 @@ final class RecurringRunTests: XCTestCase {
                 let id: String
                 let merchant: String
                 let usdCents: Int
+                let ruleUndoneFlag: Bool?
+                var ruleUndone: Bool { ruleUndoneFlag ?? false }
+                enum CodingKeys: String, CodingKey {
+                    case id, merchant, usdCents
+                    case ruleUndoneFlag = "ruleUndone"
+                }
             }
             struct Rule: Decodable, RecurringRuleLike {
                 let pattern: String

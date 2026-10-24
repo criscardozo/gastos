@@ -1026,6 +1026,19 @@ describe("households/{id}/bankCharges", () => {
     );
   });
 
+  it("an undo marks the charge so no rule files it again", async () => {
+    // The undo used to live only in the session that did it, so the next
+    // launch, the other client and the background refresh filed the charge
+    // straight back. The mark goes on the charge, on the server's clock, and
+    // like dismissedAt it may come with nothing else.
+    const charge = doc(db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "gmail-1");
+    await assertSucceeds(
+      updateDoc(charge, { dismissedAt: deleteField(), ruleUndoneAt: serverTimestamp() }),
+    );
+    await assertFails(updateDoc(charge, { ruleUndoneAt: new Date("2030-01-01") }));
+    await assertFails(updateDoc(charge, { ruleUndoneAt: serverTimestamp(), usdCents: 1 }));
+  });
+
   it("an outsider cannot dismiss a charge", async () => {
     await assertFails(
       updateDoc(doc(db(env, CAROL), "households", HOUSEHOLD, "bankCharges", "gmail-1"), {

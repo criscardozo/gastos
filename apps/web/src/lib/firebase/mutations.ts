@@ -1196,6 +1196,10 @@ export async function undoRecurringExpense(
   batch.delete(doc(db, "households", householdId, "expenses", expenseId));
   batch.update(doc(db, "households", householdId, "bankCharges", chargeId), {
     dismissedAt: deleteField(),
+    // Recorded ON the charge: the session's own memory of the undo was all
+    // that kept a run from filing it straight back, so the next launch, the
+    // other client and iOS's background refresh all did.
+    ruleUndoneAt: serverTimestamp(),
   });
   await batch.commit();
 }

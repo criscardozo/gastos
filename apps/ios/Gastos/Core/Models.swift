@@ -339,7 +339,7 @@ struct ExpenseItem: Identifiable, Equatable {
 /// `households/{id}/bankCharges/{gmailMessageId}` — a charge the bank reported
 /// by email, waiting to be matched to an expense. Written only by the Gmail
 /// ingestion (see tools/gmail-bank-ingest); from here it is read, dismissed and
-/// deleted — `dismissedAt` is the one field a client may write.
+/// deleted — `dismissedAt` and `ruleUndoneAt` are the only fields a client may write.
 struct BankCharge: Codable, Identifiable, Equatable {
     @DocumentID var docId: String?
     /// What the bank charged, integer cents of USD.
@@ -353,6 +353,11 @@ struct BankCharge: Codable, Identifiable, Equatable {
     /// When a member discarded it; nil while pending. Recoverable for
     /// `BankChargeInbox.dismissWindowHours` after this.
     var dismissedAt: Date?
+    /// Set when a member undid an expense a rule filed from this charge, so no
+    /// run files it again on any client. See shared/schema.md.
+    var ruleUndoneAt: Date?
+
+    var ruleUndone: Bool { ruleUndoneAt != nil }
 
     /// The Gmail message id: the document id, and what makes imports
     /// idempotent. Non-optional for the matcher's sake.

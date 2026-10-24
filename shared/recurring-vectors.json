@@ -206,7 +206,7 @@
     ]
   },
   "run": {
-    "comment": "One run of the rules over the pending charges: what gets FILED on its own and what gets ASKED. Both clients plan a run with this and nothing else — it used to be written twice, and it diverged twice in one day: iOS filed only newly arrived charges while the web filed everything claimable, and the web re-filed a charge somebody had just taken back with undo. A run happens only when a charge ARRIVES (`fresh` = pending minus `seen`); a rule made for a charge already waiting is applied by the rule dialog itself (claimsOfOneRule / addRecurringRuleAndApply), not here. Filing and asking are deliberately asymmetric: FILE everything claimable and priceable that this session has not filed — a charge can become priceable after it was first seen, once filing another teaches the rate — but ASK only about charges that just arrived, because re-opening a question somebody postponed is the app nagging. `filed` is what this session filed; an undo puts the charge back in pending and it must not be filed again. `pending`, `file` and `ask` are oldest first. amountAudCents null = the rule says 'ask me'.",
+    "comment": "One run of the rules over the pending charges: what gets FILED on its own and what gets ASKED. Both clients plan a run with this and nothing else — it used to be written twice, and it diverged twice in one day: iOS filed only newly arrived charges while the web filed everything claimable, and the web re-filed a charge somebody had just taken back with undo. A run happens only when a charge ARRIVES (`fresh` = pending minus `seen`); a rule made for a charge already waiting is applied by the rule dialog itself (claimsOfOneRule / addRecurringRuleAndApply), not here. Filing and asking are deliberately asymmetric: FILE everything claimable and priceable that this session has not filed — a charge can become priceable after it was first seen, once filing another teaches the rate — but ASK only about charges that just arrived, because re-opening a question somebody postponed is the app nagging. `filed` is what this session filed; an undo puts the charge back in pending and it must not be filed again. `pending`, `file` and `ask` are oldest first. amountAudCents null = the rule says 'ask me'. A pending charge marked `ruleUndone` was filed by a rule and taken back with undo, by ANY client at any time: no run files it or asks about it again. `filed` only covered the session that did the undo; the next launch, the other phone and the background refresh filed it straight back.",
     "cases": [
       {
         "name": "a charge that arrives, claimed by a rule with an amount, is filed at that amount",
@@ -507,6 +507,72 @@
             "c1",
             "c2"
           ]
+        }
+      },
+      {
+        "name": "a charge somebody took back with undo is neither filed nor asked again, by any client",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "OPAL AUCKLAND ST",
+            "usdCents": 1240,
+            "ruleUndone": true
+          },
+          {
+            "id": "c2",
+            "merchant": "OPAL CENTRAL",
+            "usdCents": 980
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Opal*",
+            "amountAudCents": 1500
+          }
+        ],
+        "learnedRate": null,
+        "seen": [],
+        "filed": [],
+        "expected": {
+          "fresh": [
+            "c1",
+            "c2"
+          ],
+          "file": [
+            {
+              "charge": "c2",
+              "amountAudCents": 1500,
+              "estimated": false
+            }
+          ],
+          "ask": []
+        }
+      },
+      {
+        "name": "a charge taken back with undo is not asked about either",
+        "pending": [
+          {
+            "id": "c1",
+            "merchant": "CAFE MARTINEZ",
+            "usdCents": 520,
+            "ruleUndone": true
+          }
+        ],
+        "rules": [
+          {
+            "pattern": "Cafe",
+            "amountAudCents": null
+          }
+        ],
+        "learnedRate": null,
+        "seen": [],
+        "filed": [],
+        "expected": {
+          "fresh": [
+            "c1"
+          ],
+          "file": [],
+          "ask": []
         }
       }
     ]

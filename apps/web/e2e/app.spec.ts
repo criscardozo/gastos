@@ -3125,6 +3125,14 @@ test("a charge taken back with undo is not filed again when the next one arrives
   await page.getByRole("button", { name: /Deshacer la carga automática/ }).first().click();
   await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible();
 
+  // A fresh session: the undo used to be remembered only in memory, so a
+  // reload — like the next launch, the other client or the background
+  // refresh on iOS — filed the charge straight back. It is on the charge now.
+  await page.reload();
+  await expect(page.getByText("1 cargo del banco sin asignar")).toBeVisible({
+    timeout: 20_000,
+  });
+
   await postCharge(request, householdId, "gmail-undo2", "OPAL AUCKLAND ST", 1240);
   await expect(page.getByText("Se cargó 1 gasto solo")).toBeVisible({ timeout: 20_000 });
 

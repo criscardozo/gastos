@@ -159,7 +159,9 @@ extension RecurringRules {
         guard !fresh.isEmpty else { return RunPlan() }
         let freshIds = Set(fresh.map(\.id))
         var plan = RunPlan<C, R>(fresh: fresh.map(\.id))
-        for charge in pending {
+        // A charge somebody took back with undo is theirs to file by hand now.
+        // It still counts as fresh — it arrived — but no run files or asks.
+        for charge in pending where !charge.ruleUndone {
             guard let rule = rule(for: charge.merchant, in: rules) else { continue }
             let amount = rule.amountAudCents
                 ?? estimateAudCents(usdCents: charge.usdCents, rate: learnedRate)
@@ -183,6 +185,8 @@ protocol RecurringChargeLike {
     var id: String { get }
     var merchant: String { get }
     var usdCents: Int { get }
+    /// Filed by a rule and taken back with undo: runs leave it alone.
+    var ruleUndone: Bool { get }
 }
 
 /// What the matcher needs of a rule, so `Core` does not depend on the Firestore

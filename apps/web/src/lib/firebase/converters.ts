@@ -144,6 +144,9 @@ export interface BankChargeDoc {
   /** When a member discarded it; null while pending. Recoverable for
    * DISMISS_WINDOW_HOURS after this — see lib/bank-charges.ts. */
   dismissedAt: Date | null;
+  /** A rule filed it and somebody took that back with undo — so no run files
+   * it again, on any client. See shared/schema.md. */
+  ruleUndone: boolean;
 }
 
 /**
@@ -416,6 +419,7 @@ export const bankChargeConverter = readOnly<BankChargeDoc>((snap) => {
     merchant: isMaybeEmptyString(data.merchant) ? data.merchant : "",
     cardLast4: isString(data.cardLast4) ? data.cardLast4 : null,
     dismissedAt: dismissedAt?.toDate() ?? null,
+    ruleUndone: data.ruleUndoneAt != null,
   };
 });
 

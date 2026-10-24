@@ -117,6 +117,8 @@ export function ruleForCharge(
 export interface MatchableCharge {
   id: string;
   merchant: string;
+  /** Filed by a rule and taken back with undo: runs leave it alone. */
+  ruleUndone?: boolean;
 }
 
 /**
@@ -257,7 +259,13 @@ export function planRecurringRun<T extends MatchableCharge & { usdCents: number 
   const fresh = pending.filter((c) => !seen.has(c.id));
   if (fresh.length === 0) return { fresh: [], file: [], ask: [] };
   const freshIds = new Set(fresh.map((c) => c.id));
-  const { ready, asking } = claimCharges(pending, rules, learnedRate);
+  // A charge somebody took back with undo is theirs to file by hand now. It
+  // still counts as fresh — it arrived — but no run files or asks about it.
+  const { ready, asking } = claimCharges(
+    pending.filter((c) => c.ruleUndone !== true),
+    rules,
+    learnedRate,
+  );
   return {
     fresh: fresh.map((c) => c.id),
     file: ready.filter((claim) => !filed.has(claim.charge.id)),

@@ -263,12 +263,13 @@ create a second charge.
 | `merchant` | string | As the bank spells it, e.g. `"COLES 0831"`. May be empty |
 | `cardLast4` | string \| absent | Four digits, when the email states them |
 | `importedAt` | timestamp | When the ingestion filed it |
-| `dismissedAt` | timestamp \| absent | Set when a member discards the charge. Absent means pending — this is the only field a client may ever write |
+| `dismissedAt` | timestamp \| absent | Set when a member discards the charge. Absent means pending. Server clock |
+| `ruleUndoneAt` | timestamp \| absent | Set when a member undoes an expense a recurring rule filed from this charge. No rule run files it or asks about it again, on any client — it can still be filed by hand. Server clock. Until 2026-10-24 the undo lived only in the session that did it, so the next launch, the other client and iOS's background refresh filed the charge straight back |
 
 **Who writes this.** Only the Gmail ingestion (`tools/gmail-bank-ingest`), with
 its own service-account key. A service account is an IAM principal, so the
 security rules do not apply to it — and the rules therefore make this collection
-read-only from the clients, plus deletable and `dismissedAt`-writable. Nobody
+read-only from the clients, plus deletable and `dismissedAt`/`ruleUndoneAt`-writable — the only two fields a client may ever write. Nobody
 should be able to invent a bank charge, and none of what the bank said about it
 ever changes.
 
