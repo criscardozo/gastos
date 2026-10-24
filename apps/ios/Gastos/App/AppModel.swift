@@ -731,15 +731,34 @@ final class AppModel {
               let range = currentMonthRange
         else { return }
         let categoryIds = budgetCategoryIds
+        let monthKey = range.start.raw
+        monthTotalRequest += 1
+        let request = monthTotalRequest
         Task {
-            self.monthSpentCents = await firestore.fetchSpentCents(
+            let spent = await firestore.fetchSpentCents(
                 householdId: householdId,
                 startDate: range.start.raw,
                 endDate: range.end.raw,
                 categoryIds: categoryIds
             )
+            // Only the newest request answers: two in flight can finish out of
+            // order, and the older one overwrote the newer figure.
+            guard request == self.monthTotalRequest else { return }
+            if let spent {
+                self.monthSpentCents = spent
+                self.monthSpentKey = monthKey
+            } else if self.monthSpentKey != monthKey {
+                // A failed read (offline, say) used to blank the card. The last
+                // figure stays as long as it is for this same month.
+                self.monthSpentCents = nil
+            }
         }
     }
+
+    /// Which `loadMonthTotal` call is the newest, and which month the figure
+    /// on screen belongs to.
+    private var monthTotalRequest = 0
+    private var monthSpentKey: String?
 
     // MARK: Auth actions
 

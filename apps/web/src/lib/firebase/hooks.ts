@@ -485,7 +485,15 @@ export function useCardCharges(
 // changes but resets on a full reload. NOT persisted to localStorage: past
 // periods are editable, so a durable cache could go stale forever. Storing
 // the in-flight promise also dedupes StrictMode's double mount.
-const periodTotalsCache = new Map<string, Promise<number>>();
+//
+// Entries expire after a minute. They used to last the whole session, and a
+// past period is NOT closed: a charge filed by a rule or "Crear gasto" carries
+// the charge's own date — usually the period that just ended — and edits land
+// there too, so a tab left open showed the old bar until a full reload. An
+// expired entry costs one read the next time a screen asks (on navigation, or
+// when the tab regains focus — see usePastPeriodTotals), never on a timer.
+const TOTAL_TTL_MS = 60_000;
+const periodTotalsCache = new Map<string, { promise: Promise<number>; at: number }>();
 
 function totalCacheKey(
   householdId: string,
@@ -517,10 +525,10 @@ export function primePeriodTotal(
   // reader (it once made a period carry over its FULL budget as "leftover").
   // A genuinely empty period just costs one cheap aggregation instead.
   if (totalCents <= 0) return;
-  periodTotalsCache.set(
-    totalCacheKey(householdId, range, categoryIds),
-    Promise.resolve(totalCents),
-  );
+  periodTotalsCache.set(totalCacheKey(householdId, range, categoryIds), {
+    promise: Promise.resolve(totalCents),
+    at: Date.now(),
+  });
 }
 
 /**
@@ -650,7 +658,9 @@ function fetchPeriodTotal(
 ): Promise<number> {
   const key = totalCacheKey(householdId, range, categoryIds);
   const cached = periodTotalsCache.get(key);
-  if (cached !== undefined && !bypassCache) return cached;
+  if (cached !== undefined && !bypassCache && Date.now() - cached.at < TOTAL_TTL_MS) {
+    return cached.promise;
+  }
   // Nothing counts towards the budget — no query to run.
   if (categoryIds !== null && categoryIds.length === 0) {
     return Promise.resolve(0);
@@ -664,9 +674,13 @@ function fetchPeriodTotal(
     query(collection(db, "households", householdId, "expenses"), ...constraints),
     { total: sum("amountCents") },
   ).then((snap) => snap.data().total ?? 0);
-  periodTotalsCache.set(key, promise);
-  // Don't cache failures — the next render retries.
-  promise.catch(() => periodTotalsCache.delete(key));
+  const entry = { promise, at: Date.now() };
+  periodTotalsCache.set(key, entry);
+  // Don't cache failures — the next render retries. Only this entry: a newer
+  // request for the same key may have replaced it meanwhile.
+  promise.catch(() => {
+    if (periodTotalsCache.get(key) === entry) periodTotalsCache.delete(key);
+  });
   return promise;
 }
 
@@ -683,6 +697,14 @@ export function usePastPeriodTotals(
   categoryIds: string[] | null = null,
 ): Record<string, number> {
   const [totals, setTotals] = useState<Record<string, number>>({});
+  // Asked again when the tab regains focus; the cache answers anything that
+  // has not expired, so this costs reads only for the entries that have.
+  const [focusTick, setFocusTick] = useState(0);
+  useEffect(() => {
+    const onFocus = () => setFocusTick((n) => n + 1);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
   // Serialize so the effect keys on VALUES (the array identity changes
   // every render).
   const serialized = useMemo(
@@ -735,7 +757,7 @@ export function usePastPeriodTotals(
     return () => {
       cancelled = true;
     };
-  }, [householdId, serialized, serializedCategories]);
+  }, [householdId, serialized, serializedCategories, focusTick]);
 
   return totals;
 }
