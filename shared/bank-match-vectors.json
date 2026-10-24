@@ -86,6 +86,29 @@
         }
       ],
       "expected": null
+    },
+    {
+      "name": "an estimated pair is left out: its AUD was worked out from this very rate",
+      "expenses": [
+        {
+          "amountCents": 10000,
+          "usdCents": 7000,
+          "verified": true
+        },
+        {
+          "amountCents": 10000,
+          "usdCents": 6000,
+          "verified": true,
+          "autoEstimated": true
+        },
+        {
+          "amountCents": 10000,
+          "usdCents": 6000,
+          "verified": true,
+          "autoEstimated": true
+        }
+      ],
+      "expected": 0.7
     }
   ],
   "suggestMatches": [

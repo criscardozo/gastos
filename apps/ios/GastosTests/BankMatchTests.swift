@@ -14,6 +14,7 @@ final class BankMatchTests: XCTestCase {
                 let amountCents: Int
                 let usdCents: Int?
                 let verified: Bool
+                let autoEstimated: Bool?
             }
             let name: String
             let expenses: [Pair]
@@ -66,7 +67,8 @@ final class BankMatchTests: XCTestCase {
         date: String = "2026-08-03",
         note: String = "",
         usdCents: Int? = nil,
-        verified: Bool = false
+        verified: Bool = false,
+        autoEstimated: Bool? = nil
     ) -> Expense {
         var expense = Expense(
             amountCents: amountCents,
@@ -76,6 +78,7 @@ final class BankMatchTests: XCTestCase {
             createdBy: "u1"
         )
         expense.id = id
+        expense.autoEstimated = autoEstimated
         expense.usdCents = usdCents
         expense.verified = verified
         return expense
@@ -155,7 +158,8 @@ final class BankMatchTests: XCTestCase {
                     id: "e\(index)",
                     amountCents: pair.amountCents,
                     usdCents: pair.usdCents,
-                    verified: pair.verified
+                    verified: pair.verified,
+                    autoEstimated: pair.autoEstimated
                 )
             }
             let rate = BankMatch.learnRate(expenses)

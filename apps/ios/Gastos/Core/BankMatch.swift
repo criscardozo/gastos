@@ -54,7 +54,9 @@ enum BankMatch {
         // unverified expense cannot carry a USD figure and the compactMap below
         // would drop it anyway. An equivalent mutant, noted here rather than
         // only in the commit that found it.
-            .filter { $0.isVerified && $0.amountCents > 0 }
+            // An estimated pair is left out: its AUD was divided out of this
+            // very rate, so counting it would hold the median where it was.
+            .filter { $0.isVerified && $0.amountCents > 0 && !$0.isEstimated }
             .compactMap { expense -> Double? in
                 guard let usd = expense.usdCents else { return nil }
                 return Double(usd) / Double(expense.amountCents)

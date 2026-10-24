@@ -29,6 +29,7 @@ describe("shared vectors: learnRate", () => {
         note: "",
         verified: e.verified,
         usdCents: e.usdCents,
+        autoEstimated: "autoEstimated" in e ? e.autoEstimated === true : false,
       })),
     );
     if (expected === null) {

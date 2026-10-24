@@ -43,6 +43,8 @@ export interface MatchableExpense {
   date: string;
   note: string;
   verified: boolean;
+  /** Its AUD was worked out FROM the learned rate — see learnRate. */
+  autoEstimated?: boolean;
 }
 
 export interface ChargeSuggestion {
@@ -105,7 +107,12 @@ export function learnRate(
   // cannot carry a USD figure and the compactMap below would drop it anyway.
   // An equivalent mutant, noted here rather than only in the commit that found
   // it, because here is where the next person to mutate this line will look.
-    .filter((e) => e.verified && e.usdCents !== null && e.amountCents > 0)
+    // An estimated pair is left out: its AUD was divided out of this very
+    // rate, so counting it would hold the median where it was and stop it
+    // following the bank.
+    .filter(
+      (e) => e.verified && e.usdCents !== null && e.amountCents > 0 && e.autoEstimated !== true,
+    )
     .map((e) => (e.usdCents as number) / e.amountCents)
     .sort((a, b) => a - b);
   if (rates.length === 0) return null;
