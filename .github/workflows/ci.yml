@@ -56,6 +56,11 @@ jobs:
       # now, which meant a change to the wording it matches would have surfaced
       # as a charge quietly never arriving.
       - run: pnpm --filter gmail-bank-ingest test
+      # The scripts' own suite: backup, restore, signing, the argument gate, and
+      # the design-token emitter's Python tests. It only ever ran on the
+      # developer's machine; it needs nothing but the install above and takes
+      # seconds.
+      - run: pnpm test:scripts
       # Turbopack reuses this between builds; without it every run compiles the
       # whole app from cold. Keyed on the lockfile AND the sources, so a cache
       # is only reused when it can be: restore-keys falls back to the newest

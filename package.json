@@ -7,7 +7,7 @@
     "build": "pnpm --filter web build",
     "typecheck": "pnpm --filter web typecheck",
     "lint": "pnpm --filter web lint",
-    "test": "pnpm --filter web test && pnpm --filter rules-tests test && pnpm --filter gmail-bank-ingest test",
+    "test": "pnpm --filter web test && pnpm --filter rules-tests test && pnpm --filter gmail-bank-ingest test && pnpm test:scripts",
     "test:web": "pnpm --filter web test",
     "test:rules": "pnpm --filter rules-tests test",
     "test:ingest": "pnpm --filter gmail-bank-ingest test",
