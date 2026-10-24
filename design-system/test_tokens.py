@@ -906,3 +906,52 @@ class Flags(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Membership(unittest.TestCase):
+    """Which tokens each Swift destination carries — the consumer's half.
+
+    The emitter follows the files (`subset=True`, see tokens.py), so a colour
+    taken out of the generator in Theme.swift — rewritten by hand as
+    `Color(red:…)`, say — simply stopped being emitted: --verify reported one
+    declaration fewer and passed, and --write changed nothing. tokens.py says a
+    test must pin membership; until 2026-10-24 none did.
+    """
+
+    REPO = Path(__file__).resolve().parent.parent
+
+    def swift_tokens(self) -> list[str]:
+        import json
+
+        doc = json.loads((self.REPO / "design-system/tokens.json").read_text(encoding="utf-8"))
+        names: list[str] = []
+
+        def walk(node):
+            if isinstance(node, dict):
+                ext = node.get("$extensions") or {}
+                if node.get("$type") == "color" and "gastos.swift" in ext:
+                    names.append(ext["gastos.swift"])
+                for key, value in node.items():
+                    if not key.startswith("$"):
+                        walk(value)
+
+        walk(doc)
+        return names
+
+    def declared(self, path: str, helper: str) -> set[str]:
+        text = (self.REPO / path).read_text(encoding="utf-8")
+        return set(re.findall(rf"static let (\w+) = {re.escape(helper)}\(", text))
+
+    def test_theme_swift_carries_every_token_named_for_swift(self):
+        expected = set(self.swift_tokens())
+        self.assertGreater(len(expected), 10, "no Swift tokens found — the walk is wrong")
+        declared = self.declared("apps/ios/Gastos/Design/Theme.swift", "Color.hex")
+        self.assertEqual(sorted(expected - declared), [], "tokens missing from Theme.swift")
+
+    def test_the_widget_carries_exactly_its_five(self):
+        # A design decision, written down: the widget draws only these. Adding
+        # or dropping one is a change to this list on purpose.
+        self.assertEqual(
+            self.declared("apps/ios/GastosWidget/WidgetTheme.swift", "Color.widgetHex"),
+            {"bg", "ink", "inkSecondary", "inkTertiary", "track"},
+        )
