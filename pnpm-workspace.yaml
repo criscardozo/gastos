@@ -56,11 +56,12 @@ overrides:
   # parent ships it itself.
   #   fast-uri <3.1.6: SSRF and host confusion through IPv6 and percent-encoding
   #     normalisation (4 advisories, all high).
+  #     Raised to <3.1.9 on 26/10/2026 for four more (two medium, two low).
   #   qs <6.16.0: array-limit bypass, and a DoS through an attacker-controlled
   #     isBuffer.
   #   fast-xml-parser <5.10.1: repeated DOCTYPE declarations reset the entity
   #     expansion limit.
-  fast-uri: ^3.1.6
+  fast-uri: ^3.1.9
   qs: ^6.16.0
   fast-xml-parser: ^5.10.1
   # vite <=7.3.6: five advisories (one high) in its dev server. It is vitest's
