@@ -445,6 +445,8 @@ struct SettingsView: View {
 
     // MARK: Log of past periods
 
+    /// One row into the list: it grows by a line every period and nothing in
+    /// it can be changed from here.
     @ViewBuilder
     private var logSection: some View {
         let past = model.pastPeriods
@@ -452,31 +454,42 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionLabel(text: l10n.t("settings.log"))
                     .padding(.horizontal, 4)
-                Card {
-                    VStack(spacing: 0) {
-                        ForEach(Array(past.enumerated()), id: \.element.startDate) { index, period in
-                            AdaptiveRow {
-                                if let start = period.start, let end = period.end {
-                                    Text(l10n.periodRangeCompact(start: start, end: end, timeZone: model.householdTimeZone))
-                                        .appFont(13.5, .semibold)
-                                        .foregroundStyle(Theme.ink)
-                                }
-                                AdaptiveGap()
-                                Text("\(l10n.t("period.\(period.period.rawValue)")) · \(MoneyFormatter.audCompact(period.amountCents, locale: l10n.locale))")
-                                    .appFont(13)
-                                    .monospacedDigit()
-                                    .foregroundStyle(Theme.inkSecondary)
-                            }
-                            .padding(.vertical, 12)
-                            if index < past.count - 1 {
-                                Divider().overlay(Theme.separator)
-                            }
-                        }
+                listLink(title: l10n.t("settings.log.open"), count: past.count) {
+                    PastPeriodsView()
+                }
+            }
+            .padding(.bottom, 10)
+        }
+    }
+
+    /// A card that pushes a full list, with how many lines are behind it.
+    private func listLink<Destination: View>(
+        title: String,
+        count: Int,
+        @ViewBuilder destination: @escaping () -> Destination
+    ) -> some View {
+        NavigationLink {
+            destination()
+        } label: {
+            Card {
+                AdaptiveRow {
+                    Text(title)
+                        .appFont(14.5, .semibold)
+                        .foregroundStyle(Theme.ink)
+                    AdaptiveGap()
+                    HStack(spacing: 8) {
+                        Text("\(count)")
+                            .appFont(13)
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.inkSecondary)
+                        chevron
                     }
                 }
-                .padding(.bottom, 10)
+                .padding(.vertical, 13)
             }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 
     // MARK: Preferences
@@ -835,50 +848,11 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             SectionLabel(text: l10n.t("paymentRuns.title"))
                 .padding(.horizontal, 4)
-            Card {
-                VStack(alignment: .leading, spacing: 0) {
-                    if paymentRuns.entries.isEmpty {
-                        Text(l10n.t("paymentRuns.empty"))
-                            .appFont(13.5)
-                            .foregroundStyle(Theme.inkSecondary)
-                            .padding(.vertical, 13)
-                    }
-                    ForEach(Array(paymentRuns.entries.enumerated()), id: \.element.id) { index, run in
-                        paymentRunRow(run)
-                        if index < paymentRuns.entries.count - 1 {
-                            Divider().overlay(Theme.separator)
-                        }
-                    }
-                }
+            listLink(title: l10n.t("paymentRuns.open"), count: paymentRuns.entries.count) {
+                PaymentRunsView()
             }
         }
         .padding(.top, 10)
-    }
-
-    /// Shows what Shortcuts handed over verbatim, so an empty or odd value is
-    /// visible as such rather than formatted into something plausible.
-    private func paymentRunRow(_ run: PaymentRunLog.Entry) -> some View {
-        let missing = l10n.t("paymentRuns.missing")
-        let outcome: String = switch run.outcome {
-        case PaymentRunLog.running: l10n.t("paymentRuns.running")
-        case "saved": l10n.t("paymentRuns.saved")
-        case "savedOffline": l10n.t("paymentRuns.savedOffline")
-        default: run.outcome
-        }
-        return VStack(alignment: .leading, spacing: 3) {
-            Text(run.startedAt.formatted(.dateTime.day().month().hour().minute().second().locale(l10n.locale)))
-                .appFont(11.5)
-                .foregroundStyle(Theme.inkTertiary)
-            Text("\(run.amount ?? missing) \(run.currency ?? "") · \(run.merchant ?? missing)")
-                .appFont(13.5, .semibold)
-                .foregroundStyle(Theme.ink)
-            Text(outcome)
-                .appFont(12.5)
-                .foregroundStyle(Theme.inkSecondary)
-                .textSelection(.enabled)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 11)
     }
 
     private var aboutSection: some View {

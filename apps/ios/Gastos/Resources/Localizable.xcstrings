@@ -4260,6 +4260,23 @@
         }
       }
     },
+    "settings.log.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Past periods"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Períodos anteriores"
+          }
+        }
+      }
+    },
     "signing.banner.body": {
       "extractionState": "manual",
       "localizations": {
@@ -6323,6 +6340,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "No terminó"
+          }
+        }
+      }
+    },
+    "paymentRuns.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent runs"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Últimas corridas"
           }
         }
       }
