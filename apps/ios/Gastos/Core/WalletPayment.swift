@@ -39,8 +39,10 @@ enum WalletPayment {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         let upper = text.uppercased()
         var code = ""
-        if let match = upper.range(of: #"\b[A-Z]{3}\b"#, options: .regularExpression) {
-            code = String(upper[match])
+        // A code counts only next to the amount ("USD7,24", "12.00 AUD"). Any
+        // three-letter word used to: "Por USD7,24 a ALDI…" came back as "POR".
+        if let match = upper.range(of: #"\b[A-Z]{3}(?=\s*\d)|(?<=\d)\s*[A-Z]{3}\b"#, options: .regularExpression) {
+            code = String(upper[match]).trimmingCharacters(in: .whitespaces)
         } else if let match = upper.range(of: #"[A-Z]{1,3}\$"#, options: .regularExpression) {
             // Letters before a dollar say WHOSE dollar. Only "A$"/"AU$" is the
             // household's; "CA$" used to read as AUD because it contains "A$",

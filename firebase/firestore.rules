@@ -506,7 +506,31 @@ service cloud.firestore {
       // arrival — hence request.time rather than anything it sends.
       match /bankCharges/{messageId} {
         allow read: if isMember(householdId);
-        allow create: if false;
+        // The Gmail ingestion writes with its own service account and is not
+        // bound by these rules. Since 2026-10-26 a member may file a charge
+        // too — the bank stopped emailing, and the BBVA app's notification
+        // ("Cargo del banco" in Atajos) is the one source left (Cristian's
+        // decision). Held to the exact shape, on the server's clock, and under
+        // the shared id (shared/bank-charge-id-vectors.json), so the same
+        // purchase from the email and the notification is one document: the
+        // second to arrive is an update, refused below.
+        allow create: if isMember(householdId)
+          && request.resource.data.keys().hasOnly(['usdCents', 'date', 'merchant', 'cardLast4', 'importedAt', 'source'])
+          && request.resource.data.keys().hasAll(['usdCents', 'date', 'merchant', 'importedAt', 'source'])
+          && request.resource.data.usdCents is int
+          && request.resource.data.usdCents > 0
+          && request.resource.data.usdCents <= 10000000
+          && isCalendarDate(request.resource.data.date)
+          && request.resource.data.merchant is string
+          && request.resource.data.merchant.size() <= 120
+          && (!('cardLast4' in request.resource.data)
+              || (request.resource.data.cardLast4 is string
+                  && request.resource.data.cardLast4.matches('^[0-9]{4}$')))
+          && isServerTimestamp(request.resource.data.importedAt)
+          && request.resource.data.source == 'notification'
+          && messageId == 'bbva-' + request.resource.data.date + '-'
+               + string(request.resource.data.usdCents) + '-'
+               + request.resource.data.get('cardLast4', 'none');
         // dismissedAt: discarded (absent = pending). ruleUndoneAt: a rule
         // filed it and somebody took that back with undo, so no run files it
         // again — recorded here because the undo used to live only in the

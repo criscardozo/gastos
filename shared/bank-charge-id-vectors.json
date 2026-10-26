@@ -1,0 +1,9 @@
+{
+  "_comment": "The id of a bank charge, the same whichever way it arrived. Two sources file the bank's USD charges: the Gmail ingestion (tools/gmail-bank-ingest, JavaScript) and the BBVA app's notification through the Shortcuts action \"Cargo del banco\" (iOS, Swift). One purchase can arrive by both, so the id is built from what both know — the household-timezone date, the USD cents and the card's last four digits — and the second to arrive finds the document already there: deduplication without a query. The cost, accepted by Cristian on 2026-10-26: two identical purchases on one day with the same card become one charge. A charge with no card digits says `none`. The Firestore rules check a client-created charge's id against this same shape.",
+  "cases": [
+    { "name": "the real case: Aldi on the debit card", "date": "2026-10-26", "usdCents": 724, "cardLast4": "2024", "expected": "bbva-2026-10-26-724-2024" },
+    { "name": "the credit card", "date": "2026-10-24", "usdCents": 23559, "cardLast4": "6576", "expected": "bbva-2026-10-24-23559-6576" },
+    { "name": "a card the email did not name", "date": "2026-08-01", "usdCents": 6390, "cardLast4": null, "expected": "bbva-2026-08-01-6390-none" },
+    { "name": "thousands, no separators in the id", "date": "2026-12-31", "usdCents": 123456, "cardLast4": "2024", "expected": "bbva-2026-12-31-123456-2024" }
+  ]
+}

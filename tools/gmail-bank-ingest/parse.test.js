@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  bankChargeId,
   bankEmailText,
   classifyBankNotification,
   householdDate,
@@ -204,3 +205,20 @@ function body({
   const card = withCard ? " finalizada en <b><span>1234</span></b>" : "";
   return `<p>Queremos informarte que registramos una autorización de consumo de <b><span>U$S</span> <span>${amount}</span></b> en el establecimiento <b><span>${merchant}</span></b>${when} con la tarjeta de <b><span>NOMBRE APELLIDO</span></b>${card}</p>`;
 }
+
+describe("bankChargeId (shared/bank-charge-id-vectors.json)", () => {
+  const vectors = JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL("../../shared/bank-charge-id-vectors.json", import.meta.url)),
+      "utf-8",
+    ),
+  );
+
+  it("runs every case, and there are cases to run", () => {
+    expect(vectors.cases.length).toBeGreaterThan(2);
+    const wrong = vectors.cases
+      .map((c) => [c.name, bankChargeId(c.date, c.usdCents, c.cardLast4), c.expected])
+      .filter(([, got, expected]) => got !== expected);
+    expect(wrong).toEqual([]);
+  });
+});

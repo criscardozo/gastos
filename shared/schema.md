@@ -254,11 +254,19 @@ An expense belongs to the period whose `[startDate, endDate]` contains its `date
 Queries are lexicographic string ranges: `date >= start && date <= end`, which is why the
 zero-padded `YYYY-MM-DD` format is mandatory.
 
-### `households/{householdId}/bankCharges/{gmailMessageId}`
+### `households/{householdId}/bankCharges/{chargeId}`
 
-A charge the bank reported by email, waiting to be matched to an expense. The
-document id **is** the Gmail message id, so re-reading the same email can never
-create a second charge.
+A charge the bank reported, waiting to be matched to an expense. It arrives two
+ways: by **email**, through the Gmail ingestion, and — since 2026-10-26, when the
+bank stopped emailing — from the **BBVA app's notification**, through the iOS
+Shortcuts action "Cargo del banco" (`LogBankChargeIntent`).
+
+The document id is **built from the charge**, the same for both:
+`bbva-<date>-<usdCents>-<cardLast4 | none>` (shared/bank-charge-id-vectors.json,
+run by the ingestion and by iOS, and checked by the rules). One purchase that
+arrives both ways is one document — whichever comes second finds it there.
+Accepted cost (Cristian, 2026-10-26): two identical purchases on one day with the
+same card are one charge. Charges filed before this carry the Gmail message id.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -268,14 +276,18 @@ create a second charge.
 | `cardLast4` | string \| absent | Four digits, when the email states them |
 | `importedAt` | timestamp | When the ingestion filed it |
 | `dismissedAt` | timestamp \| absent | Set when a member discards the charge. Absent means pending. Server clock |
+| `source` | `"notification"` \| absent | `"notification"` when a member filed it from the BBVA notification; absent when the ingestion did |
 | `ruleUndoneAt` | timestamp \| absent | Set when a member undoes an expense a recurring rule filed from this charge. No rule run files it or asks about it again, on any client — it can still be filed by hand. Server clock. Until 2026-10-24 the undo lived only in the session that did it, so the next launch, the other client and iOS's background refresh filed the charge straight back |
 
-**Who writes this.** Only the Gmail ingestion (`tools/gmail-bank-ingest`), with
-its own service-account key. A service account is an IAM principal, so the
-security rules do not apply to it — and the rules therefore make this collection
-read-only from the clients, plus deletable and `dismissedAt`/`ruleUndoneAt`-writable — the only two fields a client may ever write. Nobody
-should be able to invent a bank charge, and none of what the bank said about it
-ever changes.
+**Who writes this.** The Gmail ingestion (`tools/gmail-bank-ingest`), with its
+own service-account key — an IAM principal, so the security rules do not apply to
+it. And, since 2026-10-26, a **member** filing the BBVA notification: the rules
+accept a create only in the exact shape above, with `source: "notification"`,
+`importedAt` on the server's clock and the id built from the fields. Before that
+no client could create a charge at all; the bank's emails stopping is why that
+changed (Cristian's decision). After creation, none of what the bank said about it
+ever changes: `dismissedAt` and `ruleUndoneAt` are the only fields a client may
+write, and the charge may be deleted.
 
 **How a charge leaves.** Two different exits, deliberately not the same one:
 

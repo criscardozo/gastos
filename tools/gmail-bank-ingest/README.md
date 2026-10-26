@@ -161,9 +161,14 @@ subject (so a thread label would hide every later charge):
    paired with a `newer_than:Nd` search. Ids are remembered even when an email
    produces no charge (a reversal, an unfamiliar format), so nothing is re-parsed
    forever.
-2. **The document id is the Gmail message id.** A create for a message already
-   filed comes back `409 ALREADY_EXISTS` and is treated as done. This is what
-   protects a *pending* charge if the properties store is ever lost.
+2. **The document id is built from the charge** — `bbva-<date>-<usdCents>-<card>`
+   (`bankChargeId` in `parse.js`, shared/bank-charge-id-vectors.json). A create
+   for a charge already there comes back `409 ALREADY_EXISTS` and is treated as
+   done. That protects a *pending* charge if the properties store is ever lost,
+   and since 2026-10-26 it also deduplicates against the iOS action "Cargo del
+   banco", which files the same purchases from the BBVA app's notification under
+   the same id. (It used to be the Gmail message id, which only this script
+   knows.)
 
 A **matched** charge is deleted from Firestore on the spot. A **discarded** one is
 only stamped (`dismissedAt`) and stays recoverable for 48 hours before a client

@@ -67,6 +67,14 @@ final class WalletPaymentTests: XCTestCase {
         XCTAssertEqual(parsed("A$12.00"), "12 AUD")
         XCTAssertEqual(parsed("AU$12.00"), "12 AUD")
         XCTAssertEqual(parsed("$12.00"), "12 ")
+        // A code is the one next to the amount, not any three-letter word:
+        // the BBVA notification text, sent here by mistake on 26/10, came back
+        // refused as "POR" — the "Por" it starts with.
+        guard case .success(let bbva) = WalletPayment.parseAmount(
+            "Por USD7,24 a ALDI STORES, con tu tarjeta Visa *2024"
+        ) else { return XCTFail("the notification text should parse") }
+        XCTAssertEqual(bbva.currencyCode, "USD", "refused as USD, which is what it is")
+        XCTAssertEqual(parsed("12.00 AUD"), "12 AUD")
         guard case .success(let usd) = WalletPayment.parseAmount("USD 8.53") else { return XCTFail() }
         XCTAssertEqual(
             WalletPayment.amountCents(usd.amount, currencyCode: usd.currencyCode, householdCurrency: "AUD"),

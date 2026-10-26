@@ -134,7 +134,11 @@ function runLocked() {
       var charge = result.charge;
 
       if (token === null) token = getAccessToken(config);
-      var written = createCharge(config, token, id, charge);
+      // The charge's own id, not the message's: the same purchase may already
+      // be there from the BBVA app's notification. See bankChargeId.
+      var written = createCharge(
+        config, token, bankChargeId(charge.date, charge.usdCents, charge.cardLast4), charge,
+      );
       if (written === "created" || written === "exists") {
         seen.push(id);
         if (written === "created") imported++;
@@ -379,14 +383,14 @@ function writeSeen(ids) {
  * Create the charge document. Returns "created", "exists" (someone already
  * filed this message — nothing to do) or an error string to retry later.
  */
-function createCharge(config, token, messageId, charge) {
+function createCharge(config, token, chargeId, charge) {
   var url =
     "https://firestore.googleapis.com/v1/projects/" +
     encodeURIComponent(config.projectId) +
     "/databases/(default)/documents/households/" +
     encodeURIComponent(config.householdId) +
     "/bankCharges?documentId=" +
-    encodeURIComponent(messageId);
+    encodeURIComponent(chargeId);
 
   var fields = {
     usdCents: { integerValue: String(charge.usdCents) },

@@ -169,6 +169,20 @@ function classifyBankNotification(html, timeZone) {
   };
 }
 
+/**
+ * The document id of a bank charge: the same however it arrived.
+ *
+ * The BBVA app's notification ("Cargo del banco" on iOS) files the same
+ * purchases this script does, so the id is built from what both sources know
+ * — date, USD cents, card — and whichever arrives second finds the document
+ * there (a 409 here). It used to be the Gmail message id, which only this
+ * script has. Two identical purchases on one day with one card become one
+ * charge; accepted. Shared contract: shared/bank-charge-id-vectors.json.
+ */
+function bankChargeId(date, usdCents, cardLast4) {
+  return "bbva-" + date + "-" + String(usdCents) + "-" + (cardLast4 === null ? "none" : cardLast4);
+}
+
 /** The charge in one notification, or null for anything else. */
 function parseBankNotification(html, timeZone) {
   var result = classifyBankNotification(html, timeZone);
@@ -182,5 +196,6 @@ if (typeof module !== "undefined" && module.exports) {
     householdDate: householdDate,
     parseBankNotification: parseBankNotification,
     classifyBankNotification: classifyBankNotification,
+    bankChargeId: bankChargeId,
   };
 }

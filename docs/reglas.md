@@ -39,6 +39,7 @@ era suyo ni hacía falta se borró.
 | 2/10/2026 | Decimales con punto, sin separador de miles. |
 | 22/10/2026 | Kyber se retira; Gastos se queda con todo lo que usaba. |
 | 23/10/2026 | La CI vuelve, porque en un repo público cuesta cero. Fuera la regla de «sin subagentes», que no era suya. |
+| 26/10/2026 | El banco dejó de mandar los mails. Los cargos llegan desde la notificación de BBVA (acción «Cargo del banco» en Atajos): un miembro puede crear un cargo, con la forma validada por las reglas; y la deduplicación es por mismo USD, misma tarjeta y misma fecha, aceptando que dos compras idénticas el mismo día queden como una. |
 
 ## Publicar
 

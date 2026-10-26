@@ -6326,6 +6326,91 @@
           }
         }
       }
+    },
+    "bankCharge.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank charge: %1$@ at %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargo del banco: %1$@ en %2$@"
+          }
+        }
+      }
+    },
+    "bankCharge.alreadyThere": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That charge was already there: %1$@ at %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ese cargo ya estaba: %1$@ en %2$@."
+          }
+        }
+      }
+    },
+    "bankCharge.savedOffline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank charge saved offline: %1$@ at %2$@. It goes up when the signal is back."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargo del banco guardado sin conexión: %1$@ en %2$@. Se sube cuando vuelva la señal."
+          }
+        }
+      }
+    },
+    "bankCharge.notACharge": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: the notification carries no USD amount. Not saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: la notificación no trae un monto en USD. No se cargó."
+          }
+        }
+      }
+    },
+    "bankCharge.unreadable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: could not read the amount «%@» in the notification. Not saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: no entendí el monto «%@» de la notificación. No se cargó."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

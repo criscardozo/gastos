@@ -356,6 +356,9 @@ struct BankCharge: Codable, Identifiable, Equatable {
     /// Set when a member undid an expense a rule filed from this charge, so no
     /// run files it again on any client. See shared/schema.md.
     var ruleUndoneAt: Date?
+    /// "notification" when a member filed it from the BBVA app's notification
+    /// ("Cargo del banco"); absent when the Gmail ingestion did.
+    var source: String?
 
     var ruleUndone: Bool { ruleUndoneAt != nil }
 

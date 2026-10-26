@@ -225,7 +225,12 @@ enum BankAlerts {
 
             // 2. Announce what this device has not seen.
             let filedChargeIds = Set(filedNow.compactMap { FirestoreService.chargeId(fromAutoExpense: $0.id) })
-            let newCharges = pending.filter { !filedChargeIds.contains($0.id) }
+            // A charge filed from the BBVA notification is not news: the bank's
+            // own app just showed it, and announcing it again is a second
+            // banner for one purchase.
+            let newCharges = pending.filter {
+                !filedChargeIds.contains($0.id) && $0.source != "notification"
+            }
             var automatic = filedNow
             for expense in expenses where expense.isFiledByRule {
                 guard let id = expense.id, !automatic.contains(where: { $0.id == id }) else { continue }

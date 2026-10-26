@@ -937,22 +937,60 @@ describe("households/{id}/bankCharges", () => {
     );
   });
 
-  it("nobody can invent or rewrite a bank charge from a client", async () => {
-    // Only the ingestion service account writes here, and it bypasses rules as
-    // an IAM principal — from a client this is read-only.
-    await assertFails(
-      setDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "made-up"), {
-        usdCents: 100,
-        date: "2026-08-01",
-        merchant: "INVENTADO",
-        importedAt: serverTimestamp(),
-      }),
-    );
+  it("nobody can rewrite what the bank said about a charge", async () => {
     await assertFails(
       updateDoc(doc(db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "gmail-1"), {
         usdCents: 1,
       }),
     );
+  });
+
+  // Since 2026-10-26 a member may file a charge too: the bank stopped emailing,
+  // and the BBVA app's notification ("Cargo del banco" in Atajos) is the one
+  // source left. Cristian's decision. The shape is held exactly, and the id is
+  // the shared one (shared/bank-charge-id-vectors.json), so the same purchase
+  // from the email and the notification is one document.
+  const notified = (over: Record<string, unknown> = {}) => ({
+    usdCents: 724,
+    date: "2026-10-26",
+    merchant: "ALDI STORES",
+    cardLast4: "2024",
+    importedAt: serverTimestamp(),
+    source: "notification",
+    ...over,
+  });
+  const chargeRef = (uid: string | null, id: string) =>
+    doc(db(env, uid), "households", HOUSEHOLD, "bankCharges", id);
+
+  it("a member may file a charge from the bank's notification, under its shared id", async () => {
+    await assertSucceeds(setDoc(chargeRef(ALICE, "bbva-2026-10-26-724-2024"), notified()));
+    const { cardLast4: _, ...noCard } = notified();
+    await assertSucceeds(setDoc(chargeRef(BOB, "bbva-2026-10-26-724-none"), noCard));
+  });
+
+  it("but not under an id that does not say what it is", async () => {
+    await assertFails(setDoc(chargeRef(ALICE, "made-up"), notified()));
+    await assertFails(setDoc(chargeRef(ALICE, "bbva-2026-10-26-999-2024"), notified()));
+  });
+
+  it("and not in any other shape", async () => {
+    const id = "bbva-2026-10-26-724-2024";
+    await assertFails(setDoc(chargeRef(ALICE, id), notified({ importedAt: new Date("2026-10-26") })));
+    await assertFails(setDoc(chargeRef(ALICE, id), notified({ source: "email" })));
+    await assertFails(setDoc(chargeRef(ALICE, id), notified({ dismissedAt: serverTimestamp() })));
+    await assertFails(setDoc(chargeRef(ALICE, "bbva-2026-10-26-0-2024"), notified({ usdCents: 0 })));
+    await assertFails(setDoc(chargeRef(ALICE, "bbva-2026-10-26-724-24"), notified({ cardLast4: "24" })));
+  });
+
+  it("an outsider cannot file one", async () => {
+    await assertFails(setDoc(chargeRef(CAROL, "bbva-2026-10-26-724-2024"), notified()));
+  });
+
+  it("filing a charge that is already there changes nothing", async () => {
+    // The second source to arrive finds the document: that write is an update,
+    // and an update may not touch what the bank said.
+    await assertSucceeds(setDoc(chargeRef(ALICE, "bbva-2026-10-26-724-2024"), notified()));
+    await assertFails(setDoc(chargeRef(BOB, "bbva-2026-10-26-724-2024"), notified()));
   });
 
   it("either member can retire a charge they have dealt with", async () => {

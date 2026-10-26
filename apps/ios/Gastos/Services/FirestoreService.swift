@@ -882,6 +882,83 @@ final class FirestoreService {
         }
     }
 
+    enum BankChargeFiling: Equatable {
+        /// The server has it.
+        case created
+        /// The same purchase was already filed — from the bank's email, or an
+        /// earlier run of the same notification. Nothing was written.
+        case alreadyThere
+        /// Written locally; the server had not answered within the timeout.
+        case savedOffline
+    }
+
+    /// File a bank charge read from the BBVA app's notification, under the
+    /// shared id (`BankNotification.chargeId`). The id is what deduplicates:
+    /// a charge already there — the same purchase from the email — makes this
+    /// write an UPDATE, which the rules refuse, and that refusal is reported
+    /// as `.alreadyThere` rather than as an error. Asked of the server first,
+    /// when it answers, so the usual case never sends a write to be refused.
+    @MainActor
+    func fileBankChargeConfirmed(
+        householdId: String, chargeId: String, charge: BankNotification.Charge,
+        date: String, timeout: Duration
+    ) async throws -> BankChargeFiling {
+        let document = db.collection("households").document(householdId)
+            .collection("bankCharges").document(chargeId)
+        // Bounded: with the app in the background a server read can hang well
+        // past the time Shortcuts gives an action (measured in the Simulator:
+        // ~25 s for the whole run). No answer in time is not an answer — the
+        // write below goes ahead, and the rules settle a duplicate anyway.
+        // A race, not a cancellation: the SDK's read does not stop when its
+        // task is cancelled, so the timeout has to answer in its place.
+        let checked = Settled()
+        let exists: Bool = await withCheckedContinuation { continuation in
+            document.getDocument(source: .server) { snapshot, _ in
+                MainActor.assumeIsolated {
+                    guard checked.claim() else { return }
+                    continuation.resume(returning: snapshot?.exists ?? false)
+                }
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(4))
+                guard checked.claim() else { return }
+                continuation.resume(returning: false)
+            }
+        }
+        if exists { return .alreadyThere }
+        var data: [String: Any] = [
+            "usdCents": charge.usdCents,
+            "date": date,
+            "merchant": charge.merchant,
+            "importedAt": FieldValue.serverTimestamp(),
+            "source": "notification",
+        ]
+        if let card = charge.cardLast4 { data["cardLast4"] = card }
+        let settled = Settled()
+        return try await withCheckedThrowingContinuation { continuation in
+            document.setData(data) { error in
+                MainActor.assumeIsolated {
+                    guard settled.claim() else { return }
+                    if let error = error as NSError? {
+                        if error.domain == FirestoreErrorDomain,
+                           error.code == FirestoreErrorCode.permissionDenied.rawValue {
+                            continuation.resume(returning: .alreadyThere)
+                        } else {
+                            continuation.resume(throwing: error)
+                        }
+                    } else {
+                        continuation.resume(returning: .created)
+                    }
+                }
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: timeout)
+                guard settled.claim() else { return }
+                continuation.resume(returning: .savedOffline)
+            }
+        }
+    }
+
     @MainActor
     private final class Settled {
         private var done = false
