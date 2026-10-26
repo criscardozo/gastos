@@ -63,6 +63,10 @@ overrides:
   fast-uri: ^3.1.6
   qs: ^6.16.0
   fast-xml-parser: ^5.10.1
+  # vite <=7.3.6: five advisories (one high) in its dev server. It is vitest's
+  # peer, so `pnpm update vite` leaves the resolved 7.3.6 in place; vitest
+  # accepts any 7.x, and 7.3.7 is the patch. Never reaches the browser.
+  vite: ^7.3.7
   # The ONE that reaches the browser: exceljs 4.4.0 pins uuid 8.3.2, which is
   # missing a buffer bounds check in v3/v5/v6 when `buf` is passed. exceljs
   # does `const {v4} = require('uuid')` and calls it with no arguments, so the
