@@ -23,6 +23,7 @@
 //
 // Nothing here writes anything: a suggestion is a proposal the user confirms.
 
+import { byCodeUnit } from "./compare";
 import { daysBetween } from "./periods";
 
 export interface BankCharge {
@@ -214,8 +215,8 @@ export function suggestMatches(
   pairs.sort(
     (a, b) =>
       b.score - a.score ||
-      a.chargeId.localeCompare(b.chargeId) ||
-      a.expenseId.localeCompare(b.expenseId),
+      byCodeUnit(a.chargeId, b.chargeId) ||
+      byCodeUnit(a.expenseId, b.expenseId),
   );
 
   const takenExpense = new Set<string>();

@@ -513,6 +513,37 @@
       "expected": {
         "c1": null
       }
+    },
+    {
+      "name": "a dead heat goes to the lower id by code point, so case decides the same on both clients",
+      "referenceRate": 0.7123,
+      "charges": [
+        {
+          "id": "c1",
+          "usdCents": 4552,
+          "date": "2026-08-03",
+          "merchant": ""
+        }
+      ],
+      "expenses": [
+        {
+          "id": "a1",
+          "amountCents": 6390,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        },
+        {
+          "id": "B1",
+          "amountCents": 6390,
+          "date": "2026-08-03",
+          "note": "",
+          "verified": false
+        }
+      ],
+      "expected": {
+        "c1": "B1"
+      }
     }
   ]
 }

@@ -142,6 +142,15 @@
         "expected": "OPAL A"
       },
       {
+        "name": "a tie is decided by code point, not by a locale's collation (which puts _ before digits)",
+        "patterns": [
+          "SQ_",
+          "SQ1"
+        ],
+        "merchant": "SQ_ SQ1",
+        "expected": "SQ1"
+      },
+      {
         "name": "nothing matches, nothing is chosen",
         "patterns": [
           "Opal",

@@ -1,3 +1,5 @@
+import { byCodeUnit } from "./compare";
+
 /**
  * Recurring-expense rules: a merchant pattern the household recognises, and
  * what to file it as when the bank reports it.
@@ -103,7 +105,7 @@ export function ruleForCharge(
   return [...claiming].sort(
     (a, b) =>
       fold(b.pattern).length - fold(a.pattern).length ||
-      fold(a.pattern).localeCompare(fold(b.pattern)),
+      byCodeUnit(fold(a.pattern), fold(b.pattern)),
   )[0];
 }
 

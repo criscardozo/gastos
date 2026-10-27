@@ -78,7 +78,7 @@ final class RecurringRulesTests: XCTestCase {
             Self.vectors.matches.cases.count
                 + Self.vectors.firstMatch.cases.count
                 + Self.vectors.estimate.cases.count,
-            30
+            31
         )
     }
 

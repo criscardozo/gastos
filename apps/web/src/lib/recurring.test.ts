@@ -37,7 +37,7 @@ describe("recurring vectors", () => {
       vectors.matches.cases.length +
         vectors.firstMatch.cases.length +
         vectors.estimate.cases.length,
-    ).toBe(30);
+    ).toBe(31);
   });
 });
 
