@@ -7,9 +7,10 @@
 // pending — for 48 hours it can be restored, after which a client sweep deletes
 // it for real.
 //
-// Matching a charge to an expense still deletes on the spot, and should:
-// reconciling is not a mistake anyone needs to take back, and a resurrected
-// charge would offer to verify an already-verified expense.
+// Matching a charge to an expense stamps it dismissed AND assigned: it leaves
+// every list at once (reconciling is not a mistake anyone needs to take back),
+// but the document stays until the sweep, so the bank's email for the same
+// purchase collides with it instead of filing it again as pending.
 //
 // Pure module: no Firebase, no React. `now` is always passed in, never read
 // from the clock, so every case here is testable.
@@ -27,6 +28,8 @@ const DISMISS_WINDOW_MS = DISMISS_WINDOW_HOURS * 60 * 60 * 1000;
 /** The only shape any of this needs — the rest of the charge is irrelevant. */
 export interface Dismissable {
   dismissedAt: Date | null;
+  /** Absent on shapes that cannot be assigned (tests, older callers). */
+  assigned?: boolean;
 }
 
 export function isPending(charge: Dismissable): boolean {
@@ -54,7 +57,8 @@ export interface ChargePartition<T> {
   /** Dismissed within the window, newest dismissal first: the one most likely
    * to have been a slip is the one at the top. */
   dismissed: T[];
-  /** Past the window. Nobody renders these; the sweep deletes them. */
+  /** Past the window. Nobody renders these; the sweep deletes them. Matched
+   * charges land here too once their window passes, and in no list before. */
   expired: T[];
 }
 
@@ -69,7 +73,8 @@ export function partitionCharges<T extends Dismissable>(
   for (const charge of charges) {
     if (charge.dismissedAt === null) pending.push(charge);
     else if (isExpired(charge, now)) expired.push(charge);
-    else dismissed.push(charge);
+    // Matched: not pending, not offered back — only waiting for the sweep.
+    else if (charge.assigned !== true) dismissed.push(charge);
   }
 
   dismissed.sort(

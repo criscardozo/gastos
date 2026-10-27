@@ -494,8 +494,8 @@ service cloud.firestore {
       // A charge the bank reported by email, waiting to be matched to an
       // expense. The ingestion writes these with a service account (an IAM
       // principal, so rules do not apply to it); from a client they are
-      // READ-ONLY except for two things: the delete that retires one, and
-      // `dismissedAt`. No client create: nobody should be able to invent a bank
+      // READ-ONLY except for the delete that retires one and three stamps
+      // (`dismissedAt`, `ruleUndoneAt`, `assignedAt`). No client create: nobody should be able to invent a bank
       // charge, and nothing the bank said about it may ever change.
       //
       // `dismissedAt` is the one exception, and it is kept as narrow as the
@@ -534,11 +534,23 @@ service cloud.firestore {
         // dismissedAt: discarded (absent = pending). ruleUndoneAt: a rule
         // filed it and somebody took that back with undo, so no run files it
         // again — recorded here because the undo used to live only in the
-        // session that did it. Both on the server's clock; nothing else.
+        // session that did it. assignedAt: it verified an expense. Matching
+        // used to DELETE the charge, and once a charge could be matched the
+        // moment the BBVA notification filed it, the bank's email minutes
+        // later found no document under the shared id and filed the purchase
+        // again as pending. So the match leaves it in place, dismissed (the
+        // sweep takes it after 48 hours, and a client that predates this field
+        // reads it as discarded), and assignedAt says it is not one to offer
+        // back. All on the server's clock; nothing else.
         allow update: if isMember(householdId)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dismissedAt', 'ruleUndoneAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dismissedAt', 'ruleUndoneAt', 'assignedAt'])
           && (!('dismissedAt' in request.resource.data)
               || isServerTimestamp(request.resource.data.dismissedAt))
+          && (!('assignedAt' in request.resource.data)
+              || (request.resource.data.assignedAt == resource.data.get('assignedAt', null)
+                  && 'dismissedAt' in request.resource.data)
+              || (isServerTimestamp(request.resource.data.assignedAt)
+                  && isServerTimestamp(request.resource.data.dismissedAt)))
           && (!('ruleUndoneAt' in request.resource.data)
               || request.resource.data.ruleUndoneAt == resource.data.get('ruleUndoneAt', null)
               || isServerTimestamp(request.resource.data.ruleUndoneAt));

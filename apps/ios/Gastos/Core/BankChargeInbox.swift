@@ -9,9 +9,10 @@ import Foundation
 /// pending — for 48 hours it can be restored, after which a client sweep
 /// deletes it for real.
 ///
-/// Matching a charge to an expense still deletes on the spot, and should:
-/// reconciling is not a mistake anyone needs to take back, and a resurrected
-/// charge would offer to verify an already-verified expense.
+/// Matching a charge to an expense stamps it dismissed AND assigned: it leaves
+/// every list at once (reconciling is not a mistake anyone needs to take back),
+/// but the document stays until the sweep, so the bank's email for the same
+/// purchase collides with it instead of filing it again as pending.
 ///
 /// Pure: no Firebase, no SwiftUI. `now` is always passed in, never read from the
 /// clock, so every case here is testable.
@@ -59,6 +60,8 @@ enum BankChargeInbox {
         /// likely to have been a slip is the one at the top.
         var dismissed: [BankCharge] = []
         /// Past the window. Nobody renders these; the sweep deletes them.
+        /// Matched charges land here once their window passes, and in no list
+        /// before.
         var expired: [BankCharge] = []
     }
 
@@ -69,9 +72,10 @@ enum BankChargeInbox {
                 result.pending.append(charge)
             } else if isExpired(charge, now: now) {
                 result.expired.append(charge)
-            } else {
+            } else if charge.assignedAt == nil {
                 result.dismissed.append(charge)
             }
+            // Matched and inside the window: in no list, waiting for the sweep.
         }
         result.dismissed.sort {
             ($0.dismissedAt ?? .distantPast) > ($1.dismissedAt ?? .distantPast)

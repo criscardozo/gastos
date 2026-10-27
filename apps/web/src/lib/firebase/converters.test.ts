@@ -265,6 +265,7 @@ describe("bankChargeConverter", () => {
       cardLast4: null,
       dismissedAt: null,
       ruleUndone: false,
+      assigned: false,
     });
   });
 
@@ -274,6 +275,9 @@ describe("bankChargeConverter", () => {
     expect(
       decode(bankChargeConverter, "m1", { ...valid, ruleUndoneAt: new Date("2026-10-24") }),
     ).toMatchObject({ ruleUndone: true });
+    expect(
+      decode(bankChargeConverter, "m1", { ...valid, assignedAt: new Date("2026-10-27") }),
+    ).toMatchObject({ assigned: true });
   });
 
   it("reads an explicit digital", () => {

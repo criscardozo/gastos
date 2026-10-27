@@ -147,6 +147,8 @@ export interface BankChargeDoc {
   /** A rule filed it and somebody took that back with undo — so no run files
    * it again, on any client. See shared/schema.md. */
   ruleUndone: boolean;
+  /** It verified an expense: dismissed, and never offered back. */
+  assigned: boolean;
 }
 
 /**
@@ -420,6 +422,7 @@ export const bankChargeConverter = readOnly<BankChargeDoc>((snap) => {
     cardLast4: isString(data.cardLast4) ? data.cardLast4 : null,
     dismissedAt: dismissedAt?.toDate() ?? null,
     ruleUndone: data.ruleUndoneAt != null,
+    assigned: data.assignedAt != null,
   };
 });
 

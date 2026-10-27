@@ -278,6 +278,7 @@ same card are one charge. Charges filed before this carry the Gmail message id.
 | `dismissedAt` | timestamp \| absent | Set when a member discards the charge. Absent means pending. Server clock |
 | `source` | `"notification"` \| absent | `"notification"` when a member filed it from the BBVA notification; absent when the ingestion did |
 | `ruleUndoneAt` | timestamp \| absent | Set when a member undoes an expense a recurring rule filed from this charge. No rule run files it or asks about it again, on any client — it can still be filed by hand. Server clock. Until 2026-10-24 the undo lived only in the session that did it, so the next launch, the other client and iOS's background refresh filed the charge straight back |
+| `assignedAt` | timestamp \| absent | Set, together with `dismissedAt`, when the charge verified an expense. Never offered back under *Descartados*; the 48-hour sweep deletes it like a dismissal. Server clock. Since 2026-10-27 — before, a match deleted the charge |
 
 **Who writes this.** The Gmail ingestion (`tools/gmail-bank-ingest`), with its
 own service-account key — an IAM principal, so the security rules do not apply to
@@ -286,15 +287,20 @@ accept a create only in the exact shape above, with `source: "notification"`,
 `importedAt` on the server's clock and the id built from the fields. Before that
 no client could create a charge at all; the bank's emails stopping is why that
 changed (Cristian's decision). After creation, none of what the bank said about it
-ever changes: `dismissedAt` and `ruleUndoneAt` are the only fields a client may
-write, and the charge may be deleted.
+ever changes: `dismissedAt`, `ruleUndoneAt` and `assignedAt` are the only fields
+a client may write, and the charge may be deleted.
 
 **How a charge leaves.** Two different exits, deliberately not the same one:
 
-- **Matched** to an expense — deleted on the spot, in the same batch that writes
-  that expense's `usdCents` + `verified`. Reconciling is not a mistake anyone
-  needs to take back, and a charge that came back after being matched would
-  offer to verify an already-verified expense.
+- **Matched** to an expense — stamped `assignedAt` + `dismissedAt` in the same
+  batch that writes that expense's `usdCents` + `verified`, and gone from every
+  list. Until 2026-10-27 the match deleted the charge, which stopped being safe
+  once the BBVA notification could file AND match a purchase within seconds:
+  the bank's email for the same purchase arrived minutes later, found no
+  document under the shared id, and filed it again as pending. Kept, the email's
+  create collides with it. The sweep takes it after 48 hours, by which time the
+  email has long been read; a client older than the field sees it as an
+  ordinary dismissal.
 - **Dismissed** — `dismissedAt` is stamped and the charge disappears from the
   pending list, but the document stays. For 48 hours it is listed under
   *Descartados* with a Restore button, which clears the field; after that a

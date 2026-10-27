@@ -114,6 +114,18 @@ describe("partitionCharges", () => {
     );
   });
 
+  it("lists a matched charge nowhere until the sweep takes it", () => {
+    // A match keeps the charge (so the bank's email cannot file it again) and
+    // stamps it dismissed: it must not come back under Descartados with a
+    // Restaurar that would undo nothing the user did.
+    const matched = { ...charge("matched", ago(2)), assigned: true };
+    const old = { ...charge("old", ago(72)), assigned: true };
+    const { pending, dismissed, expired } = partitionCharges([matched, old], NOW);
+    expect(pending).toEqual([]);
+    expect(dismissed).toEqual([]);
+    expect(expired.map((c) => c.id)).toEqual(["old"]);
+  });
+
   it("puts the newest dismissal first — the likeliest slip is on top", () => {
     const { dismissed } = partitionCharges(
       [charge("old", ago(40)), charge("new", ago(1)), charge("mid", ago(20))],

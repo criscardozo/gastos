@@ -1077,6 +1077,30 @@ describe("households/{id}/bankCharges", () => {
     await assertFails(updateDoc(charge, { ruleUndoneAt: serverTimestamp(), usdCents: 1 }));
   });
 
+  it("a match stamps the charge assigned instead of deleting it", async () => {
+    // Deleted, the charge was filed again as pending by the bank's email for
+    // the same purchase, minutes after the notification had already verified
+    // it. Kept, dismissed and assigned in one write, on the server's clock.
+    const charge = doc(db(env, ALICE), "households", HOUSEHOLD, "bankCharges", "gmail-1");
+    await assertFails(updateDoc(charge, { assignedAt: serverTimestamp() }));
+    await assertFails(
+      updateDoc(charge, { assignedAt: new Date("2030-01-01"), dismissedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(charge, {
+        assignedAt: serverTimestamp(),
+        dismissedAt: serverTimestamp(),
+        usdCents: 1,
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(charge, { assignedAt: serverTimestamp(), dismissedAt: serverTimestamp() }),
+    );
+    // Not restorable as if it had been discarded: the stamp cannot be cleared
+    // by taking dismissedAt away.
+    await assertFails(updateDoc(charge, { dismissedAt: deleteField() }));
+  });
+
   it("an outsider cannot dismiss a charge", async () => {
     await assertFails(
       updateDoc(doc(db(env, CAROL), "households", HOUSEHOLD, "bankCharges", "gmail-1"), {

@@ -68,6 +68,20 @@ final class BankChargeInboxTests: XCTestCase {
         XCTAssertFalse(BankChargeInbox.isExpired(charge("a", dismissedAt: ago(-2)), now: now))
     }
 
+    func testAMatchedChargeIsListedNowhereUntilTheSweep() {
+        // A match keeps the charge, so the bank's email for the same purchase
+        // cannot file it again, and stamps it dismissed: it must not come back
+        // under Descartados with a Restaurar that undoes nothing anybody did.
+        var matched = charge("matched", dismissedAt: ago(2))
+        matched.assignedAt = ago(2)
+        var old = charge("old", dismissedAt: ago(72))
+        old.assignedAt = ago(72)
+        let result = BankChargeInbox.partition([matched, old], now: now)
+        XCTAssertEqual(result.pending, [])
+        XCTAssertEqual(result.dismissed, [])
+        XCTAssertEqual(result.expired.map(\.id), ["old"])
+    }
+
     func testPartitionSplitsTheThreeStatesAndLosesNothing() {
         let charges = [
             charge("pending", dismissedAt: nil),

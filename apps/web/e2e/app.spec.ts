@@ -363,7 +363,9 @@ test("a bank charge is matched to the expense it paid for", async ({
 
   await page.getByRole("button", { name: "Asignar" }).click();
 
-  // The expense is verified and the charge is gone from Firestore for good.
+  // The expense is verified and the charge leaves every list, but stays in
+  // Firestore stamped assigned: deleted, the bank's email for the same
+  // purchase would file it again as pending.
   await expect(page.getByText("1 cargo del banco sin asignar")).toHaveCount(0);
   await expect(page.getByText("US$ 41.54").first()).toBeVisible();
   // Poll rather than read once: the UI reflects the local write immediately,
@@ -374,9 +376,15 @@ test("a bank charge is matched to the expense it paid for", async ({
         `${REST}/households/${householdId}/bankCharges`,
         { headers: { Authorization: "Bearer owner" } },
       );
-      return "documents" in (await charges.json());
+      const body = (await charges.json()) as {
+        documents?: { fields?: { assignedAt?: unknown; dismissedAt?: unknown } }[];
+      };
+      const fields = body.documents?.[0]?.fields;
+      return fields?.assignedAt !== undefined && fields?.dismissedAt !== undefined;
     })
-    .toBe(false);
+    .toBe(true);
+  // And it is not offered back under the discarded ones.
+  await expect(page.getByText(/descartado/i)).toHaveCount(0);
 });
 
 /** Household-timezone today, shifted by `days`. */

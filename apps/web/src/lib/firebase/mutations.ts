@@ -676,7 +676,13 @@ export async function assignBankCharge(
     verified: true,
     updatedAt: serverTimestamp(),
   });
-  batch.delete(doc(db, "households", householdId, "bankCharges", chargeId));
+  // Kept rather than deleted: the bank's email for the same purchase is filed
+  // under the same id, and with no document there it would come back as
+  // pending. See assignedAt in shared/schema.md.
+  batch.update(doc(db, "households", householdId, "bankCharges", chargeId), {
+    assignedAt: serverTimestamp(),
+    dismissedAt: serverTimestamp(),
+  });
   await batch.commit();
 }
 

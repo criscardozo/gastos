@@ -339,7 +339,8 @@ struct ExpenseItem: Identifiable, Equatable {
 /// `households/{id}/bankCharges/{gmailMessageId}` — a charge the bank reported
 /// by email, waiting to be matched to an expense. Written only by the Gmail
 /// ingestion (see tools/gmail-bank-ingest); from here it is read, dismissed and
-/// deleted — `dismissedAt` and `ruleUndoneAt` are the only fields a client may write.
+/// deleted — `dismissedAt`, `ruleUndoneAt` and `assignedAt` are the only fields a
+/// client may write.
 struct BankCharge: Codable, Identifiable, Equatable {
     @DocumentID var docId: String?
     /// What the bank charged, integer cents of USD.
@@ -356,6 +357,10 @@ struct BankCharge: Codable, Identifiable, Equatable {
     /// Set when a member undid an expense a rule filed from this charge, so no
     /// run files it again on any client. See shared/schema.md.
     var ruleUndoneAt: Date?
+    /// Set with `dismissedAt` when it verified an expense: kept until the sweep
+    /// so the bank's email for the same purchase cannot file it again, and
+    /// never offered back. See shared/schema.md.
+    var assignedAt: Date?
     /// "notification" when a member filed it from the BBVA app's notification
     /// ("Cargo del banco"); absent when the Gmail ingestion did.
     var source: String?
