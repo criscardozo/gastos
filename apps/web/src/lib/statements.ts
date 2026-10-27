@@ -12,6 +12,8 @@
 // [startDate, closingDate] contains its date, exactly as an expense belongs to
 // the period containing its date. Pure module — no Firebase, no React.
 
+import { addDays, daysInMonth } from "./periods";
+
 /** The two cards the household actually carries. */
 export type CardBrand = "visa" | "mastercard";
 
@@ -44,10 +46,6 @@ export function currentStatement<T extends StatementRange>(
   );
 }
 
-function daysInMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
-
 /**
  * The same day of the month, `months` later, clamped to the target month's
  * length. Statements keep their day of the month ("cierra el 27"), so this is
@@ -66,19 +64,6 @@ export function addMonthsKeepingDay(date: string, months: number): string {
     .padStart(2, "0")}-${clamped.toString().padStart(2, "0")}`;
 }
 
-function addDays(date: string, days: number): string {
-  const ms =
-    Date.UTC(
-      Number(date.slice(0, 4)),
-      Number(date.slice(5, 7)) - 1,
-      Number(date.slice(8, 10)),
-    ) +
-    days * 86_400_000;
-  const d = new Date(ms);
-  return `${d.getUTCFullYear().toString().padStart(4, "0")}-${(d.getUTCMonth() + 1)
-    .toString()
-    .padStart(2, "0")}-${d.getUTCDate().toString().padStart(2, "0")}`;
-}
 
 /**
  * What to prefill the "close and open the next" dialog with: both dates one

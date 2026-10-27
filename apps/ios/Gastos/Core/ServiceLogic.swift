@@ -49,23 +49,11 @@ enum ServiceLogic {
     /// The category an expense must be in to count as paying a service.
     static let categoryId = "services"
 
-    private static let utcCalendar: Calendar = {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        return calendar
-    }()
-
-    /// Days in a 1-based (year, month).
-    private static func daysInMonth(year: Int, month: Int) -> Int {
-        let date = utcCalendar.date(from: DateComponents(year: year, month: month, day: 1))!
-        return utcCalendar.range(of: .day, in: .month, for: date)!.count
-    }
-
     /// `YYYY-MM-DD` for a (year, month, day), with the day clamped to the
     /// month's length. A bill due "on the 31st" is due on the 28th of
     /// February — moving it into March instead would report the wrong month.
     private static func clampedDate(year: Int, month: Int, day: Int) -> CalendarDate {
-        let clamped = min(day, daysInMonth(year: year, month: month))
+        let clamped = min(day, PeriodLogic.daysInMonth(year: year, month: month))
         return CalendarDate(String(format: "%04d-%02d-%02d", year, month, clamped))!
     }
 

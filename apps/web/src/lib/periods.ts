@@ -39,6 +39,11 @@ export function addDays(date: string, days: number): string {
   return fromUtcMs(toUtcMs(date) + days * DAY_MS);
 }
 
+/** Days in a 1-based (year, month) — day 0 of the next month is this one's last. */
+export function daysInMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
 /** Signed number of calendar days from `from` to `to`. */
 export function daysBetween(from: string, to: string): number {
   return Math.round((toUtcMs(to) - toUtcMs(from)) / DAY_MS);
@@ -65,7 +70,7 @@ export function periodEndDate(startDate: string, period: PeriodType): string {
  */
 export function monthRange(date: string): PeriodRange {
   const [year, month] = date.split("-");
-  const last = new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate();
+  const last = daysInMonth(Number(year), Number(month));
   return {
     startDate: `${year}-${month}-01`,
     endDate: `${year}-${month}-${String(last).padStart(2, "0")}`,

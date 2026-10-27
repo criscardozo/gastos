@@ -119,6 +119,12 @@ enum PeriodLogic {
         return calendarDate(fromUTCInstant: shifted)
     }
 
+    /// Days in a 1-based (year, month).
+    static func daysInMonth(year: Int, month: Int) -> Int {
+        let date = utcCalendar.date(from: DateComponents(year: year, month: month, day: 1))!
+        return utcCalendar.range(of: .day, in: .month, for: date)!.count
+    }
+
     /// Signed day distance from `from` to `to` (`to - from`).
     static func daysBetween(_ from: CalendarDate, _ to: CalendarDate) -> Int {
         utcCalendar.dateComponents([.day], from: instant(of: from), to: instant(of: to)).day!

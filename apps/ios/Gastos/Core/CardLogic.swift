@@ -31,17 +31,6 @@ struct StatementRange: Equatable, Sendable {
 }
 
 enum CardLogic {
-    private static let utcCalendar: Calendar = {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        return calendar
-    }()
-
-    private static func daysInMonth(year: Int, month: Int) -> Int {
-        let date = utcCalendar.date(from: DateComponents(year: year, month: month, day: 1))!
-        return utcCalendar.range(of: .day, in: .month, for: date)!.count
-    }
-
     /// The same day of the month, `months` on, clamped to the target month's
     /// length. A statement closing on the 31st closes on the 28th in February;
     /// rolling into March would move it into the wrong month entirely.
@@ -52,7 +41,7 @@ enum CardLogic {
         let total = month - 1 + months
         let targetYear = year + Int(floor(Double(total) / 12))
         let targetMonth = ((total % 12) + 12) % 12 + 1
-        let clamped = min(day, daysInMonth(year: targetYear, month: targetMonth))
+        let clamped = min(day, PeriodLogic.daysInMonth(year: targetYear, month: targetMonth))
         return CalendarDate(String(format: "%04d-%02d-%02d", targetYear, targetMonth, clamped))!
     }
 
@@ -75,7 +64,7 @@ enum CardLogic {
     static func firstProposal(today: CalendarDate) -> StatementRange {
         let year = Int(today.raw.prefix(4))!
         let month = Int(today.raw.dropFirst(5).prefix(2))!
-        let last = daysInMonth(year: year, month: month)
+        let last = PeriodLogic.daysInMonth(year: year, month: month)
         let dueMonth = month == 12 ? 1 : month + 1
         let dueYear = month == 12 ? year + 1 : year
         return StatementRange(

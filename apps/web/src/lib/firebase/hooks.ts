@@ -41,7 +41,7 @@ import {
   type ServiceDoc,
 } from "./converters";
 import { decoded } from "./shape";
-import type { PeriodRange } from "../periods";
+import { monthRange, type PeriodRange } from "../periods";
 
 
 /* ── The one listener pattern ──────────────────────────────────────────── */
@@ -566,12 +566,7 @@ export function useMonthTotal(
   );
   const range = useMemo<PeriodRange | null>(() => {
     if (today === null) return null;
-    const [year, month] = today.split("-");
-    const last = new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate();
-    return {
-      startDate: `${year}-${month}-01`,
-      endDate: `${year}-${month}-${String(last).padStart(2, "0")}`,
-    };
+    return monthRange(today);
   }, [today]);
   const serializedCategories = useMemo(
     () => (categoryIds === null ? "" : [...categoryIds].sort().join("+")),

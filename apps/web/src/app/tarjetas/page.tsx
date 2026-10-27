@@ -51,6 +51,7 @@ import {
   type StatementRange,
 } from "@/lib/statements";
 import { displayMerchant } from "@/lib/merchant-name";
+import { daysInMonth } from "@/lib/periods";
 
 /**
  * Today, pulled inside a statement's window. A charge belongs to whichever
@@ -67,7 +68,7 @@ function clampToStatement(today: string, statement: StatementRange | null): stri
 /** A first statement has no predecessor to chain from, so today seeds it. */
 function firstProposal(today: string): StatementRange {
   const [year, month] = [Number(today.slice(0, 4)), Number(today.slice(5, 7))];
-  const endOfMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const endOfMonth = daysInMonth(year, month);
   const closing = `${today.slice(0, 7)}-${String(endOfMonth).padStart(2, "0")}`;
   const dueMonth = month === 12 ? 1 : month + 1;
   const dueYear = month === 12 ? year + 1 : year;

@@ -10,6 +10,8 @@
 // "YYYY-MM-DD" calendar strings the rest of the app uses, computed against a
 // `today` the caller resolves in the HOUSEHOLD timezone.
 
+import { daysBetween, daysInMonth } from "./periods";
+
 export type ServiceInterval =
   | "monthly"
   | "bimonthly"
@@ -50,11 +52,6 @@ export function intervalMonths(interval: ServiceInterval): number {
     case "yearly":
       return 12;
   }
-}
-
-/** Days in a 1-based (year, month) — day 0 of the next month is this one's last. */
-function daysInMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
 /**
@@ -108,14 +105,7 @@ export function nextDueDate(rule: DueRule, today: string): string {
 
 /** Whole days from `today` to the next due date. 0 means "due today". */
 export function daysUntilDue(rule: DueRule, today: string): number {
-  const due = nextDueDate(rule, today);
-  const toUtc = (date: string): number =>
-    Date.UTC(
-      Number(date.slice(0, 4)),
-      Number(date.slice(5, 7)) - 1,
-      Number(date.slice(8, 10)),
-    );
-  return Math.round((toUtc(due) - toUtc(today)) / 86_400_000);
+  return daysBetween(today, nextDueDate(rule, today));
 }
 
 /**
