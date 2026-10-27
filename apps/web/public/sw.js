@@ -11,7 +11,10 @@
  *   navigations      network-first with a cached fallback (offline launch)
  *   other same-origin GETs (icons, manifest)  stale-while-revalidate
  *
- * Bump VERSION to retire every old cache on the next activation.
+ * Bump VERSION to retire every old cache on the next activation. A deploy does
+ * NOT bump it — this file is byte-identical across builds, so the worker is
+ * never reinstalled — which is why stale chunks are pruned after navigations
+ * instead (see pruneStaticAssets).
  */
 
 const VERSION = "v5";
@@ -59,7 +62,7 @@ async function precacheShellAssets(cache) {
     if (response === undefined) return;
     const html = await response.text();
     const urls = new Set(
-      [...html.matchAll(/["'](\/_next\/static\/[^"']+)["']/g)].map((m) => m[1]),
+      [...html.matchAll(/["'](\/_next\/static\/[^"'\\]+)/g)].map((m) => m[1]),
     );
     await Promise.allSettled([...urls].map((url) => cache.add(url)));
   } catch {
@@ -91,7 +94,7 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/__/auth")) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(networkFirst(request));
+    event.respondWith(networkFirst(request, event));
     return;
   }
   if (url.pathname.startsWith("/_next/static/")) {
@@ -102,11 +105,20 @@ self.addEventListener("fetch", (event) => {
 });
 
 /** Fresh HTML when online; the last good copy (or the app shell) when not. */
-async function networkFirst(request) {
+async function networkFirst(request, event) {
   const cache = await caches.open(CACHE);
   try {
     const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
+    if (response.ok) {
+      // Pruned only once the fresh page is stored, so its own chunks count as
+      // referenced. Not awaited here: the page streams while it is written.
+      event.waitUntil(
+        cache
+          .put(request, response.clone())
+          .then(pruneStaticAssets)
+          .catch(() => {}),
+      );
+    }
     return response;
   } catch {
     return (
@@ -115,6 +127,51 @@ async function networkFirst(request) {
       Response.error()
     );
   }
+}
+
+/**
+ * Delete the cached /_next/static/ files that no cached page refers to.
+ *
+ * Every deploy brings new content-hashed chunks and cache-first never lets go
+ * of the old ones, so without this the cache grew by a build's worth of JS on
+ * every deploy, for good. The pages themselves are the record of what is still
+ * in use: a chunk no cached HTML names belongs to a build nobody will load
+ * again. A lazily imported chunk (the PDF and spreadsheet libraries) is not in
+ * any HTML and goes too; it is fetched again the next time it is needed online,
+ * and exporting is not something done offline.
+ */
+async function pruneStaticAssets() {
+  const cache = await caches.open(CACHE);
+  const requests = await cache.keys();
+  const pages = requests.filter(
+    (r) => !new URL(r.url).pathname.startsWith("/_next/static/"),
+  );
+  const referenced = new Set();
+  for (const page of pages) {
+    const response = await cache.match(page);
+    const type = response?.headers.get("content-type") ?? "";
+    if (!type.includes("text/html")) continue;
+    const html = await response.text();
+    for (const m of html.matchAll(/["'](\/_next\/static\/[^"'\\]+)/g)) {
+      referenced.add(m[1]);
+    }
+  }
+  // No page to go by (first install still running, or an empty cache): keep
+  // everything rather than mistake "nothing known" for "nothing used".
+  if (referenced.size === 0) return;
+  await Promise.all(
+    requests
+      .filter((r) => {
+        // Path AND query: Vercel can append ?dpl=<deployment> to chunk URLs,
+        // and the HTML names them with it.
+        const url = new URL(r.url);
+        return (
+          url.pathname.startsWith("/_next/static/") &&
+          !referenced.has(url.pathname + url.search)
+        );
+      })
+      .map((r) => cache.delete(r)),
+  );
 }
 
 async function cacheFirst(request) {
