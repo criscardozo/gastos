@@ -194,10 +194,23 @@ enum BankAlerts {
 
             let pending = BankChargeInbox.partition(charges, now: Date()).pending
 
-            // 1. File what the rules can price, exactly as the open app would.
+            // 1. Verify what the two automations filed for one purchase, when
+            // one of them ran without the other's half in place yet. Before the
+            // rules, so a matched charge is not also filed as a new expense.
+            let matched = await AutoMatch.apply(
+                firestore: firestore, householdId: householdId, household: household,
+                today: today, charges: charges, expenses: expenses, timeout: .seconds(8)
+            )
+            if !matched.isEmpty { log.notice("verified \(matched.count) without asking") }
+
+            let matchedIds = Set(matched.map(\.charge.id))
+
+            // 2. File what the rules can price, exactly as the open app would.
             let liveRules = rules.filter { !(household.categories[$0.categoryId]?.isArchived ?? false) }
             let plan = RecurringRules.planRun(
-                pending: pending.filter { household.belongsToExpenses(cardLast4: $0.cardLast4) },
+                pending: pending.filter {
+                    household.belongsToExpenses(cardLast4: $0.cardLast4) && !matchedIds.contains($0.id)
+                },
                 rules: liveRules,
                 learnedRate: BankMatch.learnRate(expenses, asOf: today),
                 seen: [], filed: []
@@ -224,13 +237,14 @@ enum BankAlerts {
                 }
             }
 
-            // 2. Announce what this device has not seen.
+            // 3. Announce what this device has not seen.
             let filedChargeIds = Set(filedNow.compactMap { FirestoreService.chargeId(fromAutoExpense: $0.id) })
             // A charge filed from the BBVA notification is not news: the bank's
             // own app just showed it, and announcing it again is a second
             // banner for one purchase.
             let newCharges = pending.filter {
-                !filedChargeIds.contains($0.id) && $0.source != "notification"
+                !filedChargeIds.contains($0.id) && !matchedIds.contains($0.id)
+                    && $0.source != "notification"
             }
             var automatic = filedNow
             for expense in expenses where expense.isFiledByRule {
@@ -238,7 +252,7 @@ enum BankAlerts {
                 automatic.append(Filed(id: id, note: expense.note, amountCents: expense.amountCents))
             }
 
-            // 3. The widget. Only the open app used to publish it, so after a
+            // 4. The widget. Only the open app used to publish it, so after a
             // period ended it kept showing the old remaining figure, and the
             // other member's spending never reached it until this phone opened
             // the app. One more read — the current period — and the same sum

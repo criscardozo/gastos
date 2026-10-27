@@ -144,8 +144,11 @@ extension AppModel {
         // rules on every arrival; it files nothing until the category is back.
         let categories = household?.categories ?? [:]
         let liveRules = recurringRules.filter { !(categories[$0.categoryId]?.isArchived ?? false) }
+        // A charge just matched to the expense Wallet filed is that expense's
+        // USD, not a purchase for a rule to file again.
         let plan = RecurringRules.planRun(
-            pending: expenseBankCharges, rules: liveRules,
+            pending: expenseBankCharges.filter { !autoMatchedChargeIds.contains($0.id) },
+            rules: liveRules,
             learnedRate: learnedBankRate,
             seen: evaluatedChargeIds, filed: filedChargeIds
         )

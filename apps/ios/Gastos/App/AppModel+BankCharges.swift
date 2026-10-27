@@ -112,6 +112,24 @@ extension AppModel {
         )
     }
 
+    /// Verify what is beyond doubt (`BankMatch.confidentMatches`) without
+    /// waiting for a tap — for the pair the two Shortcuts automations filed
+    /// when neither found the other's half in place. Over what is already in
+    /// memory, so it costs no read.
+    func autoMatchIfConfident() {
+        guard bankChargesLoaded, attachedHouseholdId != nil else { return }
+        let charges = expenseBankCharges.filter { !autoMatchedChargeIds.contains($0.id) }
+        guard !charges.isEmpty else { return }
+        let matches = BankMatch.confidentMatches(
+            charges: charges, expenses: suggestionExpenses, referenceRate: learnedBankRate
+        )
+        for match in matches {
+            guard let charge = charges.first(where: { $0.id == match.chargeId }) else { continue }
+            autoMatchedChargeIds.insert(charge.id)
+            assignBankCharge(charge, to: match.expenseId)
+        }
+    }
+
     /// The unverified expenses a charge may be assigned to, most recent first.
     var unverifiedExpenses: [Expense] {
         suggestionExpenses

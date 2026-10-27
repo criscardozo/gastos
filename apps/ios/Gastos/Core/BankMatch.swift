@@ -18,7 +18,8 @@ import Foundation
 ///     often appears in the expense note ("Coles").
 ///  3. The date. The authorisation lands the same day or a day or two later.
 ///
-/// Nothing here writes anything: a suggestion is a proposal the user confirms.
+/// Nothing here writes anything. A suggestion is a proposal the user confirms;
+/// `confidentMatches` is the narrower set the app may confirm on its own.
 enum BankMatch {
 
     /// Days apart beyond which a charge and an expense cannot be the same thing.
@@ -202,5 +203,64 @@ enum BankMatch {
                 impliedRate: pair?.impliedRate
             )
         }
+    }
+
+    // MARK: Matching without asking
+
+    /// How close a pair's rate must be to the learned one for the app to match
+    /// it on its own. Wider than a day's drift, and narrow next to the gap
+    /// between two different purchases.
+    static let autoRateTolerance = 0.05
+    /// Another same-day candidate this close makes the match a guess, and a
+    /// guess is left to a person.
+    static let autoAmbiguity = 0.15
+
+    struct Match: Equatable {
+        let chargeId: String
+        let expenseId: String
+    }
+
+    /// The pairs certain enough to verify without asking: since 2026-10-27 the
+    /// Wallet automation files the AUD and the BBVA one the USD of the same
+    /// purchase seconds apart, and confirming every one by hand was the chore
+    /// both automations were meant to remove.
+    ///
+    /// Stricter than `suggestMatches` on purpose — a wrong suggestion costs a
+    /// tap, a wrong match verifies an expense with somebody else's USD:
+    ///  - the SAME day only (both automations fire as the card is tapped);
+    ///  - with a learned rate, exactly one same-day unverified expense within
+    ///    `autoRateTolerance` of it and no other within `autoAmbiguity`;
+    ///  - with none learned yet, exactly one same-day expense in the plausible
+    ///    band, and its note has to share a word with the bank's merchant;
+    ///  - an expense two charges both point at goes to neither.
+    static func confidentMatches(
+        charges: [BankCharge],
+        expenses: [Expense],
+        referenceRate: Double?
+    ) -> [Match] {
+        let candidates = expenses.filter { !$0.isVerified && $0.amountCents > 0 && $0.id != nil }
+        var proposed: [Match] = []
+        for charge in charges where !charge.id.isEmpty {
+            let sameDay = candidates.filter { $0.date == charge.date }
+            func implied(_ expense: Expense) -> Double {
+                Double(charge.usdCents) / Double(expense.amountCents)
+            }
+            let fits: [Expense]
+            let near: [Expense]
+            if let referenceRate, referenceRate > 0 {
+                func error(_ expense: Expense) -> Double { abs(implied(expense) / referenceRate - 1) }
+                fits = sameDay.filter { error($0) <= autoRateTolerance }
+                near = sameDay.filter { error($0) <= autoAmbiguity }
+            } else {
+                near = sameDay.filter {
+                    implied($0) >= plausibleRate.min && implied($0) <= plausibleRate.max
+                }
+                fits = near.filter { merchantScore(merchant: charge.merchant, note: $0.note) > 0 }
+            }
+            guard fits.count == 1, near.count == 1, let expenseId = fits[0].id else { continue }
+            proposed.append(Match(chargeId: charge.id, expenseId: expenseId))
+        }
+        let claims = Dictionary(grouping: proposed, by: \.expenseId)
+        return proposed.filter { claims[$0.expenseId]?.count == 1 }
     }
 }

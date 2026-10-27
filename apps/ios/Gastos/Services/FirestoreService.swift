@@ -243,7 +243,7 @@ final class FirestoreService {
     }
 
     /// Match a charge to an expense: the expense takes the bank's USD (and so
-    /// becomes verified) and the charge leaves the pending list. ONE batch,
+    /// becomes verified) and the charge leaves every list. ONE batch,
     /// because a charge that vanished without verifying its expense — or an
     /// expense verified twice by a charge that stayed — would both be wrong.
     func assignBankCharge(
@@ -262,7 +262,16 @@ final class FirestoreService {
             ],
             forDocument: household.collection("expenses").document(expenseId)
         )
-        batch.deleteDocument(household.collection("bankCharges").document(chargeId))
+        // Kept rather than deleted: the bank's email for the same purchase is
+        // filed under the same id, and with no document there it came back as
+        // pending. See assignedAt in shared/schema.md.
+        batch.updateData(
+            [
+                "assignedAt": FieldValue.serverTimestamp(),
+                "dismissedAt": FieldValue.serverTimestamp(),
+            ],
+            forDocument: household.collection("bankCharges").document(chargeId)
+        )
         try await batch.commit()
     }
 
@@ -629,12 +638,14 @@ final class FirestoreService {
     }
 
     /// Same window as listenBankCharges: the newest 50, oldest first.
-    func fetchBankCharges(householdId: String) async throws -> [BankCharge] {
+    func fetchBankCharges(
+        householdId: String, source: FirestoreSource = .server
+    ) async throws -> [BankCharge] {
         let snapshot = try await db.collection("households").document(householdId)
             .collection("bankCharges")
             .order(by: "date", descending: true)
             .limit(to: 50)
-            .getDocuments(source: .server)
+            .getDocuments(source: source)
         return snapshot.documents.compactMap {
             Self.decode($0, as: BankCharge.self, with: .estimate, in: "bankCharges")
         }.reversed()
@@ -852,23 +863,54 @@ final class FirestoreService {
     /// sit in the local cache until the app is next opened, so this waits for
     /// the server — up to `timeout`, because offline it would wait forever.
     ///
-    /// True when the server confirmed it; false when it is only saved locally
-    /// and will go up with the next sync. Throws when the server refused it.
+    /// The new expense's id, and whether the server confirmed it (false: only
+    /// saved locally, goes up with the next sync). Throws when the server
+    /// refused it.
     func createExpenseConfirmed(
         householdId: String, uid: String, amountCents: Int, categoryId: String,
         note: String, date: String, timeout: Duration
-    ) async throws -> Bool {
+    ) async throws -> (id: String, confirmed: Bool) {
         let document = db.collection("households").document(householdId)
             .collection("expenses").document()
         let data = Self.newExpenseData(
             uid: uid, amountCents: amountCents, categoryId: categoryId, note: note, date: date
         )
-        // Whichever comes first — the server's answer or the timeout — settles
-        // it; the other finds it settled. Both run on the main actor (the SDK
-        // calls back on the main queue), so the flag needs no lock.
+        let confirmed = try await Self.settle(timeout: timeout) { done in
+            document.setData(data, completion: done)
+        }
+        return (document.documentID, confirmed)
+    }
+
+    /// `assignBankCharge` for an automation: the same batch, but it waits for
+    /// the server only up to `timeout` — true when the server took it, false
+    /// when it is queued locally and goes up with the next connection.
+    func assignBankChargeConfirmed(
+        householdId: String, chargeId: String, expenseId: String, usdCents: Int,
+        timeout: Duration
+    ) async throws -> Bool {
+        let household = db.collection("households").document(householdId)
+        let batch = db.batch()
+        batch.updateData(
+            ["usdCents": usdCents, "verified": true, "updatedAt": FieldValue.serverTimestamp()],
+            forDocument: household.collection("expenses").document(expenseId)
+        )
+        batch.updateData(
+            ["assignedAt": FieldValue.serverTimestamp(), "dismissedAt": FieldValue.serverTimestamp()],
+            forDocument: household.collection("bankCharges").document(chargeId)
+        )
+        return try await Self.settle(timeout: timeout) { done in batch.commit(completion: done) }
+    }
+
+    /// Whichever comes first — the server's answer or the timeout — settles
+    /// it; the other finds it settled. Both run on the main actor (the SDK
+    /// calls back on the main queue), so the flag needs no lock.
+    @MainActor
+    private static func settle(
+        timeout: Duration, _ write: (@escaping @Sendable (Error?) -> Void) -> Void
+    ) async throws -> Bool {
         let settled = Settled()
         return try await withCheckedThrowingContinuation { continuation in
-            document.setData(data) { error in
+            write { error in
                 MainActor.assumeIsolated {
                     guard settled.claim() else { return }
                     if let error { continuation.resume(throwing: error) } else { continuation.resume(returning: true) }

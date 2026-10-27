@@ -220,6 +220,81 @@ final class BankMatchTests: XCTestCase {
         }
     }
 
+    // MARK: Matching without asking
+
+    private func pending(_ id: String, usd: Int, merchant: String = "COLES 0831") -> BankCharge {
+        charge(id: id, usdCents: usd, date: "2026-10-27", merchant: merchant)
+    }
+
+    private func wallet(_ id: String, aud: Int, note: String = "Coles", date: String = "2026-10-27") -> Expense {
+        expense(id: id, amountCents: aud, date: date, note: note)
+    }
+
+    func testTheTwoAutomationsHalvesOfOnePurchaseMatch() {
+        // The real pair from 27/10: Wallet's A$55.18 and BBVA's US$39.27.
+        let matches = BankMatch.confidentMatches(
+            charges: [pending("bbva", usd: 3927)],
+            expenses: [wallet("coles", aud: 5518), wallet("cafe", aud: 650, note: "Cafe")],
+            referenceRate: 0.71
+        )
+        XCTAssertEqual(matches, [BankMatch.Match(chargeId: "bbva", expenseId: "coles")])
+    }
+
+    func testAnotherDayIsNeverMatchedWithoutAsking() {
+        XCTAssertEqual(BankMatch.confidentMatches(
+            charges: [pending("bbva", usd: 3927)],
+            expenses: [wallet("coles", aud: 5518, date: "2026-10-26")],
+            referenceRate: 0.71
+        ), [])
+    }
+
+    func testARateTooFarFromTheLearnedOneIsLeftToAPerson() {
+        // 8% off: still a suggestion, not certain enough to write.
+        XCTAssertEqual(BankMatch.confidentMatches(
+            charges: [pending("bbva", usd: 3927)],
+            expenses: [wallet("coles", aud: 5960)],
+            referenceRate: 0.71
+        ), [])
+    }
+
+    func testTwoSimilarSameDayExpensesAreAGuess() {
+        // Both within 15%: whichever the rate prefers, a person picks.
+        XCTAssertEqual(BankMatch.confidentMatches(
+            charges: [pending("bbva", usd: 3927)],
+            expenses: [wallet("coles", aud: 5518), wallet("aldi", aud: 6000, note: "Aldi")],
+            referenceRate: 0.71
+        ), [])
+    }
+
+    func testOneExpenseTwoChargesPointAtGoesToNeither() {
+        XCTAssertEqual(BankMatch.confidentMatches(
+            charges: [pending("a", usd: 3927), pending("b", usd: 3930)],
+            expenses: [wallet("coles", aud: 5518)],
+            referenceRate: 0.71
+        ), [])
+    }
+
+    func testAVerifiedExpenseIsNotACandidate() {
+        var verified = wallet("coles", aud: 5518)
+        verified.usdCents = 3900
+        verified.verified = true
+        XCTAssertEqual(BankMatch.confidentMatches(
+            charges: [pending("bbva", usd: 3927)], expenses: [verified], referenceRate: 0.71
+        ), [])
+    }
+
+    func testWithNothingLearnedTheMerchantHasToAgree() {
+        let expenses = [wallet("coles", aud: 5518)]
+        XCTAssertEqual(
+            BankMatch.confidentMatches(charges: [pending("bbva", usd: 3927)], expenses: expenses, referenceRate: nil),
+            [BankMatch.Match(chargeId: "bbva", expenseId: "coles")]
+        )
+        XCTAssertEqual(BankMatch.confidentMatches(
+            charges: [pending("bbva", usd: 3927, merchant: "WOOLWORTHS 1234")],
+            expenses: expenses, referenceRate: nil
+        ), [])
+    }
+
     func testSuggestMatchesVectors() {
         for testCase in Self.vectors.suggestMatches {
             let charges = testCase.charges.map {

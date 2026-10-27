@@ -121,12 +121,25 @@ struct LogPaymentIntent: AppIntent {
         case .failure(let refusal): throw Failure.refused(refusal, l10n)
         }
 
-        let confirmed = try await firestore.createExpenseConfirmed(
+        let (expenseId, confirmed) = try await firestore.createExpenseConfirmed(
             householdId: householdId, uid: uid, amountCents: cents, categoryId: categoryId,
             note: note, date: today.raw, timeout: Self.serverTimeout
         )
         let category = household.categories[categoryId].map(l10n.categoryName) ?? ""
         let money = MoneyFormatter.aud(cents, locale: l10n.locale)
+        // BBVA's notification may have filed the USD a moment ago: if it is
+        // this payment's beyond doubt, the expense is verified straight away.
+        let verified = await AutoMatch.run(
+            firestore: firestore, householdId: householdId, household: household,
+            today: today, timeout: Self.serverTimeout
+        ).first { $0.expense.id == expenseId }
+        if let verified {
+            let usd = MoneyFormatter.usd(verified.charge.usdCents, locale: l10n.locale)
+            return (
+                IntentDialog(stringLiteral: l10n.t("payment.verified", money, note, category, usd)),
+                "saved, verified \(verified.charge.id)"
+            )
+        }
         let key = confirmed ? "payment.saved" : "payment.savedOffline"
         return (
             IntentDialog(stringLiteral: l10n.t(key, money, note, category)),

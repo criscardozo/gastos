@@ -283,6 +283,10 @@ final class AppModel {
     private var periodsListener: ListenerRegistration?
     private var currentExpensesListener: ListenerRegistration?
     private var bankChargesListener: ListenerRegistration?
+    /// Charges `autoMatchIfConfident` already wrote a match for, so the
+    /// snapshots that arrive before the server acknowledges it do not write it
+    /// again.
+    var autoMatchedChargeIds: Set<String> = []
     private var recurringRulesListener: ListenerRegistration?
     /// Charges already handed to the sweep, so it never asks twice.
     /// True while a manual fetch is in flight — gates the double tap. What tells
@@ -467,6 +471,7 @@ final class AppModel {
         recurringRulesLoaded = false
         bankChargesLoaded = false
         sweptChargeIds = []
+        autoMatchedChargeIds = []
         currentListenerRange = nil
         currentLedgerSignature = nil
         viewedListenerRange = nil
@@ -521,6 +526,7 @@ final class AppModel {
             self.bankCharges = charges
             self.bankChargesLoaded = true
             self.sweepExpiredDismissals(charges, householdId: id)
+            self.autoMatchIfConfident()
         }
 
         householdListener = firestore.listenHousehold(id: id) { [weak self] household in
@@ -643,6 +649,7 @@ final class AppModel {
                     }
                     self.currentLedgerSignature = signature
                     self.publishWidgetSnapshot()
+                    self.autoMatchIfConfident()
                 }
             }
         }

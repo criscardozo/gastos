@@ -6242,6 +6242,23 @@
         }
       }
     },
+    "payment.verified": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved and verified: %1$@ · %2$@ (%3$@) — the bank charged %4$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargado y verificado: %1$@ · %2$@ (%3$@) — el banco cobró %4$@."
+          }
+        }
+      }
+    },
     "paymentRuns.title": {
       "extractionState": "manual",
       "localizations": {
@@ -6442,6 +6459,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gastos: no entendí el monto «%@» de la notificación. No se cargó."
+          }
+        }
+      }
+    },
+    "bankCharge.verified": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank charge: %1$@ — verified %2$@ (%3$@)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargo del banco: %1$@ — verificó %2$@ (%3$@)."
           }
         }
       }

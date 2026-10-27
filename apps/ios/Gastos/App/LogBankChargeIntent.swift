@@ -10,7 +10,8 @@ import UIKit
 /// For Shortcuts' "When I receive a notification from BBVA" automation: the
 /// notification's Body goes into the one parameter. Since 2026-10-26 the bank
 /// stopped emailing, and this is where the USD the bank charged comes from —
-/// what verifies the AUD expense the Wallet automation ("Cargar pago") files,
+/// what verifies the AUD expense the Wallet automation ("Cargar pago") files —
+/// on its own when the pair is beyond doubt (`AutoMatch`) —
 /// and what routes a credit-card purchase to Tarjetas by its last four digits.
 /// A bank charge, never an expense: filing the USD as one would count the
 /// purchase twice.
@@ -81,13 +82,27 @@ struct LogBankChargeIntent: AppIntent {
         // The notification arrives as the purchase is made: today, in the
         // household's timezone, is its date — the same date the email's
         // timestamp gave, which is what lets the two share an id.
-        let date = PeriodLogic.todayInTimezone(Date(), household.timeZone).raw
+        let today = PeriodLogic.todayInTimezone(Date(), household.timeZone)
+        let date = today.raw
+        let chargeId = BankNotification.chargeId(date: date, usdCents: charge.usdCents, cardLast4: charge.cardLast4)
         let filing = try await firestore.fileBankChargeConfirmed(
-            householdId: householdId,
-            chargeId: BankNotification.chargeId(date: date, usdCents: charge.usdCents, cardLast4: charge.cardLast4),
+            householdId: householdId, chargeId: chargeId,
             charge: charge, date: date, timeout: Self.serverTimeout
         )
         let money = MoneyFormatter.usd(charge.usdCents, locale: l10n.locale)
+        // Wallet's automation may have filed the AUD a moment ago: if this is
+        // its USD beyond doubt, verify it now rather than leave it to a tap.
+        let verified = await AutoMatch.run(
+            firestore: firestore, householdId: householdId, household: household,
+            today: today, timeout: Self.serverTimeout
+        ).first { $0.charge.id == chargeId }
+        if let verified {
+            let aud = MoneyFormatter.aud(verified.expense.amountCents, locale: l10n.locale)
+            return (
+                IntentDialog(stringLiteral: l10n.t("bankCharge.verified", money, verified.expense.note, aud)),
+                "charge \(filing), verified \(verified.expense.id ?? ""): \(charge.usdCents) \(charge.cardLast4 ?? "none")"
+            )
+        }
         let key: String
         switch filing {
         case .created: key = "bankCharge.saved"
