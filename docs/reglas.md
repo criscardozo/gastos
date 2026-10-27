@@ -83,8 +83,10 @@ web).
   el banco**, en su propio campo. El ledger no convierte nada, y por eso el
   presupuesto es determinístico y funciona offline. La única cotización del
   proyecto es la estimación en pesos de la pantalla de Tarjetas
-  (`apps/web/src/lib/usd-rate.ts`, dólar oficial de dolarapi.com, con una
-  cotización cargada a mano como respaldo): se mira, no se guarda ni se suma.
+  (`apps/web/src/lib/usd-rate.ts` y `UsdArsRate.swift`: dólar mayorista, que es
+  el que imprime el resumen de BBVA — el del día de cierre desde
+  argentinadatos.com, o el de hoy desde dolarapi.com para el resumen abierto —,
+  con una cotización cargada a mano como respaldo): se mira, no se guarda ni se suma.
 - **Las fechas de gasto son `"YYYY-MM-DD"` en la timezone del hogar.**
 - **Las reglas de Firestore son la única frontera de seguridad**, y no se
   sobre-endurecen (ver la decisión del 27/9).
