@@ -77,8 +77,16 @@ export default function DataPage() {
    */
   const [categoryFilter, setCategoryFilter] = useState<string[] | null>(null);
   const [exportPhase, setExportPhase] = useState<
-    "idle" | "excel" | "drive" | "error" | "driveStandalone"
+    | "idle"
+    | "excel"
+    | "drive"
+    | "error"
+    | "driveStandalone"
+    | "driveBlocked"
+    | "driveWrongAccount"
   >("idle");
+  /** The sheet the last Drive export made, shown as a link (see exportDrive). */
+  const [driveUrl, setDriveUrl] = useState<string | null>(null);
   /** Ticked consent to export a range that still has unverified expenses. */
   const [acceptUnverified, setAcceptUnverified] = useState(false);
   /** How the grid is ordered — and therefore how the export is ordered too. */
@@ -280,14 +288,17 @@ export default function DataPage() {
     const fb = getFirebaseClient();
     if (payload === null || fb === null) return;
     setExportPhase("drive");
+    setDriveUrl(null);
     try {
-      const url = await exportToGoogleDrive(
-        fb.auth,
-        payload.filename,
-        await buildExpensesWorkbook(payload),
+      // The workbook is built inside, after Google's popup: awaiting it here
+      // first is what got the popup blocked.
+      const url = await exportToGoogleDrive(fb.auth, payload.filename, () =>
+        buildExpensesWorkbook(payload),
       );
       setExportPhase("idle");
-      window.open(url, "_blank", "noopener");
+      // A link, not window.open: by now the click is long gone — an upload
+      // later — so a new tab would be blocked like the popup was.
+      setDriveUrl(url);
     } catch (error) {
       // Closing Google's dialog is a choice, not a failure worth shouting
       // about; the installed app hitting Google's popup limit is neither, and
@@ -299,7 +310,11 @@ export default function DataPage() {
           ? "idle"
           : kind === "standalone"
             ? "driveStandalone"
-            : "error",
+            : kind === "blocked"
+              ? "driveBlocked"
+              : kind === "wrongAccount"
+                ? "driveWrongAccount"
+                : "error",
       );
     }
   };
@@ -378,6 +393,29 @@ export default function DataPage() {
       {exportPhase === "driveStandalone" && (
         <span className="text-[12.5px] font-semibold text-warn-text">
           {t("exportDriveStandalone")}
+        </span>
+      )}
+      {exportPhase === "driveBlocked" && (
+        <span className="text-[12.5px] font-semibold text-warn-text">
+          {t("exportDriveBlocked")}
+        </span>
+      )}
+      {exportPhase === "driveWrongAccount" && (
+        <span className="text-[12.5px] font-semibold text-warn-text">
+          {t("exportDriveWrongAccount")}
+        </span>
+      )}
+      {driveUrl !== null && exportPhase === "idle" && (
+        <span className="text-[12.5px] font-semibold text-ink-2">
+          {t("exportDriveDone")}{" "}
+          <a
+            href={driveUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent underline underline-offset-2"
+          >
+            {t("exportDriveOpen")}
+          </a>
         </span>
       )}
 

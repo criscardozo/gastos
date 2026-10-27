@@ -224,6 +224,17 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
   await page.getByRole("button", { name: /Importar 1 gasto/ }).click();
   await expect(page.getByText("Importado 1 gasto")).toBeVisible();
 
+  // The same file again finds its row already in the ledger and imports
+  // nothing — before, a second import created every expense twice.
+  await page.getByLabel("Elegir archivo CSV").setInputFiles({
+    name: "import.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(importCsv, "utf-8"),
+  });
+  await expect(page.getByText("1 ya cargado (se omite)")).toBeVisible();
+  await expect(page.getByText("Ya está cargado")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Importar 0 gastos/ })).toBeDisabled();
+
   // The imported expense shows up in Gastos.
   await page.getByRole("link", { name: "Gastos", exact: true }).click();
   await expect(page.getByText("Gasto importado").first()).toBeVisible();

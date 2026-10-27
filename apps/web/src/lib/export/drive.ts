@@ -14,7 +14,7 @@
 
 import {
   GoogleAuthProvider,
-  signInWithPopup,
+  reauthenticateWithPopup,
   type Auth,
 } from "firebase/auth";
 
@@ -42,7 +42,13 @@ export class DriveExportError extends Error {
     /** Distinguishes "the user closed the dialog" from a real failure, so the
      * UI can stay quiet in the first case, and the installed-app case from
      * both. */
-    readonly kind: "cancelled" | "auth" | "upload" | "standalone",
+    readonly kind:
+      | "cancelled"
+      | "auth"
+      | "upload"
+      | "standalone"
+      | "blocked"
+      | "wrongAccount",
     message: string,
   ) {
     super(message);
@@ -55,17 +61,24 @@ export class DriveExportError extends Error {
  * token; throws a DriveExportError otherwise.
  */
 async function requestDriveToken(auth: Auth): Promise<string> {
+  const user = auth.currentUser;
+  if (user === null) throw new DriveExportError("auth", "Not signed in");
   const provider = new GoogleAuthProvider();
   provider.addScope(DRIVE_SCOPE);
   // Keep the user on their own account without a chooser when possible.
-  const email = auth.currentUser?.email;
+  const email = user.email;
   if (email != null && email !== "") {
     provider.setCustomParameters({ login_hint: email });
   }
 
   let result;
   try {
-    result = await signInWithPopup(auth, provider);
+    // REauthenticate, not sign in: the chooser still lets you pick another
+    // Google account, and signInWithPopup would then REPLACE the session with
+    // that account — someone who is not a member of the household. This one
+    // refuses a different account (auth/user-mismatch) and leaves the session
+    // exactly as it was.
+    result = await reauthenticateWithPopup(user, provider);
   } catch (error) {
     const code = (error as { code?: string } | null)?.code;
     if (
@@ -73,6 +86,12 @@ async function requestDriveToken(auth: Auth): Promise<string> {
       code === "auth/cancelled-popup-request"
     ) {
       throw new DriveExportError("cancelled", "Sign-in dialog closed");
+    }
+    if (code === "auth/user-mismatch") {
+      throw new DriveExportError("wrongAccount", "Another Google account was chosen");
+    }
+    if (code === "auth/popup-blocked") {
+      throw new DriveExportError("blocked", "The browser blocked Google's popup");
     }
     if (isStandalone()) {
       throw new DriveExportError(
@@ -91,15 +110,21 @@ async function requestDriveToken(auth: Auth): Promise<string> {
 }
 
 /**
- * Uploads `blob` (an .xlsx) to Drive, converted to a Google Sheet.
- * Resolves with the URL of the new spreadsheet.
+ * Uploads the workbook `build` makes (an .xlsx) to Drive, converted to a
+ * Google Sheet. Resolves with the URL of the new spreadsheet.
+ *
+ * The workbook is built AFTER Google's popup, not before, and that order is
+ * the point: a browser only lets a click open a popup while nothing has been
+ * awaited since the click. Building first (a dynamic import of exceljs, then
+ * the workbook) used the gesture up, and Safari blocked the popup.
  */
 export async function exportToGoogleDrive(
   auth: Auth,
   filename: string,
-  blob: Blob,
+  build: () => Promise<Blob>,
 ): Promise<string> {
   const token = await requestDriveToken(auth);
+  const blob = await build();
 
   const metadata = {
     name: filename.replace(/\.xlsx$/i, ""),

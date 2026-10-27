@@ -13,12 +13,21 @@
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import { isArchived } from "@/lib/categories";
 import { useTranslations } from "next-intl";
-import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  query,
+  serverTimestamp,
+  where,
+  writeBatch,
+} from "firebase/firestore";
 
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
 import { Icon } from "@/components/ui/icon";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { commitInChunks } from "@/lib/import-chunks";
+import { alreadyThere } from "@/lib/import-dedupe";
 import {
   formatCents,
   formatUsd,
@@ -58,13 +67,16 @@ interface PreviewRow {
   amountCents: number | null;
   /** The bank's USD charge from the optional `monto_usd` column. */
   usdCents: number | null;
-  status: "ok" | "mapped" | "error";
+  /** `duplicate`: an expense like it is already in the ledger, so it is skipped. */
+  status: "ok" | "mapped" | "error" | "duplicate";
   reasonKey?: "reasonBadDate" | "reasonBadAmount" | "reasonBadUsd" | "reasonArchived";
 }
 
 // Amount cap mirrors the security rule (1..10_000_000 cents).
 const MAX_NOTE_LEN = 200;
 const BATCH_CHUNK = 400;
+/** How long a chunk waits for the server before the import lets go of it. */
+const SETTLE_MS = 15_000;
 
 export function ImportExpenses() {
   const t = useTranslations("data");
@@ -77,8 +89,10 @@ export function ImportExpenses() {
   const [headerError, setHeaderError] = useState(false);
   const [fileError, setFileError] = useState(false);
   const [importPhase, setImportPhase] = useState<
-    "idle" | "working" | "done" | "error"
+    "idle" | "working" | "done" | "queued" | "error"
   >("idle");
+  /** Looking for rows already in the ledger; `failed` falls back to a warning. */
+  const [dedupe, setDedupe] = useState<"checking" | "done" | "failed">("done");
   const [importedCount, setImportedCount] = useState(0);
   /** Set when a later chunk failed after earlier ones landed. */
   const [partial, setPartial] = useState<{ written: number; total: number } | null>(
@@ -213,13 +227,61 @@ export function ImportExpenses() {
         return;
       }
       setPreview(built);
+      setDedupe("checking");
+      try {
+        setPreview(await markDuplicates(built));
+        setDedupe("done");
+      } catch (error) {
+        console.error("[gastos] import dedupe", error);
+        setDedupe("failed");
+      }
     } catch {
       setFileError(true);
     }
   };
 
-  const importable = preview?.filter((r) => r.status !== "error") ?? [];
-  const errorCount = (preview?.length ?? 0) - importable.length;
+  /**
+   * Mark the rows the ledger already has. One read bounded by the file's own
+   * date range, and `getDocs`, not a server-only read: it answers from the
+   * local cache offline, and that cache holds an import still waiting to go up
+   * — so retrying a file offline finds the rows the first try queued.
+   */
+  const markDuplicates = async (rows: PreviewRow[]): Promise<PreviewRow[]> => {
+    const fb = getFirebaseClient();
+    const candidates = rows.filter((r) => r.status !== "error");
+    if (fb === null || candidates.length === 0) return rows;
+    const dates = candidates.map((r) => r.date).sort();
+    const snap = await getDocs(
+      query(
+        collection(fb.db, "households", household.id, "expenses"),
+        where("date", ">=", dates[0]),
+        where("date", "<=", dates[dates.length - 1]),
+      ),
+    );
+    const existing = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        date: String(data.date ?? ""),
+        amountCents: Number(data.amountCents),
+        categoryId: String(data.categoryId ?? ""),
+        note: String(data.note ?? ""),
+      };
+    });
+    const found = alreadyThere(
+      candidates.map((r) => ({ ...r, amountCents: r.amountCents as number })),
+      existing,
+    );
+    const duplicates = new Set([...found].map((i) => candidates[i]));
+    return rows.map((r) =>
+      duplicates.has(r) ? { ...r, status: "duplicate" as const } : r,
+    );
+  };
+
+  const importable =
+    preview?.filter((r) => r.status === "ok" || r.status === "mapped") ?? [];
+  const errorCount = preview?.filter((r) => r.status === "error").length ?? 0;
+  const duplicateCount =
+    preview?.filter((r) => r.status === "duplicate").length ?? 0;
 
   const doImport = async () => {
     const fb = getFirebaseClient();
@@ -227,7 +289,7 @@ export function ImportExpenses() {
     setImportPhase("working");
     setPartial(null);
     const rows = importable;
-    const { written, error } = await commitInChunks(rows, BATCH_CHUNK, async (chunk) => {
+    const { written, error, queued } = await commitInChunks(rows, BATCH_CHUNK, async (chunk) => {
       const batch = writeBatch(fb.db);
       for (const r of chunk) {
         const ref = doc(
@@ -249,10 +311,10 @@ export function ImportExpenses() {
         });
       }
       await batch.commit();
-    });
+    }, SETTLE_MS);
     if (error === null) {
       setImportedCount(rows.length);
-      setImportPhase("done");
+      setImportPhase(queued > 0 ? "queued" : "done");
       setPreview(null);
       if (fileInputRef.current !== null) fileInputRef.current.value = "";
       return;
@@ -274,13 +336,16 @@ export function ImportExpenses() {
       ok: "bg-good-bg text-good-text",
       mapped: "bg-warn-bg text-warn-text",
       error: "bg-over-bg text-over-text",
+      duplicate: "bg-fill text-ink-3",
     };
     const label =
       r.status === "ok"
         ? t("statusOk")
         : r.status === "mapped"
           ? t("statusMapped")
-          : `${t("statusError")}: ${r.reasonKey ? t(r.reasonKey) : ""}`;
+          : r.status === "duplicate"
+            ? t("statusDuplicate")
+            : `${t("statusError")}: ${r.reasonKey ? t(r.reasonKey) : ""}`;
     return (
       <span
         className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${styles[r.status]}`}
@@ -333,10 +398,14 @@ export function ImportExpenses() {
                   importable: importable.length,
                   errors: errorCount,
                 })}
+                {duplicateCount > 0 &&
+                  ` · ${t("previewDuplicates", { count: duplicateCount })}`}
               </span>
             </div>
 
-            {/* Dedup warning */}
+            {/* Only when the ledger could not be read: otherwise the rows it
+                already has are marked in the table and skipped. */}
+            {dedupe === "failed" && (
             <div className="flex items-start gap-2 rounded-xl bg-warn-bg px-3 py-2.5">
               <Icon
                 name="flag"
@@ -348,6 +417,7 @@ export function ImportExpenses() {
                 {t("dedupeWarning")}
               </span>
             </div>
+            )}
 
             <div className="overflow-x-auto rounded-2xl border border-line">
               <table className="w-full min-w-[560px] text-left text-[13px]">
@@ -416,7 +486,11 @@ export function ImportExpenses() {
               <button
                 type="button"
                 onClick={() => void doImport()}
-                disabled={importable.length === 0 || importPhase === "working"}
+                disabled={
+                  importable.length === 0 ||
+                  importPhase === "working" ||
+                  dedupe === "checking"
+                }
                 className="rounded-full bg-accent-fill px-5 py-2 text-[13px] font-bold text-white primary-disabled"
               >
                 {importPhase === "working"
@@ -430,6 +504,11 @@ export function ImportExpenses() {
         {preview === null && importPhase === "done" && (
           <p className="text-[13px] font-semibold text-good-text">
             {t("importDone", { count: importedCount })}
+          </p>
+        )}
+        {preview === null && importPhase === "queued" && (
+          <p className="text-[13px] font-semibold text-warn-text">
+            {t("importQueued", { count: importedCount })}
           </p>
         )}
       </div>

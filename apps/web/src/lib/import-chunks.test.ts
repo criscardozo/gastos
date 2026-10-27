@@ -15,7 +15,7 @@ describe("commitInChunks", () => {
       sizes.push(chunk.length);
     });
     expect(sizes).toEqual([400, 400, 100]);
-    expect(result).toEqual({ written: 900, error: null });
+    expect(result).toEqual({ written: 900, error: null, queued: 0 });
   });
 
   it("says how many landed before a chunk failed, and stops there", async () => {
@@ -25,7 +25,7 @@ describe("commitInChunks", () => {
       calls += 1;
       if (calls === 2) throw boom;
     });
-    expect(result).toEqual({ written: 400, error: boom });
+    expect(result).toEqual({ written: 400, error: boom, queued: 0 });
     expect(calls).toBe(2);
   });
 
@@ -34,5 +34,35 @@ describe("commitInChunks", () => {
       throw new Error("refused");
     });
     expect(result.written).toBe(0);
+  });
+
+  // Offline, a commit only resolves once the server confirms, so the screen
+  // sat on "Importando…" for good. The writes are already in the local cache
+  // and will go up with the connection; what was missing was letting go.
+  it("lets go of a commit the server does not confirm, and queues the rest", async () => {
+    const started: number[] = [];
+    const never = new Promise<void>(() => {});
+    const result = await commitInChunks(
+      rows,
+      400,
+      (chunk) => {
+        started.push(chunk.length);
+        return started.length === 1 ? Promise.resolve() : never;
+      },
+      20,
+    );
+    expect(result).toEqual({ written: 400, error: null, queued: 500 });
+    // Every chunk was handed to Firestore — the last one without waiting.
+    expect(started).toEqual([400, 400, 100]);
+  });
+
+  it("a slow chunk that does answer in time is just written", async () => {
+    const result = await commitInChunks(
+      rows,
+      400,
+      () => new Promise<void>((resolve) => setTimeout(resolve, 5)),
+      200,
+    );
+    expect(result).toEqual({ written: 900, error: null, queued: 0 });
   });
 });
