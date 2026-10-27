@@ -587,6 +587,14 @@ struct HistoryView: View {
     private var bankSection: some View {
         let charges = model.expenseBankCharges
         let dismissed = model.dismissedBankCharges.count
+        // Once per section, not per row: `bankChargeSuggestions` runs the
+        // whole matcher (every charge against every expense, plus the learned
+        // rate), and each row asking for its own had it run once per charge
+        // on every render.
+        let suggestions = Dictionary(
+            model.bankChargeSuggestions.map { ($0.chargeId, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
         // Folded means GONE, header and all, not an empty section: kept, it was
         // a lone header over a gap, and the chip above already carries the
         // count that header would be repeating.
@@ -601,8 +609,7 @@ struct HistoryView: View {
                     ForEach(charges, id: \.id) { charge in
                         BankChargeRow(
                             charge: charge,
-                            suggestion: model.bankChargeSuggestions
-                                .first { $0.chargeId == charge.id }
+                            suggestion: suggestions[charge.id]
                         )
                         .contentShape(Rectangle())
                         .onTapGesture { decidingCharge = charge }
