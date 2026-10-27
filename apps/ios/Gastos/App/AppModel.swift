@@ -438,6 +438,8 @@ final class AppModel {
             periods = []
             currentExpenses = []
             viewedExpenses = []
+            rateWindowExpenses = []
+            rateWindowKey = nil
             pastTotals = [:]
             monthSpentCents = nil
             inviteCode = nil
@@ -499,6 +501,8 @@ final class AppModel {
     private func attachHousehold(id: String) {
         guard attachedHouseholdId != id else { return }
         attachedHouseholdId = id
+        rateWindowExpenses = []
+        rateWindowKey = nil
         householdListener?.remove()
         periodsListener?.remove()
         bankChargesListener?.remove()
@@ -644,6 +648,7 @@ final class AppModel {
         }
 
         refreshViewedListener()
+        loadRateWindow()
     }
 
     private func refreshViewedListener() {
@@ -759,6 +764,41 @@ final class AppModel {
     /// on screen belongs to.
     private var monthTotalRequest = 0
     private var monthSpentKey: String?
+
+    // MARK: The window the bank's rate is learned from
+
+    /// The expenses of `BankMatch.rateWindow`, read once — the same 45 days the
+    /// background run reads, so the app and the run price a charge alike. Not a
+    /// listener: the current and viewed periods' listeners already keep the
+    /// recent part live (`learnedBankRate` merges them over this), and what is
+    /// older than the current period seldom changes.
+    var rateWindowExpenses: [Expense] = []
+    /// Which household and window `rateWindowExpenses` belongs to.
+    private var rateWindowKey: String?
+
+    /// Asks again only when the window moved (a new day) or the household
+    /// changed, so a periods snapshot does not cost a read of 45 days.
+    private func loadRateWindow() {
+        guard let householdId = attachedHouseholdId else { return }
+        let window = BankMatch.rateWindow(today: today)
+        let key = "\(householdId)/\(window.start.raw)"
+        guard key != rateWindowKey else { return }
+        rateWindowKey = key
+        Task {
+            do {
+                let expenses = try await firestore.fetchExpenses(
+                    householdId: householdId,
+                    startDate: window.start.raw,
+                    endDate: window.end.raw
+                )
+                guard key == self.rateWindowKey else { return }
+                self.rateWindowExpenses = expenses
+            } catch {
+                // The last window stays; the next day or launch asks again.
+                if key == self.rateWindowKey { self.rateWindowKey = nil }
+            }
+        }
+    }
 
     // MARK: Auth actions
 

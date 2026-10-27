@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 import vectors from "../../../../shared/bank-match-vectors.json";
 import {
   learnRate,
+  learnRateAsOf,
+  RATE_WINDOW_DAYS,
   suggestMatches,
   type BankCharge,
   type MatchableExpense,
@@ -15,7 +17,7 @@ import {
 describe("bank match vectors", () => {
   it("runs every group in the file", () => {
     const groups = Object.keys(vectors).filter((key) => key !== "_comment");
-    expect(new Set(groups)).toEqual(new Set(["learnRate", "suggestMatches"]));
+    expect(new Set(groups)).toEqual(new Set(["learnRate", "learnRateWindow", "suggestMatches"]));
   });
 });
 
@@ -31,6 +33,32 @@ describe("shared vectors: learnRate", () => {
         usdCents: e.usdCents,
         autoEstimated: "autoEstimated" in e ? e.autoEstimated === true : false,
       })),
+    );
+    if (expected === null) {
+      expect(rate).toBeNull();
+    } else {
+      expect(rate).toBeCloseTo(expected, 6);
+    }
+  });
+});
+
+describe("shared vectors: learnRateWindow", () => {
+  it("uses the window the vectors name", () => {
+    expect(RATE_WINDOW_DAYS).toBe(vectors.learnRateWindow.windowDays);
+  });
+
+  it.each(vectors.learnRateWindow.cases)("$name", ({ today, expenses, expected }) => {
+    const rate = learnRateAsOf(
+      expenses.map((e, i) => ({
+        id: `e${i}`,
+        amountCents: e.amountCents,
+        date: e.date,
+        note: "",
+        verified: e.verified,
+        usdCents: e.usdCents,
+        autoEstimated: false,
+      })),
+      today,
     );
     if (expected === null) {
       expect(rate).toBeNull();

@@ -63,9 +63,9 @@ export function BankChargesPanel({
   /** Expenses of the period on screen — the pool a charge can match. */
   expenses: Expense[];
   /**
-   * The household's learned rate — from the current period as well as the one
-   * on screen, so a past month with nothing verified still has one. The page
-   * learns it (rateExpenses); this used to learn it from `expenses` alone.
+   * The household's learned rate as of today (useLearnedRate), not the range
+   * on screen's: a past month with nothing verified still has one, and an old
+   * one does not move today's.
    */
   rate: number | null;
   /** Note, or the category name when the note is empty. */

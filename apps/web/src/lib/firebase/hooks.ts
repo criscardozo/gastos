@@ -23,6 +23,7 @@ import {
 } from "firebase/firestore";
 
 import { partitionCharges } from "../bank-charges";
+import { learnRateAsOf, rateWindow } from "../bank-match";
 import { getFirebaseClient } from "./client";
 import { readFailed } from "./read-failures";
 import { deleteBankCharge } from "./mutations";
@@ -255,6 +256,25 @@ export function useExpensesRange(
     { includeMetadataChanges: true },
   );
   return { expenses: items, loading, failed };
+}
+
+/**
+ * The bank's rate as of today: learned from the last RATE_WINDOW_DAYS of
+ * expenses, the same window the iPhone and its background run use. A listener
+ * bounded by those dates; on Gastos it overlaps the period on screen, so most
+ * of it is served from the cache.
+ */
+export function useLearnedRate(
+  householdId: string | null,
+  today: string | null,
+): number | null {
+  const window = today === null ? null : rateWindow(today);
+  const { expenses } = useExpensesRange(
+    householdId,
+    window?.start ?? null,
+    window?.end ?? null,
+  );
+  return today === null ? null : learnRateAsOf(expenses, today);
 }
 
 /* ── Bank charges waiting to be matched ────────────────────────────────── */

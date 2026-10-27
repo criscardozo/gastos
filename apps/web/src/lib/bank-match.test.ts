@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   learnRate,
-  rateExpenses,
+  learnRateAsOf,
   suggestMatches,
   type BankCharge,
   type MatchableExpense,
@@ -172,21 +172,19 @@ describe("suggestMatches", () => {
   });
 });
 
-describe("rateExpenses", () => {
-  // Gastos learned the rate from the range on screen only. With a past month
-  // open that had nothing verified, the rate was null even though this
-  // period's verified pairs sat one listener away — iOS has always learned
-  // from the current period plus the viewed one (suggestionExpenses).
-  const verifiedNow = expense({ id: "now", verified: true, usdCents: 4152 });
-  const pastUnverified = expense({ id: "past", date: "2026-07-10" });
-
-  it("learns from the current period while a past one is on screen", () => {
-    expect(learnRate([pastUnverified])).toBeNull();
-    expect(learnRate(rateExpenses([verifiedNow], [pastUnverified]))).not.toBeNull();
+describe("learnRateAsOf", () => {
+  // Gastos learned the rate from the range on screen plus the current period,
+  // so browsing an old period repriced today's charges, and the background
+  // run on iOS used a 45-day window of its own.
+  const verifiedNow = expense({ id: "now", date: "2026-08-01", verified: true, usdCents: 4152 });
+  const verifiedLastYear = expense({
+    id: "old", date: "2025-08-01", verified: true, usdCents: 3000,
   });
 
-  it("counts an expense in both lists once", () => {
-    const union = rateExpenses([verifiedNow], [verifiedNow, pastUnverified]);
-    expect(union.map((e) => e.id)).toEqual(["now", "past"]);
+  it("does not let an old period on screen move today's rate", () => {
+    expect(learnRateAsOf([verifiedNow, verifiedLastYear], "2026-08-03")).toBeCloseTo(
+      learnRate([verifiedNow]) as number,
+      10,
+    );
   });
 });

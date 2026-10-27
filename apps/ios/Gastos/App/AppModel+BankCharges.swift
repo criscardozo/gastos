@@ -16,11 +16,19 @@ import Foundation
 @MainActor
 extension AppModel {
 
-    /// The bank's rate as the household's own verified expenses reveal it. Read
-    /// from what is already in memory (current + viewed period), so it costs
-    /// nothing — and it is what every suggestion is judged against.
+    /// The bank's rate as the household's own verified expenses reveal it, as of
+    /// today: the shared window (`BankMatch.rateWindow`), the same one the
+    /// background run and the web learn over, so whichever files a charge
+    /// prices it alike. The live periods go first, so a pair verified a moment
+    /// ago counts before the window is read again; an old period on screen
+    /// falls outside the window and no longer moves today's rate.
     var learnedBankRate: Double? {
-        BankMatch.learnRate(suggestionExpenses)
+        var seen = Set<String>()
+        let pool = (suggestionExpenses + rateWindowExpenses).filter { expense in
+            guard let id = expense.id else { return true }
+            return seen.insert(id).inserted
+        }
+        return BankMatch.learnRate(pool, asOf: today)
     }
 
     /// The charges this screen is concerned with: the debit card's, plus any

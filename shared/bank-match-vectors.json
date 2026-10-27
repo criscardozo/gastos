@@ -111,6 +111,103 @@
       "expected": 0.7
     }
   ],
+  "learnRateWindow": {
+    "_comment": [
+      "The rate is learned from the verified pairs dated in the last windowDays",
+      "days up to and including today (household timezone) — the same window",
+      "for the open app, the web and the background run, so a charge filed by",
+      "any of them is priced at the same rate. Before this the app learned from",
+      "the current period plus whichever one was on screen, and the background",
+      "run from 45 days: the same charge got a different AUD depending on who",
+      "filed it, and browsing last year's period moved today's estimate."
+    ],
+    "windowDays": 45,
+    "cases": [
+      {
+        "name": "a pair from before the window is left out",
+        "today": "2026-10-27",
+        "expenses": [
+          {
+            "date": "2026-10-20",
+            "amountCents": 10000,
+            "usdCents": 7000,
+            "verified": true
+          },
+          {
+            "date": "2026-09-11",
+            "amountCents": 10000,
+            "usdCents": 6000,
+            "verified": true
+          }
+        ],
+        "expected": 0.7
+      },
+      {
+        "name": "the window's first day counts",
+        "today": "2026-10-27",
+        "expenses": [
+          {
+            "date": "2026-09-12",
+            "amountCents": 10000,
+            "usdCents": 6000,
+            "verified": true
+          }
+        ],
+        "expected": 0.6
+      },
+      {
+        "name": "a pair dated after today is left out",
+        "today": "2026-10-27",
+        "expenses": [
+          {
+            "date": "2026-10-27",
+            "amountCents": 10000,
+            "usdCents": 7000,
+            "verified": true
+          },
+          {
+            "date": "2026-10-28",
+            "amountCents": 10000,
+            "usdCents": 6000,
+            "verified": true
+          }
+        ],
+        "expected": 0.7
+      },
+      {
+        "name": "across a year boundary",
+        "today": "2026-01-10",
+        "expenses": [
+          {
+            "date": "2025-11-26",
+            "amountCents": 10000,
+            "usdCents": 6500,
+            "verified": true
+          },
+          {
+            "date": "2025-11-25",
+            "amountCents": 10000,
+            "usdCents": 5000,
+            "verified": true
+          }
+        ],
+        "expected": 0.65
+      },
+      {
+        "name": "nothing in the window: no rate, rather than an old one",
+        "today": "2026-10-27",
+        "expenses": [
+          {
+            "date": "2026-06-01",
+            "amountCents": 10000,
+            "usdCents": 7000,
+            "verified": true
+          }
+        ],
+        "expected": null
+      }
+    ]
+  },
   "suggestMatches": [
     {
       "name": "the rate alone identifies the expense, with no merchant help",

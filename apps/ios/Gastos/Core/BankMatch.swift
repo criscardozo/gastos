@@ -67,6 +67,26 @@ enum BankMatch {
         return rates.count % 2 == 1 ? rates[mid] : (rates[mid - 1] + rates[mid]) / 2
     }
 
+    /// How many days back from today the rate is learned over. The open app,
+    /// the web and the background run all use this one window, so a charge is
+    /// priced the same whichever of them files it — before, the app learned
+    /// from the current period plus whichever one was on screen and the
+    /// background run from 45 days. Held to the web by
+    /// `learnRateWindow.windowDays` in the shared vectors.
+    static let rateWindowDays = 45
+
+    /// The dates the rate is learned from: the last `rateWindowDays` up to today.
+    static func rateWindow(today: CalendarDate) -> (start: CalendarDate, end: CalendarDate) {
+        (PeriodLogic.addDays(today, -rateWindowDays), today)
+    }
+
+    /// `learnRate` over the window only. Whatever else the caller has loaded —
+    /// an old period on screen, say — does not move today's rate.
+    static func learnRate(_ expenses: [Expense], asOf today: CalendarDate) -> Double? {
+        let window = rateWindow(today: today)
+        return learnRate(expenses.filter { $0.date >= window.start.raw && $0.date <= window.end.raw })
+    }
+
     /// Lowercase, unaccented, digit-free words of 3+ letters.
     static func tokens(_ text: String) -> Set<String> {
         let folded = text.folding(

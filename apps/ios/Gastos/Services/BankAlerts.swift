@@ -41,8 +41,9 @@ enum BankAlerts {
     private static let lastOutcomeKey = "bankAlerts.lastOutcome"
     private static let expensesKey = "bankAlerts.seenExpenses"
     /// Enough history to learn the bank's rate from and to catch what a rule
-    /// filed while nobody looked, without reading the whole ledger.
-    private static let lookbackDays = 45
+    /// filed while nobody looked, without reading the whole ledger. The rate's
+    /// window, so the run reads exactly what the open app learns from.
+    private static let lookbackDays = BankMatch.rateWindowDays
     /// Past this many in one run, one summary instead of a stack of banners.
     private static let maxSingle = 3
 
@@ -198,7 +199,7 @@ enum BankAlerts {
             let plan = RecurringRules.planRun(
                 pending: pending.filter { household.belongsToExpenses(cardLast4: $0.cardLast4) },
                 rules: liveRules,
-                learnedRate: BankMatch.learnRate(expenses),
+                learnedRate: BankMatch.learnRate(expenses, asOf: today),
                 seen: [], filed: []
             )
             var filedNow: [Filed] = []

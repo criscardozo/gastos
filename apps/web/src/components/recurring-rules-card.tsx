@@ -14,7 +14,12 @@ import { RecurringRuleDialog } from "@/components/recurring-rule-dialog";
 import { useAppError } from "@/components/app-error";
 import { useAuth, useHousehold } from "@/components/providers";
 import { getFirebaseClient } from "@/lib/firebase/client";
-import { useBankCharges, useRecurringRules, useServices } from "@/lib/firebase/hooks";
+import {
+  useBankCharges,
+  useLearnedRate,
+  useRecurringRules,
+  useServices,
+} from "@/lib/firebase/hooks";
 import {
   addRecurringRule,
   deleteRecurringRule,
@@ -24,9 +29,7 @@ import {
 } from "@/lib/firebase/mutations";
 import type { Household, RecurringRuleDoc } from "@/lib/firebase/converters";
 import { isPending } from "@/lib/bank-charges";
-import { learnRate } from "@/lib/bank-match";
 import { claimsOfOneRule } from "@/lib/recurring";
-import { useExpensesRange } from "@/lib/firebase/hooks";
 import { formatCents } from "@/lib/money";
 
 export function RecurringRulesCard({
@@ -39,20 +42,13 @@ export function RecurringRulesCard({
   const t = useTranslations("recurring");
   const tCat = useTranslations("categories");
   const { user } = useAuth();
-  const { currentPeriod } = useHousehold();
+  const { today } = useHousehold();
   const { write } = useAppError();
   const { rules } = useRecurringRules(household.id);
   const { charges } = useBankCharges(household.id);
-  // Only to learn the bank's rate, which is what prices a rule that states no
-  // amount. Bounded by the current period's dates like every other expense
-  // query — and it is the same query the summary runs, so in practice it is
-  // served from the cache rather than costing a read.
-  const { expenses } = useExpensesRange(
-    household.id,
-    currentPeriod?.startDate ?? null,
-    currentPeriod?.endDate ?? null,
-  );
-  const learnedRate = learnRate(expenses);
+  // Prices a rule that states no amount — the same window, and so the same
+  // rate, as the run that files it.
+  const learnedRate = useLearnedRate(household.id, today);
 
   const [editing, setEditing] = useState<RecurringRuleDoc | null>(null);
   const [adding, setAdding] = useState(false);

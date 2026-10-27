@@ -24,7 +24,7 @@
 // Nothing here writes anything: a suggestion is a proposal the user confirms.
 
 import { byCodeUnit } from "./compare";
-import { daysBetween } from "./periods";
+import { addDays, daysBetween } from "./periods";
 
 export interface BankCharge {
   /** Gmail message id — also the Firestore doc id, so imports are idempotent. */
@@ -70,24 +70,29 @@ const PLAUSIBLE_RATE = { min: 0.35, max: 1 };
 const MIN_SCORE = 0.35;
 
 /**
- * What the rate is learned from: the current period's expenses plus the ones
- * on screen, each once — iOS's `suggestionExpenses`. The RATE is the
- * household's, not the screen's: learned from the viewed range alone, a past
- * month with nothing verified had no rate while this period's verified pairs
- * were one listener away. Matching stays with the rows on screen.
+ * How many days back from today the rate is learned over. The open app, the
+ * web and iOS's background run all use this one window, so a charge is priced
+ * the same whichever of them files it — before, the apps learned from the
+ * current period plus whichever one was on screen and the background run from
+ * 45 days. Held to iOS by `learnRateWindow.windowDays` in the shared vectors.
  */
-export function rateExpenses<T extends { id: string }>(
-  current: readonly T[],
-  viewed: readonly T[],
-): T[] {
-  const seen = new Set<string>();
-  const result: T[] = [];
-  for (const e of [...current, ...viewed]) {
-    if (seen.has(e.id)) continue;
-    seen.add(e.id);
-    result.push(e);
-  }
-  return result;
+export const RATE_WINDOW_DAYS = 45;
+
+/** The dates the rate is learned from: the last RATE_WINDOW_DAYS up to today. */
+export function rateWindow(today: string): { start: string; end: string } {
+  return { start: addDays(today, -RATE_WINDOW_DAYS), end: today };
+}
+
+/**
+ * learnRate over the window only. Whatever else the caller has loaded — an old
+ * period on screen, say — does not move today's rate.
+ */
+export function learnRateAsOf(
+  expenses: readonly (MatchableExpense & { usdCents: number | null })[],
+  today: string,
+): number | null {
+  const { start, end } = rateWindow(today);
+  return learnRate(expenses.filter((e) => e.date >= start && e.date <= end));
 }
 
 /**

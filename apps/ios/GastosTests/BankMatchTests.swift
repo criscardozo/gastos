@@ -43,7 +43,25 @@ final class BankMatchTests: XCTestCase {
             let expected: [String: String?]
         }
 
+        struct WindowGroup: Decodable {
+            struct Case: Decodable {
+                struct Pair: Decodable {
+                    let date: String
+                    let amountCents: Int
+                    let usdCents: Int?
+                    let verified: Bool
+                }
+                let name: String
+                let today: String
+                let expenses: [Pair]
+                let expected: Double?
+            }
+            let windowDays: Int
+            let cases: [Case]
+        }
+
         let learnRate: [RateCase]
+        let learnRateWindow: WindowGroup
         let suggestMatches: [MatchCase]
     }
 
@@ -145,7 +163,7 @@ final class BankMatchTests: XCTestCase {
         let groups = Set(raw.keys).subtracting(["_comment"])
         XCTAssertEqual(
             groups,
-            ["learnRate", "suggestMatches"],
+            ["learnRate", "learnRateWindow", "suggestMatches"],
             "a group was added to or removed from the vectors: decode it and "
                 + "run it, or the suite quietly covers less"
         )
@@ -163,6 +181,33 @@ final class BankMatchTests: XCTestCase {
                 )
             }
             let rate = BankMatch.learnRate(expenses)
+            if let expected = testCase.expected {
+                guard let rate else {
+                    XCTFail("\(testCase.name): expected \(expected), got nil")
+                    continue
+                }
+                XCTAssertEqual(rate, expected, accuracy: 0.000001, testCase.name)
+            } else {
+                XCTAssertNil(rate, testCase.name)
+            }
+        }
+    }
+
+    func testLearnRateWindowVectors() throws {
+        let group = Self.vectors.learnRateWindow
+        XCTAssertEqual(BankMatch.rateWindowDays, group.windowDays)
+        for testCase in group.cases {
+            let today = try XCTUnwrap(CalendarDate(testCase.today), testCase.name)
+            let expenses = testCase.expenses.enumerated().map { index, pair in
+                expense(
+                    id: "e\(index)",
+                    amountCents: pair.amountCents,
+                    date: pair.date,
+                    usdCents: pair.usdCents,
+                    verified: pair.verified
+                )
+            }
+            let rate = BankMatch.learnRate(expenses, asOf: today)
             if let expected = testCase.expected {
                 guard let rate else {
                     XCTFail("\(testCase.name): expected \(expected), got nil")

@@ -19,7 +19,7 @@ import { useExpenseFilters } from "@/components/use-expense-filters";
 import { Segmented } from "@/components/ui/segmented";
 import { BankChargesPanel } from "@/components/bank-charges-panel";
 import { ExpenseDetailDialog } from "@/components/expense-detail-dialog";
-import { useBankCharges, useExpensesRange } from "@/lib/firebase/hooks";
+import { useBankCharges, useExpensesRange, useLearnedRate } from "@/lib/firebase/hooks";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { monthSelection, resolveSelection } from "@/lib/period-selection";
 import {
@@ -39,7 +39,6 @@ import {
   type VerificationFilter,
 } from "./pieces";
 import { EditExpenseRow, VerifyExpenseRow } from "./rows";
-import { learnRate, rateExpenses } from "@/lib/bank-match";
 import {
   claimsOfOneRule,
   planRecurringRun,
@@ -192,22 +191,9 @@ export default function ExpensesPage() {
   // its batch updates the charge, so with the charge swept it can only fail.
   const liveChargeIds = new Set(charges.map((c) => c.id));
 
-  // Pure over what is already loaded, so it can sit above the early return and
-  // feed the effect below.
-  // The rate is learned from this period too when another range is on screen
-  // (see rateExpenses). A second listener only then, bounded by the current
-  // period's dates — the same query Inicio runs, so usually served from cache.
-  const viewingCurrent =
-    selected !== null &&
-    currentPeriod !== null &&
-    selected.startDate === currentPeriod.startDate &&
-    selected.endDate === currentPeriod.endDate;
-  const { expenses: currentExpenses } = useExpensesRange(
-    viewingCurrent ? null : (household?.id ?? null),
-    currentPeriod?.startDate ?? null,
-    currentPeriod?.endDate ?? null,
-  );
-  const learnedRate = learnRate(rateExpenses(currentExpenses, expenses));
+  // The household's rate as of today, over the shared window — not this
+  // range's: browsing an old period must not reprice today's charges.
+  const learnedRate = useLearnedRate(household?.id ?? null, today);
 
   // The run. Above the early return, like every other hook here — see the
   // note on useExpenseFilters for what putting one below it costs.
