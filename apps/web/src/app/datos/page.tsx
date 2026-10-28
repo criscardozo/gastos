@@ -13,7 +13,7 @@
 // page you visit, not one you live in).
 
 import { useMemo, useState } from "react";
-import { Reckonings } from "@/components/reckonings";
+import { Reckonings, useReckonings } from "@/components/reckonings";
 import { useTranslations } from "next-intl";
 
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
@@ -30,7 +30,11 @@ import type { Expense } from "@/lib/firebase/converters";
 import { formatCents, formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
 import { addDays, monthRange, type PeriodRange } from "@/lib/periods";
-import { previousMonth } from "@/lib/service-payments";
+import {
+  currentCycle,
+  previousCycle,
+  type CycleResult,
+} from "@/lib/reckoning-cycle";
 import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
 import { exportExpensesPdf, type PdfExportOptions } from "@/lib/export/pdf";
 import { buildExportPayload } from "@/lib/export/payload";
@@ -42,7 +46,7 @@ import { DriveExportError, exportToGoogleDrive } from "@/lib/export/drive";
 
 /* ── Pure helpers ──────────────────────────────────────────────────────── */
 
-type RangePreset = "week" | "month" | "lastMonth" | "custom";
+type RangePreset = "week" | "cycle" | "lastCycle" | "custom";
 
 /** Monday–Sunday week containing `today` (already a household-tz date). */
 function weekRange(today: string): PeriodRange {
@@ -64,9 +68,10 @@ export default function DataPage() {
   const { user } = useAuth();
   const { household, today } = useHousehold();
 
-  // The month by default: Datos is where the month's figures are looked at and
-  // exported (Cristian, 28/10/2026), not the budget period, which Gastos shows.
-  const [preset, setPreset] = useState<RangePreset>("month");
+  // The cycle by default: Datos is where the household looks at what the next
+  // "Hacemos las cuentas" will cover (Cristian, 28/10/2026) — not the calendar
+  // month it opened on for a day, nor the budget period, which Gastos shows.
+  const [preset, setPreset] = useState<RangePreset>("cycle");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   /**
@@ -123,6 +128,21 @@ export default function DataPage() {
     );
   }, [household]);
 
+  const householdId = household?.id ?? null;
+  // Shared with the "Hacemos las cuentas" card: a press there closes the cycle
+  // the grid is showing, and the grid follows.
+  const reckonings = useReckonings(householdId);
+
+  /* The cycle presets, resolved; null for the others, or while the
+     reckonings are still loading. */
+  const cycle = useMemo<CycleResult | null>(() => {
+    if (today === null || reckonings.entries === null) return null;
+    if (preset === "cycle") return currentCycle(reckonings.entries, today);
+    if (preset === "lastCycle") return previousCycle(reckonings.entries);
+    return null;
+  }, [preset, today, reckonings.entries]);
+  const isCycle = preset === "cycle" || preset === "lastCycle";
+
   /* Resolve the [from, to] range for the current preset. */
   const range = useMemo<PeriodRange | null>(() => {
     if (preset === "week") return today !== null ? weekRange(today) : null;
@@ -132,16 +152,10 @@ export default function DataPage() {
       }
       return { startDate: customFrom, endDate: customTo };
     }
-    // The whole calendar month today falls in, the 1st to its last day.
-    if (preset === "month") return today !== null ? monthRange(today) : null;
-    // The calendar month before this one, the 1st to its last day. It was
-    // the previous PERIOD, a fortnight; a month is what statements and
-    // bills are counted in.
-    return today !== null ? previousMonth(today) : null;
-  }, [preset, today, customFrom, customTo]);
+    return cycle?.kind === "range" ? cycle.range : null;
+  }, [preset, today, customFrom, customTo, cycle]);
 
   /* One-shot bounded read for the resolved range. */
-  const householdId = household?.id ?? null;
   const rangeFrom = range?.startDate ?? null;
   const rangeTo = range?.endDate ?? null;
   const loadState = useExpensesOnce(householdId, rangeFrom, rangeTo, "datos");
@@ -222,7 +236,8 @@ export default function DataPage() {
 
   const changePreset = (next: RangePreset) => {
     if (next === "custom" && customFrom === "") {
-      const seed = today !== null ? monthRange(today) : null;
+      // Start from what is on screen, so "Personalizado" is a nudge to it.
+      const seed = range ?? (today !== null ? monthRange(today) : null);
       if (seed !== null) {
         setCustomFrom(seed.startDate);
         setCustomTo(seed.endDate);
@@ -325,7 +340,12 @@ export default function DataPage() {
       </div>
 
       {today !== null && (
-        <Reckonings householdId={household.id} today={today} locale={locale} />
+        <Reckonings
+          householdId={household.id}
+          today={today}
+          locale={locale}
+          {...reckonings}
+        />
       )}
 
       {/* Range on the left, everything you can do with it on the right.
@@ -338,8 +358,8 @@ export default function DataPage() {
             ariaLabel={t("rangeLabel")}
             options={[
               { value: "week", label: t("rangeWeek") },
-              { value: "month", label: t("rangeMonth") },
-              { value: "lastMonth", label: t("rangeLastMonth") },
+              { value: "cycle", label: t("rangeCycle") },
+              { value: "lastCycle", label: t("rangeLastCycle") },
               { value: "custom", label: t("rangeCustom") },
             ]}
             value={preset}
@@ -430,11 +450,29 @@ export default function DataPage() {
       {/* ── The grid ─────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 rounded-[18px] border border-line bg-surface px-[18px] py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <span className="section-label">{t("gridTitle")}</span>
+          <span className="section-label">
+            {t("gridTitle")}
+            {/* The cycle presets have no date inputs, so the dates they
+                resolved to are said here. */}
+            {range !== null &&
+              ` · ${formatShortDate(range.startDate, locale)} – ${formatShortDate(range.endDate, locale)}`}
+          </span>
           <span className="text-[11.5px] text-ink-3">{t("gridHint")}</span>
         </div>
 
-        {loadState.loading ? (
+        {isCycle && reckonings.failed ? (
+          <p className="py-6 text-center text-[13px] font-semibold text-over-text">
+            {t("cycleUnknown")}
+          </p>
+        ) : cycle?.kind === "startsTomorrow" ? (
+          <p className="py-6 text-center text-[13px] text-ink-3">
+            {t("cycleStartsTomorrow")}
+          </p>
+        ) : cycle?.kind === "noPrevious" ? (
+          <p className="py-6 text-center text-[13px] text-ink-3">
+            {t("cycleNoPrevious")}
+          </p>
+        ) : loadState.loading || (isCycle && reckonings.entries === null) ? (
           <p className="py-6 text-center text-[13px] text-ink-3">
             {t("loading")}
           </p>

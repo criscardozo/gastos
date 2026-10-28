@@ -1608,8 +1608,26 @@ test("Datos records the day the accounts were done, and keeps the history", asyn
   await expect(page.getByText(/Últimas: martes 1 de septiembre/)).toBeVisible({
     timeout: 20_000,
   });
+  // The grid opens on the cycle: from the day after the last reckoning to
+  // today, across month boundaries.
+  await expect(page.getByRole("tab", { name: "Ciclo actual" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByText(/Gastos del intervalo · 2 sept – /i)).toBeVisible();
+  await expect(page.getByText(/no hay un ciclo anterior/)).toHaveCount(0);
+  await page.getByRole("tab", { name: "Ciclo anterior" }).click();
+  await expect(page.getByText(/no hay un ciclo anterior/)).toBeVisible();
+  await page.getByRole("tab", { name: "Ciclo actual" }).click();
+
   await page.getByRole("button", { name: "Hacemos las cuentas hoy" }).click();
   await expect(page.getByText("Hechas hoy")).toBeVisible();
+  // The press closed the cycle on screen: the new one has no days yet, and
+  // the one just closed is the previous cycle.
+  await expect(page.getByText(/el ciclo nuevo empieza mañana/)).toBeVisible();
+  await page.getByRole("tab", { name: "Ciclo anterior" }).click();
+  await expect(page.getByText(/Gastos del intervalo · 2 sept – /i)).toBeVisible();
+  await page.getByRole("tab", { name: "Ciclo actual" }).click();
   await expect(page.getByRole("button", { name: "Hacemos las cuentas hoy" })).toHaveCount(0);
   // Only the date — who pressed it is not kept or shown.
   // \p{L}, not \w: JavaScript's \w is ASCII, so "sábado" and "miércoles"

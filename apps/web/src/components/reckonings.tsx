@@ -4,8 +4,8 @@
 // against the bank and settled up. One press records today; the last time is
 // always on show beside it, and the history folds out underneath.
 //
-// Read once (Datos is visited, not lived in) and kept in local state after a
-// press: the write is fired and not awaited, like every write here, so the
+// Read once (Datos is visited, not lived in, by `useReckonings`) and kept in
+// local state after a press: the write is fired and not awaited, like every write here, so the
 // screen moves the moment the press lands in the local cache.
 
 import { useEffect, useState } from "react";
@@ -18,25 +18,21 @@ import { fetchReckonings } from "@/lib/firebase/reckonings";
 import { deleteReckoning, recordReckoning } from "@/lib/firebase/mutations";
 import { formatLongDate, formatShortDateInYear } from "@/lib/dates";
 
-export function Reckonings({
-  householdId,
-  today,
-  locale,
-}: {
-  householdId: string;
-  today: string;
-  locale: string;
-}) {
-  const t = useTranslations("data");
-  const { write } = useAppError();
+/**
+ * The household's reckoning dates, newest first; null while loading.
+ *
+ * A hook of its own because Datos needs the list twice: this card shows it,
+ * and the range presets count the current cycle from its newest date. One read
+ * for both, so pressing the button moves the grid's cycle too.
+ */
+export function useReckonings(householdId: string | null) {
   // The dates, newest first. Only the date is kept, not who pressed it.
   const [entries, setEntries] = useState<string[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const fb = getFirebaseClient();
-    if (fb === null) return;
+    if (fb === null || householdId === null) return;
     let cancelled = false;
     fetchReckonings(fb.db, householdId)
       .then((list) => {
@@ -50,6 +46,25 @@ export function Reckonings({
       cancelled = true;
     };
   }, [householdId]);
+
+  return { entries, failed, setEntries };
+}
+
+export function Reckonings({
+  householdId,
+  today,
+  locale,
+  entries,
+  failed,
+  setEntries,
+}: {
+  householdId: string;
+  today: string;
+  locale: string;
+} & ReturnType<typeof useReckonings>) {
+  const t = useTranslations("data");
+  const { write } = useAppError();
+  const [open, setOpen] = useState(false);
 
   const last = entries?.[0] ?? null;
   const doneToday = last === today;
