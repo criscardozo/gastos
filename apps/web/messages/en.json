@@ -261,7 +261,7 @@
     "exportTitle": "Export",
     "exportHint": "Exports what you are looking at, in this order",
     "rangeWeek": "This week",
-    "rangeCurrent": "Current period",
+    "rangeMonth": "This month",
     "rangeLastMonth": "Last month",
     "rangeCustom": "Custom",
     "from": "From",

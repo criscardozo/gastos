@@ -30,7 +30,7 @@ import { useExpensesOnce } from "@/lib/firebase/hooks";
 import type { Expense } from "@/lib/firebase/converters";
 import { formatCents, formatUsd } from "@/lib/money";
 import { formatShortDate } from "@/lib/dates";
-import { addDays, type PeriodRange } from "@/lib/periods";
+import { addDays, monthRange, type PeriodRange } from "@/lib/periods";
 import { previousMonth } from "@/lib/service-payments";
 import { buildExpensesCsv, downloadCsv } from "@/lib/export/csv";
 import { exportExpensesPdf, type PdfExportOptions } from "@/lib/export/pdf";
@@ -43,7 +43,7 @@ import { DriveExportError, exportToGoogleDrive } from "@/lib/export/drive";
 
 /* ── Pure helpers ──────────────────────────────────────────────────────── */
 
-type RangePreset = "week" | "current" | "lastMonth" | "custom";
+type RangePreset = "week" | "month" | "lastMonth" | "custom";
 
 /** Monday–Sunday week containing `today` (already a household-tz date). */
 function weekRange(today: string): PeriodRange {
@@ -63,9 +63,11 @@ export default function DataPage() {
   const tCat = useTranslations("categories");
   const { locale } = useLocale();
   const { user } = useAuth();
-  const { household, periods, currentPeriod, today } = useHousehold();
+  const { household, today } = useHousehold();
 
-  const [preset, setPreset] = useState<RangePreset>("current");
+  // The month by default: Datos is where the month's figures are looked at and
+  // exported (Cristian, 28/10/2026), not the budget period, which Gastos shows.
+  const [preset, setPreset] = useState<RangePreset>("month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   /**
@@ -131,15 +133,13 @@ export default function DataPage() {
       }
       return { startDate: customFrom, endDate: customTo };
     }
-    if (preset === "current") {
-      const p = currentPeriod ?? periods[periods.length - 1] ?? null;
-      return p ? { startDate: p.startDate, endDate: p.endDate } : null;
-    }
+    // The whole calendar month today falls in, the 1st to its last day.
+    if (preset === "month") return today !== null ? monthRange(today) : null;
     // The calendar month before this one, the 1st to its last day. It was
     // the previous PERIOD, a fortnight; a month is what statements and
     // bills are counted in.
     return today !== null ? previousMonth(today) : null;
-  }, [preset, today, customFrom, customTo, currentPeriod, periods]);
+  }, [preset, today, customFrom, customTo]);
 
   /* One-shot bounded read for the resolved range. */
   const householdId = household?.id ?? null;
@@ -223,8 +223,7 @@ export default function DataPage() {
 
   const changePreset = (next: RangePreset) => {
     if (next === "custom" && customFrom === "") {
-      const seed =
-        currentPeriod ?? (today !== null ? weekRange(today) : null);
+      const seed = today !== null ? monthRange(today) : null;
       if (seed !== null) {
         setCustomFrom(seed.startDate);
         setCustomTo(seed.endDate);
@@ -339,7 +338,7 @@ export default function DataPage() {
           ariaLabel={t("rangeLabel")}
           options={[
             { value: "week", label: t("rangeWeek") },
-            { value: "current", label: t("rangeCurrent") },
+            { value: "month", label: t("rangeMonth") },
             { value: "lastMonth", label: t("rangeLastMonth") },
             { value: "custom", label: t("rangeCustom") },
           ]}

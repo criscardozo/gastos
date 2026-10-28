@@ -17,8 +17,8 @@ const NAV = [
   { href: "/gastos", icon: "receipt_long", key: "expenses" },
   { href: "/servicios", icon: "calendar_today", key: "services" },
   { href: "/tarjetas", icon: "credit_card", key: "cards" },
-  { href: "/estadisticas", icon: "bar_chart", key: "stats" },
   { href: "/datos", icon: "database", key: "data" },
+  { href: "/estadisticas", icon: "bar_chart", key: "stats" },
   { href: "/ajustes", icon: "settings", key: "settings" },
 ] as const;
 
