@@ -140,7 +140,12 @@ export function ExportMenu({
 }
 
 /**
- * The category filter that lives in its own column heading.
+ * The category filter, in the toolbar above the grid.
+ *
+ * It used to sit in the Categoría heading, and the table it lived in is sized
+ * by its rows: untick categories and the columns narrowed under it, so the
+ * heading — and the button — moved while you were using it (Cristian,
+ * 28/10/2026). Out here nothing it filters can move it.
  *
  * Checkboxes rather than a `<select multiple>`: the native one needs
  * ctrl-clicking to add a second choice, shows its options in a fixed-height box
@@ -203,18 +208,19 @@ export function CategoryFilter({
         type="button"
         aria-haspopup="true"
         aria-expanded={open}
-        // Not "Categoría": the sort control in the same heading is already
-        // called that, and two buttons with one name is a coin toss.
+        // Not "Categoría": the grid's sort control is already called that,
+        // and two buttons with one name is a coin toss.
         aria-label={t("filterCategory")}
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-0.5 rounded-[8px] border bg-bg px-1.5 py-0.5 text-[11.5px] font-semibold ${
+        className={`flex items-center gap-1 rounded-[10px] border bg-bg px-2.5 py-2 text-[13px] font-semibold ${
           selected === null
             ? "border-pill text-ink-3"
             : "border-accent text-accent-strong"
         }`}
       >
+        <span className="text-ink-3">{t("categoriesLabel")}</span>
         {label}
-        <Icon name="expand_more" size={13} />
+        <Icon name="expand_more" size={15} />
       </button>
 
       {open && (

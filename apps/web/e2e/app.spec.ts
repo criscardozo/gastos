@@ -163,7 +163,7 @@ test("sign in, onboard, add expenses, export/import CSV, switch language", async
     page.getByRole("columnheader", { name: "Monto" }),
   ).toHaveAttribute("aria-sort", "descending");
 
-  // Filtering happens in the column heading that owns it, and narrows what
+  // Filtering happens in the toolbar above the grid, and narrows what
   // leaves with you: another category empties the grid, and the TOTAL follows.
   await page.getByRole("button", { name: "Filtrar por categoría" }).click();
   await page.getByRole("checkbox", { name: "Súper" }).uncheck();

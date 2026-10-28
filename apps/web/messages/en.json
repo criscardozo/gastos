@@ -305,6 +305,7 @@
     "total": "Total",
     "expensesCount": "{count, plural, one {# expense} other {# expenses}}",
     "categoriesLabel": "Categories to export",
+    "categoriesLabel": "Categories:",
     "categoriesAll": "All",
     "categoriesNone": "None",
     "exportExcel": "Excel",

@@ -17,7 +17,6 @@ import { Reckonings } from "@/components/reckonings";
 import { useTranslations } from "next-intl";
 
 import { useAuth, useHousehold, useLocale } from "@/components/providers";
-import { Icon } from "@/components/ui/icon";
 import {
   CategoryFilter,
   ExportMenu,
@@ -334,17 +333,27 @@ export default function DataPage() {
           chips, a person select and a note search — all of them ways to
           describe a file nobody could see. The table below is the file. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Segmented<RangePreset>
-          ariaLabel={t("rangeLabel")}
-          options={[
-            { value: "week", label: t("rangeWeek") },
-            { value: "month", label: t("rangeMonth") },
-            { value: "lastMonth", label: t("rangeLastMonth") },
-            { value: "custom", label: t("rangeCustom") },
-          ]}
-          value={preset}
-          onChange={changePreset}
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <Segmented<RangePreset>
+            ariaLabel={t("rangeLabel")}
+            options={[
+              { value: "week", label: t("rangeWeek") },
+              { value: "month", label: t("rangeMonth") },
+              { value: "lastMonth", label: t("rangeLastMonth") },
+              { value: "custom", label: t("rangeCustom") },
+            ]}
+            value={preset}
+            onChange={changePreset}
+          />
+          {rangeRows.length > 0 && (
+            <CategoryFilter
+              available={rangeCategoryIds}
+              selected={categoryFilter}
+              labelOf={catLabelOf}
+              onChange={setCategoryFilter}
+            />
+          )}
+        </div>
         <ExportMenu
           disabled={!canExport}
           busy={exportPhase}
@@ -435,9 +444,8 @@ export default function DataPage() {
           </p>
         ) : rangeRows.length === 0 ? (
           // Only when the RANGE is empty. When it is the category filter that
-          // left nothing, the grid stays — its heading is where the filter
-          // lives, and this used to take it away, leaving no way back short
-          // of changing the range.
+          // left nothing, the grid stays and says so, rather than reading as
+          // a range with no expenses.
           <p className="py-6 text-center text-[13px] text-ink-3">
             {t("exportEmpty")}
           </p>
@@ -453,41 +461,13 @@ export default function DataPage() {
                     sortAsc={sortAsc}
                     onSort={onSort}
                   />
-                  {/* Sorting AND filtering, in the heading that owns the
-                      column — the chips that used to do this lived in another
-                      card, describing rows you could not see. */}
-                  <th className="px-3 py-2 font-semibold">
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => onSort("category")}
-                        className={`inline-flex items-center gap-1 ${
-                          sortKey === "category" ? "text-ink" : "text-ink-3"
-                        }`}
-                      >
-                        {t("colCategory")}
-                        <Icon
-                          name={
-                            sortKey === "category" && !sortAsc
-                              ? "keyboard_arrow_down"
-                              : "keyboard_arrow_up"
-                          }
-                          size={14}
-                          className={
-                            sortKey === "category"
-                              ? "text-accent-strong"
-                              : "text-transparent"
-                          }
-                        />
-                      </button>
-                      <CategoryFilter
-                        available={rangeCategoryIds}
-                        selected={categoryFilter}
-                        labelOf={catLabelOf}
-                        onChange={setCategoryFilter}
-                      />
-                    </div>
-                  </th>
+                  <SortHeader
+                    label={t("colCategory")}
+                    columnKey="category"
+                    sortKey={sortKey}
+                    sortAsc={sortAsc}
+                    onSort={onSort}
+                  />
                   <SortHeader
                     label={t("colNote")}
                     columnKey="note"
