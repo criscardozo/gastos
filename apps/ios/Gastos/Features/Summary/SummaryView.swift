@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Period summary (design 2b): hero card with per-period budget, category
-/// breakdown, member split and the record of previous periods.
+/// breakdown and member split, with Períodos anteriores and Servicios one tap
+/// below.
 struct SummaryView: View {
     @Environment(AppModel.self) private var model
     /// Rows that cannot share their width at the accessibility sizes stack
@@ -40,17 +41,24 @@ struct SummaryView: View {
                     heroCard(period)
                     spendCards
                     categoryBreakdown
-                    pastPeriods
                 } else {
                     emptyState
                 }
+                moreLinks
             }
             .padding(.horizontal, 20)
             .padding(.top, 6)
             .padding(.bottom, 24)
         }
         .background(Theme.bg.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
         .statusBarScrim()
+        .navigationDestination(for: SummaryLink.self) { link in
+            switch link {
+            case .pastPeriods: PreviousPeriodsView()
+            case .services: ServicesView()
+            }
+        }
         .sheet(isPresented: $showAdjustSheet) {
             AdjustPeriodBudgetSheet()
         }
@@ -436,38 +444,125 @@ struct SummaryView: View {
         }
     }
 
-    // MARK: Past periods
+    // MARK: More
 
-    @ViewBuilder
-    private var pastPeriods: some View {
-        let past = model.pastPeriods
-        if !past.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionLabel(text: l10n.t("summary.pastPeriods"))
-                Card(padding: EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16)) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(past.enumerated()), id: \.element.startDate) { index, period in
-                            pastPeriodRow(period)
-                            if index < past.count - 1 {
-                                Divider().overlay(Theme.separator)
-                            }
-                        }
-                    }
-                }
-                Text(l10n.t("summary.pastPeriods.foot"))
-                    .appFont(12)
-                    .foregroundStyle(Theme.inkTertiary)
-                    .padding(.horizontal, 4)
-            }
+    /// Períodos anteriores and Servicios, at the foot of the screen.
+    ///
+    /// The past periods used to be listed here in full, and Servicios was a
+    /// tab. Both are looked at now and then rather than every day, so they
+    /// sit one tap below the period instead of growing it and crowding the
+    /// bar (Cristian, 1/11/2026).
+    private var moreLinks: some View {
+        VStack(spacing: 10) {
+            moreLink(.pastPeriods, title: l10n.t("summary.pastPeriods"), icon: "clock.arrow.circlepath")
+            moreLink(.services, title: l10n.t("tab.services"), icon: "calendar")
         }
     }
 
-    private func pastPeriodRow(_ period: PeriodBudget) -> some View {
+    private func moreLink(_ link: SummaryLink, title: String, icon: String) -> some View {
+        NavigationLink(value: link) {
+            Card {
+                HStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .iconFont(16, .semibold)
+                        .foregroundStyle(Theme.inkSecondary)
+                        .frame(width: 22)
+                    Text(title)
+                        .appFont(14.5, .semibold)
+                        .foregroundStyle(Theme.ink)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .iconFont(13, .semibold)
+                        .foregroundStyle(Theme.inkTertiary.opacity(0.6))
+                }
+                .padding(.vertical, 13)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var emptyState: some View {
+        Card(padding: EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)) {
+            HStack(spacing: 12) {
+                Image(systemName: "flag")
+                    .iconFont(22)
+                    .foregroundStyle(Theme.inkTertiary)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l10n.t("empty.noPeriod.title"))
+                        .appFont(13.5, .bold)
+                        .foregroundStyle(Theme.ink)
+                    Text(l10n.t("empty.noPeriod.body"))
+                        .appFont(12)
+                        .foregroundStyle(Theme.inkTertiary)
+                }
+                Spacer()
+            }
+        }
+    }
+}
+
+// MARK: - Past periods
+
+/// Where Resumen's buttons lead.
+enum SummaryLink: Hashable {
+    case pastPeriods, services
+}
+
+/// The record of previous periods, newest first. Tapping one shows it on
+/// Resumen — the screen that knows how to draw a period — and goes back there.
+struct PreviousPeriodsView: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+
+    private var l10n: L10n { model.l10n }
+
+    var body: some View {
+        let past = model.pastPeriods
+        ScrollView {
+            VStack(alignment: .leading, spacing: 10) {
+                if past.isEmpty {
+                    Card {
+                        Text(l10n.t("summary.pastPeriods.empty"))
+                            .appFont(13)
+                            .foregroundStyle(Theme.inkTertiary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 6)
+                    }
+                } else {
+                    Card(padding: EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16)) {
+                        VStack(spacing: 0) {
+                            ForEach(Array(past.enumerated()), id: \.element.startDate) { index, period in
+                                row(period)
+                                if index < past.count - 1 {
+                                    Divider().overlay(Theme.separator)
+                                }
+                            }
+                        }
+                    }
+                    Text(l10n.t("summary.pastPeriods.foot"))
+                        .appFont(12)
+                        .foregroundStyle(Theme.inkTertiary)
+                        .padding(.horizontal, 4)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 6)
+            .padding(.bottom, 24)
+        }
+        .background(Theme.bg.ignoresSafeArea())
+        .navigationTitle(l10n.t("summary.pastPeriods"))
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear { model.refreshPastTotals() }
+    }
+
+    private func row(_ period: PeriodBudget) -> some View {
         Button {
             if let index = model.periods.firstIndex(where: { $0.startDate == period.startDate }) {
                 model.viewedPeriodIndex = index
                 model.navigatePeriod(by: 0)
             }
+            dismiss()
         } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -505,25 +600,6 @@ struct SummaryView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    private var emptyState: some View {
-        Card(padding: EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)) {
-            HStack(spacing: 12) {
-                Image(systemName: "flag")
-                    .iconFont(22)
-                    .foregroundStyle(Theme.inkTertiary)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(l10n.t("empty.noPeriod.title"))
-                        .appFont(13.5, .bold)
-                        .foregroundStyle(Theme.ink)
-                    Text(l10n.t("empty.noPeriod.body"))
-                        .appFont(12)
-                        .foregroundStyle(Theme.inkTertiary)
-                }
-                Spacer()
-            }
-        }
     }
 }
 

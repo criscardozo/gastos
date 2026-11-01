@@ -4872,6 +4872,23 @@
         }
       }
     },
+    "summary.pastPeriods.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No previous periods yet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todavía no hay períodos anteriores."
+          }
+        }
+      }
+    },
     "tab.cards": {
       "extractionState": "manual",
       "localizations": {
@@ -4890,18 +4907,18 @@
       }
     },
     "tab.history": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "History"
+            "value": "Expenses"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Historial"
+            "value": "Gastos"
           }
         }
       }

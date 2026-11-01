@@ -75,8 +75,10 @@ struct ServicesView: View {
                 .padding(.bottom, 16)
         }
         .background(Theme.bg)
-        .toolbar(.hidden, for: .navigationBar)
-        .statusBarScrim()
+        // Pushed from Resumen since it left the tab bar (1/11/2026), so the
+        // bar is shown: it carries the title and the way back.
+        .navigationTitle(l10n.t("tab.services"))
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             store.start(
                 householdId: model.household?.id,
@@ -87,17 +89,9 @@ struct ServicesView: View {
         .onDisappear { store.stop() }
     }
 
-    /// The tab's title in the content, like Resumen, Historial and Ajustes.
-    ///
-    /// It was a centred navigation-bar title with the month as a second, bigger
-    /// heading under it: two titles, and a header shaped differently from three
-    /// of the five tabs. The month is what this screen is about, so it stays —
-    /// as the subtitle.
+    /// The month this screen is about, under the navigation bar's title.
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(l10n.t("tab.services"))
-                .appFont(18, .bold)
-                .foregroundStyle(Theme.ink)
             Text("\(l10n.monthLabel(model.today, timeZone: model.householdTimeZone)) · \(l10n.t("services.subtitle"))")
                 .appFont(12)
                 .foregroundStyle(Theme.inkTertiary)

@@ -125,7 +125,7 @@ struct MainTabView: View {
     var body: some View {
         @Bindable var model = model
         let l10n = model.l10n
-        // Five destinations and no "Nuevo".
+        // Four destinations and no "Nuevo".
         //
         // Loading an expense is an action, not a place, so it lives as a
         // button on the two screens you would be looking at when you need it
@@ -137,7 +137,9 @@ struct MainTabView: View {
         // was room for the three screens it held, and a menu whose every row
         // is now a tab is a menu with nothing left to do.
         TabView(selection: $model.selectedTab) {
-            SummaryView()
+            // A stack of its own since 1/11/2026: Períodos anteriores and
+            // Servicios are pushed from the foot of Resumen.
+            NavigationStack { SummaryView() }
                 .tabItem {
                     Label(l10n.t("tab.summary"), systemImage: "chart.pie.fill")
                 }
@@ -147,18 +149,14 @@ struct MainTabView: View {
                     Label(l10n.t("tab.history"), systemImage: "list.bullet.rectangle.fill")
                 }
                 .tag(AppModel.MainTab.history)
-            // These three were pushed from Más and still set navigation
-            // titles, so each brings its own stack now.
+            // These were pushed from Más and still set navigation titles, so
+            // each brings its own stack. Servicios left the bar on 1/11/2026
+            // for a button on Resumen.
             NavigationStack { CardsView() }
                 .tabItem {
                     Label(l10n.t("tab.cards"), systemImage: "creditcard.fill")
                 }
                 .tag(AppModel.MainTab.cards)
-            NavigationStack { ServicesView() }
-                .tabItem {
-                    Label(l10n.t("tab.services"), systemImage: "calendar")
-                }
-                .tag(AppModel.MainTab.services)
             NavigationStack { SettingsView() }
                 .tabItem {
                     Label(l10n.t("tab.settings"), systemImage: "gearshape.fill")

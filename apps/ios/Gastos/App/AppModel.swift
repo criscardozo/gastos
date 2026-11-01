@@ -151,7 +151,7 @@ final class AppModel {
     /// bar, and everything consulted once a month lives one tap inside it.
     /// Settings used to be the fourth tab and is now the last row in there.
     enum MainTab: Hashable {
-        case summary, history, cards, services, settings
+        case summary, history, cards, settings
     }
 
     /// The app opens on the summary, not on the entry form.
@@ -182,7 +182,6 @@ final class AppModel {
         case "summary": return .summary
         case "history": return .history
         case "cards": return .cards
-        case "services": return .services
         case "settings": return .settings
         default: return nil
         }
