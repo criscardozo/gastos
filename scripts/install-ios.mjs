@@ -275,7 +275,16 @@ async function main() {
           "-project", project,
           "-scheme", config.iosScheme,
           "-configuration", "Debug",
-          "-destination", "generic/platform=iOS",
+          // The phone itself, not generic/platform=iOS: with a generic
+          // destination Xcode chose which devices the free team's profile
+          // covered, and on 1/11/2026, with a second iPhone plugged in, it
+          // issued one for that phone only — the install on this one was
+          // refused ("This provisioning profile cannot be installed on this
+          // device").
+          "-destination",
+          /^[0-9A-F-]{20,}$/i.test(device)
+            ? `platform=iOS,id=${device}`
+            : `platform=iOS,name=${device}`,
           "-derivedDataPath", derived,
           "-allowProvisioningUpdates",
         ],
