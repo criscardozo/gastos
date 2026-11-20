@@ -78,6 +78,10 @@ struct LogBankChargeIntent: AppIntent {
         case .success(let value): charge = value
         case .failure(.notACharge): throw Failure.notACharge(l10n)
         case .failure(.unreadableAmount(let raw)): throw Failure.unreadable(raw, l10n)
+        case .failure(.incomingMoney):
+            // A dialog, not an error: nothing went wrong, the automation simply
+            // fires on every BBVA notification and this one was money in.
+            return (IntentDialog(stringLiteral: l10n.t("bankCharge.incoming")), "ignored: money in")
         }
         // The notification arrives as the purchase is made: today, in the
         // household's timezone, is its date — the same date the email's

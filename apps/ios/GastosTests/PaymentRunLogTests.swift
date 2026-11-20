@@ -4,16 +4,47 @@ import XCTest
 final class PaymentRunLogTests: XCTestCase {
     private func entry(_ n: Int, outcome: String = PaymentRunLog.running) -> PaymentRunLog.Entry {
         PaymentRunLog.Entry(
-            id: UUID(), startedAt: Date(timeIntervalSince1970: TimeInterval(n)),
+            id: UUID(), startedAt: Date().addingTimeInterval(TimeInterval(n)),
             amount: "\(n)", currency: "AUD", merchant: "Shop \(n)", outcome: outcome
         )
     }
 
-    func testNewestFirstAndCapped() {
+    func testNewestFirst() {
         var log = PaymentRunLog()
-        for n in 1...(PaymentRunLog.capacity + 3) { log.start(entry(n)) }
+        for n in 1...3 { log.start(entry(n)) }
+        XCTAssertEqual(log.entries.map(\.amount), ["3", "2", "1"])
+    }
+
+    /// Whole months, not the last few runs: on 17/11 the two transfers that
+    /// were filed as charges were still readable only because the log had
+    /// not filled up yet.
+    func testKeepsThisMonthAndTheOneBefore() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "Australia/Sydney"))
+        func at(_ y: Int, _ m: Int, _ d: Int) -> Date {
+            calendar.date(from: DateComponents(year: y, month: m, day: d, hour: 12))!
+        }
+        var log = PaymentRunLog()
+        for (n, date) in [at(2026, 9, 30), at(2026, 10, 1), at(2026, 10, 31), at(2026, 11, 17)].enumerated() {
+            var e = entry(n)
+            e.startedAt = date
+            log.start(e, now: date, calendar: calendar)
+        }
+        XCTAssertEqual(log.entries.map(\.amount), ["3", "2", "1"], "September went once it was November")
+        let months = log.byMonth(calendar: calendar)
+        XCTAssertEqual(months.map(\.entries.count), [1, 2])
+        XCTAssertEqual(months.first?.month, calendar.date(from: DateComponents(year: 2026, month: 11, day: 1)))
+    }
+
+    func testTheCeilingStillHolds() {
+        var log = PaymentRunLog()
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        for n in 1...(PaymentRunLog.capacity + 3) {
+            var e = entry(n)
+            e.startedAt = now
+            log.start(e, now: now)
+        }
         XCTAssertEqual(log.entries.count, PaymentRunLog.capacity)
-        XCTAssertEqual(log.entries.first?.amount, "\(PaymentRunLog.capacity + 3)")
         XCTAssertEqual(log.entries.last?.amount, "4", "the oldest three fall off")
     }
 

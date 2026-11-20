@@ -36,6 +36,20 @@ final class BankNotificationTests: XCTestCase {
         XCTAssertEqual(charge("Por USD8,5 a OPAL, con tu tarjeta Visa *2024")?.usdCents, 850)
     }
 
+    func testRefusesMoneyThatCameIn() {
+        // Verbatim from the phone, 17 November 2026 — the spaces are BBVA's.
+        let text = "Recibiste una transferencia DEBIN de USD        1.046,54 de 2GXYVR2026111703022N en la CA-USD ***775/0."
+        XCTAssertEqual(BankNotification.parse(text), .failure(.incomingMoney(text)))
+        let small = "Recibiste una transferencia DEBIN de USD           10,57 de 9DEZOL2026111703007N en la CA-USD ***775/0."
+        XCTAssertEqual(BankNotification.parse(small), .failure(.incomingMoney(small)))
+        let titled = "Transferencia recibida\n" + small
+        XCTAssertEqual(BankNotification.parse(titled), .failure(.incomingMoney(titled)))
+        // A purchase whose shop happens to contain one of the words still files.
+        XCTAssertEqual(
+            charge("Por USD9,99 a RECIBISTE CAFE, con tu tarjeta Visa *2024")?.usdCents, 999
+        )
+    }
+
     func testRefusesWhatIsNotACharge() {
         XCTAssertEqual(
             BankNotification.parse("Tu resumen ya está disponible"),

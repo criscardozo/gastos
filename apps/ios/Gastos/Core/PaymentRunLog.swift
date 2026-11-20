@@ -8,6 +8,13 @@ import Foundation
 /// doing anything else, what it was handed — and then how it ended. An empty
 /// log after a payment is an answer too: the automation never reached the app.
 ///
+/// It is also the record of what arrived on its own: "Cargo del banco" logs
+/// the BBVA notification's text verbatim here, so when a bank charge looks
+/// wrong the words that produced it can be read back. Two "charges" with no
+/// shop on 17/11/2026 were incoming transfers, and this log is what said so.
+/// For that it keeps whole months — the current one and the one before —
+/// rather than the last few runs (Cristian, 20/11/2026).
+///
 /// Lives in the app's own defaults: `LogPaymentIntent` runs in the app
 /// process, and Settings reads it back.
 struct PaymentRunLog: Equatable {
@@ -25,8 +32,9 @@ struct PaymentRunLog: Equatable {
 
     static let running = "running"
     static let defaultsKey = "logPayment.runs"
-    /// Enough to cover a few days of payments without growing forever.
-    static let capacity = 20
+    /// A ceiling, not the rule: the rule is two calendar months. Twice a
+    /// busy month's runs, so it only bites if something loops.
+    static let capacity = 1000
 
     /// Newest first.
     private(set) var entries: [Entry]
@@ -35,9 +43,31 @@ struct PaymentRunLog: Equatable {
         self.entries = Array(entries.prefix(Self.capacity))
     }
 
-    mutating func start(_ entry: Entry) {
+    mutating func start(_ entry: Entry, now: Date = Date(), calendar: Calendar = .current) {
         entries.insert(entry, at: 0)
+        prune(now: now, calendar: calendar)
+    }
+
+    /// Keeps the current month and the one before it, whole; older runs go.
+    mutating func prune(now: Date, calendar: Calendar) {
+        let thisMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
+        let cutoff = calendar.date(byAdding: .month, value: -1, to: thisMonth) ?? thisMonth
+        entries.removeAll { $0.startedAt < cutoff }
         if entries.count > Self.capacity { entries.removeLast(entries.count - Self.capacity) }
+    }
+
+    /// Newest month first, each month's runs newest first.
+    func byMonth(calendar: Calendar = .current) -> [(month: Date, entries: [Entry])] {
+        var groups: [(month: Date, entries: [Entry])] = []
+        for entry in entries {
+            let month = calendar.dateInterval(of: .month, for: entry.startedAt)?.start ?? entry.startedAt
+            if groups.last?.month == month {
+                groups[groups.count - 1].entries.append(entry)
+            } else {
+                groups.append((month, [entry]))
+            }
+        }
+        return groups
     }
 
     /// A finish for an entry that is no longer kept is dropped, not appended.

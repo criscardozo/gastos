@@ -56,21 +56,37 @@ struct PaymentRunsView: View {
 
     var body: some View {
         ScrollView {
-            Card {
-                VStack(alignment: .leading, spacing: 0) {
-                    if runs.entries.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                if runs.entries.isEmpty {
+                    Card {
                         Text(l10n.t("paymentRuns.empty"))
                             .appFont(13.5)
                             .foregroundStyle(Theme.inkSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.vertical, 13)
                     }
-                    ForEach(Array(runs.entries.enumerated()), id: \.element.id) { index, run in
-                        row(run)
-                        if index < runs.entries.count - 1 {
-                            Divider().overlay(Theme.separator)
+                }
+                // One card per month: the log keeps whole months, and "what
+                // came in this month" is the question it is read to answer.
+                ForEach(runs.byMonth(), id: \.month) { group in
+                    SectionLabel(text: "\(monthTitle(group.month)) · \(group.entries.count)")
+                        .padding(.horizontal, 4)
+                        .padding(.top, 6)
+                    Card {
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(group.entries.enumerated()), id: \.element.id) { index, run in
+                                row(run)
+                                if index < group.entries.count - 1 {
+                                    Divider().overlay(Theme.separator)
+                                }
+                            }
                         }
                     }
                 }
+                Text(l10n.t("paymentRuns.foot"))
+                    .appFont(12)
+                    .foregroundStyle(Theme.inkTertiary)
+                    .padding(.horizontal, 4)
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
@@ -84,6 +100,11 @@ struct PaymentRunsView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    private func monthTitle(_ month: Date) -> String {
+        let text = month.formatted(.dateTime.month(.wide).year().locale(l10n.locale))
+        return text.prefix(1).uppercased() + text.dropFirst()
+    }
+
     /// Shows what Shortcuts handed over verbatim, so an empty or odd value is
     /// visible as such rather than formatted into something plausible.
     private func row(_ run: PaymentRunLog.Entry) -> some View {
@@ -92,6 +113,7 @@ struct PaymentRunsView: View {
         case PaymentRunLog.running: l10n.t("paymentRuns.running")
         case "saved": l10n.t("paymentRuns.saved")
         case "savedOffline": l10n.t("paymentRuns.savedOffline")
+        case "ignored: money in": l10n.t("paymentRuns.ignoredIncoming")
         default: run.outcome
         }
         return VStack(alignment: .leading, spacing: 3) {

@@ -23,6 +23,11 @@ enum BankNotification {
         case notACharge(String)
         /// A USD amount in a shape this does not know; carries what it read.
         case unreadableAmount(String)
+        /// Money that came IN — "Recibiste una transferencia DEBIN de USD
+        /// 1.046,54 …". It carries a USD amount and nothing else a charge has,
+        /// so it used to be filed as a charge with no shop and no card: two of
+        /// them sat unassigned on 17/11/2026. Carries the text.
+        case incomingMoney(String)
     }
 
     static func parse(_ text: String) -> Result<Charge, Refusal> {
@@ -33,6 +38,12 @@ enum BankNotification {
         guard let amountMatch = amountPattern.firstMatch(
             in: text, range: NSRange(location: 0, length: ns.length)
         ) else { return .failure(.notACharge(text)) }
+        // At the start of a line, where BBVA puts the verb (after the title,
+        // when there is one): a shop called "Recibiste Cafe" is still a shop.
+        if text.range(of: #"(?m)^\s*(recibiste|te (enviaron|transfirieron)|acreditamos)\b"#,
+                      options: [.regularExpression, .caseInsensitive]) != nil {
+            return .failure(.incomingMoney(text))
+        }
         let raw = ns.substring(with: amountMatch.range(at: 1))
             .trimmingCharacters(in: CharacterSet(charactersIn: ",."))
         guard let cents = usdCents(raw) else { return .failure(.unreadableAmount(raw)) }

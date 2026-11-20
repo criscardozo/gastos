@@ -6282,13 +6282,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Payments from Shortcuts"
+            "value": "Shortcuts log"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pagos desde Atajos"
+            "value": "Registro de Atajos"
           }
         }
       }
@@ -6384,13 +6384,47 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recent runs"
+            "value": "This month and last"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Últimas corridas"
+            "value": "Este mes y el anterior"
+          }
+        }
+      }
+    },
+    "paymentRuns.foot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every Wallet payment and BBVA notification that arrived through Shortcuts, with the text exactly as it came and what the app did with it. This month and last are kept, on this phone."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada pago de Wallet y cada notificación de BBVA que llegó por Atajos, con el texto tal como llegó y qué hizo la app. Se guardan el mes en curso y el anterior, en este teléfono."
+          }
+        }
+      }
+    },
+    "paymentRuns.ignoredIncoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not saved: money coming in"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se cargó: plata que entró"
           }
         }
       }
@@ -6493,6 +6527,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cargo del banco: %1$@ — verificó %2$@ (%3$@)."
+          }
+        }
+      }
+    },
+    "bankCharge.incoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: that is money coming in (a transfer received), not an expense. Not saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gastos: es plata que entró (una transferencia recibida), no un gasto. No se cargó."
           }
         }
       }
